@@ -117,7 +117,11 @@
         </button>
  </form>
       <div class="divider"><span>หรือ</span></div>
+<<<<<<< HEAD
       <p class="register-row">ยังไม่มีบัญชี? <a href="testdb.php" class="link">สมัครสมาชิก</a></p>
+=======
+      <p class="register-row">ยังไม่มีบัญชี? <a href="regis.php" class="link">สมัครสมาชิก</a></p>
+>>>>>>> 8a208fbb83041fb60a4fddbb89c552d9398b7276
     </div>
   </main>
 
