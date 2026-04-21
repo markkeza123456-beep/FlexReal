@@ -115,7 +115,7 @@
             <div class="spinner"></div>
           </span>
         </button>
-      </form>
+ </form>
       <div class="divider"><span>หรือ</span></div>
       <p class="register-row">ยังไม่มีบัญชี? <a href="testdb.php" class="link">สมัครสมาชิก</a></p>
     </div>
