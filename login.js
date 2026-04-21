@@ -174,11 +174,11 @@
 
   // ── Loading State ─────────────────────────
   function setLoading(loading) {
-    submitBtn.disabled = loading;
-    btnText.hidden     = loading;
-    if (btnArrow) btnArrow.hidden  = loading;
-    if (btnLoader) btnLoader.hidden = !loading;
-  }
+  submitBtn.disabled = loading;
+  btnText.hidden = loading;
+  if (btnArrow) btnArrow.style.display = loading ? 'none' : '';
+  if (btnLoader) btnLoader.style.display = loading ? 'flex' : 'none';
+}
 
   // ── Form Submit ───────────────────────────
   form.addEventListener('submit', async (e) => {
