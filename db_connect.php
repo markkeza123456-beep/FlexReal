@@ -1,5 +1,5 @@
 <?php
-$host = "db.gwunrmptlmfpvidrxwdf.supabase.co";
+$host = "aws-1-ap-northeast-1.pooler.supabase.com";
 $db   = "postgres";
 $user = "postgres";
 $pass = "lerninghub@";
