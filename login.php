@@ -109,12 +109,15 @@
         </div>
 
         <button type="submit" class="btn-submit" id="submitBtn">
-  <span class="btn-text">เข้าสู่ระบบ</span>
-  </span>
-</button>
-
+          <span class="btn-text">เข้าสู่ระบบ</span>
+          <span class="btn-arrow" id="btnArrow">→</span>
+          <span class="btn-loader" id="btnLoader" style="display:none;">
+            <div class="spinner"></div>
+          </span>
+        </button>
+      </form>
       <div class="divider"><span>หรือ</span></div>
-      <p class="register-row">ยังไม่มีบัญชี? <a href="#" class="link">สมัครสมาชิก</a></p>
+      <p class="register-row">ยังไม่มีบัญชี? <a href="testdb.php" class="link">สมัครสมาชิก</a></p>
     </div>
   </main>
 
