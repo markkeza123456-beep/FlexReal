@@ -110,9 +110,6 @@
 
         <button type="submit" class="btn-submit" id="submitBtn">
   <span class="btn-text">เข้าสู่ระบบ</span>
-  <span class="btn-arrow">→</span>
-  <span class="btn-loader" id="btnLoader" hidden>
-    <div class="spinner"></div>
   </span>
 </button>
 
