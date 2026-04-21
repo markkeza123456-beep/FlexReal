@@ -17,6 +17,3 @@ try {
     die("การเชื่อมต่อ Supabase ล้มเหลว: " . $e->getMessage());
 }
 ?>
-<?php
-// เรียกใช้ไฟล์เชื่อมต่อฐานข้อมูลของคุณ
-require_once 'db_connect.php';
