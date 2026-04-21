@@ -27,8 +27,8 @@
           </svg>
         </div>
         <div class="brand-text">
-          <span class="brand-name">NEXORA</span>
-          <span class="brand-sub">SYSTEM ACCESS</span>
+          <span class="brand-name">FLEXIBLE</span>
+          <span class="brand-sub">LERNING HUB</span>
         </div>
       </div>
 
