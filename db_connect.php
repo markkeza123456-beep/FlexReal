@@ -7,7 +7,7 @@ $port = "5432";
 
 $dsn = "pgsql:host=$host;port=$port;dbname=$db;";
 
-try {fdfdfdfd
+try {
     $conn = new PDO($dsn, $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
