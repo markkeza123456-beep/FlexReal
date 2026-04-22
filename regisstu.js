@@ -248,18 +248,21 @@
 
     setLoading(true);
     try {
-      // ── ส่งข้อมูลไป PHP backend ──
-      // const formData = new FormData(e.target);
-      // formData.append('pin', pinVal);
-      // const res = await fetch('regis_process.php', { method: 'POST', body: formData });
-      // const result = await res.json();
-      // if (!res.ok) throw new Error(result.message || 'เกิดข้อผิดพลาด');
+      // 1. รวมค่า PIN 6 หลักจากช่องเล็กๆ มาใส่ในช่อง Hidden (id="final_pin")
+      const pinVal = pinDigits.map(d => d.value).join('');
+      const finalPinInput = document.getElementById('final_pin');
+      if (finalPinInput) {
+        finalPinInput.value = pinVal;
+      }
 
-      await new Promise(r => setTimeout(r, 1800)); // mock — ลบออกเมื่อเชื่อม backend จริง
-      showToast('✓ สมัครสมาชิกสำเร็จ!', 'success');
-      setTimeout(() => { window.location.href = 'login.php'; }, 1200);
+      // 2. สั่ง Submit ฟอร์ม (id="regisForm") ส่งไปที่ regisss_action.php จริงๆ
+      const form = document.getElementById('regisForm');
+      if (form) {
+        form.submit();
+      }
+
     } catch (err) {
-      showToast('✕ ' + (err.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่'), 'error-toast');
+      showToast('✕ ' + (err.message || 'เกิดข้อผิดพลาด'), 'error-toast');
       setLoading(false);
     }
   });
@@ -276,5 +279,6 @@
     }
   `;
   document.head.appendChild(s);
+  
 
 })();

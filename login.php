@@ -82,7 +82,7 @@
         </button>
       </form>
       <div class="divider"><span>หรือ</span></div>
-      <p class="register-row">ยังไม่มีบัญชี? <a href="regis.php" class="link">สมัครสมาชิก</a></p>
+      <p class="register-row">ยังไม่มีบัญชี? <a href="regisstu.php" class="link">สมัครสมาชิก</a></p>
     </div>
   </main>
   <div class="toast" id="toast"></div>
