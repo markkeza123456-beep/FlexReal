@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>เข้าสู่ระบบ</title>
+  <title>เข้าสู่ระบบ - NEXORA</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -17,7 +17,6 @@
   <main class="container">
     <div class="card" id="loginCard">
       <div class="card-accent"></div>
-
       <div class="brand">
         <div class="brand-icon">
           <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -28,40 +27,27 @@
         </div>
         <div class="brand-text">
           <span class="brand-name">FLEXIBLE</span>
-          <span class="brand-sub">LERNING HUB</span>
+          <span class="brand-sub">LEARNING HUB</span>
         </div>
       </div>
 
       <h1 class="title">เข้าสู่ระบบ</h1>
       <p class="subtitle">เลือกบทบาทแล้วกรอกข้อมูลเพื่อเข้าถึงระบบ</p>
 
-      <!-- Role Tabs -->
       <div class="role-tabs" id="roleTabs">
-        <button class="role-tab active" data-role="student">
-          <span>นักเรียน</span>
-        </button>
-        <button class="role-tab" data-role="teacher">
-          <span>อาจารย์</span>
-        </button>
-        <button class="role-tab" data-role="parent">
-          <span>ผู้ปกครอง</span>
-        </button>
-        <button class="role-tab" data-role="staff">
-          <span>เจ้าหน้าที่</span>
-        </button>
+        <button class="role-tab active" data-role="student"><span>นักเรียน</span></button>
+        <button class="role-tab" data-role="teacher"><span>อาจารย์</span></button>
+        <button class="role-tab" data-role="parent"><span>ผู้ปกครอง</span></button>
+        <button class="role-tab" data-role="staff"><span>เจ้าหน้าที่</span></button>
       </div>
 
       <form class="form" id="loginForm" novalidate>
-
-        <!-- ช่องรหัสบัตรประชาชน (แสดงทุก role แต่ label เปลี่ยนตาม role) -->
         <div class="field" id="field-email">
           <label class="label" for="email">รหัสบัตรประชาชน</label>
           <div class="input-wrap">
             <span class="input-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <rect x="3" y="4" width="18" height="16" rx="2"/>
-                <path d="M7 8h10M7 12h6"/>
-                <circle cx="16" cy="14" r="2"/>
+                <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6"/><circle cx="16" cy="14" r="2"/>
               </svg>
             </span>
             <input type="text" id="email" name="email" placeholder="กรอกรหัสบัตรประชาชน" autocomplete="off" />
@@ -70,21 +56,18 @@
           <span class="error-msg" id="email-error"></span>
         </div>
 
-        <!-- รหัสผ่าน (แสดงทุก role) -->
         <div class="field" id="field-password">
           <label class="label" for="password">รหัสผ่าน</label>
           <div class="input-wrap">
             <span class="input-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <rect x="3" y="11" width="18" height="11" rx="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
             </span>
             <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" />
-            <button type="button" class="toggle-pw" id="togglePw" aria-label="แสดง/ซ่อนรหัสผ่าน">
+            <button type="button" class="toggle-pw" id="togglePw">
               <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
               </svg>
             </button>
             <span class="focus-bar"></span>
@@ -92,37 +75,17 @@
           <span class="error-msg" id="password-error"></span>
         </div>
 
-        <!-- PIN (ผู้ปกครองเท่านั้น) -->
-        <div class="field field-pin" id="field-pin" style="display:none;">
-          <label class="label">PIN ผู้ปกครอง</label>
-          <div class="pin-wrap" id="pinWrap">
-            <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" />
-            <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" />
-            <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" />
-            <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" />
-          </div>
-          <span class="error-msg" id="pin-error"></span>
-        </div>
-
-        <div class="options-row">
-          <a href="#" class="link forgot-link">ลืมรหัสผ่าน?</a>
-        </div>
-
         <button type="submit" class="btn-submit" id="submitBtn">
           <span class="btn-text">เข้าสู่ระบบ</span>
           <span class="btn-arrow" id="btnArrow">→</span>
-          <span class="btn-loader" id="btnLoader" style="display:none;">
-            <div class="spinner"></div>
-          </span>
+          <span class="btn-loader" id="btnLoader" style="display:none;"><div class="spinner"></div></span>
         </button>
- </form>
+      </form>
       <div class="divider"><span>หรือ</span></div>
-      <p class="register-row">ยังไม่มีบัญชี? <a href="regis.php" class="link">สมัครสมาชิก </a></p>
+      <p class="register-row">ยังไม่มีบัญชี? <a href="regisstu.php" class="link">สมัครสมาชิก</a></p>
     </div>
   </main>
-
   <div class="toast" id="toast"></div>
-
   <script src="login.js"></script>
 </body>
 </html>
