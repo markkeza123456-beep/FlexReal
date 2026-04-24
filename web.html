@@ -6,6 +6,7 @@
     <title>Flexible Learning Hub</title>
     <link rel="stylesheet" href="web.css">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
@@ -42,7 +43,7 @@
             </div> 
         </div>
 
-        <button class="btn-orange" style="padding: 8px 20px;">Login</button>
+        <button class="btn-orange" style="padding: 8px 20px; background: var(--primary-orange); color: white; border: none; border-radius: 5px; cursor: pointer;">Login</button>
     </div>
 </nav>
 
@@ -118,31 +119,109 @@
 </div>
 
 <div id="course-detail" class="page">
-    <div class="content-header">
-        <h1 id="detail-title">ชื่อวิชา</h1>
-        <p id="detail-desc" style="color:var(--text-gray); margin-top:10px;"></p>
-    </div>
-    <div class="container" style="max-width: 900px; margin: 0 auto;">
-        <div class="info-card">
-            <h4>📖 แผนการเรียน</h4>
-            <div class="lesson-item">
-                <div>
-                    <b>บทที่ 1: การปูพื้นฐานความรู้</b>
-                    <p style="font-size:14px; color:var(--text-gray);">ไฟล์เอกสารประกอบการเรียน .pdf</p>
-                    <div class="file-upload-area">
-                        <label style="font-size: 13px;">ส่งงาน/เพิ่มไฟล์เสริม:</label>
-                        <input type="file" style="font-size: 12px; margin-top: 5px;">
+    <div class="container">
+        <div class="course-layout-grid">
+            
+            <div class="course-main-content">
+              <div class="course-main-content">
+    <h1 id="detail-title" style="font-size: 32px; margin-bottom: 5px;">ชื่อวิชา</h1>
+    
+    <p id="detail-desc-top" style="color:var(--text-gray); margin-bottom: 25px;">รายละเอียดเบื้องต้นของวิชา...</p>
+    
+    <div class="tabs">
+        </div>
+</div>
+                
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="openTab(event, 'overview')">Overview</button>
+                    <button class="tab-btn" onclick="openTab(event, 'curriculum')">Curriculum</button>
+                    <button class="tab-btn" onclick="openTab(event, 'instructor')">Instructor</button>
+                </div>
+
+                <div id="overview" class="tab-content active">
+                    <div class="info-card" style="margin-top: 25px;">
+                        <h3 class="section-title" style="border-left: 4px solid var(--primary-orange); padding-left: 10px; font-size: 20px; margin-bottom: 20px;">คำอธิบายรายวิชา</h3>
+                        <p id="detail-desc">เริ่มต้นเรียนรู้และพัฒนาทักษะไปกับหลักสูตรคุณภาพจากผู้เชี่ยวชาญ</p>
                     </div>
                 </div>
-                <button class="btn-orange">ดาวน์โหลดเอกสาร</button>
-            </div>
-            <div class="lesson-item">
-                <div>
-                    <b>บทที่ 2: วิดีโอสรุปบทเรียน</b>
-                    <p style="font-size:14px; color:var(--text-gray);">ความยาว 20 นาที</p>
+
+                <div id="curriculum" class="tab-content">
+                    <div class="info-card" style="margin-top: 25px;">
+                        <h3 class="section-title" style="border-left: 4px solid var(--primary-orange); padding-left: 10px; font-size: 20px; margin-bottom: 20px;">รายละเอียดบทเรียน</h3>
+                        <div class="curriculum-list">
+                            <div class="curriculum-item">
+                                <div class="curr-left">
+                                    <span class="curr-icon">📄</span>
+                                    <div class="curr-text">
+                                        <b>บทที่ 1: การปูพื้นฐานความรู้</b>
+                                        <p>ไฟล์เอกสารประกอบการเรียน .pdf</p>
+                                    </div>
+                                </div>
+                                <button class="btn-outline-orange">ดาวน์โหลดเอกสาร</button>
+                            </div>
+
+                            <div class="curriculum-item">
+                                <div class="curr-left">
+                                    <span class="curr-icon">🎬</span>
+                                    <div class="curr-text">
+                                        <b>บทที่ 2: วิดีโอสรุปบทเรียน</b>
+                                        <p>ความยาว 20 นาที</p>
+                                    </div>
+                                </div>
+                                <button class="btn-outline-orange">ชมวิดีโอ</button>
+                            </div>
+
+                            <div class="curriculum-item">
+                                <div class="curr-left">
+                                    <span class="curr-icon">📝</span>
+                                    <div class="curr-text">
+                                        <b>แบบทดสอบวัดความรู้</b>
+                                        <p>คำถาม 10 ข้อ • เกณฑ์ผ่าน 70%</p>
+                                    </div>
+                                </div>
+                                <button class="btn-outline-orange">เริ่มทำ Quiz</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <button class="btn-orange">ชมวิดีโอ</button>
+
+                <div id="instructor" class="tab-content">
+                    <div class="info-card" style="margin-top: 25px;">
+                        <h3 class="section-title" style="border-left: 4px solid var(--primary-orange); padding-left: 10px; font-size: 20px; margin-bottom: 20px;">อาจารย์ผู้สอน</h3>
+                        <div style="display:flex; gap:20px; align-items:center;">
+                            <div style="width:80px; height:80px; background:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px;">👨‍🏫</div>
+                            <div>
+                                <b>อาจารย์ผู้เชี่ยวชาญประจำหลักสูตร</b>
+                                <p style="color:var(--text-gray); font-size:14px;">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
+
+            <div class="course-sidebar">
+                <div class="sidebar-card">
+                    <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--deep-blue);">Free</h2>
+                    <button class="btn-enroll">ไปยังรายวิชา</button>
+                    
+                    <div class="meta-list">
+                        <div class="meta-item"><span>🕒 Duration</span> <b id="detail-duration">5 ชั่วโมง</b></div>
+                        <div class="meta-item"><span>📖 Lessons</span> <b>3 บทเรียน</b></div>
+                        <div class="meta-item"><span>📝 Quizzes</span> <b>1 ชุด</b></div>
+                        <div class="meta-item"><span>🌐 Language</span> <b>ภาษาไทย</b></div>
+                        <div class="meta-item"><span>📊 Skill level</span> <b>ระดับต้น</b></div>
+                        <div class="meta-item"><span>🎓 Certificate</span> <b>yes</b></div>
+                    </div>
+                    
+                    <div style="margin-top: 20px; display: flex; justify-content: center; gap: 20px; color: var(--text-gray);">
+                        <i class="fab fa-facebook" style="cursor:pointer;"></i> 
+                        <i class="fab fa-twitter" style="cursor:pointer;"></i> 
+                        <i class="fab fa-linkedin" style="cursor:pointer;"></i>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -151,14 +230,16 @@
     <div class="content-header">
         <h1 id="guide-title">คู่มือการเรียน</h1>
     </div>
-    <div class="container" id="guide-content" style="max-width: 800px; margin: 0 auto;"></div>
+    <div class="container" id="guide-content">
+        </div>
 </div>
 
 <div id="page-contact" class="page">
     <div class="content-header">
         <h1 id="contact-title">ติดต่อเรา</h1>
     </div>
-    <div class="container" id="contact-content" style="max-width: 800px; margin: 0 auto;"></div>
+    <div class="container" id="contact-content">
+        </div>
 </div>
 
 <footer class="footer">
