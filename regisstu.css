@@ -173,66 +173,50 @@ body {
 }
 
 /* ============================================
-   ROLE TAB BAR
+   ROLE TAB BAR (สไตล์ Grid แบบหน้า Login)
    ============================================ */
 .role-tabs {
-  position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 50px;
+  border-radius: var(--radius-sm);
   padding: 5px;
-  margin-bottom: 28px;
-  gap: 0;
+  margin-bottom: 24px;
   animation: fadeSlideUp .5s .22s both;
 }
 
 .role-tab {
-  position: relative;
-  z-index: 1;
-  flex: 1;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  padding: 11px 8px;
-  background: none;
+  gap: 4px;
+  padding: 11px 6px;
+  background: transparent;
   border: none;
-  border-radius: 50px;
-  cursor: pointer;
-  color: var(--text-secondary);
+  border-radius: 6px;
+  color: var(--text-muted);
   font-family: 'IBM Plex Sans Thai', sans-serif;
-  font-size: .82rem;
+  font-size: 0.85rem;
   font-weight: 500;
-  transition: color var(--transition);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), box-shadow var(--transition);
+  position: relative;
   white-space: nowrap;
 }
-.role-tab svg {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  transition: color var(--transition);
-}
-.role-tab.active {
-  color: #fff;
-  font-weight: 600;
-}
-.role-tab:hover:not(.active) {
-  color: var(--text-primary);
+
+.role-tab:hover {
+  color: var(--text-secondary);
+  background: rgba(255,107,26,.06);
 }
 
-/* Sliding pill */
-.role-slider {
-  position: absolute;
-  top: 5px;
-  height: calc(100% - 10px);
+.role-tab.active {
   background: linear-gradient(135deg, var(--orange), var(--orange-light));
-  border-radius: 50px;
-  transition: left .3s cubic-bezier(0.4, 0, 0.2, 1), width .3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 16px rgba(255,107,26,.5);
-  z-index: 0;
-  pointer-events: none;
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(255,107,26,.4);
+  font-weight: 600;
 }
 
 /* ---------- Section Label ---------- */

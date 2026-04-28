@@ -6,10 +6,9 @@
 
   // ── Role Tab Bar ──────────────────────────
   const tabs      = [...document.querySelectorAll('.role-tab')];
-  const slider    = document.getElementById('roleSlider');
   const roleInput = document.getElementById('roleInput');
 
-  // Role → action URL mapping (adjust paths as needed)
+  // Role → action URL mapping 
   const roleActions = {
     student: 'regisss_action.php',
     teacher: 'regis_teacher_action.php',
@@ -17,7 +16,7 @@
     staff:   'regis_staff_action.php',
   };
 
-  // Fields visible per role (beyond shared fields)
+  // Fields visible per role
   const roleFieldMap = {
     student: ['student-field'],
     teacher: ['teacher-field'],
@@ -25,47 +24,39 @@
     staff:   ['staff-field'],
   };
 
-  function moveSlider(tab) {
-    const tabRect  = tab.getBoundingClientRect();
-    const wrapRect = tab.closest('.role-tabs').getBoundingClientRect();
-    slider.style.left  = (tabRect.left - wrapRect.left) + 'px';
-    slider.style.width = tabRect.width + 'px';
+  const slider = document.querySelector('.role-slider');
+
+  function moveSlider(activeTab) {
+    if (!slider || !activeTab) return;
+    slider.style.left  = activeTab.offsetLeft + 'px';
+    slider.style.width = activeTab.offsetWidth + 'px';
   }
 
   function switchRole(role) {
-    // Update active tab
+    // อัปเดตปุ่มที่ถูกเลือก (Active)
     tabs.forEach(t => t.classList.toggle('active', t.dataset.role === role));
-    const activeTab = tabs.find(t => t.dataset.role === role);
-    if (activeTab) moveSlider(activeTab);
+    moveSlider(tabs.find(t => t.dataset.role === role));
 
-    // Update hidden input & form action
+    // อัปเดตฟอร์ม
     roleInput.value = role;
     const form = document.getElementById('regisForm');
     if (roleActions[role]) form.action = roleActions[role];
 
-    // Show/hide role-specific fields
+    // ซ่อน/แสดงช่องกรอกข้อมูลตาม Role
     document.querySelectorAll('.role-field').forEach(el => {
       const visible = roleFieldMap[role]?.some(cls => el.classList.contains(cls));
       el.style.display = visible ? '' : 'none';
     });
   }
 
-  // Init slider position
+  // โหลดค่าเริ่มต้นตอนเปิดหน้าเว็บ
   window.addEventListener('load', () => {
-    const active = tabs.find(t => t.classList.contains('active'));
-    if (active) moveSlider(active);
-    // Show default role fields
     switchRole(roleInput.value || 'student');
   });
 
+  // จับเหตุการณ์คลิกเปลี่ยน Role
   tabs.forEach(tab => {
     tab.addEventListener('click', () => switchRole(tab.dataset.role));
-  });
-
-  // Recalculate on resize
-  window.addEventListener('resize', () => {
-    const active = tabs.find(t => t.classList.contains('active'));
-    if (active) moveSlider(active);
   });
 
 

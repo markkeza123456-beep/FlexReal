@@ -35,25 +35,19 @@
       <h1 class="title">สมัครสมาชิก</h1>
       <p class="subtitle">เลือกบทบาทแล้วกรอกข้อมูลเพื่อสร้างบัญชี</p>
 
-      <!-- ── Role Tab Bar ── -->
       <div class="role-tabs" id="roleTabs">
         <button type="button" class="role-tab active" data-role="student">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
           <span>นักเรียน</span>
         </button>
         <button type="button" class="role-tab" data-role="teacher">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
           <span>อาจารย์</span>
         </button>
         <button type="button" class="role-tab" data-role="parent">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <span>ผู้ปกครอง</span>
         </button>
         <button type="button" class="role-tab" data-role="staff">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <span>เจ้าหน้าที่</span>
         </button>
-        <div class="role-slider" id="roleSlider"></div>
       </div>
 
       <form class="form" id="regisForm" action="regisss_action.php" method="POST" enctype="multipart/form-data">
@@ -99,7 +93,6 @@
           <span class="error-msg" id="idcard-error"></span>
         </div>
 
-        <!-- นักเรียน: ระดับชั้น -->
         <div class="field role-field student-field" id="field-level">
           <label class="label" for="level">ระดับชั้น<span class="required">*</span></label>
           <div class="input-wrap">
@@ -122,7 +115,6 @@
           <span class="error-msg" id="level-error"></span>
         </div>
 
-        <!-- อาจารย์: วิชาที่สอน -->
         <div class="field role-field teacher-field" id="field-subject" style="display:none;">
           <label class="label" for="subject">วิชาที่สอน<span class="required">*</span></label>
           <div class="input-wrap">
@@ -135,7 +127,6 @@
           <span class="error-msg" id="subject-error"></span>
         </div>
 
-        <!-- ผู้ปกครอง: ความสัมพันธ์กับนักเรียน -->
         <div class="field role-field parent-field" id="field-relation" style="display:none;">
           <label class="label" for="relation">ความสัมพันธ์กับนักเรียน<span class="required">*</span></label>
           <div class="input-wrap">
@@ -157,7 +148,6 @@
           <span class="error-msg" id="relation-error"></span>
         </div>
 
-        <!-- เจ้าหน้าที่: ตำแหน่ง -->
         <div class="field role-field staff-field" id="field-position" style="display:none;">
           <label class="label" for="position">ตำแหน่ง<span class="required">*</span></label>
           <div class="input-wrap">
@@ -347,7 +337,6 @@
           </div>
         </div>
 
-        <!-- PIN — แสดงเฉพาะนักเรียน -->
         <div class="role-field student-field" id="pin-section">
           <div class="section-label">ตั้ง PIN สำหรับผู้ปกครอง</div>
 
