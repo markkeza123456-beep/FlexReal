@@ -1,8 +1,74 @@
 /* ============================================
-   FLEXIBLE LEARNING HUB — regis.js
+   FLEXIBLE LEARNING HUB — regisstu.js
    ============================================ */
 
 (() => {
+
+  // ── Role Tab Bar ──────────────────────────
+  const tabs      = [...document.querySelectorAll('.role-tab')];
+  const slider    = document.getElementById('roleSlider');
+  const roleInput = document.getElementById('roleInput');
+
+  // Role → action URL mapping (adjust paths as needed)
+  const roleActions = {
+    student: 'regisss_action.php',
+    teacher: 'regis_teacher_action.php',
+    parent:  'regis_parent_action.php',
+    staff:   'regis_staff_action.php',
+  };
+
+  // Fields visible per role (beyond shared fields)
+  const roleFieldMap = {
+    student: ['student-field'],
+    teacher: ['teacher-field'],
+    parent:  ['parent-field'],
+    staff:   ['staff-field'],
+  };
+
+  function moveSlider(tab) {
+    const tabRect  = tab.getBoundingClientRect();
+    const wrapRect = tab.closest('.role-tabs').getBoundingClientRect();
+    slider.style.left  = (tabRect.left - wrapRect.left) + 'px';
+    slider.style.width = tabRect.width + 'px';
+  }
+
+  function switchRole(role) {
+    // Update active tab
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.role === role));
+    const activeTab = tabs.find(t => t.dataset.role === role);
+    if (activeTab) moveSlider(activeTab);
+
+    // Update hidden input & form action
+    roleInput.value = role;
+    const form = document.getElementById('regisForm');
+    if (roleActions[role]) form.action = roleActions[role];
+
+    // Show/hide role-specific fields
+    document.querySelectorAll('.role-field').forEach(el => {
+      const visible = roleFieldMap[role]?.some(cls => el.classList.contains(cls));
+      el.style.display = visible ? '' : 'none';
+    });
+  }
+
+  // Init slider position
+  window.addEventListener('load', () => {
+    const active = tabs.find(t => t.classList.contains('active'));
+    if (active) moveSlider(active);
+    // Show default role fields
+    switchRole(roleInput.value || 'student');
+  });
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => switchRole(tab.dataset.role));
+  });
+
+  // Recalculate on resize
+  window.addEventListener('resize', () => {
+    const active = tabs.find(t => t.classList.contains('active'));
+    if (active) moveSlider(active);
+  });
+
+
   // ── File Upload Display ───────────────────
   const fileInput   = document.getElementById('cert');
   const fileDisplay = document.getElementById('fileDisplay');
@@ -135,6 +201,9 @@
   clearOnFocus('lastname',  'field-lastname',  'lastname-error');
   clearOnFocus('idcard',    'field-idcard',    'idcard-error');
   clearOnFocus('level',     'field-level',     'level-error');
+  clearOnFocus('subject',   'field-subject',   'subject-error');
+  clearOnFocus('relation',  'field-relation',  'relation-error');
+  clearOnFocus('position',  'field-position',  'position-error');
   clearOnFocus('email',     'field-email',     'email-error');
   clearOnFocus('phone',     'field-phone',     'phone-error');
   clearOnFocus('house',     'field-house',     'house-error');
@@ -175,8 +244,10 @@
     e.preventDefault();
     let valid = true;
 
-    const v = (id) => document.getElementById(id).value.trim();
+    const currentRole = roleInput.value;
+    const v = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
 
+    // Shared fields
     if (!v('firstname'))
       valid = setError('field-firstname', 'firstname-error', 'กรุณากรอกชื่อ') && valid;
     if (!v('lastname'))
@@ -186,8 +257,15 @@
     if (id13.length !== 13)
       valid = setError('field-idcard', 'idcard-error', 'เลขบัตรประชาชนต้องมี 13 หลัก') && valid;
 
-    if (!v('level'))
+    // Role-specific required field
+    if (currentRole === 'student' && !v('level'))
       valid = setError('field-level', 'level-error', 'กรุณาเลือกระดับชั้น') && valid;
+    if (currentRole === 'teacher' && !v('subject'))
+      valid = setError('field-subject', 'subject-error', 'กรุณากรอกวิชาที่สอน') && valid;
+    if (currentRole === 'parent' && !v('relation'))
+      valid = setError('field-relation', 'relation-error', 'กรุณาเลือกความสัมพันธ์') && valid;
+    if (currentRole === 'staff' && !v('position'))
+      valid = setError('field-position', 'position-error', 'กรุณากรอกตำแหน่ง') && valid;
 
     const emailVal = v('email');
     if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal))
@@ -224,20 +302,22 @@
     if (pw !== cpw)
       valid = setError('field-confirm', 'confirm-error', 'รหัสผ่านไม่ตรงกัน') && valid;
 
-    // PIN
-    const pinVal        = getPinValue(pinDigits);
-    const pinConfirmVal = getPinValue(pinConfirmDigits);
-    if (pinVal.length < 4) {
-      valid = setPinError(pinDigits, 'pin-error', 'กรุณากรอก PIN ให้ครบ 4 หลัก') && valid;
-    } else {
-      setPinError(pinDigits, 'pin-error', '');
-    }
-    if (pinVal.length === 4 && pinConfirmVal !== pinVal) {
-      valid = setPinError(pinConfirmDigits, 'pin-confirm-error', 'PIN ไม่ตรงกัน') && valid;
-    } else if (pinConfirmVal.length < 4) {
-      valid = setPinError(pinConfirmDigits, 'pin-confirm-error', 'กรุณายืนยัน PIN ให้ครบ 4 หลัก') && valid;
-    } else {
-      setPinError(pinConfirmDigits, 'pin-confirm-error', '');
+    // PIN — เฉพาะนักเรียน
+    if (currentRole === 'student') {
+      const pinVal        = getPinValue(pinDigits);
+      const pinConfirmVal = getPinValue(pinConfirmDigits);
+      if (pinVal.length < 6) {
+        valid = setPinError(pinDigits, 'pin-error', 'กรุณากรอก PIN ให้ครบ 6 หลัก') && valid;
+      } else {
+        setPinError(pinDigits, 'pin-error', '');
+      }
+      if (pinVal.length === 6 && pinConfirmVal !== pinVal) {
+        valid = setPinError(pinConfirmDigits, 'pin-confirm-error', 'PIN ไม่ตรงกัน') && valid;
+      } else if (pinConfirmVal.length < 6) {
+        valid = setPinError(pinConfirmDigits, 'pin-confirm-error', 'กรุณายืนยัน PIN ให้ครบ 6 หลัก') && valid;
+      } else {
+        setPinError(pinConfirmDigits, 'pin-confirm-error', '');
+      }
     }
 
     if (!valid) {
@@ -248,18 +328,14 @@
 
     setLoading(true);
     try {
-      // 1. รวมค่า PIN 6 หลักจากช่องเล็กๆ มาใส่ในช่อง Hidden (id="final_pin")
-      const pinVal = pinDigits.map(d => d.value).join('');
-      const finalPinInput = document.getElementById('final_pin');
-      if (finalPinInput) {
-        finalPinInput.value = pinVal;
+      // ใส่ค่า PIN ลง hidden field
+      if (currentRole === 'student') {
+        const pinVal = pinDigits.map(d => d.value).join('');
+        const finalPinInput = document.getElementById('final_pin');
+        if (finalPinInput) finalPinInput.value = pinVal;
       }
 
-      // 2. สั่ง Submit ฟอร์ม (id="regisForm") ส่งไปที่ regisss_action.php จริงๆ
-      const form = document.getElementById('regisForm');
-      if (form) {
-        form.submit();
-      }
+      document.getElementById('regisForm').submit();
 
     } catch (err) {
       showToast('✕ ' + (err.message || 'เกิดข้อผิดพลาด'), 'error-toast');
@@ -279,6 +355,5 @@
     }
   `;
   document.head.appendChild(s);
-  
 
 })();

@@ -77,7 +77,7 @@
 
         <button type="submit" class="btn-submit" id="submitBtn">
           <span class="btn-text">เข้าสู่ระบบ</span>
-          <span class="btn-arrow" id="btnArrow">→</span>
+          
           <span class="btn-loader" id="btnLoader" style="display:none;"><div class="spinner"></div></span>
         </button>
       </form>
