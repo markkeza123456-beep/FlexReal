@@ -1,3 +1,50 @@
+<?php
+session_start();
+require_once __DIR__ . '/db_connect.php';
+
+if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? '')) !== 'staff') {
+    header('Location: login.php');
+    exit;
+}
+
+$staffName = 'เจ้าหน้าที่ระบบ';
+$staffRole = 'เจ้าหน้าที่';
+$staffInitials = 'ST';
+
+try {
+    $stmt = $conn->prepare(
+        "SELECT firstname, lastname
+         FROM public.staff
+         WHERE user_id = :user_id
+         LIMIT 1"
+    );
+    $stmt->execute([':user_id' => $_SESSION['user_id']]);
+    $staff = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($staff) {
+        $firstname = trim((string) ($staff['firstname'] ?? ''));
+        $lastname = trim((string) ($staff['lastname'] ?? ''));
+        $fullName = trim($firstname . ' ' . $lastname);
+
+        if ($fullName !== '') {
+            $staffName = $fullName;
+        }
+
+        $firstInitial = $firstname !== ''
+            ? (function_exists('mb_substr') ? mb_substr($firstname, 0, 1, 'UTF-8') : substr($firstname, 0, 1))
+            : '';
+        $lastInitial = $lastname !== ''
+            ? (function_exists('mb_substr') ? mb_substr($lastname, 0, 1, 'UTF-8') : substr($lastname, 0, 1))
+            : '';
+
+        if (trim($firstInitial . $lastInitial) !== '') {
+            $staffInitials = $firstInitial . $lastInitial;
+        }
+    }
+} catch (Throwable $e) {
+    // Keep fallback display values if staff profile is missing.
+}
+?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -64,14 +111,25 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         <span>รายชื่อสมาชิก</span>
       </a>
+      <a class="nav-item" data-page="staff-add" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+        <span>เพิ่มเจ้าหน้าที่</span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
-      <div class="user-info">
+      <div class="user-info" style="display:none;">
         <div class="user-avatar">จน</div>
         <div class="user-detail">
           <span class="user-name">เจ้าหน้าที่ ระบบ</span>
           <span class="user-role">แอดมิน</span>
+        </div>
+      </div>
+      <div class="user-info">
+        <div class="user-avatar"><?= htmlspecialchars($staffInitials, ENT_QUOTES, 'UTF-8'); ?></div>
+        <div class="user-detail">
+          <span class="user-name"><?= htmlspecialchars($staffName, ENT_QUOTES, 'UTF-8'); ?></span>
+          <span class="user-role"><?= htmlspecialchars($staffRole, ENT_QUOTES, 'UTF-8'); ?></span>
         </div>
       </div>
       <a href="login.php" class="btn-logout">
@@ -322,6 +380,47 @@
           <div class="form-actions">
             <button type="button" class="btn-ghost" data-goto="member-list">ยกเลิก</button>
             <button type="submit" class="btn-primary"><span class="btn-text">บันทึกข้อมูลสมาชิก</span></button>
+          </div>
+        </form>
+      </div>
+
+      <div class="page" id="page-staff-add">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">เพิ่มเจ้าหน้าที่</h1>
+            <p class="page-sub">สร้างบัญชีเจ้าหน้าที่ใหม่สำหรับเข้าใช้งานระบบจัดการ</p>
+          </div>
+        </div>
+        <form class="form-card" id="staffCreateForm" style="max-width: 800px;">
+          <div class="form-grid-2">
+            <div class="form-field">
+              <label class="form-label">เลขบัตรประชาชน <span class="req">*</span></label>
+              <div class="input-wrap"><input type="text" id="stf-user-id" inputmode="numeric" maxlength="13" placeholder="กรอก 13 หลัก" required /></div>
+            </div>
+            <div class="form-field">
+              <label class="form-label">รหัสผ่าน <span class="req">*</span></label>
+              <div class="input-wrap"><input type="password" id="stf-password" minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร" required /></div>
+            </div>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-field">
+              <label class="form-label">ชื่อ <span class="req">*</span></label>
+              <div class="input-wrap"><input type="text" id="stf-firstname" required /></div>
+            </div>
+            <div class="form-field">
+              <label class="form-label">นามสกุล <span class="req">*</span></label>
+              <div class="input-wrap"><input type="text" id="stf-lastname" required /></div>
+            </div>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-field">
+              <label class="form-label">ยืนยันรหัสผ่าน <span class="req">*</span></label>
+              <div class="input-wrap"><input type="password" id="stf-password-confirm" minlength="6" required /></div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-ghost" id="staffResetBtn">ล้างข้อมูล</button>
+            <button type="submit" class="btn-primary"><span class="btn-text">บันทึกเจ้าหน้าที่</span></button>
           </div>
         </form>
       </div>

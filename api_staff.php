@@ -1,4 +1,5 @@
 <?php
+session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/db_connect.php';
 
@@ -18,6 +19,13 @@ function postValue(string $key, $default = '') {
 
 function intValue($value): int {
     return (int) filter_var($value, FILTER_VALIDATE_INT, ['options' => ['default' => 0]]);
+}
+
+if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? '')) !== 'staff') {
+    jsonResponse([
+        'status' => 'error',
+        'message' => 'Unauthorized',
+    ], 403);
 }
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
@@ -258,10 +266,63 @@ try {
             jsonResponse(['status' => 'success']);
             break;
 
+        case 'createStaff':
+            $userId = preg_replace('/\D+/', '', (string) ($_POST['user_id'] ?? ''));
+            $password = trim((string) ($_POST['password'] ?? ''));
+            $firstname = postValue('firstname');
+            $lastname = postValue('lastname');
+
+            if (strlen($userId) !== 13) {
+                jsonResponse(['status' => 'error', 'message' => 'กรุณากรอกเลขบัตรประชาชน 13 หลัก'], 400);
+            }
+
+            if ($firstname === '' || $lastname === '') {
+                jsonResponse(['status' => 'error', 'message' => 'กรุณากรอกชื่อและนามสกุลให้ครบ'], 400);
+            }
+
+            if (strlen($password) < 6) {
+                jsonResponse(['status' => 'error', 'message' => 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'], 400);
+            }
+
+            $existsStmt = $conn->prepare('SELECT 1 FROM public."User" WHERE user_id = :user_id LIMIT 1');
+            $existsStmt->execute([':user_id' => $userId]);
+            if ($existsStmt->fetchColumn()) {
+                jsonResponse(['status' => 'error', 'message' => 'มีเลขบัตรประชาชนนี้อยู่ในระบบแล้ว'], 409);
+            }
+
+            $conn->beginTransaction();
+
+            $userStmt = $conn->prepare(
+                'INSERT INTO public."User" (user_id, password, ref_user_id, status)
+                 VALUES (:user_id, :password, NULL, :status)'
+            );
+            $userStmt->execute([
+                ':user_id' => $userId,
+                ':password' => $password,
+                ':status' => 'Staff',
+            ]);
+
+            $staffStmt = $conn->prepare(
+                'INSERT INTO public.staff (user_id, firstname, lastname)
+                 VALUES (:user_id, :firstname, :lastname)'
+            );
+            $staffStmt->execute([
+                ':user_id' => $userId,
+                ':firstname' => $firstname,
+                ':lastname' => $lastname,
+            ]);
+
+            $conn->commit();
+            jsonResponse(['status' => 'success']);
+            break;
+
         default:
             jsonResponse(['status' => 'error', 'message' => 'Invalid action'], 400);
     }
 } catch (Throwable $exception) {
+    if ($conn->inTransaction()) {
+        $conn->rollBack();
+    }
     jsonResponse([
         'status' => 'error',
         'message' => $exception->getMessage(),

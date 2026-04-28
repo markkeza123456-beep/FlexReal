@@ -331,27 +331,23 @@
 
           <div class="field" id="field-pin">
             <label class="label">PIN 6 หลัก<span class="required">*</span></label>
-            <div class="pin-wrap" id="pinWrap">
-              <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" />
-              <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" />
-              <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" />
-              <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" />
-              <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" />
-              <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" />
+            <div class="input-wrap">
+              <span class="input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </span>
+              <input type="password" id="student_pin" name="student_pin" placeholder="เธฃเธซเธฑเธช PIN 6 เธซเธฅเธฑเธ" maxlength="6" inputmode="numeric" />
+              <span class="focus-bar"></span>
             </div>
             <span class="error-msg" id="pin-error"></span>
           </div>
-          <input type="hidden" name="student_pin" id="final_pin">
-
           <div class="field" id="field-pin-confirm">
             <label class="label">ยืนยัน PIN<span class="required">*</span></label>
-            <div class="pin-wrap" id="pinConfirmWrap">
-              <input class="pin-digit pin-confirm" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" />
-              <input class="pin-digit pin-confirm" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" />
-              <input class="pin-digit pin-confirm" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" />
-              <input class="pin-digit pin-confirm" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" />
-              <input class="pin-digit pin-confirm" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" />
-              <input class="pin-digit pin-confirm" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" />
+            <div class="input-wrap">
+              <span class="input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </span>
+              <input type="password" id="student_pin_confirm" name="student_pin_confirm" placeholder="เธขเธทเธเธขเธฑเธ PIN 6 เธซเธฅเธฑเธ" maxlength="6" inputmode="numeric" />
+              <span class="focus-bar"></span>
             </div>
             <span class="error-msg" id="pin-confirm-error"></span>
           </div>
