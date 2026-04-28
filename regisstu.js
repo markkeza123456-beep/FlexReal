@@ -8,21 +8,29 @@
   const tabs      = [...document.querySelectorAll('.role-tab')];
   const roleInput = document.getElementById('roleInput');
 
-  // Role → action URL mapping 
+  // Role → action URL mapping — ชี้ไป regisstu_action.php ที่รองรับทุก role
   const roleActions = {
-    student: 'regisss_action.php',
-    teacher: 'regis_teacher_action.php',
-    parent:  'regis_parent_action.php',
-    staff:   'regis_staff_action.php',
+    student: 'regisstu_action.php',
+    teacher: 'regisstu_action.php',
+    parent:  'regisstu_action.php',
   };
 
   // Fields visible per role
+  // ✅ cert-field และ pin-section แสดงเฉพาะ student
+  // ✅ parent-link-section + parent-pin-section แสดงเฉพาะ parent
   const roleFieldMap = {
-    student: ['student-field'],
+    student: ['student-field', 'cert-field'],
     teacher: ['teacher-field'],
     parent:  ['parent-field'],
-    staff:   ['staff-field'],
   };
+
+  // sections ที่ toggle ด้วย id (ไม่ใช้ class)
+  const roleSectionMap = {
+    student: ['pin-section'],
+    teacher: [],
+    parent:  ['parent-link-section'],
+  };
+  const allSections = ['pin-section', 'parent-link-section'];
 
   const slider = document.querySelector('.role-slider');
 
@@ -42,10 +50,16 @@
     const form = document.getElementById('regisForm');
     if (roleActions[role]) form.action = roleActions[role];
 
-    // ซ่อน/แสดงช่องกรอกข้อมูลตาม Role
+    // ซ่อน/แสดงช่องกรอกข้อมูลตาม Role (class-based)
     document.querySelectorAll('.role-field').forEach(el => {
       const visible = roleFieldMap[role]?.some(cls => el.classList.contains(cls));
       el.style.display = visible ? '' : 'none';
+    });
+
+    // ซ่อน/แสดง sections ตาม id (PIN, link student)
+    allSections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = roleSectionMap[role]?.includes(id) ? '' : 'none';
     });
   }
 
@@ -99,6 +113,21 @@
     if (v.length > 6) out += '-' + v.slice(6, 10);
     phoneInput.value = out;
   });
+
+  // ── Link Student ID Auto-format (ผู้ปกครอง) ──
+  const linkIdInput = document.getElementById('link_student_id');
+  if (linkIdInput) {
+    linkIdInput.addEventListener('input', () => {
+      let v = linkIdInput.value.replace(/\D/g, '').slice(0, 13);
+      let out = '';
+      if (v.length > 0)  out += v.slice(0, 1);
+      if (v.length > 1)  out += '-' + v.slice(1, 5);
+      if (v.length > 5)  out += '-' + v.slice(5, 10);
+      if (v.length > 10) out += '-' + v.slice(10, 12);
+      if (v.length > 12) out += '-' + v.slice(12, 13);
+      linkIdInput.value = out;
+    });
+  }
 
   // ── Zipcode numbers only ───────────────────
   const zipcodeInput = document.getElementById('zipcode');
@@ -155,8 +184,10 @@
 
   const pinDigits        = [...document.querySelectorAll('#pinWrap .pin-digit')];
   const pinConfirmDigits = [...document.querySelectorAll('#pinConfirmWrap .pin-digit')];
+  const parentPinDigits  = [...document.querySelectorAll('#parentPinWrap .pin-digit')];
   initPin(pinDigits);
   initPin(pinConfirmDigits);
+  initPin(parentPinDigits);
 
   const getPinValue = (digits) => digits.map(d => d.value).join('');
 
@@ -194,7 +225,6 @@
   clearOnFocus('level',     'field-level',     'level-error');
   clearOnFocus('subject',   'field-subject',   'subject-error');
   clearOnFocus('relation',  'field-relation',  'relation-error');
-  clearOnFocus('position',  'field-position',  'position-error');
   clearOnFocus('email',     'field-email',     'email-error');
   clearOnFocus('phone',     'field-phone',     'phone-error');
   clearOnFocus('house',     'field-house',     'house-error');
@@ -255,8 +285,6 @@
       valid = setError('field-subject', 'subject-error', 'กรุณากรอกวิชาที่สอน') && valid;
     if (currentRole === 'parent' && !v('relation'))
       valid = setError('field-relation', 'relation-error', 'กรุณาเลือกความสัมพันธ์') && valid;
-    if (currentRole === 'staff' && !v('position'))
-      valid = setError('field-position', 'position-error', 'กรุณากรอกตำแหน่ง') && valid;
 
     const emailVal = v('email');
     if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal))
@@ -279,11 +307,13 @@
     if (zip.length !== 5)
       valid = setError('field-zipcode', 'zipcode-error', 'รหัสไปรษณีย์ต้องมี 5 หลัก') && valid;
 
-    // ไฟล์
-    if (!fileInput.files[0])
-      valid = setError('field-cert', 'cert-error', 'กรุณาแนบไฟล์วุฒิการศึกษา') && valid;
-    else if (fileInput.files[0].size > 5 * 1024 * 1024)
-      valid = setError('field-cert', 'cert-error', 'ไฟล์ต้องมีขนาดไม่เกิน 5MB') && valid;
+    // ✅ ไฟล์วุฒิ — บังคับเฉพาะนักเรียนเท่านั้น
+    if (currentRole === 'student') {
+      if (!fileInput.files[0])
+        valid = setError('field-cert', 'cert-error', 'กรุณาแนบไฟล์วุฒิการศึกษา') && valid;
+      else if (fileInput.files[0].size > 5 * 1024 * 1024)
+        valid = setError('field-cert', 'cert-error', 'ไฟล์ต้องมีขนาดไม่เกิน 5MB') && valid;
+    }
 
     // รหัสผ่าน
     const pw  = document.getElementById('password').value;
@@ -310,6 +340,25 @@
         setPinError(pinConfirmDigits, 'pin-confirm-error', '');
       }
     }
+
+    // Link student fields — เฉพาะผู้ปกครอง
+    if (currentRole === 'parent') {
+      const linkId  = document.getElementById('link_student_id');
+      const rawLinkId = linkId ? linkId.value.replace(/\D/g, '') : '';
+      if (rawLinkId.length !== 13)
+        valid = setError('field-link-student-id', 'link-student-id-error', 'รหัสบัตรประชาชนนักเรียนต้องมี 13 หลัก') && valid;
+
+      const parentPinVal = getPinValue(parentPinDigits);
+      if (parentPinVal.length < 6) {
+        valid = setPinError(parentPinDigits, 'link-student-pin-error', 'PIN นักเรียนต้องมี 6 หลัก') && valid;
+      } else {
+        setPinError(parentPinDigits, 'link-student-pin-error', '');
+        // ใส่ค่า PIN ลง hidden field ก่อน submit
+        const hiddenPin = document.getElementById('link_student_pin');
+        if (hiddenPin) hiddenPin.value = parentPinVal;
+      }
+    }
+
 
     if (!valid) {
       const firstErr = document.querySelector('.has-error, .pin-error');

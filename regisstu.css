@@ -173,11 +173,11 @@ body {
 }
 
 /* ============================================
-   ROLE TAB BAR (สไตล์ Grid แบบหน้า Login)
+   ROLE TAB BAR
    ============================================ */
 .role-tabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr); /* ✅ แก้จาก 4 → 3 */
   gap: 6px;
   background: var(--surface);
   border: 1px solid var(--border);

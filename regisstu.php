@@ -45,12 +45,9 @@
         <button type="button" class="role-tab" data-role="parent">
           <span>ผู้ปกครอง</span>
         </button>
-        <button type="button" class="role-tab" data-role="staff">
-          <span>เจ้าหน้าที่</span>
-        </button>
       </div>
 
-      <form class="form" id="regisForm" action="regisss_action.php" method="POST" enctype="multipart/form-data">
+      <form class="form" id="regisForm" action="regisstu_action.php" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="role" id="roleInput" value="student">
 
         <div class="section-label">ข้อมูลส่วนตัว</div>
@@ -146,18 +143,6 @@
             <span class="focus-bar"></span>
           </div>
           <span class="error-msg" id="relation-error"></span>
-        </div>
-
-        <div class="field role-field staff-field" id="field-position" style="display:none;">
-          <label class="label" for="position">ตำแหน่ง<span class="required">*</span></label>
-          <div class="input-wrap">
-            <span class="input-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
-            </span>
-            <input type="text" id="position" name="position" placeholder="เช่น เจ้าหน้าที่ธุรการ" />
-            <span class="focus-bar"></span>
-          </div>
-          <span class="error-msg" id="position-error"></span>
         </div>
 
         <div class="section-label">ข้อมูลติดต่อ</div>
@@ -283,6 +268,8 @@
           </div>
         </div>
 
+        <!-- ✅ ห่อทั้ง section-label และ field-cert ไว้ด้วยกัน เพื่อซ่อนพร้อมกันตอนเลือก teacher -->
+        <div class="role-field cert-field">
         <div class="section-label">เอกสารประกอบ</div>
 
         <div class="field" id="field-cert">
@@ -302,6 +289,7 @@
           </div>
           <span class="error-msg" id="cert-error"></span>
         </div>
+        </div><!-- /cert-field wrapper -->
 
         <div class="section-label">ตั้งรหัสผ่าน</div>
 
@@ -337,6 +325,7 @@
           </div>
         </div>
 
+        <!-- PIN นักเรียน -->
         <div class="role-field student-field" id="pin-section">
           <div class="section-label">ตั้ง PIN สำหรับผู้ปกครอง</div>
 
@@ -367,6 +356,34 @@
             <span class="error-msg" id="pin-confirm-error"></span>
           </div>
         </div>
+
+        <!-- ข้อมูลนักเรียนที่ต้องการผูกบัญชี (เฉพาะผู้ปกครอง) -->
+        <div class="role-field parent-field" id="parent-link-section" style="display:none;">
+          <div class="section-label">ข้อมูลนักเรียนที่ต้องการผูก</div>
+          <div class="field" id="field-link-student-id">
+            <label class="label" for="link_student_id">รหัสบัตรประชาชนนักเรียน<span class="required">*</span></label>
+            <div class="input-wrap">
+              <span class="input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6"/><circle cx="16" cy="14" r="2"/></svg>
+              </span>
+              <input type="text" id="link_student_id" name="link_student_id" placeholder="X-XXXX-XXXXX-XX-X" maxlength="17" autocomplete="off" />
+              <span class="focus-bar"></span>
+            </div>
+            <span class="error-msg" id="link-student-id-error"></span>
+          </div>
+          <div class="field" id="field-link-student-pin">
+            <label class="label" for="link_student_pin">PIN 6 หลักของนักเรียน<span class="required">*</span></label>
+            <div class="input-wrap">
+              <span class="input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </span>
+              <input type="password" id="link_student_pin" name="link_student_pin" placeholder="รหัส PIN 6 หลักของนักเรียน" maxlength="6" inputmode="numeric" />
+              <span class="focus-bar"></span>
+            </div>
+            <span class="error-msg" id="link-student-pin-error"></span>
+          </div>
+        </div>
+
 
         <button type="submit" class="btn-submit" id="submitBtn">
           <span class="btn-text">สมัครสมาชิก</span>
