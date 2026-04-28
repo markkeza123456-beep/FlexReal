@@ -1,0 +1,238 @@
+:root {
+    --primary-orange: #ff6b00;
+    --dark-orange: #e65a00;
+    --soft-orange: #fff4ed;
+    --deep-blue: #2d3436;
+    --text-gray: #636e72;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Prompt', sans-serif; }
+body { background: #f9ba87; color: var(--deep-blue); }
+
+/* ระบบสลับหน้า */
+.page { display: none; min-height: 80vh; }
+.page.active { display: block; animation: fadeIn 0.4s ease-in-out; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Navbar */
+.navbar {
+    background: white; padding: 15px 8%; display: flex;
+    align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    position: sticky; top: 0; z-index: 1000;
+}
+.logo { font-size: 24px; font-weight: 800; color: var(--primary-orange); text-decoration: none; cursor: pointer; }
+.nav-links { display: flex; gap: 30px; align-items: center; }
+
+/* Dropdown */
+.dropdown { position: relative; display: inline-block; }
+.dropbtn { background: none; border: none; font-size: 16px; font-weight: 500; cursor: pointer; color: var(--deep-blue); padding: 10px 0; }
+.dropdown-content {
+    display: none; position: absolute; background-color: white; min-width: 220px;
+    box-shadow: 0px 10px 30px rgba(0,0,0,0.15); border-radius: 12px; top: 45px; border: 1px solid #eee;
+}
+.dropdown-content a { color: var(--deep-blue); padding: 12px 20px; text-decoration: none; display: block; transition: 0.2s; font-size: 14px; }
+.dropdown-content a:hover { background: var(--soft-orange); color: var(--primary-orange); padding-left: 25px; }
+.dropdown:hover .dropdown-content { display: block; }
+
+/* Hero */
+.hero { background: linear-gradient(135deg, #ff6b00 0%, #ff9100 100%); padding: 60px 8%; text-align: center; color: white; }
+.search-box { width: 100%; max-width: 600px; padding: 18px 30px; border-radius: 50px; border: none; margin-top: 20px; outline: none; box-shadow: var(--shadow); }
+
+/* Course Cards */
+.container { padding: 50px 8%; }
+.section-title { font-size: 24px; margin-bottom: 30px; border-left: 6px solid var(--primary-orange); padding-left: 15px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; }
+.card { background: white; border-radius: 20px; overflow: hidden; border: 1px solid #eee; transition: 0.4s; cursor: pointer; }
+.card:hover { transform: translateY(-10px); box-shadow: var(--shadow); }
+.card img { width: 100%; height: 180px; object-fit: cover; }
+.card-content { padding: 20px; }
+.card-tag { background: var(--soft-orange); color: var(--primary-orange); padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 600; display: inline-block; margin-bottom: 10px; }
+
+/* Steps Section */
+.steps-bg { background: white; padding: 60px 8%; margin-top: 20px; border-top: 1px solid #ff6b00; }
+.steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; text-align: center; }
+.step-icon { width: 65px; height: 65px; background: var(--soft-orange); color: var(--primary-orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 22px; font-weight: bold; border: 2px solid var(--primary-orange); }
+
+/* จัดการหน้าคู่มือและหน้าติดต่อเราให้อยู่กึ่งกลาง */
+#page-guide .container, 
+#page-contact .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* จัดให้อยู่กึ่งกลางแนวนอน */
+    justify-content: center;
+    min-height: 50vh;
+}
+
+#page-guide .info-card, 
+#page-contact .info-card {
+    width: 100%;
+    max-width: 700px; /* จำกัดความกว้างตามภาพตัวอย่าง */
+    margin: 0 auto;
+    text-align: left;
+}
+
+.content-header {
+    background: white; padding: 40px 8%; border-bottom: 1px solid #eee; text-align: center;
+}
+
+/* Course Detail Layout */
+.course-layout-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+.info-card { background: white; padding: 30px; border-radius: 20px; border: 1px solid #eee; margin-bottom: 20px; }
+
+/* --- รายการบทเรียนแบบ Thai MOOC --- */
+.curriculum-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.curriculum-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 25px;
+    background: #fff;
+    border: 1px solid #f0f0f0;
+    border-radius: 12px;
+    transition: 0.3s;
+}
+
+.curriculum-item:hover {
+    border-color: var(--primary-orange);
+    background: #fffaf7;
+    transform: translateX(5px);
+}
+
+.curr-left {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.curr-icon {
+    font-size: 20px;
+    background: #f8f9fa;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--primary-orange);
+}
+
+.curr-text b {
+    display: block;
+    font-size: 16px;
+    color: var(--deep-blue);
+    margin-bottom: 2px;
+}
+
+.curr-text p {
+    font-size: 13px;
+    color: var(--text-gray);
+    margin: 0;
+}
+
+.btn-outline-orange {
+    background: transparent;
+    color: var(--primary-orange);
+    border: 1px solid var(--primary-orange);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+    white-space: nowrap;
+}
+
+.btn-outline-orange:hover {
+    background: var(--primary-orange);
+    color: white;
+}
+
+/* Sidebar & Buttons */
+.sidebar-card {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    position: sticky;
+    top: 100px;
+    border: 1px solid #eee;
+}
+
+.btn-enroll {
+    width: 100%;
+    background: #5b567d;
+    color: white;
+    border: none;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 25px;
+    transition: 0.3s;
+}
+
+.btn-enroll:hover { background: #4a456a; }
+
+.meta-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 0;
+    border-bottom: 1px solid #f1f1f1;
+    font-size: 15px;
+}
+
+.meta-item span { color: var(--text-gray); }
+
+/* Tabs */
+.tabs { display: flex; gap: 30px; border-bottom: 1px solid #ddd; }
+.tab-btn {
+    background: none; border: none; padding: 15px 5px; font-size: 16px;
+    cursor: pointer; color: var(--text-gray); position: relative;
+}
+.tab-btn.active { color: var(--deep-blue); font-weight: 600; }
+.tab-btn.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0;
+    width: 100%; height: 3px; background: var(--primary-orange);
+}
+
+.footer { background: var(--deep-blue); color: white; padding: 40px 8%; text-align: center; margin-top: 40px; }
+
+@media (max-width: 992px) {
+    .course-layout-grid { grid-template-columns: 1fr; }
+    .course-sidebar { order: -1; }
+}
+
+/* ตั้งค่าเริ่มต้นให้เนื้อหา Tab อื่นๆ ถูกซ่อน */
+.tab-content {
+    display: none;
+    padding-top: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+/* แสดงเฉพาะ Tab ที่มีคลาส active */
+.tab-content.active {
+    display: block;
+}
+
+/* ตกแต่งปุ่ม Tab ตอนเอาเมาส์วาง */
+.tab-btn:hover {
+    color: var(--primary-orange);
+}

@@ -68,4 +68,33 @@
       btnLoader.style.display = 'none';
     }
   });
+  // ── เพิ่มโค้ดเปิด/ปิดตาลูกตา (Login) ──
+  // 1. ค้นหาปุ่มลูกตา (ID: togglePw) และช่องกรอกรหัสผ่าน (ID: password)
+  const togglePwBtn = document.getElementById('togglePw');
+  const eyeIcon = document.getElementById('eyeIcon'); // ถ้าใน HTML ของคุณตั้ง ID ไอคอนไว้
+
+  if (togglePwBtn && pwInput) {
+    togglePwBtn.addEventListener('click', (e) => {
+      e.preventDefault(); // ป้องกันไม่ให้ปุ่มไปกด Submit ฟอร์ม
+      
+      // สลับประเภท Input
+      const isPassword = pwInput.type === 'password';
+      pwInput.type = isPassword ? 'text' : 'password';
+
+      // เปลี่ยนความโปร่งใสของปุ่มให้รู้ว่าสถานะเปลี่ยน
+      togglePwBtn.style.opacity = isPassword ? '1' : '0.5';
+      
+      // ถ้าคุณมี SVG หลายตัวในปุ่ม สามารถเขียนสลับรูปตรงนี้ได้เหมือนหน้า Register ครับ
+    });
+  }
+  emailInput.addEventListener('input', () => {
+    let v = emailInput.value.replace(/\D/g, '').slice(0, 13);
+    let out = '';
+    if (v.length > 0)  out += v.slice(0, 1);
+    if (v.length > 1)  out += '-' + v.slice(1, 5);
+    if (v.length > 5)  out += '-' + v.slice(5, 10);
+    if (v.length > 10) out += '-' + v.slice(10, 12);
+    if (v.length > 12) out += '-' + v.slice(12, 13);
+    emailInput.value = out;
+  });
 })();

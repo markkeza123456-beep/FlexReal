@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flexible Learning Hub</title>
+    <link rel="stylesheet" href="web.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="#" class="logo" onclick="showPage('home')">Flexible Learning Hub</a>
+    <div class="nav-links">
+        <a href="#" onclick="showPage('home')" style="text-decoration:none; color:inherit; font-weight:500;">หน้าหลัก</a>
+        
+        <div class="dropdown">
+            <button class="dropbtn">หมวดหมู่ ▾</button>
+            <div class="dropdown-content">
+                <a href="#" onclick="showCourse('ภาษาไทย')">ภาษาไทย</a>
+                <a href="#" onclick="showCourse('คณิตศาสตร์')">คณิตศาสตร์</a>
+                <a href="#" onclick="showCourse('วิทยาศาสตร์')">วิทยาศาสตร์</a>
+                <a href="#" onclick="showCourse('สังคมศึกษา')">สังคมศึกษา</a>
+                <a href="#" onclick="showCourse('ภาษาอังกฤษ')">ภาษาอังกฤษ</a>
+            </div> 
+        </div>
+
+        <div class="dropdown">
+            <button class="dropbtn">คู่มือการเรียน ▾</button>
+            <div class="dropdown-content">
+                <a href="#" onclick="showGuide('register')">ขั้นตอนการสมัคร</a>
+                <a href="#" onclick="showGuide('search')">ค้นหาบทเรียน</a>
+                <a href="#" onclick="showGuide('certificate')">การรับใบประกาศ</a>
+            </div> 
+        </div>
+
+        <div class="dropdown">
+            <button class="dropbtn">ติดต่อเรา ▾</button>
+            <div class="dropdown-content">
+                <a href="#" onclick="showContact('channel')">ช่องทางการติดต่อ</a>
+                <a href="#" onclick="showContact('location')">สถานที่ตั้ง</a>
+            </div> 
+        </div>
+
+        <button class="btn-orange" style="padding: 8px 20px; background: var(--primary-orange); color: white; border: none; border-radius: 5px; cursor: pointer;">Login</button>
+    </div>
+</nav>
+
+<div id="home" class="page active">
+    <div class="hero">
+        <h1>Learning Hub</h1>
+        <p style="margin-top:10px; opacity:0.9;">ค้นพบรายวิชาออนไลน์ที่ตอบโจทย์ชีวิตคุณ</p>
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-box" onkeyup="filterCourses()" placeholder="ค้นหาบทเรียนที่คุณสนใจ...">
+        </div>
+    </div>
+
+    <div class="container">
+        <h2 class="section-title">รายวิชาแนะนำ</h2>
+        <div class="grid">
+            <div class="card" onclick="showCourse('ภาษาอังกฤษ')">
+                <img src="https://media.istockphoto.com/id/1264465629/photo/alphabets.webp?a=1&b=1&s=612x612&w=0&k=20&c=C59JmBj2tKU0KZT3a1kMDK8MxC2uqwlgahm8kGfWxDY=">
+                <div class="card-content">
+                    <span class="card-tag">ภาษาและการสื่อสาร</span>
+                    <h3>ภาษาอังกฤษ</h3>
+                    <p>เรียนรู้วิธีการสื่อสารอย่างมืออาชีพ</p>
+                </div>
+            </div>
+
+             <div class="card" onclick="showCourse('ภาษาไทย')">
+                <img src="https://plus.unsplash.com/premium_photo-1664910914570-82e5805c21ac?w=600&auto=format&fit=crop&q=60">
+                <div class="card-content">
+                    <span class="card-tag">ภาษาและการสื่อสาร</span>
+                    <h3>ภาษาไทย</h3>
+                    <p>ทักษะการใช้ภาษาไทยเพื่อการทำงานที่มีประสิทธิภาพ</p>
+                </div>
+            </div>
+
+             <div class="card" onclick="showCourse('สังคมศึกษา')">
+                <img src="https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&q=80&w=500">
+                <div class="card-content">
+                    <span class="card-tag">วัฒนธรรม</span>
+                    <h3>สังคมศึกษา</h3>
+                    <p>เรียนรู้วิธีการเข้าสังคมอย่างมืออาชีพ</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="showCourse('คณิตศาสตร์')">
+                <img src="https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?w=600&auto=format&fit=crop&q=60">
+                <div class="card-content">
+                    <span class="card-tag">คำนวณ</span>
+                    <h3>คณิตศาสตร์</h3>
+                    <p>เพิ่มทักษะการคิดวิเคราะห์เชิงตัวเลข</p>
+                </div>
+            </div>
+
+            <div class="card" onclick="showCourse('วิทยาศาสตร์')">
+                <img src="https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&q=80&w=500">
+                <div class="card-content">
+                    <span class="card-tag">ทดลอง</span>
+                    <h3>วิทยาศาสตร์</h3>
+                    <p>เจาะลึกกระบวนการคิดทางวิทยาศาสตร์</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="steps-bg">
+        <h2 class="section-title" style="text-align:center; border:none;">เรียนรู้ง่ายๆ ใน 5 ขั้นตอน</h2>
+        <div class="steps-grid" style="margin-top:40px;">
+            <div><div class="step-icon">1</div><h4>สมัครสมาชิก</h4></div>
+            <div><div class="step-icon">2</div><h4>ค้นหารายวิชา</h4></div>
+            <div><div class="step-icon">3</div><h4>เรียนออนไลน์</h4></div>
+            <div><div class="step-icon">4</div><h4>ทำแบบทดสอบ</h4></div>
+            <div><div class="step-icon">5</div><h4>รับใบประกาศ</h4></div>
+        </div>
+    </div>
+</div>
+
+<div id="course-detail" class="page">
+    <div class="container">
+        <div class="course-layout-grid">
+            
+            <div class="course-main-content">
+              <div class="course-main-content">
+    <h1 id="detail-title" style="font-size: 32px; margin-bottom: 5px;">ชื่อวิชา</h1>
+    
+    <p id="detail-desc-top" style="color:var(--text-gray); margin-bottom: 25px;">รายละเอียดเบื้องต้นของวิชา...</p>
+    
+    <div class="tabs">
+        </div>
+</div>
+                
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="openTab(event, 'overview')">Overview</button>
+                    <button class="tab-btn" onclick="openTab(event, 'curriculum')">Curriculum</button>
+                    <button class="tab-btn" onclick="openTab(event, 'instructor')">Instructor</button>
+                </div>
+
+                <div id="overview" class="tab-content active">
+                    <div class="info-card" style="margin-top: 25px;">
+                        <h3 class="section-title" style="border-left: 4px solid var(--primary-orange); padding-left: 10px; font-size: 20px; margin-bottom: 20px;">คำอธิบายรายวิชา</h3>
+                        <p id="detail-desc">เริ่มต้นเรียนรู้และพัฒนาทักษะไปกับหลักสูตรคุณภาพจากผู้เชี่ยวชาญ</p>
+                    </div>
+                </div>
+
+                <div id="curriculum" class="tab-content">
+                    <div class="info-card" style="margin-top: 25px;">
+                        <h3 class="section-title" style="border-left: 4px solid var(--primary-orange); padding-left: 10px; font-size: 20px; margin-bottom: 20px;">รายละเอียดบทเรียน</h3>
+                        <div class="curriculum-list">
+                            <div class="curriculum-item">
+                                <div class="curr-left">
+                                    <span class="curr-icon">📄</span>
+                                    <div class="curr-text">
+                                        <b>บทที่ 1: การปูพื้นฐานความรู้</b>
+                                        <p>ไฟล์เอกสารประกอบการเรียน .pdf</p>
+                                    </div>
+                                </div>
+                                <button class="btn-outline-orange">ดาวน์โหลดเอกสาร</button>
+                            </div>
+
+                            <div class="curriculum-item">
+                                <div class="curr-left">
+                                    <span class="curr-icon">🎬</span>
+                                    <div class="curr-text">
+                                        <b>บทที่ 2: วิดีโอสรุปบทเรียน</b>
+                                        <p>ความยาว 20 นาที</p>
+                                    </div>
+                                </div>
+                                <button class="btn-outline-orange">ชมวิดีโอ</button>
+                            </div>
+
+                            <div class="curriculum-item">
+                                <div class="curr-left">
+                                    <span class="curr-icon">📝</span>
+                                    <div class="curr-text">
+                                        <b>แบบทดสอบวัดความรู้</b>
+                                        <p>คำถาม 10 ข้อ • เกณฑ์ผ่าน 70%</p>
+                                    </div>
+                                </div>
+                                <button class="btn-outline-orange">เริ่มทำ Quiz</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="instructor" class="tab-content">
+                    <div class="info-card" style="margin-top: 25px;">
+                        <h3 class="section-title" style="border-left: 4px solid var(--primary-orange); padding-left: 10px; font-size: 20px; margin-bottom: 20px;">อาจารย์ผู้สอน</h3>
+                        <div style="display:flex; gap:20px; align-items:center;">
+                            <div style="width:80px; height:80px; background:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px;">👨‍🏫</div>
+                            <div>
+                                <b>อาจารย์ผู้เชี่ยวชาญประจำหลักสูตร</b>
+                                <p style="color:var(--text-gray); font-size:14px;">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="course-sidebar">
+                <div class="sidebar-card">
+                    <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--deep-blue);">Free</h2>
+                    <button class="btn-enroll">ไปยังรายวิชา</button>
+                    
+                    <div class="meta-list">
+                        <div class="meta-item"><span>🕒 Duration</span> <b id="detail-duration">5 ชั่วโมง</b></div>
+                        <div class="meta-item"><span>📖 Lessons</span> <b>3 บทเรียน</b></div>
+                        <div class="meta-item"><span>📝 Quizzes</span> <b>1 ชุด</b></div>
+                        <div class="meta-item"><span>🌐 Language</span> <b>ภาษาไทย</b></div>
+                        <div class="meta-item"><span>📊 Skill level</span> <b>ระดับต้น</b></div>
+                        <div class="meta-item"><span>🎓 Certificate</span> <b>yes</b></div>
+                    </div>
+                    
+                    <div style="margin-top: 20px; display: flex; justify-content: center; gap: 20px; color: var(--text-gray);">
+                        <i class="fab fa-facebook" style="cursor:pointer;"></i> 
+                        <i class="fab fa-twitter" style="cursor:pointer;"></i> 
+                        <i class="fab fa-linkedin" style="cursor:pointer;"></i>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div id="page-guide" class="page">
+    <div class="content-header">
+        <h1 id="guide-title">คู่มือการเรียน</h1>
+    </div>
+    <div class="container" id="guide-content">
+        </div>
+</div>
+
+<div id="page-contact" class="page">
+    <div class="content-header">
+        <h1 id="contact-title">ติดต่อเรา</h1>
+    </div>
+    <div class="container" id="contact-content">
+        </div>
+</div>
+
+<footer class="footer">
+    <p><b>Flexible Learning Hub</b></p>
+    <p>© 2026 Flow Learning. All Rights Reserved.</p>
+</footer>
+
+<script src="web.js"></script>
+
+</body>
+</html>
