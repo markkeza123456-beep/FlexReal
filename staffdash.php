@@ -86,12 +86,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
       <div class="topbar-title" id="topbarTitle">แดชบอร์ด</div>
-      <div class="topbar-right">
-        <div class="search-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="globalSearch" placeholder="ค้นหา..." />
-        </div>
-      </div>
     </header>
 
     <main class="content">
@@ -99,9 +93,7 @@
       <div class="page active" id="page-dashboard">
         <div class="page-header">
           <h1 class="page-title">ภาพรวมระบบ</h1>
-          <p class="page-sub">ข้อมูล ณ วันนี้</p>
         </div>
-
         <div class="stat-grid">
           <div class="stat-card">
             <div class="stat-icon orange">
@@ -135,80 +127,61 @@
 
       <div class="page" id="page-curriculum-list">
         <div class="page-header">
-          <div>
-            <h1 class="page-title">รายการหลักสูตร</h1>
-            <p class="page-sub">จัดการและแก้ไขหลักสูตรทั้งหมด</p>
-          </div>
-          <button class="btn-primary" data-goto="curriculum-add">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            เพิ่มหลักสูตร
-          </button>
-        </div>
-        <div class="toolbar">
-          <div class="search-field">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="searchCurriculum" placeholder="ค้นหาหลักสูตร..." />
-          </div>
-          <select class="filter-select" id="filterCurriculumStatus">
-            <option value="">สถานะทั้งหมด</option>
-            <option value="active">เปิดใช้</option>
-            <option value="draft">ร่าง</option>
-            <option value="inactive">ปิดใช้</option>
-          </select>
+          <div><h1 class="page-title">รายการหลักสูตร</h1></div>
+          <button class="btn-primary" data-goto="curriculum-add">เพิ่มหลักสูตร</button>
         </div>
         <div class="table-wrap">
-          <table class="data-table" id="curriculumTable">
-            <thead>
-              <tr><th>รหัส</th><th>ชื่อหลักสูตร</th><th>ระดับชั้น</th><th>สถานะ</th><th>จัดการ</th></tr>
-            </thead>
+          <table class="data-table">
+            <thead><tr><th>รหัส</th><th>ชื่อหลักสูตร</th><th>ระดับชั้น</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
             <tbody id="curriculumBody"></tbody>
           </table>
         </div>
-        <div class="pagination" id="curriculumPagination"></div>
       </div>
 
       <div class="page" id="page-curriculum-add">
         <div class="page-header">
-          <div>
-            <h1 class="page-title" id="curriculumFormTitle">เพิ่มหลักสูตรใหม่</h1>
-          </div>
+          <div><h1 class="page-title" id="curriculumFormTitle">เพิ่มหลักสูตรใหม่</h1></div>
           <button class="btn-ghost" data-goto="curriculum-list">← ย้อนกลับ</button>
         </div>
-        <form class="form-card" id="curriculumForm" novalidate>
-          <input type="hidden" id="curriculumEditId" value="" />
+        <form class="form-card" id="curriculumForm" style="max-width: 800px;">
+          <input type="hidden" id="cf-id" value="" />
           <div class="form-grid-2">
-            <div class="form-field">
+            <div class="form-field" id="field-cf-code">
               <label class="form-label">รหัสหลักสูตร <span class="req">*</span></label>
               <div class="input-wrap"><input type="text" id="cf-code" required /></div>
             </div>
-            <div class="form-field">
+            <div class="form-field" id="field-cf-level">
               <label class="form-label">ระดับชั้น <span class="req">*</span></label>
               <div class="input-wrap select-wrap">
-                <select id="cf-level"><option value="m4">ม.4</option><option value="m5">ม.5</option><option value="m6">ม.6</option></select>
+                <select id="cf-level" required><option value="m4">ม.4</option><option value="m5">ม.5</option><option value="m6">ม.6</option></select>
                 <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
             </div>
           </div>
-          <div class="form-field">
+          <div class="form-field" id="field-cf-name">
             <label class="form-label">ชื่อหลักสูตร <span class="req">*</span></label>
             <div class="input-wrap"><input type="text" id="cf-name" required /></div>
           </div>
+          <div class="form-field">
+            <label class="form-label">คำอธิบาย</label>
+            <div class="input-wrap"><textarea id="cf-desc" rows="3"></textarea></div>
+          </div>
           <div class="form-grid-2">
-            <div class="form-field">
+            <div class="form-field" id="field-cf-year">
               <label class="form-label">ปีการศึกษา <span class="req">*</span></label>
               <div class="input-wrap"><input type="text" id="cf-year" maxlength="4" required /></div>
             </div>
             <div class="form-field">
               <label class="form-label">สถานะ</label>
               <div class="input-wrap select-wrap">
-                <select id="cf-status"><option value="active">เปิดใช้งาน</option><option value="draft">บันทึกเป็นร่าง</option><option value="inactive">ปิดใช้งาน</option></select>
+                <select id="cf-status"><option value="active">เปิดใช้งาน</option><option value="draft">ร่าง</option><option value="inactive">ปิดใช้งาน</option></select>
                 <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
             </div>
           </div>
           <div class="form-actions">
             <button type="button" class="btn-ghost" data-goto="curriculum-list">ยกเลิก</button>
-            <button type="submit" class="btn-primary"><span class="btn-text">บันทึกหลักสูตร</span></button>
+            <button type="submit" class="btn-primary"><span class="btn-text">บันทึกข้อมูล</span></button>
           </div>
         </form>
       </div>
@@ -218,16 +191,12 @@
           <div><h1 class="page-title">รายการรายวิชา</h1></div>
           <button class="btn-primary" data-goto="subject-add">เพิ่มรายวิชา</button>
         </div>
-        <div class="toolbar">
-          <div class="search-field"><input type="text" id="searchSubject" placeholder="ค้นหาวิชา..." /></div>
-        </div>
         <div class="table-wrap">
           <table class="data-table">
             <thead><tr><th>รหัสวิชา</th><th>ชื่อวิชา</th><th>หน่วยกิต</th><th>ประเภท</th><th>จัดการ</th></tr></thead>
             <tbody id="subjectBody"></tbody>
           </table>
         </div>
-        <div class="pagination" id="subjectPagination"></div>
       </div>
 
       <div class="page" id="page-subject-add">
@@ -235,8 +204,8 @@
           <div><h1 class="page-title" id="subjectFormTitle">เพิ่มรายวิชาใหม่</h1></div>
           <button class="btn-ghost" data-goto="subject-list">← ย้อนกลับ</button>
         </div>
-        <form class="form-card" id="subjectForm">
-          <input type="hidden" id="subjectEditId" value="" />
+        <form class="form-card" id="subjectForm" style="max-width: 800px;">
+          <input type="hidden" id="sf-id" value="" />
           <div class="form-grid-2">
             <div class="form-field">
               <label class="form-label">รหัสวิชา <span class="req">*</span></label>
@@ -249,7 +218,7 @@
           </div>
           <div class="form-grid-2">
             <div class="form-field">
-              <label class="form-label">หน่วยกิต</label>
+              <label class="form-label">หน่วยกิต <span class="req">*</span></label>
               <div class="input-wrap"><input type="number" id="sf-credit" required /></div>
             </div>
             <div class="form-field">
@@ -267,39 +236,64 @@
         </form>
       </div>
 
-      <div class="page" id="page-member-list">
+      <div class="page" id="page-subject-detail">
         <div class="page-header">
           <div>
-            <h1 class="page-title">จัดการผู้ใช้งาน</h1>
-            <p class="page-sub">แก้ไขข้อมูลและบทบาทของสมาชิกทั้งหมด</p>
+            <h1 class="page-title" id="detailSubjectTitle">จัดการบทเรียน</h1>
+            <p class="page-sub">เพิ่ม แก้ไข และจัดเรียงเนื้อหาในรายวิชานี้</p>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn-ghost" data-goto="subject-list">← กลับ</button>
+            <button class="btn-primary" onclick="openAddLesson()">+ เพิ่มบทเรียน</button>
           </div>
         </div>
-
-        <div class="toolbar">
-          <div class="search-field">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="searchMember" placeholder="ค้นหาชื่อ, อีเมล..." />
-          </div>
-          <select class="filter-select" id="filterMemberRole">
-            <option value="">ทุกบทบาท</option>
-            <option value="student">นักเรียน</option>
-            <option value="teacher">อาจารย์</option>
-            <option value="parent">ผู้ปกครอง</option>
-            <option value="staff">เจ้าหน้าที่</option>
-          </select>
-        </div>
-
         <div class="table-wrap">
-          <table class="data-table" id="memberTable">
-            <thead>
-              <tr>
-                <th>ชื่อ-นามสกุล</th>
-                <th>อีเมล</th>
-                <th>บทบาท</th>
-                <th>สถานะ</th>
-                <th>จัดการ</th>
-              </tr>
-            </thead>
+          <table class="data-table">
+            <thead><tr><th style="width: 80px;">รูปภาพ</th><th>ชื่อบทเรียน</th><th>วิดีโอ</th><th style="width: 120px;">จัดการ</th></tr></thead>
+            <tbody id="lessonBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="page" id="page-lesson-add">
+        <div class="page-header">
+          <div><h1 class="page-title" id="lessonFormTitle">เพิ่มบทเรียนใหม่</h1></div>
+          <button class="btn-ghost" onclick="goTo('subject-detail')">← กลับ</button>
+        </div>
+        <form class="form-card" id="lessonForm" style="max-width: 800px;" enctype="multipart/form-data">
+          <input type="hidden" id="lf-id" value="" />
+          <div class="form-field">
+            <label class="form-label">ชื่อบทเรียน <span class="req">*</span></label>
+            <div class="input-wrap"><input type="text" id="lf-title" required /></div>
+          </div>
+          <div class="form-field">
+            <label class="form-label">รายละเอียดเนื้อหา</label>
+            <div class="input-wrap"><textarea id="lf-content" rows="4"></textarea></div>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-field">
+              <label class="form-label">รูปภาพหน้าปก</label>
+              <div class="input-wrap"><input type="file" id="lf-image" accept="image/*" /></div>
+            </div>
+            <div class="form-field">
+              <label class="form-label">ลิงก์วิดีโอ (YouTube URL)</label>
+              <div class="input-wrap"><input type="url" id="lf-video" placeholder="https://..." /></div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-ghost" onclick="goTo('subject-detail')">ยกเลิก</button>
+            <button type="submit" class="btn-primary"><span class="btn-text">บันทึกบทเรียน</span></button>
+          </div>
+        </form>
+      </div>
+
+      <div class="page" id="page-member-list">
+        <div class="page-header">
+          <div><h1 class="page-title">จัดการผู้ใช้งาน</h1></div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>ชื่อ-นามสกุล</th><th>อีเมล</th><th>บทบาท</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
             <tbody id="memberBody"></tbody>
           </table>
         </div>
@@ -307,57 +301,24 @@
 
       <div class="page" id="page-member-edit">
         <div class="page-header">
-          <div>
-            <h1 class="page-title">แก้ไขข้อมูลสมาชิก</h1>
-            <p class="page-sub">ปรับเปลี่ยนข้อมูลส่วนตัวและบทบาท</p>
-          </div>
+          <div><h1 class="page-title">แก้ไขข้อมูลสมาชิก</h1></div>
           <button class="btn-ghost" data-goto="member-list">← ย้อนกลับ</button>
         </div>
-
-        <form class="form-card" id="memberForm">
+        <form class="form-card" id="memberForm" style="max-width: 800px;">
           <input type="hidden" id="mf-id" value="" />
-          
           <div class="form-grid-2">
-            <div class="form-field">
-              <label class="form-label">ชื่อจริง <span class="req">*</span></label>
-              <div class="input-wrap"><input type="text" id="mf-firstname" required /></div>
-            </div>
-            <div class="form-field">
-              <label class="form-label">นามสกุล <span class="req">*</span></label>
-              <div class="input-wrap"><input type="text" id="mf-lastname" required /></div>
-            </div>
+            <div class="form-field"><label class="form-label">ชื่อจริง</label><div class="input-wrap"><input type="text" id="mf-firstname" required /></div></div>
+            <div class="form-field"><label class="form-label">นามสกุล</label><div class="input-wrap"><input type="text" id="mf-lastname" required /></div></div>
           </div>
-
-          <div class="form-field">
-            <label class="form-label">อีเมล <span class="req">*</span></label>
-            <div class="input-wrap"><input type="email" id="mf-email" required /></div>
-          </div>
-
+          <div class="form-field"><label class="form-label">อีเมล</label><div class="input-wrap"><input type="email" id="mf-email" required /></div></div>
           <div class="form-grid-2">
-            <div class="form-field">
-              <label class="form-label">บทบาท</label>
-              <div class="input-wrap select-wrap">
-                <select id="mf-role">
-                  <option value="student">นักเรียน</option>
-                  <option value="teacher">อาจารย์</option>
-                  <option value="parent">ผู้ปกครอง</option>
-                  <option value="staff">เจ้าหน้าที่</option>
-                </select>
-                <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
+            <div class="form-field"><label class="form-label">บทบาท</label>
+              <div class="input-wrap select-wrap"><select id="mf-role"><option value="student">นักเรียน</option><option value="teacher">อาจารย์</option><option value="parent">ผู้ปกครอง</option><option value="staff">เจ้าหน้าที่</option></select><svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
             </div>
-            <div class="form-field">
-              <label class="form-label">สถานะบัญชี</label>
-              <div class="input-wrap select-wrap">
-                <select id="mf-status">
-                  <option value="active">เปิดใช้งาน (Active)</option>
-                  <option value="inactive">ระงับบัญชี (Inactive)</option>
-                </select>
-                <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
+            <div class="form-field"><label class="form-label">สถานะบัญชี</label>
+              <div class="input-wrap select-wrap"><select id="mf-status"><option value="active">ปกติ</option><option value="inactive">ระงับบัญชี</option></select><svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
             </div>
           </div>
-
           <div class="form-actions">
             <button type="button" class="btn-ghost" data-goto="member-list">ยกเลิก</button>
             <button type="submit" class="btn-primary"><span class="btn-text">บันทึกข้อมูลสมาชิก</span></button>
@@ -370,9 +331,7 @@
 
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
-      <div class="modal-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      </div>
+      <div class="modal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
       <h3 class="modal-title" id="modalTitle">ยืนยัน</h3>
       <p class="modal-body" id="modalBody">คุณต้องการดำเนินการนี้ใช่หรือไม่?</p>
       <div class="modal-actions">
@@ -383,6 +342,6 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <script src="staffdsash.js"></script>
+  <script src="staffdash.js"></script>
 </body>
 </html>
