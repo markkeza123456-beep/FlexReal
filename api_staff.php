@@ -1,107 +1,269 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/db_connect.php';
 
-// 1. ดึงไฟล์เชื่อมต่อฐานข้อมูลของคุณ
-// *** สมมติว่าในไฟล์ connect.php คุณใช้ตัวแปรชื่อ $conn หรือ $mysqli นะครับ ***
-require 'connect.php'; 
+function fetchAllRows(PDOStatement $statement): array {
+    return $statement->fetchAll(PDO::FETCH_ASSOC) ?: [];
+}
 
-// ฟังก์ชันช่วยเหลือสำหรับแปลงข้อมูลจาก DB เป็น Array
-function fetchAll($result) {
-    $data = [];
-    if ($result && $result->num_rows > 0) {
-        while($row = $result->fetch_assoc()) {
-            $data[] = $row;
-        }
+function jsonResponse(array $payload, int $statusCode = 200): void {
+    http_response_code($statusCode);
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+function postValue(string $key, $default = '') {
+    return isset($_POST[$key]) ? trim((string) $_POST[$key]) : $default;
+}
+
+function intValue($value): int {
+    return (int) filter_var($value, FILTER_VALIDATE_INT, ['options' => ['default' => 0]]);
+}
+
+$action = $_GET['action'] ?? $_POST['action'] ?? '';
+
+try {
+    switch ($action) {
+        case 'getAllData':
+            $membersStmt = $conn->query("SELECT id, firstname, lastname, email, role, status FROM users ORDER BY id DESC");
+            $curriculaStmt = $conn->query("SELECT * FROM curricula ORDER BY id DESC");
+            $subjectsStmt = $conn->query("SELECT * FROM subjects ORDER BY id DESC");
+
+            jsonResponse([
+                'status' => 'success',
+                'members' => fetchAllRows($membersStmt),
+                'curricula' => fetchAllRows($curriculaStmt),
+                'subjects' => fetchAllRows($subjectsStmt),
+            ]);
+            break;
+
+        case 'getSubjectEditorData':
+            $subjectId = intValue($_GET['subject_id'] ?? 0);
+            if ($subjectId <= 0) {
+                jsonResponse(['status' => 'error', 'message' => 'ไม่พบรหัสรายวิชา'], 400);
+            }
+
+            $subjectStmt = $conn->prepare("SELECT * FROM subjects WHERE id = :id LIMIT 1");
+            $subjectStmt->execute([':id' => $subjectId]);
+            $subject = $subjectStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$subject) {
+                jsonResponse(['status' => 'error', 'message' => 'ไม่พบข้อมูลรายวิชา'], 404);
+            }
+
+            $lessonStmt = $conn->prepare("SELECT * FROM lessons WHERE subject_id = :subject_id ORDER BY id ASC");
+            $lessonStmt->execute([':subject_id' => $subjectId]);
+
+            jsonResponse([
+                'status' => 'success',
+                'subject' => $subject,
+                'lessons' => fetchAllRows($lessonStmt),
+            ]);
+            break;
+
+        case 'getLessons':
+            $subjectId = intValue($_GET['subject_id'] ?? 0);
+            if ($subjectId <= 0) {
+                jsonResponse(['status' => 'error', 'message' => 'Missing subject_id'], 400);
+            }
+
+            $lessonStmt = $conn->prepare("SELECT * FROM lessons WHERE subject_id = :subject_id ORDER BY id ASC");
+            $lessonStmt->execute([':subject_id' => $subjectId]);
+
+            jsonResponse([
+                'status' => 'success',
+                'lessons' => fetchAllRows($lessonStmt),
+            ]);
+            break;
+
+        case 'saveMember':
+            $memberId = intValue($_POST['id'] ?? 0);
+            if ($memberId <= 0) {
+                jsonResponse(['status' => 'error', 'message' => 'ไม่พบรหัสสมาชิก'], 400);
+            }
+
+            $statement = $conn->prepare(
+                "UPDATE users
+                 SET firstname = :firstname,
+                     lastname = :lastname,
+                     email = :email,
+                     role = :role,
+                     status = :status
+                 WHERE id = :id"
+            );
+            $statement->execute([
+                ':firstname' => postValue('firstname'),
+                ':lastname' => postValue('lastname'),
+                ':email' => postValue('email'),
+                ':role' => postValue('role', 'student'),
+                ':status' => postValue('status', 'active'),
+                ':id' => $memberId,
+            ]);
+
+            jsonResponse(['status' => 'success']);
+            break;
+
+        case 'deleteMember':
+            $statement = $conn->prepare("DELETE FROM users WHERE id = :id");
+            $statement->execute([':id' => intValue($_POST['id'] ?? 0)]);
+            jsonResponse(['status' => 'success']);
+            break;
+
+        case 'saveCurriculum':
+            $curriculumId = intValue($_POST['id'] ?? 0);
+            $params = [
+                ':code' => postValue('code'),
+                ':name' => postValue('name'),
+                ':level' => postValue('level'),
+                ':year' => postValue('year'),
+                ':description' => postValue('description'),
+                ':status' => postValue('status', 'active'),
+            ];
+
+            if ($curriculumId > 0) {
+                $params[':id'] = $curriculumId;
+                $statement = $conn->prepare(
+                    "UPDATE curricula
+                     SET code = :code,
+                         name = :name,
+                         level = :level,
+                         year = :year,
+                         description = :description,
+                         status = :status
+                     WHERE id = :id"
+                );
+            } else {
+                $statement = $conn->prepare(
+                    "INSERT INTO curricula (code, name, level, year, description, status)
+                     VALUES (:code, :name, :level, :year, :description, :status)"
+                );
+            }
+
+            $statement->execute($params);
+            jsonResponse(['status' => 'success']);
+            break;
+
+        case 'deleteCurriculum':
+            $statement = $conn->prepare("DELETE FROM curricula WHERE id = :id");
+            $statement->execute([':id' => intValue($_POST['id'] ?? 0)]);
+            jsonResponse(['status' => 'success']);
+            break;
+
+        case 'saveSubject':
+            $subjectId = intValue($_POST['id'] ?? 0);
+            $params = [
+                ':code' => postValue('code'),
+                ':name' => postValue('name'),
+                ':credit' => intValue($_POST['credit'] ?? 0),
+                ':type' => postValue('type', 'required'),
+            ];
+
+            if ($subjectId > 0) {
+                $params[':id'] = $subjectId;
+                $statement = $conn->prepare(
+                    "UPDATE subjects
+                     SET code = :code,
+                         name = :name,
+                         credit = :credit,
+                         type = :type
+                     WHERE id = :id"
+                );
+            } else {
+                $statement = $conn->prepare(
+                    "INSERT INTO subjects (code, name, credit, type)
+                     VALUES (:code, :name, :credit, :type)"
+                );
+            }
+
+            $statement->execute($params);
+            jsonResponse(['status' => 'success']);
+            break;
+
+        case 'deleteSubject':
+            $statement = $conn->prepare("DELETE FROM subjects WHERE id = :id");
+            $statement->execute([':id' => intValue($_POST['id'] ?? 0)]);
+            jsonResponse(['status' => 'success']);
+            break;
+
+        case 'saveLesson':
+            $lessonId = intValue($_POST['id'] ?? 0);
+            $subjectId = intValue($_POST['subject_id'] ?? 0);
+
+            if ($subjectId <= 0) {
+                jsonResponse(['status' => 'error', 'message' => 'ไม่พบรหัสรายวิชา'], 400);
+            }
+
+            $imagePath = '';
+            if (isset($_FILES['image']) && (int) $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                $uploadDir = __DIR__ . '/uploads';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
+                }
+
+                $safeName = preg_replace('/[^A-Za-z0-9._-]/', '_', basename($_FILES['image']['name']));
+                $fileName = time() . '_' . $safeName;
+                $destination = $uploadDir . '/' . $fileName;
+
+                if (!move_uploaded_file($_FILES['image']['tmp_name'], $destination)) {
+                    jsonResponse(['status' => 'error', 'message' => 'อัปโหลดรูปภาพไม่สำเร็จ'], 500);
+                }
+
+                $imagePath = 'uploads/' . $fileName;
+            }
+
+            $baseParams = [
+                ':subject_id' => $subjectId,
+                ':title' => postValue('title'),
+                ':content' => postValue('content'),
+                ':video_url' => postValue('video_url'),
+            ];
+
+            if ($lessonId > 0) {
+                if ($imagePath !== '') {
+                    $statement = $conn->prepare(
+                        "UPDATE lessons
+                         SET title = :title,
+                             content = :content,
+                             image_path = :image_path,
+                             video_url = :video_url
+                         WHERE id = :id"
+                    );
+                    $baseParams[':image_path'] = $imagePath;
+                } else {
+                    $statement = $conn->prepare(
+                        "UPDATE lessons
+                         SET title = :title,
+                             content = :content,
+                             video_url = :video_url
+                         WHERE id = :id"
+                    );
+                }
+
+                $baseParams[':id'] = $lessonId;
+            } else {
+                $statement = $conn->prepare(
+                    "INSERT INTO lessons (subject_id, title, content, image_path, video_url)
+                     VALUES (:subject_id, :title, :content, :image_path, :video_url)"
+                );
+                $baseParams[':image_path'] = $imagePath;
+            }
+
+            $statement->execute($baseParams);
+            jsonResponse(['status' => 'success']);
+            break;
+
+        case 'deleteLesson':
+            $statement = $conn->prepare("DELETE FROM lessons WHERE id = :id");
+            $statement->execute([':id' => intValue($_POST['id'] ?? 0)]);
+            jsonResponse(['status' => 'success']);
+            break;
+
+        default:
+            jsonResponse(['status' => 'error', 'message' => 'Invalid action'], 400);
     }
-    return $data;
+} catch (Throwable $exception) {
+    jsonResponse([
+        'status' => 'error',
+        'message' => $exception->getMessage(),
+    ], 500);
 }
-
-// ตรวจสอบว่ามีคำสั่งอะไรส่งมา (ผ่าน GET หรือ POST)
-$action = isset($_GET['action']) ? $_GET['action'] : (isset($_POST['action']) ? $_POST['action'] : '');
-
-switch ($action) {
-
-    // ------------------------------------------------
-    // ดึงข้อมูลทั้งหมด (Dashboard โหลดหน้านี้หน้าเดียวได้ครบ)
-    // ------------------------------------------------
-    case 'getAllData':
-        // ดึงข้อมูลสมาชิก (สมมติว่าตารางของคุณชื่อ users หรือ members ปรับชื่อให้ตรงด้วยนะครับ)
-        $sql_members = "SELECT id, firstname, lastname, email, role, status FROM users ORDER BY id DESC";
-        $members = fetchAll($conn->query($sql_members));
-
-        // ดึงข้อมูลหลักสูตร (ถ้ามีตารางแล้ว)
-        // $sql_cur = "SELECT * FROM curricula";
-        // $curricula = fetchAll($conn->query($sql_cur));
-        $curricula = []; // ใส่ไว้ก่อนถ้ายังไม่มีตาราง
-
-        // ดึงข้อมูลรายวิชา (ถ้ามีตารางแล้ว)
-        // $sql_sub = "SELECT * FROM subjects";
-        // $subjects = fetchAll($conn->query($sql_sub));
-        $subjects = []; // ใส่ไว้ก่อนถ้ายังไม่มีตาราง
-
-        echo json_encode([
-            'status' => 'success',
-            'members' => $members,
-            'curricula' => $curricula,
-            'subjects' => $subjects
-        ]);
-        break;
-
-    // ------------------------------------------------
-    // บันทึกการแก้ไขข้อมูลสมาชิก
-    // ------------------------------------------------
-    case 'saveMember':
-        $id = $_POST['id'] ?? '';
-        $firstname = $_POST['firstname'] ?? '';
-        $lastname = $_POST['lastname'] ?? '';
-        $email = $_POST['email'] ?? '';
-        $role = $_POST['role'] ?? 'student';
-        $status = $_POST['status'] ?? 'active';
-
-        if(empty($id)) {
-            echo json_encode(['status' => 'error', 'message' => 'ไม่พบ ID ของผู้ใช้']);
-            exit;
-        }
-
-        // ปรับชื่อตาราง (users) ให้ตรงกับ Database ของคุณ
-        $stmt = $conn->prepare("UPDATE users SET firstname=?, lastname=?, email=?, role=?, status=? WHERE id=?");
-        $stmt->bind_param("sssssi", $firstname, $lastname, $email, $role, $status, $id);
-
-        if ($stmt->execute()) {
-            echo json_encode(['status' => 'success', 'message' => 'อัปเดตข้อมูลสำเร็จ']);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'บันทึกข้อมูลล้มเหลว: ' . $conn->error]);
-        }
-        $stmt->close();
-        break;
-
-    // ------------------------------------------------
-    // ลบสมาชิก
-    // ------------------------------------------------
-    case 'deleteMember':
-        $id = $_POST['id'] ?? '';
-
-        if(empty($id)) {
-            echo json_encode(['status' => 'error', 'message' => 'ไม่พบ ID ของผู้ใช้']);
-            exit;
-        }
-
-        // ปรับชื่อตาราง (users) ให้ตรงกับ Database ของคุณ
-        $stmt = $conn->prepare("DELETE FROM users WHERE id=?");
-        $stmt->bind_param("i", $id);
-
-        if ($stmt->execute()) {
-            echo json_encode(['status' => 'success', 'message' => 'ลบผู้ใช้สำเร็จ']);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'ลบข้อมูลล้มเหลว']);
-        }
-        $stmt->close();
-        break;
-
-    default:
-        echo json_encode(['status' => 'error', 'message' => 'ไม่พบคำสั่ง (Action)']);
-        break;
-}
-
-$conn->close();
-?>

@@ -1,18 +1,16 @@
 /* ============================================
    NEXORA — staff_dashboard.js 
-   (เวอร์ชันเชื่อมต่อ Database 100%)
+   (เวอร์ชันรวมระบบจัดการบทเรียน)
    ============================================ */
 
 (() => {
-  // ── State ──────────────────────────────────
   let curricula = [];
   let subjects = [];
   let members = []; 
-
-  let currentPage = 'dashboard';
-  let curPage = 1;
-  let subPage = 1;
-  const PAGE_SIZE = 5;
+  let lessons = []; 
+  const initialPage = new URLSearchParams(window.location.search).get('page') || 'dashboard';
+  let currentPage = initialPage;
+  let currentSubjectId = null;
 
   const pageNames = {
     'dashboard':       'แดชบอร์ด',
@@ -20,59 +18,55 @@
     'curriculum-add':  'เพิ่ม/แก้ไขหลักสูตร',
     'subject-list':    'รายการรายวิชา',
     'subject-add':     'เพิ่ม/แก้ไขรายวิชา',
+    'subject-detail':  'รายละเอียดรายวิชา (บทเรียน)',
+    'lesson-add':      'เพิ่ม/แก้ไขบทเรียน',
     'member-list':     'จัดการผู้ใช้งาน',
     'member-edit':     'แก้ไขข้อมูลสมาชิก',
   };
 
-  // ── Selectors ─────────────────────────────
-  const sidebar      = document.getElementById('sidebar');
-  const menuBtn      = document.getElementById('menuBtn');
-  const sidebarClose = document.getElementById('sidebarClose');
-  const topbarTitle  = document.getElementById('topbarTitle');
-  const toast        = document.getElementById('toast');
-  const modalOverlay = document.getElementById('modalOverlay');
-  const modalTitle   = document.getElementById('modalTitle');
-  const modalBody    = document.getElementById('modalBody');
-  const modalConfirm = document.getElementById('modalConfirm');
-  const modalCancel  = document.getElementById('modalCancel');
-
   // ── UI Controls ─────────────────────────
-  menuBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
-  sidebarClose.addEventListener('click', () => sidebar.classList.remove('open'));
+  document.getElementById('menuBtn')?.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+  document.getElementById('sidebarClose')?.addEventListener('click', () => document.getElementById('sidebar').classList.remove('open'));
+  
+  const modalOverlay = document.getElementById('modalOverlay');
+  const modalConfirm = document.getElementById('modalConfirm');
   modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+  document.getElementById('modalCancel').addEventListener('click', closeModal);
 
   function openModal(title, body, onConfirm) {
-    modalTitle.textContent = title;
-    modalBody.textContent  = body;
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalBody').textContent  = body;
     modalOverlay.classList.add('show');
     modalConfirm.onclick = () => { onConfirm(); closeModal(); };
   }
   function closeModal() { modalOverlay.classList.remove('show'); }
-  modalCancel.addEventListener('click', closeModal);
 
   function showToast(msg, type = 'info') {
+    const toast = document.getElementById('toast');
     toast.textContent = msg;
     toast.className = 'toast show ' + type;
     setTimeout(() => toast.classList.remove('show'), 3000);
   }
 
-  function goTo(page) {
+  window.goTo = function(page) {
+    if (!document.getElementById('page-' + page)) {
+      page = 'dashboard';
+    }
     currentPage = page;
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    const el = document.getElementById('page-' + page);
-    if (el) el.classList.add('active');
+    document.getElementById('page-' + page)?.classList.add('active');
 
     document.querySelectorAll('.nav-item').forEach(n => {
       n.classList.toggle('active', n.dataset.page === page);
     });
-    topbarTitle.textContent = pageNames[page] || '';
+    document.getElementById('topbarTitle').textContent = pageNames[page] || '';
 
     if (page === 'dashboard') updateDashStats();
     if (page === 'curriculum-list') renderCurricula();
     if (page === 'subject-list') renderSubjects();
     if (page === 'member-list') renderMembers();
 
-    sidebar.classList.remove('open');
+    document.getElementById('sidebar').classList.remove('open');
     window.scrollTo(0, 0);
   }
 
@@ -85,32 +79,20 @@
     if (gt) goTo(gt.dataset.goto);
   });
 
-  // ==========================================
-  // ── Database API Connection ──
-  // ==========================================
-
-  // โหลดข้อมูลทั้งหมดจากฐานข้อมูล (Dashboard, Curricula, Subjects, Members)
   async function loadData() {
     try {
       const res = await fetch('api_staff.php?action=getAllData');
       const data = await res.json();
-      
       if (data.status === 'success') {
         curricula = data.curricula || [];
         subjects = data.subjects || [];
         members = data.members || [];
-        
         updateDashStats();
         if(currentPage === 'curriculum-list') renderCurricula();
         if(currentPage === 'subject-list') renderSubjects();
         if(currentPage === 'member-list') renderMembers();
-      } else {
-        showToast('✕ โหลดข้อมูลไม่สำเร็จ', 'error');
       }
-    } catch(err) { 
-      console.error("Fetch Error: ", err);
-      showToast('✕ ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error');
-    }
+    } catch(err) { showToast('✕ ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error'); }
   }
 
   function updateDashStats() {
@@ -119,19 +101,10 @@
     document.getElementById('stat-student').textContent    = members.length;
   }
 
-  // ── จัดการสมาชิก (Members) ──
+  // ── ส่วนจัดการสมาชิก (Members) ──
   function renderMembers() {
-    const q = (document.getElementById('searchMember')?.value || '').toLowerCase();
-    const roleFilter = document.getElementById('filterMemberRole')?.value || '';
-    
-    const filtered = members.filter(m => 
-      (m.firstname.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)) &&
-      (roleFilter === '' || m.role === roleFilter)
-    );
-
     const roleName = { student: 'นักเรียน', teacher: 'อาจารย์', parent: 'ผู้ปกครอง', staff: 'เจ้าหน้าที่' };
-    
-    document.getElementById('memberBody').innerHTML = filtered.length ? filtered.map(m => `
+    document.getElementById('memberBody').innerHTML = members.length ? members.map(m => `
       <tr>
         <td>${m.firstname} ${m.lastname}</td>
         <td style="color:var(--text-secondary)">${m.email}</td>
@@ -139,21 +112,14 @@
         <td>${m.status === 'active' ? '<span class="badge active">ปกติ</span>' : '<span class="badge inactive">ระงับบัญชี</span>'}</td>
         <td>
           <div class="action-btns">
-            <button type="button" class="btn-icon edit" onclick="editMember(${m.id})">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
-            <button type="button" class="btn-icon del" onclick="deleteMember(${m.id})">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-            </button>
+            <button type="button" class="btn-icon edit" onclick="editMember(${m.id})">✎</button>
+            <button type="button" class="btn-icon del" onclick="deleteMember(${m.id})">✖</button>
           </div>
         </td>
       </tr>
-    `).join('') : `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted)">ไม่พบข้อมูลผู้ใช้งาน</td></tr>`;
+    `).join('') : `<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่พบข้อมูล</td></tr>`;
   }
-
-  document.getElementById('searchMember')?.addEventListener('input', renderMembers);
-  document.getElementById('filterMemberRole')?.addEventListener('change', renderMembers);
-
+  
   window.editMember = (id) => {
     const m = members.find(x => x.id == id);
     if(m) {
@@ -177,63 +143,179 @@
     formData.append('email', document.getElementById('mf-email').value);
     formData.append('role', document.getElementById('mf-role').value);
     formData.append('status', document.getElementById('mf-status').value);
+    try {
+      const res = await fetch('api_staff.php', { method: 'POST', body: formData });
+      const result = await res.json();
+      if(result.status === 'success') { showToast('✓ บันทึกสำเร็จ', 'success'); await loadData(); goTo('member-list'); }
+    } catch(err) { showToast('✕ ขัดข้อง', 'error'); }
+  });
+
+  window.deleteMember = (id) => {
+    openModal('ลบสมาชิก', 'ยืนยันหรือไม่?', async () => {
+      const formData = new FormData(); formData.append('action', 'deleteMember'); formData.append('id', id);
+      await fetch('api_staff.php', { method: 'POST', body: formData });
+      showToast('✓ ลบสำเร็จ', 'success'); await loadData();
+    });
+  };
+
+  // ── ส่วนจัดการหลักสูตร (Curriculum) ──
+  function renderCurricula() {
+    document.getElementById('curriculumBody').innerHTML = curricula.length ? curricula.map(c => `
+      <tr>
+        <td class="mono">${c.code}</td><td>${c.name}</td><td>${c.level.toUpperCase()}</td>
+        <td><span class="badge ${c.status === 'active'?'active':'draft'}">${c.status}</span></td>
+        <td>
+          <div class="action-btns">
+            <button class="btn-icon edit" onclick="editCurriculum(${c.id})">✎</button>
+            <button class="btn-icon del" onclick="deleteCurriculum(${c.id})">✖</button>
+          </div>
+        </td>
+      </tr>
+    `).join('') : `<tr><td colspan="5" style="text-align:center;">ไม่มีข้อมูล</td></tr>`;
+  }
+  document.querySelector('[data-goto="curriculum-add"]')?.addEventListener('click', () => {
+    document.getElementById('curriculumFormTitle').textContent = 'เพิ่มหลักสูตรใหม่'; document.getElementById('curriculumForm').reset(); document.getElementById('cf-id').value = '';
+  });
+  window.editCurriculum = (id) => {
+    const c = curricula.find(x => x.id == id);
+    if(c) {
+      document.getElementById('curriculumFormTitle').textContent = 'แก้ไขหลักสูตร'; document.getElementById('cf-id').value = c.id;
+      document.getElementById('cf-code').value = c.code; document.getElementById('cf-name').value = c.name;
+      document.getElementById('cf-level').value = c.level; document.getElementById('cf-year').value = c.year || '';
+      document.getElementById('cf-desc').value = c.description || ''; document.getElementById('cf-status').value = c.status;
+      goTo('curriculum-add');
+    }
+  };
+  document.getElementById('curriculumForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(); fd.append('action', 'saveCurriculum');
+    fd.append('id', document.getElementById('cf-id').value); fd.append('code', document.getElementById('cf-code').value);
+    fd.append('name', document.getElementById('cf-name').value); fd.append('level', document.getElementById('cf-level').value);
+    fd.append('year', document.getElementById('cf-year').value);
+    fd.append('description', document.getElementById('cf-desc').value);
+    fd.append('status', document.getElementById('cf-status').value);
+    await fetch('api_staff.php', { method: 'POST', body: fd }); showToast('✓ บันทึกสำเร็จ', 'success'); await loadData(); goTo('curriculum-list');
+  });
+  window.deleteCurriculum = (id) => {
+    openModal('ลบ', 'ยืนยัน?', async () => { const fd = new FormData(); fd.append('action', 'deleteCurriculum'); fd.append('id', id); await fetch('api_staff.php', { method: 'POST', body: fd }); showToast('✓ สำเร็จ', 'success'); await loadData(); });
+  };
+
+  // ── ส่วนจัดการรายวิชา (Subjects) ──
+  function renderSubjects() {
+    document.getElementById('subjectBody').innerHTML = subjects.length ? subjects.map(s => `
+      <tr>
+        <td class="mono">${s.code}</td><td>${s.name}</td><td>${s.credit}</td>
+        <td><span class="badge ${s.type === 'required' ? 'required' : 'elective'}">${s.type === 'required' ? 'บังคับ' : 'เลือก'}</span></td>
+        <td>
+          <div class="action-btns">
+            <button type="button" class="btn-icon" style="color:var(--blue);" onclick="openSubjectEditor(${s.id}, 'lessons')" title="จัดการบทเรียน">📚</button>
+            <button type="button" class="btn-icon edit" onclick="openSubjectEditor(${s.id}, 'subject')" title="แก้ไขรายวิชา">✎</button>
+            <button type="button" class="btn-icon del" onclick="deleteSubject(${s.id})">✖</button>
+          </div>
+        </td>
+      </tr>
+    `).join('') : `<tr><td colspan="5" style="text-align:center;">ไม่มีข้อมูลรายวิชา</td></tr>`;
+  }
+  document.querySelector('[data-goto="subject-add"]')?.addEventListener('click', () => { document.getElementById('subjectFormTitle').textContent = 'เพิ่มวิชา'; document.getElementById('subjectForm').reset(); document.getElementById('sf-id').value = ''; });
+  window.openSubjectEditor = (id, section = 'subject') => {
+    window.location.href = `staff_subject_editor.php?subject_id=${encodeURIComponent(id)}&section=${encodeURIComponent(section)}`;
+  };
+  window.editSubject = (id) => window.openSubjectEditor(id, 'subject');
+  document.getElementById('subjectForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault(); const fd = new FormData(); fd.append('action', 'saveSubject');
+    ['sf-id','sf-code','sf-name','sf-credit','sf-type'].forEach(id => fd.append(id.replace('sf-',''), document.getElementById(id).value));
+    await fetch('api_staff.php', { method: 'POST', body: fd }); showToast('✓ บันทึกวิชาสำเร็จ', 'success'); await loadData(); goTo('subject-list');
+  });
+  window.deleteSubject = (id) => {
+    openModal('ลบ', 'ยืนยัน?', async () => { const fd = new FormData(); fd.append('action', 'deleteSubject'); fd.append('id', id); await fetch('api_staff.php', { method: 'POST', body: fd }); showToast('✓ สำเร็จ', 'success'); await loadData(); });
+  };
+
+  // ==========================================
+  // ── ส่วนจัดการบทเรียน (Lessons) NEW! ──
+  // ==========================================
+  window.manageLessons = async (subId, subName) => {
+    currentSubjectId = subId;
+    document.getElementById('detailSubjectTitle').textContent = `วิชา: ${subName}`;
+    await loadLessons();
+    goTo('subject-detail');
+  };
+
+  async function loadLessons() {
+    try {
+      const res = await fetch(`api_staff.php?action=getLessons&subject_id=${currentSubjectId}`);
+      const data = await res.json();
+      if(data.status === 'success') { lessons = data.lessons || []; renderLessons(); }
+    } catch(err) { console.error(err); }
+  }
+
+  function renderLessons() {
+    document.getElementById('lessonBody').innerHTML = lessons.length ? lessons.map(l => `
+      <tr>
+        <td>${l.image_path ? `<img src="${l.image_path}" style="height:40px; border-radius:4px; object-fit:cover;">` : '<div style="height:40px;width:60px;background:#222;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;">ไม่มีรูป</div>'}</td>
+        <td>${l.title}</td>
+        <td>${l.video_url ? `<a href="${l.video_url}" target="_blank" style="color:var(--blue);text-decoration:none;">🔗 ลิงก์วิดีโอ</a>` : '-'}</td>
+        <td>
+          <div class="action-btns">
+            <button type="button" class="btn-icon edit" onclick="editLesson(${l.id})">✎</button>
+            <button type="button" class="btn-icon del" onclick="deleteLesson(${l.id})">✖</button>
+          </div>
+        </td>
+      </tr>
+    `).join('') : `<tr><td colspan="4" style="text-align:center; padding:30px;">ยังไม่มีบทเรียนในวิชานี้</td></tr>`;
+  }
+
+  window.openAddLesson = () => {
+    document.getElementById('lessonFormTitle').textContent = 'เพิ่มบทเรียนใหม่';
+    document.getElementById('lessonForm').reset();
+    document.getElementById('lf-id').value = '';
+    goTo('lesson-add');
+  };
+
+  window.editLesson = (id) => {
+    const l = lessons.find(x => x.id == id);
+    if(l) {
+      document.getElementById('lessonFormTitle').textContent = 'แก้ไขบทเรียน';
+      document.getElementById('lf-id').value = l.id;
+      document.getElementById('lf-title').value = l.title;
+      document.getElementById('lf-content').value = l.content;
+      document.getElementById('lf-video').value = l.video_url || '';
+      goTo('lesson-add');
+    }
+  };
+
+  document.getElementById('lessonForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('action', 'saveLesson');
+    formData.append('id', document.getElementById('lf-id').value);
+    formData.append('subject_id', currentSubjectId);
+    formData.append('title', document.getElementById('lf-title').value);
+    formData.append('content', document.getElementById('lf-content').value);
+    formData.append('video_url', document.getElementById('lf-video').value);
+    
+    // ดึงไฟล์รูปภาพเพื่อแนบส่งไปด้วย
+    const fileInput = document.getElementById('lf-image');
+    if(fileInput.files.length > 0) { formData.append('image', fileInput.files[0]); }
 
     try {
       const res = await fetch('api_staff.php', { method: 'POST', body: formData });
       const result = await res.json();
       if(result.status === 'success') {
-        showToast('✓ บันทึกข้อมูลสมาชิกสำเร็จ', 'success');
-        await loadData();
-        goTo('member-list');
-      } else {
-        showToast('✕ ' + result.message, 'error');
-      }
+        showToast('✓ บันทึกบทเรียนเรียบร้อย', 'success');
+        await loadLessons();
+        goTo('subject-detail');
+      } else { showToast('✕ ' + result.message, 'error'); }
     } catch(err) { showToast('✕ ระบบขัดข้อง', 'error'); }
   });
 
-  window.deleteMember = (id) => {
-    openModal('ยืนยันการลบสมาชิก', 'คุณแน่ใจหรือไม่ที่จะลบบัญชีนี้? การกระทำนี้ไม่สามารถกู้คืนได้', async () => {
-      const formData = new FormData();
-      formData.append('action', 'deleteMember');
-      formData.append('id', id);
-      try {
-        const res = await fetch('api_staff.php', { method: 'POST', body: formData });
-        const result = await res.json();
-        if(result.status === 'success') {
-          showToast('✓ ลบสมาชิกออกจากระบบสำเร็จ', 'success');
-          await loadData();
-        }
-      } catch(err) { showToast('✕ เกิดข้อผิดพลาด', 'error'); }
+  window.deleteLesson = (id) => {
+    openModal('ลบบทเรียน', 'ยืนยันการลบบทเรียนนี้ใช่หรือไม่?', async () => {
+      const formData = new FormData(); formData.append('action', 'deleteLesson'); formData.append('id', id);
+      await fetch('api_staff.php', { method: 'POST', body: formData });
+      showToast('✓ ลบบทเรียนสำเร็จ', 'success');
+      await loadLessons();
     });
   };
 
-  // ── จัดการหลักสูตร & รายวิชา (เรนเดอร์เบื้องต้น) ──
-  function renderCurricula() {
-    document.getElementById('curriculumBody').innerHTML = curricula.map(c => `
-      <tr>
-        <td class="mono">${c.code}</td>
-        <td>${c.name}</td>
-        <td>${c.level}</td>
-        <td><span class="badge ${c.status === 'active'?'active':'draft'}">${c.status}</span></td>
-        <td><button class="btn-icon edit" onclick="goTo('curriculum-add')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></td>
-      </tr>
-    `).join('');
-  }
-
-  function renderSubjects() {
-    document.getElementById('subjectBody').innerHTML = subjects.map(s => `
-      <tr>
-        <td class="mono">${s.code}</td>
-        <td>${s.name}</td>
-        <td>${s.credit}</td>
-        <td><span class="badge required">${s.type}</span></td>
-        <td><button class="btn-icon edit" onclick="goTo('subject-add')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></td>
-      </tr>
-    `).join('');
-  }
-
-  // ── Init ───────────────────────────────────
-  goTo('dashboard');
-  loadData();
-
+  goTo(initialPage); loadData();
 })();
