@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบทดสอบรายวิชา - Flexible Learning Hub</title>
+    <link rel="stylesheet" href="test.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="quiz-nav">
+        <a href="web.html" class="brand">Flexible Learning Hub</a>
+        <a id="backToCourse" href="web.html" class="back-link">กลับไปรายวิชา</a>
+    </nav>
+
+    <main class="quiz-shell">
+        <section class="quiz-head">
+            <p class="eyebrow">แบบทดสอบหลังเรียน</p>
+            <h1 id="quizTitle">แบบทดสอบรายวิชา</h1>
+            <p id="quizSubtitle">เลือกคำตอบที่ถูกต้องที่สุด</p>
+        </section>
+
+        <section class="quiz-panel">
+            <div class="quiz-progress">
+                <span id="progressText">ข้อ 1 จาก 5</span>
+                <div class="progress-track">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+            </div>
+
+            <form id="quizForm" class="quiz-form"></form>
+
+            <div id="resultBox" class="result-box" hidden></div>
+
+            <div class="quiz-actions">
+                <button type="button" id="prevBtn" class="ghost-btn">ย้อนกลับ</button>
+                <button type="button" id="nextBtn" class="primary-btn">ข้อต่อไป</button>
+                <button type="button" id="submitBtn" class="primary-btn" hidden>ส่งคำตอบ</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="test.js"></script>
+</body>
+</html>
