@@ -310,6 +310,35 @@ function openCourseVideo() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    fetch('student_session.php', { credentials: 'same-origin' })
+        .then((res) => res.json())
+        .then((user) => {
+            const loginBtn = document.getElementById('loginBtn');
+            const userProfile = document.getElementById('userProfile');
+            const userName = document.getElementById('userName');
+            const userAvatar = document.getElementById('userAvatar');
+            const userProfileBtn = document.getElementById('userProfileBtn');
+            const userMenu = document.getElementById('userMenu');
+
+            if (user && user.logged_in) {
+                if (loginBtn) loginBtn.style.display = 'none';
+                if (userProfile) userProfile.style.display = 'inline-flex';
+                if (userName) userName.textContent = user.name || 'ผู้ใช้งาน';
+                if (userAvatar) userAvatar.textContent = user.avatar_text || 'U';
+                if (userProfileBtn && userMenu) {
+                    userProfileBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        userMenu.classList.toggle('show');
+                    });
+                    document.addEventListener('click', () => userMenu.classList.remove('show'));
+                }
+            } else {
+                if (loginBtn) loginBtn.style.display = 'inline-block';
+                if (userProfile) userProfile.style.display = 'none';
+            }
+        })
+        .catch(() => {});
+
     const params = new URLSearchParams(window.location.search);
     const courseName = params.get('course');
     if (courseName) {

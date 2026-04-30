@@ -1,1 +1,374 @@
 lprq ixqu ugye ayph
+-- 1. สร้างตารางหลัก (Master Tables) ก่อน
+
+
+
+-- ตารางที่ 3.1
+
+CREATE TABLE "User" (
+
+    User_ID VARCHAR(50) PRIMARY KEY,
+
+    Password VARCHAR(50),
+
+    Ref_User_ID VARCHAR(50),
+
+    Status VARCHAR(100)
+
+);
+
+
+
+-- ตารางที่ 3.7
+
+CREATE TABLE Institutions (
+
+    Institutions_ID VARCHAR(50) PRIMARY KEY,
+
+    Institutions_Name VARCHAR(200),
+
+    Institutions_Address VARCHAR(100)
+
+);
+
+
+
+-- ตารางที่ 3.3
+
+CREATE TABLE Parents (
+
+    Parents_ID VARCHAR(50) PRIMARY KEY,
+
+    Password VARCHAR(50),
+
+    Parents_Name VARCHAR(200),
+
+    Parents_Address VARCHAR(100),
+
+    Email VARCHAR(50),
+
+    Tel VARCHAR(20),
+
+    PIN VARCHAR(10)
+
+);
+
+
+
+-- ตารางที่ 3.4
+
+CREATE TABLE Executive (
+
+    Executive_ID VARCHAR(50) PRIMARY KEY,
+
+    Password VARCHAR(50),
+
+    Executive_Name VARCHAR(200),
+
+    Email VARCHAR(50),
+
+    Tel VARCHAR(20)
+
+);
+
+
+
+-- ตารางที่ 3.5
+
+CREATE TABLE Officer (
+
+    Officer_ID VARCHAR(50) PRIMARY KEY,
+
+    Emp_ID VARCHAR(50),
+
+    Password VARCHAR(50),
+
+    Work_Time TIMESTAMP,
+
+    Work_Date DATE,
+
+    Tel VARCHAR(20)
+
+);
+
+
+
+-- ตารางที่ 3.6
+
+CREATE TABLE Teachers (
+
+    Teachers_ID VARCHAR(50) PRIMARY KEY,
+
+    Password VARCHAR(50),
+
+    Teachers_Name VARCHAR(200),
+
+    Teachers_Address VARCHAR(100),
+
+    Email VARCHAR(50),
+
+    Work_Time TIMESTAMP,
+
+    Work_Date DATE,
+
+    Tel VARCHAR(20)
+
+);
+
+
+
+-- 2. สร้างตารางที่มี Foreign Key โยงไปหาตารางหลัก
+
+
+
+-- ตารางที่ 3.8
+
+CREATE TABLE Curriculums (
+
+    Curriculums_ID VARCHAR(50) PRIMARY KEY,
+
+    Curriculums_Name VARCHAR(200),
+
+    Total_Credits DECIMAL(4,1),
+
+    Executive_ID VARCHAR(50) REFERENCES Executive(Executive_ID) ON DELETE SET NULL,
+
+    Officer_ID VARCHAR(50) REFERENCES Officer(Officer_ID) ON DELETE SET NULL
+
+);
+
+
+
+-- ตารางที่ 3.9
+
+CREATE TABLE Teacher_Curriculums (
+
+    Curriculums_ID VARCHAR(50) REFERENCES Curriculums(Curriculums_ID) ON DELETE CASCADE,
+
+    Teachers_ID VARCHAR(50) REFERENCES Teachers(Teachers_ID) ON DELETE CASCADE,
+
+    PRIMARY KEY (Curriculums_ID, Teachers_ID)
+
+);
+
+
+
+-- ตารางที่ 3.12
+
+CREATE TABLE Subjects (
+
+    Subjects_ID VARCHAR(50) PRIMARY KEY,
+
+    Subjects_Name VARCHAR(200),
+
+    Subjects_Description VARCHAR(200),
+
+    Teachers_ID VARCHAR(50) REFERENCES Teachers(Teachers_ID) ON DELETE SET NULL
+
+);
+
+
+
+-- ตารางที่ 3.11
+
+CREATE TABLE Curriculums_Subject (
+
+    Curriculums_ID VARCHAR(50) REFERENCES Curriculums(Curriculums_ID) ON DELETE CASCADE,
+
+    Subject_ID VARCHAR(50) REFERENCES Subjects(Subjects_ID) ON DELETE CASCADE,
+
+    PRIMARY KEY (Curriculums_ID, Subject_ID)
+
+);
+
+
+
+-- ตารางที่ 3.2
+
+CREATE TABLE Student (
+
+    Student_ID VARCHAR(50) PRIMARY KEY,
+
+    Student_Name VARCHAR(200),
+
+    Email VARCHAR(50),
+
+    Tel VARCHAR(20),
+
+    Status_Address VARCHAR(100),
+
+    Education_Level VARCHAR(100),
+
+    Student_Level VARCHAR(20),
+
+    Educational_ID VARCHAR(50) REFERENCES Institutions(Institutions_ID) ON DELETE SET NULL,
+
+    Teacher_ID VARCHAR(50) REFERENCES Teachers(Teachers_ID) ON DELETE SET NULL,
+
+    Parent_ID VARCHAR(50) REFERENCES Parents(Parents_ID) ON DELETE SET NULL,
+
+    StudCurriculums_ID VARCHAR(50) REFERENCES Curriculums(Curriculums_ID) ON DELETE SET NULL,
+
+    PIN VARCHAR(10)
+
+);
+
+
+
+-- ตารางที่ 3.10
+
+CREATE TABLE Student_Subject (
+
+    Student_ID VARCHAR(50) REFERENCES Student(Student_ID) ON DELETE CASCADE,
+
+    Subjects_ID VARCHAR(50) REFERENCES Subjects(Subjects_ID) ON DELETE CASCADE,
+
+    PRIMARY KEY (Student_ID, Subjects_ID)
+
+);
+
+
+
+-- ตารางที่ 3.13
+
+CREATE TABLE Lessons (
+
+    Lessons_ID VARCHAR(50) PRIMARY KEY,
+
+    Lessons_Name VARCHAR(200),
+
+    Study_Hours INT,
+
+    Pass_Percentage DECIMAL(5,2),
+
+    Subjects_ID VARCHAR(50) REFERENCES Subjects(Subjects_ID) ON DELETE CASCADE
+
+);
+
+
+
+-- ตารางที่ 3.14
+
+CREATE TABLE Test_Questions (
+
+    Questions_ID INT PRIMARY KEY,
+
+    Questions_Text VARCHAR(200),
+
+    Choice_A VARCHAR(255),
+
+    Choice_B VARCHAR(255),
+
+    Choice_C VARCHAR(255),
+
+    Choice_D VARCHAR(255),
+
+    Correct_Answer CHAR(1),
+
+    Lessons_ID VARCHAR(50) REFERENCES Lessons(Lessons_ID) ON DELETE CASCADE
+
+);
+
+
+
+-- ตารางที่ 3.15
+
+CREATE TABLE Test (
+
+    Test_ID INT PRIMARY KEY,
+
+    Score INT,
+
+    Test_Attempt INT,
+
+    Status VARCHAR(20),
+
+    Student_ID VARCHAR(50) REFERENCES Student(Student_ID) ON DELETE CASCADE
+
+);
+
+
+
+-- ตารางที่ 3.16
+
+CREATE TABLE Test_Answers (
+
+    Questions_ID INT REFERENCES Test_Questions(Questions_ID) ON DELETE CASCADE,
+
+    Test_ID INT REFERENCES Test(Test_ID) ON DELETE CASCADE,
+
+    Selected_Choice CHAR(1),
+
+    PRIMARY KEY (Questions_ID, Test_ID)
+
+);
+
+
+
+-- ตารางที่ 3.17
+
+CREATE TABLE Learning_Records (
+
+    Records_ID INT PRIMARY KEY,
+
+    Study_Time TIMESTAMP,
+
+    Student_ID VARCHAR(50) REFERENCES Student(Student_ID) ON DELETE CASCADE,
+
+    Lessons_ID VARCHAR(50) REFERENCES Lessons(Lessons_ID) ON DELETE CASCADE
+
+);
+
+
+
+-- ตารางที่ 3.18
+
+CREATE TABLE Registrations (
+
+    Registrations_ID INT PRIMARY KEY,
+
+    Student_ID VARCHAR(50) REFERENCES Student(Student_ID) ON DELETE CASCADE,
+
+    Curriculums_ID VARCHAR(50) REFERENCES Curriculums(Curriculums_ID) ON DELETE CASCADE
+
+);
+
+
+
+-- ตารางที่ 3.19
+
+CREATE TABLE Credit_Transfers (
+
+    Transfer_ID INT PRIMARY KEY,
+
+    Document VARCHAR(200),
+
+    Status VARCHAR(20),
+
+    Transfer_Date DATE,
+
+    Student_ID VARCHAR(50) REFERENCES Student(Student_ID) ON DELETE CASCADE,
+
+    Teacher_ID VARCHAR(50) REFERENCES Teachers(Teachers_ID) ON DELETE SET NULL
+
+);
+
+
+
+-- ตารางที่ 3.20
+
+CREATE TABLE Certificates (
+
+    Certificates_ID INT PRIMARY KEY,
+
+    Certificates_Name VARCHAR(200),
+
+    Receive_Date DATE,
+
+    Department VARCHAR(200),
+
+    Certificates_File VARCHAR(255),
+
+    Student_ID VARCHAR(50) REFERENCES Student(Student_ID) ON DELETE CASCADE
+
+);
