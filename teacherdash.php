@@ -36,6 +36,27 @@ $students = [
     ['name'=>'นายธนพล รุ่งเรือง',      'class'=>'ม.6/1','score'=>88,'status'=>'good'],
 ];
 
+$sub_lessons = [
+    1 => [
+        ['id'=>'1-1','title'=>'จำนวนจริงและพีชคณิต',     'duration'=>'45 นาที','status'=>'active'],
+        ['id'=>'1-2','title'=>'นิพจน์และสมการ',           'duration'=>'60 นาที','status'=>'active'],
+        ['id'=>'1-3','title'=>'อสมการและค่าสัมบูรณ์',     'duration'=>'50 นาที','status'=>'draft'],
+    ],
+    2 => [
+        ['id'=>'2-1','title'=>'สมการเชิงเส้นตัวแปรเดียว', 'duration'=>'40 นาที','status'=>'active'],
+        ['id'=>'2-2','title'=>'ระบบสมการเชิงเส้น',         'duration'=>'55 นาที','status'=>'active'],
+    ],
+    3 => [
+        ['id'=>'3-1','title'=>'อัตราส่วนตรีโกณมิติ',       'duration'=>'50 นาที','status'=>'active'],
+        ['id'=>'3-2','title'=>'กฎของไซน์และโคไซน์',       'duration'=>'60 นาที','status'=>'draft'],
+        ['id'=>'3-3','title'=>'ฟังก์ชันตรีโกณมิติ',        'duration'=>'65 นาที','status'=>'draft'],
+    ],
+    4 => [
+        ['id'=>'4-1','title'=>'ลิมิตและความต่อเนื่อง',    'duration'=>'60 นาที','status'=>'draft'],
+        ['id'=>'4-2','title'=>'อนุพันธ์เบื้องต้น',         'duration'=>'70 นาที','status'=>'draft'],
+    ],
+];
+
 $activities = [
     ['icon'=>'📘','text'=>'เพิ่มบทเรียน "ตรีโกณมิติ" สำเร็จ',   'time'=>'10 นาทีที่แล้ว'],
     ['icon'=>'✅','text'=>'ตรวจงาน 15 ชิ้นเสร็จแล้ว',             'time'=>'1 ชั่วโมงที่แล้ว'],
@@ -287,10 +308,20 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
                         </tr>
                     </thead>
                     <tbody id="lessonsTableBody">
-                        <?php foreach ($lessons as $lesson): ?>
-                        <tr class="lesson-row" data-id="<?= $lesson['id'] ?>" data-status="<?= $lesson['status'] ?>">
-                            <td>
-                                <div class="lesson-title-cell"><?= htmlspecialchars($lesson['title']) ?></div>
+                        <?php foreach ($lessons as $lesson):
+                            $subs = $sub_lessons[$lesson['id']] ?? [];
+                        ?>
+                        <tr class="lesson-row lesson-main-row" data-id="<?= $lesson['id'] ?>" data-status="<?= $lesson['status'] ?>" data-expanded="false">
+                            <td class="lesson-title-cell">
+                                <div style="display:flex;align-items:center;gap:8px">
+                                    <?php if (!empty($subs)): ?>
+                                    <button class="btn-expand-sub" data-id="<?= $lesson['id'] ?>" title="ดูบทย่อย"
+                                        style="background:none;border:none;color:var(--text-muted);font-size:11px;cursor:pointer;padding:2px 4px;transition:transform .2s;line-height:1">▶</button>
+                                    <?php else: ?>
+                                    <span style="display:inline-block;width:20px"></span>
+                                    <?php endif; ?>
+                                    <span><?= htmlspecialchars($lesson['title']) ?></span>
+                                </div>
                             </td>
                             <td class="lesson-subject"><?= htmlspecialchars($lesson['subject']) ?></td>
                             <td><?= $lesson['students'] ?> คน</td>
@@ -315,6 +346,26 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
                                 </div>
                             </td>
                         </tr>
+                        <?php foreach ($subs as $sub): ?>
+                        <tr class="sub-lesson-row" data-parent="<?= $lesson['id'] ?>" style="display:none">
+                            <td style="padding-left:48px">
+                                <div style="display:flex;align-items:center;gap:6px">
+                                    <span style="color:var(--text-muted);font-size:11px">└</span>
+                                    <span style="font-size:13px;color:var(--text-dim)"><?= htmlspecialchars($sub['title']) ?></span>
+                                </div>
+                            </td>
+                            <td style="font-size:12px;color:var(--text-muted)">⏱ <?= $sub['duration'] ?></td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td><span class="badge badge-<?= $sub['status'] ?>"><?= $sub['status'] === 'active' ? 'เผยแพร่' : 'ฉบับร่าง' ?></span></td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="btn-icon" title="แก้ไขบทย่อย" style="font-size:12px">✏️</button>
+                                    <button class="btn-icon btn-del" title="ลบบทย่อย" style="font-size:12px">🗑</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
