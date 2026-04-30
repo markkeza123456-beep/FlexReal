@@ -1,4 +1,18 @@
-﻿function showPage(pageId) {
+﻿// --- ตัวแปรหลักของระบบ ---
+let currentSubjectId = '';
+let currentCourseName = '';
+let enrolledCourses = {};
+let courseIdByName = {};
+
+function pick(obj, ...keys) {
+    for (const key of keys) {
+        if (obj && obj[key] !== undefined && obj[key] !== null) return obj[key];
+    }
+    return '';
+}
+
+// --- 1. ระบบจัดการหน้าและ URL ---
+function showPage(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     const targetPage = document.getElementById(pageId);
     if (targetPage) targetPage.classList.add('active');
@@ -7,124 +21,136 @@
 
 function getCourseReturnUrl(courseName) {
     const url = new URL('web.html', window.location.href);
-    url.searchParams.set('course', courseName);
+    url.searchParams.set('subject_id', currentSubjectId);
     return url.pathname.split('/').pop() + url.search;
 }
 
-function filterCourses() {
-    let input = document.getElementById('searchInput').value.toLowerCase();
-    let cards = document.getElementsByClassName('card');
-    for (let i = 0; i < cards.length; i++) {
-        let title = cards[i].querySelector('h3').innerText.toLowerCase();
-        cards[i].style.display = title.includes(input) ? "" : "none";
+// --- 2. ดึงข้อมูลจาก Database (API) ---
+async function loadAllCourses() {
+    try {
+        const response = await fetch('api_courses.php?action=get_all');
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            const grid = document.getElementById('course-grid');
+            if(!grid) return; // ป้องกัน error ถ้าไม่มี element นี้
+            
+            grid.innerHTML = ''; 
+            
+            result.data.forEach(course => {
+                const subjectId = String(pick(course, 'Subjects_ID', 'subjects_id'));
+                const subjectName = String(pick(course, 'Subjects_Name', 'subjects_name'));
+                const subjectDesc = String(pick(course, 'Subjects_Description', 'subjects_description'));
+                if (subjectName) courseIdByName[subjectName] = subjectId;
+
+                // ถ้ามีรูปใน DB ค่อยดึงมาใช้ ถ้าไม่มีใช้รูป default
+                const imgUrl = course.image_url || 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&auto=format&fit=crop&q=60';
+                
+                const cardHtml = `
+                    <div class="card" onclick="showCourse('${subjectId}')">
+                        <img src="${imgUrl}" alt="Course Image">
+                        <div class="card-content">
+                            <span class="card-tag">หลักสูตรแนะนำ</span>
+                            <h3>${subjectName || '-'}</h3>
+                            <p>${subjectDesc || 'คลิกเพื่อดูรายละเอียด'}</p>
+                        </div>
+                    </div>
+                `;
+                grid.innerHTML += cardHtml;
+            });
+        }
+    } catch (error) {
+        console.error("Error loading courses:", error);
+        const grid = document.getElementById('course-grid');
+        if(grid) grid.innerHTML = '<p style="text-align:center;">ไม่สามารถโหลดข้อมูลวิชาได้ กรุณาลองใหม่อีกครั้ง</p>';
     }
 }
 
-let currentCourseName = '';
-let enrolledCourses = {};
+async function showCourse(subjectId) {
+    if (courseIdByName[subjectId]) {
+        subjectId = courseIdByName[subjectId];
+    }
+    currentSubjectId = subjectId;
+    
+    try {
+        const response = await fetch(`api_courses.php?action=get_detail&id=${subjectId}`);
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            const course = result.course;
+            const lessons = result.lessons;
+            currentCourseName = String(pick(course, 'Subjects_Name', 'subjects_name')); // เก็บชื่อไว้ใช้ต่อ
+            
+            // อัปเดตข้อมูลหน้า Detail
+            document.getElementById('detail-title').innerText = currentCourseName;
+            document.getElementById('detail-desc-top').innerText = String(pick(course, 'Subjects_Description', 'subjects_description')) || 'รายละเอียดเบื้องต้น';
+            document.getElementById('detail-desc').innerText = String(pick(course, 'Subjects_Description', 'subjects_description')) || 'คำอธิบายรายวิชา...';
+            document.getElementById('detail-duration').innerText = course.duration || 'ไม่ระบุเวลา';
+            
+            // วาดรายการบทเรียนในแท็บ "เนื้อหาในคอร์ส"
+            const lessonContainer = document.getElementById('course-curriculum-lesson-list');
+            if (lessons.length > 0) {
+                lessonContainer.innerHTML = lessons.map((lesson, index) => `<p>${index + 1}. ${pick(lesson, 'Lessons_Name', 'lessons_name') || '-'}</p>`).join('');
+            } else {
+                lessonContainer.innerHTML = '<p style="color: gray;">ยังไม่มีการเพิ่มเนื้อหาบทเรียนสำหรับวิชานี้</p>';
+            }
 
-const courseData = {
-    'คณิตศาสตร์': { top: 'เน้นการคิดวิเคราะห์และแก้โจทย์', bot: 'เจาะลึกตรรกะระดับสากล', time: '10 ชั่วโมง' },
-    'ภาษาไทย': { top: 'การสื่อสารในที่ทำงาน', bot: 'ทักษะภาษาเพื่อประสิทธิภาพการทำงาน', time: '5 ชั่วโมง' },
-    'วิทยาศาสตร์': { top: 'กระบวนการและนวัตกรรม', bot: 'เรียนรู้ฟิสิกส์ เคมี ชีววิทยาพื้นฐาน', time: '12 ชั่วโมง' },
-    'สังคมศึกษา': { top: 'วัฒนธรรมและความเป็นพลเมือง', bot: 'ความหลากหลายทางวัฒนธรรม', time: '6 ชั่วโมง' },
-    'ภาษาอังกฤษ': { top: 'Business Communication', bot: 'Professional English for career', time: '8 ชั่วโมง' }
-};
+            // จัดการสถานะปุ่มลงทะเบียน
+            updateEnrollButton(false);
+            checkCourseEnrollment(subjectId); 
 
-const lessonTextByCourse = {
-    'คณิตศาสตร์': [
-        'บทที่ 1: จำนวนนับและการคำนวณพื้นฐาน',
-        'บทที่ 2: เศษส่วน ทศนิยม และร้อยละ',
-        'บทที่ 3: โจทย์ปัญหาและการคิดวิเคราะห์'
-    ],
-    'ภาษาไทย': [
-        'บทที่ 1: การอ่านจับใจความสำคัญ',
-        'บทที่ 2: การเขียนสื่อสารให้ชัดเจน',
-        'บทที่ 3: หลักภาษาไทยที่ใช้บ่อยในการทำงาน'
-    ],
-    'วิทยาศาสตร์': [
-        'บทที่ 1: กระบวนการทางวิทยาศาสตร์',
-        'บทที่ 2: สารและสมบัติของสาร',
-        'บทที่ 3: พลังงานและการเปลี่ยนรูป'
-    ],
-    'สังคมศึกษา': [
-        'บทที่ 1: หน้าที่พลเมืองและสังคม',
-        'บทที่ 2: วัฒนธรรมและการอยู่ร่วมกัน',
-        'บทที่ 3: เศรษฐกิจพื้นฐานในชีวิตประจำวัน'
-    ],
-    'ภาษาอังกฤษ': [
-        'Lesson 1: Basic Workplace Communication',
-        'Lesson 2: Writing Professional Messages',
-        'Lesson 3: Speaking with Confidence'
-    ]
-};
-
-function showCourse(courseName) {
-    currentCourseName = courseName;
-    document.getElementById('detail-title').innerText = courseName;
-    const descTop = document.getElementById('detail-desc-top');
-    const descBottom = document.getElementById('detail-desc');
-    const duration = document.getElementById('detail-duration');
-
-    const data = courseData[courseName] || { top: 'รายละเอียดวิชา...', bot: 'หลักสูตรคุณภาพ', time: '6 ชั่วโมง' };
-    descTop.innerText = data.top;
-    descBottom.innerText = data.bot;
-    duration.innerText = data.time;
-    renderLessonText(courseName, 'course-curriculum-lesson-list');
-    updateEnrollButton(false);
-    checkCourseEnrollment(courseName);
-
-    // Reset Tab ไปที่หน้าแรกเสมอ
-    openTab({ currentTarget: document.querySelector('.tab-btn') }, 'overview');
-    showPage('course-detail');
-
-    const url = new URL(window.location.href);
-    url.searchParams.set('course', courseName);
-    window.history.replaceState({}, '', url);
+            // สลับไปหน้า Detail และเปิดแท็บ Overview
+            openTab({ currentTarget: document.querySelector('.tab-btn') }, 'overview');
+            showPage('course-detail');
+            
+            // เปลี่ยน URL ให้สวยงามและแชร์ได้
+            const url = new URL(window.location.href);
+            url.searchParams.set('subject_id', subjectId);
+            window.history.replaceState({}, '', url);
+        } else {
+            alert('ไม่พบข้อมูลรายวิชา: ' + result.message);
+        }
+    } catch (error) {
+        console.error("Error fetching course detail:", error);
+        alert('เชื่อมต่อฐานข้อมูลล้มเหลว');
+    }
 }
 
-function renderLessonText(courseName, targetId = 'learning-lesson-text-list') {
-    const container = document.getElementById(targetId);
-    if (!container) return;
-
-    const lessons = lessonTextByCourse[courseName] || [
-        'บทที่ 1: เนื้อหาแนะนำรายวิชา',
-        'บทที่ 2: กิจกรรมฝึกทักษะ',
-        'บทที่ 3: สรุปและทบทวนก่อนทำแบบทดสอบ'
-    ];
-
-    container.innerHTML = lessons
-        .map((lesson, index) => `<p>${index + 1}. ${lesson}</p>`)
-        .join('');
-}
-
+// --- 3. ระบบการเรียน (Learning Page) ---
 function goToCourseLearning() {
-    if (!enrolledCourses[currentCourseName]) {
+    if (!enrolledCourses[currentSubjectId]) {
         alert('กรุณาลงรายวิชาก่อนเข้าเนื้อหาบทเรียน');
         return;
     }
 
-    renderLearningPage(currentCourseName);
+    // ก็อปปี้เนื้อหาจากหน้า Detail มาใส่หน้า Learning
+    document.getElementById('learning-title').innerText = document.getElementById('detail-title').innerText;
+    document.getElementById('learning-desc-top').innerText = document.getElementById('detail-desc-top').innerText;
+    document.getElementById('learning-desc').innerText = document.getElementById('detail-desc').innerText;
+    document.getElementById('learning-duration').innerText = document.getElementById('detail-duration').innerText;
+    document.getElementById('learning-lesson-text-list').innerHTML = document.getElementById('course-curriculum-lesson-list').innerHTML;
+
     showPage('course-learning');
     openLearningTab({ currentTarget: document.querySelector("#course-learning .tab-btn[onclick*='learning-curriculum']") }, 'learning-curriculum');
 }
 
-async function checkCourseEnrollment(courseName) {
+// --- 4. ระบบเช็คและลงทะเบียนเรียน ---
+async function checkCourseEnrollment(subjectId) {
     try {
-        const response = await fetch(`course_enrollment_api.php?course_name=${encodeURIComponent(courseName)}`, {
+        const response = await fetch(`course_enrollment_api.php?subject_id=${encodeURIComponent(subjectId)}`, {
             credentials: 'same-origin'
         });
         const result = await response.json();
 
         if (result.status === 'success') {
-            enrolledCourses[courseName] = Boolean(result.enrolled);
+            enrolledCourses[subjectId] = Boolean(result.enrolled);
             updateEnrollButton(Boolean(result.enrolled));
         } else if (result.status === 'unauthorized') {
-            enrolledCourses[courseName] = false;
+            enrolledCourses[subjectId] = false;
             updateEnrollButton(false);
         }
     } catch (error) {
-        enrolledCourses[courseName] = false;
+        enrolledCourses[subjectId] = false;
         updateEnrollButton(false);
     }
 }
@@ -132,21 +158,27 @@ async function checkCourseEnrollment(courseName) {
 function updateEnrollButton(isEnrolled) {
     const button = document.getElementById('enroll-course-btn');
     if (!button) return;
-
-    button.innerText = isEnrolled ? 'เข้าเรียน' : 'ลงรายวิชา';
+    
+    if(isEnrolled) {
+        button.innerText = 'เข้าเรียน';
+        button.classList.add('is-enrolled');
+    } else {
+        button.innerText = 'ลงรายวิชา';
+        button.classList.remove('is-enrolled');
+    }
 }
 
 async function enrollCourseAndOpenLearning() {
-    if (!currentCourseName) return;
+    if (!currentSubjectId) return;
 
-    if (enrolledCourses[currentCourseName]) {
+    if (enrolledCourses[currentSubjectId]) {
         goToCourseLearning();
         return;
     }
 
     try {
         const formData = new FormData();
-        formData.append('course_name', currentCourseName);
+        formData.append('subject_id', currentSubjectId);
 
         const response = await fetch('course_enrollment_api.php', {
             method: 'POST',
@@ -168,7 +200,7 @@ async function enrollCourseAndOpenLearning() {
             return;
         }
 
-        enrolledCourses[currentCourseName] = true;
+        enrolledCourses[currentSubjectId] = true;
         updateEnrollButton(true);
         goToCourseLearning();
     } catch (error) {
@@ -176,13 +208,22 @@ async function enrollCourseAndOpenLearning() {
     }
 }
 
-function renderLearningPage(courseName) {
-    const data = courseData[courseName] || { top: 'เริ่มเรียนรายวิชา', bot: 'หลักสูตรคุณภาพ', time: '6 ชั่วโมง' };
-    document.getElementById('learning-title').innerText = courseName;
-    document.getElementById('learning-desc-top').innerText = data.top;
-    document.getElementById('learning-desc').innerText = data.bot;
-    document.getElementById('learning-duration').innerText = data.time;
-    renderLessonText(courseName, 'learning-lesson-text-list');
+// --- 5. ระบบ UI ทั่วไป (Tabs, Search) ---
+function filterCourses() {
+    let input = document.getElementById('searchInput').value.toLowerCase();
+    let cards = document.getElementsByClassName('card');
+    for (let i = 0; i < cards.length; i++) {
+        let title = cards[i].querySelector('h3').innerText.toLowerCase();
+        cards[i].style.display = title.includes(input) ? "" : "none";
+    }
+}
+
+function openTab(evt, tabName) {
+    document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    
+    document.getElementById(tabName).style.display = "block";
+    if (evt && evt.currentTarget) evt.currentTarget.classList.add("active");
 }
 
 function openLearningTab(evt, tabName) {
@@ -193,38 +234,25 @@ function openLearningTab(evt, tabName) {
     if (evt && evt.currentTarget) evt.currentTarget.classList.add("active");
 }
 
-// --- 3. ระบบ Tab ---
-function openTab(evt, tabName) {
-    document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    
-    document.getElementById(tabName).style.display = "block";
-    if (evt && evt.currentTarget) evt.currentTarget.classList.add("active");
-}
-
-// --- 4. การจัดการไฟล์เอกสารและวิดีโอ ---
-function downloadLesson(fileName) {
-    const filePath = 'docs/' + fileName;
-    window.open(filePath, '_blank');
-}
-
+// --- 6. ไฟล์และ Modal ---
 function downloadCourseLesson() {
-    if (!enrolledCourses[currentCourseName]) {
-        alert('กรุณากดไปยังรายวิชาเพื่อลงรายวิชาก่อนดาวน์โหลดเอกสาร');
+    if (!enrolledCourses[currentSubjectId]) {
+        alert('กรุณาลงรายวิชาก่อนดาวน์โหลดเอกสาร');
         return;
     }
-    window.open(`download_course_lesson.php?course_name=${encodeURIComponent(currentCourseName)}`, '_blank');
+    // ส่ง Subject ID ไปดึงไฟล์แทน
+    window.open(`download_course_lesson.php?subject_id=${encodeURIComponent(currentSubjectId)}`, '_blank');
 }
 
-function openLocalVideo(fileName) {
-    if (!enrolledCourses[currentCourseName]) {
+function openCourseVideo() {
+    if (!enrolledCourses[currentSubjectId]) {
         alert('กรุณาลงรายวิชาก่อนชมวิดีโอ');
         return;
     }
-
     const modal = document.getElementById('modal-overlay');
     const body = document.getElementById('modal-body');
-    const videoPath = 'videos/' + fileName; 
+    // อนาคตสามารถดึง URL วิดีโอจาก DB มาใส่ตรงนี้ได้
+    const videoPath = 'lesson1.mp4'; 
 
     body.innerHTML = `
         <h3 style="margin-bottom:15px; color:#E67E22;">🎥 วิดีโอบทเรียน</h3>
@@ -236,30 +264,21 @@ function openLocalVideo(fileName) {
     modal.style.display = 'flex';
 }
 
-// --- 5. ระบบ Modal & Quiz ---
 function startQuiz() {
-    if (!enrolledCourses[currentCourseName]) {
+    if (!enrolledCourses[currentSubjectId]) {
         alert('กรุณาลงรายวิชาก่อนทำแบบทดสอบ');
         return;
     }
-
     const modal = document.getElementById('modal-overlay');
     const body = document.getElementById('modal-body');
     body.innerHTML = `
         <h3 style="margin-bottom:20px; color:#E67E22;">📝 แบบทดสอบหลังเรียน</h3>
         <div style="text-align:left; background:#f9f9f9; padding:20px; border-radius:10px;">
-            <p><b>ข้อที่ 1:</b> ข้อใดคือหลักการของ Flexible Hub?</p>
-            <label style="display:block; margin:10px 0;"><input type="radio" name="q1"> ก. เรียนที่ไหน เมื่อไหร่ก็ได้</label>
-            <label style="display:block; margin:10px 0;"><input type="radio" name="q1"> ข. ต้องเข้าเรียนตามเวลา</label>
+            <p>ระบบเตรียมแสดงแบบทดสอบสำหรับรายวิชานี้...</p>
         </div>
-        <button class="btn-enroll" style="margin-top:20px; width:100%;" onclick="submitQuiz()">ส่งคำตอบ</button>
+        <button class="btn-enroll" style="margin-top:20px; width:100%;" onclick="closeModal()">ปิดหน้าต่าง</button>
     `;
     modal.style.display = 'flex';
-}
-
-function submitQuiz() {
-    alert('บันทึกคะแนนเรียบร้อยแล้ว!');
-    closeModal();
 }
 
 function closeModal() {
@@ -268,7 +287,7 @@ function closeModal() {
     document.getElementById('modal-overlay').style.display = 'none';
 }
 
-// --- 6. คู่มือและติดต่อ ---
+// --- 7. ข้อมูล Static (คู่มือ / ติดต่อ) ---
 function showGuide(type) {
     const title = document.getElementById('guide-title');
     const content = document.getElementById('guide-content');
@@ -295,21 +314,11 @@ function showContact(type) {
     showPage('page-contact');
 }
 
-function openCourseVideo() {
-    const videoByCourse = {
-        'คณิตศาสตร์': 'lesson-math.mp4',
-        'ภาษาไทย': 'lesson-thai.mp4',
-        'วิทยาศาสตร์': 'lesson-science.mp4',
-        'สังคมศึกษา': 'lesson-social.mp4',
-        'ภาษาอังกฤษ': 'lesson-english.mp4'
-    };
-
-    const fallbackVideo = 'lesson1.mp4';
-    const selectedVideo = videoByCourse[currentCourseName] || fallbackVideo;
-    openLocalVideo(selectedVideo);
-}
-
+// --- Initializer ---
 document.addEventListener('DOMContentLoaded', () => {
+    // โหลดรายวิชาทั้งหมดจาก DB
+    loadAllCourses();
+
     fetch('student_session.php', { credentials: 'same-origin' })
         .then((res) => res.json())
         .then((user) => {
@@ -339,9 +348,10 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch(() => {});
 
+    // เช็คว่ามี Parameter การเข้าถึงวิชาตรงๆ ไหม (เช่น ตอนแชร์ลิงก์ให้เพื่อน)
     const params = new URLSearchParams(window.location.search);
-    const courseName = params.get('course');
-    if (courseName) {
-        showCourse(courseName);
+    const subjectId = params.get('subject_id');
+    if (subjectId) {
+        setTimeout(() => { showCourse(subjectId); }, 300); // ดีเลย์นิดนึงรอให้หน้าเตรียมตัวเสร็จ
     }
 });
