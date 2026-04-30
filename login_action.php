@@ -47,8 +47,10 @@ try {
             $userData = $stmt->fetch(PDO::FETCH_ASSOC);
             break;
 
-        case 'teacher':
-            $redirectUrl = 'teacher_dashboard.php';
+        
+            case 'teacher':
+            $redirectUrl = 'teacher_dashboard.php'; // ← เปลี่ยนเป็น
+            $redirectUrl = 'teacherdash.php';        // ← ชื่อไฟล์ที่ทำไว้
             $stmt = $conn->prepare(
                 "SELECT teachers_id AS user_id, password, teachers_name AS name
                  FROM public.teachers
