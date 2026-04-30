@@ -74,6 +74,9 @@
           </div>
           <span class="error-msg" id="password-error"></span>
         </div>
+        <div class="options-row" style="margin-top: -5px; margin-bottom: 20px;">
+          <a href="forgot_password.php" class="link">ลืมรหัสผ่าน?</a>
+        </div>
 
         <div class="options-row">
           <a href="forgot_password.php" class="link">ลืมรหัสผ่าน?</a>
