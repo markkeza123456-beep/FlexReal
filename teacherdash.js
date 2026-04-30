@@ -522,11 +522,71 @@ document.addEventListener('DOMContentLoaded', () => {
         closeQuizModal();
     });
 
-    // ── Save Profile (settings) ────────────────────────
-    document.getElementById('saveProfileBtn')?.addEventListener('click', () => {
-        const btn = document.getElementById('saveProfileBtn');
-        btn.textContent = '✅ บันทึกแล้ว!';
-        setTimeout(() => { btn.textContent = '💾 บันทึกข้อมูล'; }, 1500);
-    });
-
 });
+
+// ── Save Profile via AJAX (global scope) ───────────
+function saveProfile() {
+    const btn      = document.getElementById('saveProfileBtn');
+    const feedback = document.getElementById('profileFeedback');
+    const name     = document.getElementById('profileName')?.value.trim();
+    const current  = document.getElementById('pwdCurrent')?.value ?? '';
+    const newPwd   = document.getElementById('pwdNew')?.value ?? '';
+    const confirm  = document.getElementById('pwdConfirm')?.value ?? '';
+
+    function showFeedback(type, msg) {
+        feedback.style.display    = 'block';
+        feedback.textContent      = msg;
+        feedback.style.background = type === 'success' ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)';
+        feedback.style.color      = type === 'success' ? '#10b981' : '#ef4444';
+        feedback.style.border     = `1px solid ${type === 'success' ? '#10b98133' : '#ef444433'}`;
+        setTimeout(() => { feedback.style.display = 'none'; }, 4000);
+    }
+
+    // Client-side validation
+    if (newPwd && newPwd !== confirm) {
+        showFeedback('error', '✗ รหัสผ่านใหม่ไม่ตรงกัน');
+        return;
+    }
+    if (newPwd && newPwd.length < 8) {
+        showFeedback('error', '✗ รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
+        return;
+    }
+    if (newPwd && !current) {
+        showFeedback('error', '✗ กรุณาใส่รหัสผ่านปัจจุบันก่อน');
+        return;
+    }
+
+    btn.disabled    = true;
+    btn.textContent = '⏳ กำลังบันทึก...';
+
+    const body = new FormData();
+    body.append('name',        name);
+    body.append('pwd_current', current);
+    body.append('pwd_new',     newPwd);
+
+    fetch('update_profile.php', { method: 'POST', body })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showFeedback('success', '✓ ' + data.message);
+                ['pwdCurrent','pwdNew','pwdConfirm'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+                document.getElementById('pwdStrengthWrap').style.display = 'none';
+                document.getElementById('pwdMatchMsg').textContent = '';
+                const nameEl = document.querySelector('.sidebar-profile .profile-name');
+                if (nameEl && name) nameEl.textContent = name;
+            } else {
+                showFeedback('error', '✗ ' + data.message);
+            }
+        })
+        .catch(err => {
+            console.error('saveProfile error:', err);
+            showFeedback('error', '✗ เกิดข้อผิดพลาด กรุณาลองใหม่');
+        })
+        .finally(() => {
+            btn.disabled    = false;
+            btn.textContent = '💾 บันทึกข้อมูล';
+        });
+}
