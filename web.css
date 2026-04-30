@@ -164,6 +164,36 @@ body { background: #f9ba87; color: var(--deep-blue); }
     color: white;
 }
 
+.btn-orange {
+    background: var(--primary-orange);
+    color: white;
+    border: 1px solid var(--primary-orange);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+    white-space: nowrap;
+}
+
+.btn-orange:hover {
+    background: var(--dark-orange);
+    border-color: var(--dark-orange);
+}
+
+.lesson-text-list {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 20px;
+    line-height: 1.75;
+}
+
+.lesson-text-list p {
+    color: var(--text-gray);
+    margin: 0;
+}
+
 /* Sidebar & Buttons */
 .sidebar-card {
     background: white;
@@ -190,6 +220,11 @@ body { background: #f9ba87; color: var(--deep-blue); }
 }
 
 .btn-enroll:hover { background: #4a456a; }
+
+.btn-enroll.is-enrolled {
+    background: #5b567d;
+    cursor: default;
+}
 
 .meta-item {
     display: flex;
@@ -229,6 +264,16 @@ body { background: #f9ba87; color: var(--deep-blue); }
 
 /* แสดงเฉพาะ Tab ที่มีคลาส active */
 .tab-content.active {
+    display: block;
+}
+
+.learning-tab-content {
+    display: none;
+    padding-top: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+.learning-tab-content.active {
     display: block;
 }
 
@@ -319,4 +364,23 @@ body { background: #f9ba87; color: var(--deep-blue); }
     background: #000;
     border-radius: 8px;
     outline: none;
+}
+.btn-primary {
+    display: block;
+    width: 100%;                  /* ให้ปุ่มกว้างเต็มกรอบสีขาว */
+    background-color: #5D5A88;    /* สีม่วงเข้มตามในรูป */
+    color: #ffffff;               /* ตัวอักษรสีขาว */
+    padding: 15px 0;
+    text-align: center;
+    text-decoration: none;        /* ลบเส้นใต้กรณีใช้แท็ก <a> */
+    border-radius: 10px;          /* ความโค้งมนของมุมปุ่ม */
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn-primary:hover {
+    background-color: #4A476D;    /* สีเข้มขึ้นเล็กน้อยเมื่อเอาเมาส์วาง */
 }
