@@ -1,14 +1,77 @@
 /* ============================================
-   FLEXIBLE LEARNING HUB — regis.js
+   FLEXIBLE LEARNING HUB - regisstu.js
    ============================================ */
 
 (() => {
-  // ── File Upload Display ───────────────────
-  const fileInput   = document.getElementById('cert');
-  const fileDisplay = document.getElementById('fileDisplay');
-  const fileName    = document.getElementById('fileName');
+  const tabs = [...document.querySelectorAll('.role-tab')];
+  const roleInput = document.getElementById('roleInput');
+  const form = document.getElementById('regisForm');
 
-  fileInput.addEventListener('change', () => {
+  const roleActions = {
+    student: 'regisstu_action.php',
+    teacher: 'regisstu_action.php',
+    parent: 'regisstu_action.php',
+  };
+
+  const roleFieldMap = {
+    student: ['student-field', 'cert-field'],
+    teacher: ['teacher-field'],
+    parent: ['parent-field'],
+  };
+
+  const roleSectionMap = {
+    student: ['pin-section'],
+    teacher: [],
+    parent: ['parent-link-section'],
+  };
+
+  const allSections = ['pin-section', 'parent-link-section'];
+  const slider = document.querySelector('.role-slider');
+
+  function moveSlider(activeTab) {
+    if (!slider || !activeTab) return;
+    slider.style.left = activeTab.offsetLeft + 'px';
+    slider.style.width = activeTab.offsetWidth + 'px';
+  }
+
+  function switchRole(role) {
+    tabs.forEach((tab) => {
+      tab.classList.toggle('active', tab.dataset.role === role);
+    });
+
+    moveSlider(tabs.find((tab) => tab.dataset.role === role));
+    roleInput.value = role;
+
+    if (roleActions[role]) {
+      form.action = roleActions[role];
+    }
+
+    document.querySelectorAll('.role-field').forEach((element) => {
+      const visible = roleFieldMap[role]?.some((cls) => element.classList.contains(cls));
+      element.style.display = visible ? '' : 'none';
+    });
+
+    allSections.forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.style.display = roleSectionMap[role]?.includes(id) ? '' : 'none';
+      }
+    });
+  }
+
+  window.addEventListener('load', () => {
+    switchRole(roleInput.value || 'student');
+  });
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => switchRole(tab.dataset.role));
+  });
+
+  const fileInput = document.getElementById('cert');
+  const fileDisplay = document.getElementById('fileDisplay');
+  const fileName = document.getElementById('fileName');
+
+  fileInput?.addEventListener('change', () => {
     const file = fileInput.files[0];
     if (file) {
       fileName.textContent = file.name;
@@ -19,266 +82,250 @@
     }
   });
 
-  // ── ID Card Auto-format X-XXXX-XXXXX-XX-X ─
-  const idInput = document.getElementById('idcard');
-  idInput.addEventListener('input', () => {
-    let v = idInput.value.replace(/\D/g, '').slice(0, 13);
-    let out = '';
-    if (v.length > 0)  out += v.slice(0, 1);
-    if (v.length > 1)  out += '-' + v.slice(1, 5);
-    if (v.length > 5)  out += '-' + v.slice(5, 10);
-    if (v.length > 10) out += '-' + v.slice(10, 12);
-    if (v.length > 12) out += '-' + v.slice(12, 13);
-    idInput.value = out;
-  });
+  function bindDigitsOnly(input, maxLength) {
+    input?.addEventListener('input', () => {
+      input.value = input.value.replace(/\D/g, '').slice(0, maxLength);
+    });
+  }
 
-  // ── Phone Auto-format 0XX-XXX-XXXX ────────
-  const phoneInput = document.getElementById('phone');
-  phoneInput.addEventListener('input', () => {
-    let v = phoneInput.value.replace(/\D/g, '').slice(0, 10);
-    let out = '';
-    if (v.length > 0) out += v.slice(0, 3);
-    if (v.length > 3) out += '-' + v.slice(3, 6);
-    if (v.length > 6) out += '-' + v.slice(6, 10);
-    phoneInput.value = out;
-  });
+  function bindIdCardFormat(input) {
+    input?.addEventListener('input', () => {
+      let value = input.value.replace(/\D/g, '').slice(0, 13);
+      let output = '';
+      if (value.length > 0) output += value.slice(0, 1);
+      if (value.length > 1) output += '-' + value.slice(1, 5);
+      if (value.length > 5) output += '-' + value.slice(5, 10);
+      if (value.length > 10) output += '-' + value.slice(10, 12);
+      if (value.length > 12) output += '-' + value.slice(12, 13);
+      input.value = output;
+    });
+  }
 
-  // ── Zipcode numbers only ───────────────────
-  const zipcodeInput = document.getElementById('zipcode');
-  zipcodeInput.addEventListener('input', () => {
-    zipcodeInput.value = zipcodeInput.value.replace(/\D/g, '').slice(0, 5);
-  });
+  function bindPhoneFormat(input) {
+    input?.addEventListener('input', () => {
+      let value = input.value.replace(/\D/g, '').slice(0, 10);
+      let output = '';
+      if (value.length > 0) output += value.slice(0, 3);
+      if (value.length > 3) output += '-' + value.slice(3, 6);
+      if (value.length > 6) output += '-' + value.slice(6, 10);
+      input.value = output;
+    });
+  }
 
-  // ── Password Toggle ────────────────────────
+  bindIdCardFormat(document.getElementById('idcard'));
+  bindPhoneFormat(document.getElementById('phone'));
+  bindIdCardFormat(document.getElementById('link_student_id'));
+  bindDigitsOnly(document.getElementById('zipcode'), 5);
+  bindDigitsOnly(document.getElementById('student_pin'), 6);
+  bindDigitsOnly(document.getElementById('student_pin_confirm'), 6);
+  bindDigitsOnly(document.getElementById('link_student_pin'), 6);
+
   const eyeOpen = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
-  const eyeOff  = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>`;
+  const eyeOff = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>`;
 
-  function makeToggle(btnId, inputId, eyeId) {
+  function makeToggle(buttonId, inputId, iconId) {
+    const button = document.getElementById(buttonId);
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (!button || !input || !icon) return;
+
     let visible = false;
-    document.getElementById(btnId).addEventListener('click', () => {
+    button.addEventListener('click', () => {
       visible = !visible;
-      document.getElementById(inputId).type = visible ? 'text' : 'password';
-      document.getElementById(eyeId).innerHTML = visible ? eyeOff : eyeOpen;
+      input.type = visible ? 'text' : 'password';
+      icon.innerHTML = visible ? eyeOff : eyeOpen;
     });
   }
+
   makeToggle('togglePw1', 'password', 'eye1');
-  makeToggle('togglePw2', 'confirm',  'eye2');
+  makeToggle('togglePw2', 'confirm', 'eye2');
 
-  // ── PIN Input Logic ────────────────────────
-  function initPin(digits) {
-    digits.forEach((digit, idx) => {
-      digit.addEventListener('keydown', (e) => {
-        if (e.key === 'Backspace' && !digit.value && idx > 0) {
-          e.preventDefault();
-          digits[idx - 1].focus();
-          digits[idx - 1].value = '';
-          digits[idx - 1].classList.remove('filled');
-        }
-        if (!/^\d$/.test(e.key) && !['Backspace','Delete','Tab','ArrowLeft','ArrowRight'].includes(e.key)) {
-          e.preventDefault();
-        }
-      });
-      digit.addEventListener('input', () => {
-        digit.value = digit.value.replace(/\D/g, '').slice(-1);
-        digit.classList.toggle('filled', digit.value !== '');
-        digit.classList.remove('pin-error');
-        if (digit.value && idx < digits.length - 1) digits[idx + 1].focus();
-      });
-      digit.addEventListener('focus', () => digit.select());
-      digit.addEventListener('paste', (e) => {
-        e.preventDefault();
-        const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
-        [...text].slice(0, digits.length).forEach((ch, i) => {
-          if (digits[i]) { digits[i].value = ch; digits[i].classList.add('filled'); }
-        });
-        digits[Math.min(text.length, digits.length - 1)].focus();
-      });
-    });
-  }
+  function setError(fieldId, errorId, message) {
+    const field = document.getElementById(fieldId);
+    const error = document.getElementById(errorId);
+    if (!field || !error) return !message;
 
-  const pinDigits        = [...document.querySelectorAll('#pinWrap .pin-digit')];
-  const pinConfirmDigits = [...document.querySelectorAll('#pinConfirmWrap .pin-digit')];
-  initPin(pinDigits);
-  initPin(pinConfirmDigits);
-
-  const getPinValue = (digits) => digits.map(d => d.value).join('');
-
-  function setPinError(digits, errorId, msg) {
-    const e = document.getElementById(errorId);
-    if (msg) {
-      digits.forEach(d => d.classList.add('pin-error'));
-      if (e) e.textContent = msg;
-      setTimeout(() => digits.forEach(d => d.classList.remove('pin-error')), 500);
+    if (message) {
+      field.classList.add('has-error');
+      error.textContent = message;
     } else {
-      digits.forEach(d => d.classList.remove('pin-error'));
-      if (e) e.textContent = '';
+      field.classList.remove('has-error');
+      error.textContent = '';
     }
-    return !msg;
-  }
 
-  // ── Validation Helpers ────────────────────
-  function setError(fieldId, errorId, msg) {
-    const f = document.getElementById(fieldId);
-    const e = document.getElementById(errorId);
-    if (!f || !e) return !msg;
-    if (msg) { f.classList.add('has-error'); e.textContent = msg; }
-    else     { f.classList.remove('has-error'); e.textContent = ''; }
-    return !msg;
+    return !message;
   }
 
   function clearOnFocus(inputId, fieldId, errorId) {
-    const el = document.getElementById(inputId);
-    if (el) el.addEventListener('focus', () => setError(fieldId, errorId, ''));
+    const input = document.getElementById(inputId);
+    input?.addEventListener('focus', () => setError(fieldId, errorId, ''));
   }
 
-  clearOnFocus('firstname', 'field-firstname', 'firstname-error');
-  clearOnFocus('lastname',  'field-lastname',  'lastname-error');
-  clearOnFocus('idcard',    'field-idcard',    'idcard-error');
-  clearOnFocus('level',     'field-level',     'level-error');
-  clearOnFocus('email',     'field-email',     'email-error');
-  clearOnFocus('phone',     'field-phone',     'phone-error');
-  clearOnFocus('house',     'field-house',     'house-error');
-  clearOnFocus('tambon',    'field-tambon',    'tambon-error');
-  clearOnFocus('amphoe',    'field-amphoe',    'amphoe-error');
-  clearOnFocus('province',  'field-province',  'province-error');
-  clearOnFocus('zipcode',   'field-zipcode',   'zipcode-error');
-  clearOnFocus('password',  'field-password',  'password-error');
-  clearOnFocus('confirm',   'field-confirm',   'confirm-error');
+  [
+    ['firstname', 'field-firstname', 'firstname-error'],
+    ['lastname', 'field-lastname', 'lastname-error'],
+    ['idcard', 'field-idcard', 'idcard-error'],
+    ['level', 'field-level', 'level-error'],
+    ['subject', 'field-subject', 'subject-error'],
+    ['relation', 'field-relation', 'relation-error'],
+    ['email', 'field-email', 'email-error'],
+    ['phone', 'field-phone', 'phone-error'],
+    ['house', 'field-house', 'house-error'],
+    ['tambon', 'field-tambon', 'tambon-error'],
+    ['amphoe', 'field-amphoe', 'amphoe-error'],
+    ['province', 'field-province', 'province-error'],
+    ['zipcode', 'field-zipcode', 'zipcode-error'],
+    ['password', 'field-password', 'password-error'],
+    ['confirm', 'field-confirm', 'confirm-error'],
+    ['student_pin', 'field-pin', 'pin-error'],
+    ['student_pin_confirm', 'field-pin-confirm', 'pin-confirm-error'],
+    ['link_student_id', 'field-link-student-id', 'link-student-id-error'],
+    ['link_student_pin', 'field-link-student-pin', 'link-student-pin-error'],
+  ].forEach(([inputId, fieldId, errorId]) => clearOnFocus(inputId, fieldId, errorId));
 
-  // ── Toast ─────────────────────────────────
   const toast = document.getElementById('toast');
   let toastTimer;
-  function showToast(msg, type = '') {
-    clearTimeout(toastTimer);
-    toast.textContent = msg;
+
+  function showToast(message, type = '') {
+    window.clearTimeout(toastTimer);
+    toast.textContent = message;
     toast.className = 'toast' + (type ? ' ' + type : '');
     void toast.offsetWidth;
     toast.classList.add('show');
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
+    toastTimer = window.setTimeout(() => toast.classList.remove('show'), 3200);
   }
 
-  // ── Loading State ─────────────────────────
   const submitBtn = document.getElementById('submitBtn');
-  const btnText   = submitBtn.querySelector('.btn-text');
-  const btnArrow  = document.getElementById('btnArrow');
+  const btnText = submitBtn.querySelector('.btn-text');
+  const btnArrow = document.getElementById('btnArrow');
   const btnLoader = document.getElementById('btnLoader');
 
   function setLoading(loading) {
-    submitBtn.disabled      = loading;
-    btnText.hidden          = loading;
-    btnArrow.style.display  = loading ? 'none' : '';
+    submitBtn.disabled = loading;
+    btnText.hidden = loading;
+    btnArrow.style.display = loading ? 'none' : '';
     btnLoader.style.display = loading ? 'flex' : 'none';
   }
 
-  // ── Form Submit ───────────────────────────
-  document.getElementById('regisForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+
     let valid = true;
+    const currentRole = roleInput.value;
+    const valueOf = (id) => document.getElementById(id)?.value.trim() || '';
 
-    const v = (id) => document.getElementById(id).value.trim();
-
-    if (!v('firstname'))
+    if (!valueOf('firstname')) {
       valid = setError('field-firstname', 'firstname-error', 'กรุณากรอกชื่อ') && valid;
-    if (!v('lastname'))
-      valid = setError('field-lastname', 'lastname-error', 'กรุณากรอกนามสกุล') && valid;
-
-    const id13 = v('idcard').replace(/\D/g, '');
-    if (id13.length !== 13)
-      valid = setError('field-idcard', 'idcard-error', 'เลขบัตรประชาชนต้องมี 13 หลัก') && valid;
-
-    if (!v('level'))
-      valid = setError('field-level', 'level-error', 'กรุณาเลือกระดับชั้น') && valid;
-
-    const emailVal = v('email');
-    if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal))
-      valid = setError('field-email', 'email-error', 'กรุณากรอกอีเมลให้ถูกต้อง') && valid;
-
-    const phoneVal = v('phone').replace(/\D/g, '');
-    if (phoneVal.length !== 10)
-      valid = setError('field-phone', 'phone-error', 'เบอร์โทรต้องมี 10 หลัก') && valid;
-
-    // ที่อยู่
-    if (!v('house'))
-      valid = setError('field-house', 'house-error', 'กรุณากรอกบ้านเลขที่') && valid;
-    if (!v('tambon'))
-      valid = setError('field-tambon', 'tambon-error', 'กรุณากรอกตำบล/แขวง') && valid;
-    if (!v('amphoe'))
-      valid = setError('field-amphoe', 'amphoe-error', 'กรุณากรอกอำเภอ/เขต') && valid;
-    if (!v('province'))
-      valid = setError('field-province', 'province-error', 'กรุณาเลือกจังหวัด') && valid;
-    const zip = v('zipcode').replace(/\D/g, '');
-    if (zip.length !== 5)
-      valid = setError('field-zipcode', 'zipcode-error', 'รหัสไปรษณีย์ต้องมี 5 หลัก') && valid;
-
-    // ไฟล์
-    if (!fileInput.files[0])
-      valid = setError('field-cert', 'cert-error', 'กรุณาแนบไฟล์วุฒิการศึกษา') && valid;
-    else if (fileInput.files[0].size > 5 * 1024 * 1024)
-      valid = setError('field-cert', 'cert-error', 'ไฟล์ต้องมีขนาดไม่เกิน 5MB') && valid;
-
-    // รหัสผ่าน
-    const pw  = document.getElementById('password').value;
-    const cpw = document.getElementById('confirm').value;
-    if (!pw || pw.length < 6)
-      valid = setError('field-password', 'password-error', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร') && valid;
-    if (pw !== cpw)
-      valid = setError('field-confirm', 'confirm-error', 'รหัสผ่านไม่ตรงกัน') && valid;
-
-    // PIN
-    const pinVal        = getPinValue(pinDigits);
-    const pinConfirmVal = getPinValue(pinConfirmDigits);
-    if (pinVal.length < 4) {
-      valid = setPinError(pinDigits, 'pin-error', 'กรุณากรอก PIN ให้ครบ 4 หลัก') && valid;
-    } else {
-      setPinError(pinDigits, 'pin-error', '');
     }
-    if (pinVal.length === 4 && pinConfirmVal !== pinVal) {
-      valid = setPinError(pinConfirmDigits, 'pin-confirm-error', 'PIN ไม่ตรงกัน') && valid;
-    } else if (pinConfirmVal.length < 4) {
-      valid = setPinError(pinConfirmDigits, 'pin-confirm-error', 'กรุณายืนยัน PIN ให้ครบ 4 หลัก') && valid;
-    } else {
-      setPinError(pinConfirmDigits, 'pin-confirm-error', '');
+    if (!valueOf('lastname')) {
+      valid = setError('field-lastname', 'lastname-error', 'กรุณากรอกนามสกุล') && valid;
+    }
+
+    const idCard = valueOf('idcard').replace(/\D/g, '');
+    if (idCard.length !== 13) {
+      valid = setError('field-idcard', 'idcard-error', 'เลขบัตรประชาชนต้องมี 13 หลัก') && valid;
+    }
+
+    if (currentRole === 'student' && !valueOf('level')) {
+      valid = setError('field-level', 'level-error', 'กรุณาเลือกระดับชั้น') && valid;
+    }
+    if (currentRole === 'teacher' && !valueOf('subject')) {
+      valid = setError('field-subject', 'subject-error', 'กรุณากรอกวิชาที่สอน') && valid;
+    }
+    if (currentRole === 'parent' && !valueOf('relation')) {
+      valid = setError('field-relation', 'relation-error', 'กรุณาเลือกความสัมพันธ์') && valid;
+    }
+
+    const email = valueOf('email');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      valid = setError('field-email', 'email-error', 'กรุณากรอกอีเมลให้ถูกต้อง') && valid;
+    }
+
+    const phone = valueOf('phone').replace(/\D/g, '');
+    if (phone.length !== 10) {
+      valid = setError('field-phone', 'phone-error', 'เบอร์โทรต้องมี 10 หลัก') && valid;
+    }
+
+    if (!valueOf('house')) {
+      valid = setError('field-house', 'house-error', 'กรุณากรอกบ้านเลขที่') && valid;
+    }
+    if (!valueOf('tambon')) {
+      valid = setError('field-tambon', 'tambon-error', 'กรุณากรอกตำบล/แขวง') && valid;
+    }
+    if (!valueOf('amphoe')) {
+      valid = setError('field-amphoe', 'amphoe-error', 'กรุณากรอกอำเภอ/เขต') && valid;
+    }
+    if (!valueOf('province')) {
+      valid = setError('field-province', 'province-error', 'กรุณาเลือกจังหวัด') && valid;
+    }
+
+    const zip = valueOf('zipcode').replace(/\D/g, '');
+    if (zip.length !== 5) {
+      valid = setError('field-zipcode', 'zipcode-error', 'รหัสไปรษณีย์ต้องมี 5 หลัก') && valid;
+    }
+
+    if (currentRole === 'student') {
+      if (!fileInput.files[0]) {
+        valid = setError('field-cert', 'cert-error', 'กรุณาแนบไฟล์วุฒิการศึกษา') && valid;
+      } else if (fileInput.files[0].size > 5 * 1024 * 1024) {
+        valid = setError('field-cert', 'cert-error', 'ไฟล์ต้องมีขนาดไม่เกิน 5MB') && valid;
+      }
+    }
+
+    const password = valueOf('password');
+    const confirmPassword = valueOf('confirm');
+    if (!password || password.length < 6) {
+      valid = setError('field-password', 'password-error', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร') && valid;
+    }
+    if (password !== confirmPassword) {
+      valid = setError('field-confirm', 'confirm-error', 'รหัสผ่านไม่ตรงกัน') && valid;
+    }
+
+    if (currentRole === 'student') {
+      const studentPin = valueOf('student_pin').replace(/\D/g, '');
+      const studentPinConfirm = valueOf('student_pin_confirm').replace(/\D/g, '');
+
+      if (studentPin.length !== 6) {
+        valid = setError('field-pin', 'pin-error', 'กรุณากรอก PIN ให้ครบ 6 หลัก') && valid;
+      } else {
+        setError('field-pin', 'pin-error', '');
+      }
+
+      if (studentPinConfirm.length !== 6) {
+        valid = setError('field-pin-confirm', 'pin-confirm-error', 'กรุณายืนยัน PIN ให้ครบ 6 หลัก') && valid;
+      } else if (studentPin !== studentPinConfirm) {
+        valid = setError('field-pin-confirm', 'pin-confirm-error', 'PIN ไม่ตรงกัน') && valid;
+      } else {
+        setError('field-pin-confirm', 'pin-confirm-error', '');
+      }
+    }
+
+    if (currentRole === 'parent') {
+      const linkedStudentId = valueOf('link_student_id').replace(/\D/g, '');
+      const linkedStudentPin = valueOf('link_student_pin').replace(/\D/g, '');
+
+      if (linkedStudentId.length !== 13) {
+        valid = setError('field-link-student-id', 'link-student-id-error', 'รหัสบัตรประชาชนนักเรียนต้องมี 13 หลัก') && valid;
+      }
+      if (linkedStudentPin.length !== 6) {
+        valid = setError('field-link-student-pin', 'link-student-pin-error', 'PIN นักเรียนต้องมี 6 หลัก') && valid;
+      } else {
+        setError('field-link-student-pin', 'link-student-pin-error', '');
+      }
     }
 
     if (!valid) {
-      const firstErr = document.querySelector('.has-error, .pin-error');
-      if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const firstError = document.querySelector('.has-error');
+      firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
     setLoading(true);
     try {
-      // 1. รวมค่า PIN 6 หลักจากช่องเล็กๆ มาใส่ในช่อง Hidden (id="final_pin")
-      const pinVal = pinDigits.map(d => d.value).join('');
-      const finalPinInput = document.getElementById('final_pin');
-      if (finalPinInput) {
-        finalPinInput.value = pinVal;
-      }
-
-      // 2. สั่ง Submit ฟอร์ม (id="regisForm") ส่งไปที่ regisss_action.php จริงๆ
-      const form = document.getElementById('regisForm');
-      if (form) {
-        form.submit();
-      }
-
-    } catch (err) {
-      showToast('✕ ' + (err.message || 'เกิดข้อผิดพลาด'), 'error-toast');
+      form.submit();
+    } catch (error) {
+      showToast('เกิดข้อผิดพลาดในการส่งฟอร์ม', 'error-toast');
       setLoading(false);
     }
   });
-
-  // ── Inject shake keyframe ─────────────────
-  const s = document.createElement('style');
-  s.textContent = `
-    @keyframes shake {
-      0%,100%{ transform:translateX(0); }
-      20%    { transform:translateX(-6px); }
-      40%    { transform:translateX(6px); }
-      60%    { transform:translateX(-4px); }
-      80%    { transform:translateX(4px); }
-    }
-  `;
-  document.head.appendChild(s);
-  
-
 })();

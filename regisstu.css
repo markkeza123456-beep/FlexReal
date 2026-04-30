@@ -1,5 +1,5 @@
 /* ============================================
-   FLEXIBLE LEARNING HUB — regis.css
+   FLEXIBLE LEARNING HUB — regisstu.css
    ============================================ */
 
 :root {
@@ -168,8 +168,55 @@ body {
 .subtitle {
   font-size: .88rem;
   color: var(--text-secondary);
-  margin-bottom: 28px;
+  margin-bottom: 24px;
   animation: fadeSlideUp .5s .2s both;
+}
+
+/* ============================================
+   ROLE TAB BAR
+   ============================================ */
+.role-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* ✅ แก้จาก 4 → 3 */
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px;
+  margin-bottom: 24px;
+  animation: fadeSlideUp .5s .22s both;
+}
+
+.role-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 11px 6px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), box-shadow var(--transition);
+  position: relative;
+  white-space: nowrap;
+}
+
+.role-tab:hover {
+  color: var(--text-secondary);
+  background: rgba(255,107,26,.06);
+}
+
+.role-tab.active {
+  background: linear-gradient(135deg, var(--orange), var(--orange-light));
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(255,107,26,.4);
+  font-weight: 600;
 }
 
 /* ---------- Section Label ---------- */
@@ -515,10 +562,22 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ---------- Role field transitions ---------- */
+.role-field {
+  transition: opacity .25s ease, transform .25s ease;
+}
+.role-field[style*="display:none"],
+.role-field[style*="display: none"] {
+  display: none !important;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 520px) {
   body { padding: 24px 16px; }
   .card { padding: 36px 20px 28px; }
   .title { font-size: 1.5rem; }
   .grid-2 { grid-template-columns: 1fr; }
+  .role-tab { font-size: .72rem; padding: 10px 4px; gap: 4px; }
+  .role-tab svg { display: none; }
+  .pin-digit { width: 42px; height: 48px; font-size: 1.1rem; }
 }
