@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Lesson data store (mirrors PHP $lessons, extended client-side) ──
     const lessonData = {};
-    document.querySelectorAll('#lessonsTableBody tr.lesson-main-row[data-id]').forEach(row => {
+    document.querySelectorAll('#lessonsTableBody tr[data-id]').forEach(row => {
         const id = row.dataset.id;
         lessonData[id] = {
             id,
@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function filterLessons() {
         const q  = lessonSearch.value.toLowerCase();
         const st = lessonFilterStatus.value;
-        const rows = document.querySelectorAll('#lessonsTableBody tr.lesson-main-row[data-id]');
+        const rows = document.querySelectorAll('#lessonsTableBody tr[data-id]');
         let visible = 0;
         rows.forEach(row => {
             const text   = row.textContent.toLowerCase();
@@ -316,26 +316,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('.btn-view-lesson').forEach(btn => {
         btn.addEventListener('click', () => openLessonDetail(btn.dataset.id));
-    });
-
-    // Expand / collapse sub-lessons
-    document.querySelectorAll('.btn-expand-sub').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const id   = btn.dataset.id;
-            const subs = document.querySelectorAll(`.sub-lesson-row[data-parent="${id}"]`);
-            const expanded = btn.closest('tr').dataset.expanded === 'true';
-            subs.forEach(row => {
-                row.style.display = expanded ? 'none' : '';
-            });
-            btn.closest('tr').dataset.expanded = expanded ? 'false' : 'true';
-            btn.style.transform = expanded ? '' : 'rotate(90deg)';
-        });
-    });
-
-    // Edit lesson button in lessons table
-    document.querySelectorAll('.btn-edit-lesson').forEach(btn => {
-        btn.addEventListener('click', () => openEditLesson(btn.dataset.id));
     });
 
     // Dashboard shortcuts → switch to lessons view then open detail/edit
@@ -540,6 +520,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('quizAnswer').value   = '';
         document.getElementById('quizScore').value    = '1';
         closeQuizModal();
+    });
+
+    // ── Save Profile (settings) ────────────────────────
+    document.getElementById('saveProfileBtn')?.addEventListener('click', () => {
+        const btn = document.getElementById('saveProfileBtn');
+        btn.textContent = '✅ บันทึกแล้ว!';
+        setTimeout(() => { btn.textContent = '💾 บันทึกข้อมูล'; }, 1500);
     });
 
 });
