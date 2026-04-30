@@ -1,179 +1,154 @@
-/**
- * ฟังก์ชันหลักสำหรับสลับหน้าจอ
- */
-function showPage(pageId) {
+﻿function showPage(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById(pageId).classList.add('active');
+    const targetPage = document.getElementById(pageId);
+    if (targetPage) targetPage.classList.add('active');
     window.scrollTo(0, 0);
 }
 
-/**
- * ฟังก์ชันสำหรับค้นหาวิชา (เพิ่มเข้าไปใหม่)
- * ทำงานร่วมกับ id="searchInput" ในไฟล์ HTML
- */
 function filterCourses() {
     let input = document.getElementById('searchInput').value.toLowerCase();
     let cards = document.getElementsByClassName('card');
-
     for (let i = 0; i < cards.length; i++) {
         let title = cards[i].querySelector('h3').innerText.toLowerCase();
-        if (title.includes(input)) {
-            cards[i].style.display = ""; // แสดงผล
-        } else {
-            cards[i].style.display = "none"; // ซ่อน
-        }
+        cards[i].style.display = title.includes(input) ? "" : "none";
     }
 }
 
-/**
-ฟังก์ชันแสดงรายละเอียดวิชา
- */
+let currentCourseName = '';
+
 function showCourse(courseName) {
-    const titleElement = document.getElementById('detail-title');
-    const descTopElement = document.getElementById('detail-desc-top'); // ตัวแปรสำหรับบรรทัดบน
-    const descElement = document.getElementById('detail-desc');       // ตัวแปรใน Tab Overview
-    const durationElement = document.getElementById('detail-duration');
+    currentCourseName = courseName;
+    document.getElementById('detail-title').innerText = courseName;
+    const descTop = document.getElementById('detail-desc-top');
+    const descBottom = document.getElementById('detail-desc');
+    const duration = document.getElementById('detail-duration');
 
-    // เปลี่ยนชื่อหัวข้อหลัก
-    titleElement.innerText = courseName;
-    
-    // ตรวจสอบวิชาและเปลี่ยนข้อความให้ตรงกัน
-    if (courseName === 'คณิตศาสตร์') {
-        descTopElement.innerText = 'รายละเอียดเบื้องต้นของวิชาคณิตศาสตร์: เน้นการคิดวิเคราะห์และแก้โจทย์';
-        descElement.innerText = 'เจาะลึกตรรกะและการแก้โจทย์ปัญหาอย่างเป็นระบบในระดับสากล';
-        durationElement.innerText = '10 ชั่วโมง';
-    } 
-    else if (courseName === 'ภาษาไทย') {
-        descTopElement.innerText = 'รายละเอียดเบื้องต้นของวิชาภาษาไทย: การสื่อสารและการใช้ภาษาในที่ทำงาน';
-        descElement.innerText = 'ทักษะการใช้ภาษาไทยเพื่อการทำงานและการสื่อสารอย่างมีประสิทธิภาพ';
-        durationElement.innerText = '5 ชั่วโมง';
-    }
-    else if (courseName === 'วิทยาศาสตร์') {
-        descTopElement.innerText = 'รายละเอียดเบื้องต้นของวิชาวิทยาศาสตร์: กระบวนการทางวิทยาศาสตร์และนวัตกรรม';
-        descElement.innerText = 'เรียนรู้การทดลองและแนวคิดพื้นฐานทางฟิสิกส์ เคมี และชีววิทยา';
-        durationElement.innerText = '12 ชั่วโมง';
-    }
-    else if (courseName === 'สังคมศึกษา') {
-        descTopElement.innerText = 'รายละเอียดเบื้องต้นของวิชาสังคมศึกษา: วัฒนธรรมและความเป็นพลเมือง';
-        descElement.innerText = 'เรียนรู้วิธีการเข้าสังคมและทำความเข้าใจความหลากหลายทางวัฒนธรรม';
-        durationElement.innerText = '6 ชั่วโมง';
-    }
-    else if (courseName === 'ภาษาอังกฤษ') {
-        descTopElement.innerText = 'รายละเอียดเบื้องต้นของวิชาอังกฤษ: English for Business Communication';
-        descElement.innerText = 'Professional English skills for career advancement and daily life.';
-        durationElement.innerText = '8 ชั่วโมง';
-    }
-    else {
-        descTopElement.innerText = 'รายละเอียดเบื้องต้นของวิชา...';
-        descElement.innerText = 'เริ่มต้นเรียนรู้และพัฒนาทักษะไปกับหลักสูตรคุณภาพจากผู้เชี่ยวชาญ';
-        durationElement.innerText = '6 ชั่วโมง';
-    }
+    const courseData = {
+        'คณิตศาสตร์': { top: 'เน้นการคิดวิเคราะห์และแก้โจทย์', bot: 'เจาะลึกตรรกะระดับสากล', time: '10 ชั่วโมง' },
+        'ภาษาไทย': { top: 'การสื่อสารในที่ทำงาน', bot: 'ทักษะภาษาเพื่อประสิทธิภาพการทำงาน', time: '5 ชั่วโมง' },
+        'วิทยาศาสตร์': { top: 'กระบวนการและนวัตกรรม', bot: 'เรียนรู้ฟิสิกส์ เคมี ชีววิทยาพื้นฐาน', time: '12 ชั่วโมง' },
+        'สังคมศึกษา': { top: 'วัฒนธรรมและความเป็นพลเมือง', bot: 'ความหลากหลายทางวัฒนธรรม', time: '6 ชั่วโมง' },
+        'ภาษาอังกฤษ': { top: 'Business Communication', bot: 'Professional English for career', time: '8 ชั่วโมง' }
+    };
 
-    // เมื่อตั้งค่าเสร็จแล้วจึงเปิดหน้า Course Detail
+    const data = courseData[courseName] || { top: 'รายละเอียดวิชา...', bot: 'หลักสูตรคุณภาพ', time: '6 ชั่วโมง' };
+    descTop.innerText = data.top;
+    descBottom.innerText = data.bot;
+    duration.innerText = data.time;
+
+    // Reset Tab ไปที่หน้าแรกเสมอ
+    openTab({ currentTarget: document.querySelector('.tab-btn') }, 'overview');
     showPage('course-detail');
 }
 
-/**
- * ฟังก์ชันสำหรับสลับ Tab ( Overview / Curriculum / Instructor )
- * เพิ่มเติม: ให้กลับมาที่หน้า Overview ทุกครั้งที่กดวิชาใหม่
- */
+// --- 3. ระบบ Tab ---
 function openTab(evt, tabName) {
-    const tabContents = document.getElementsByClassName("tab-content");
-    for (let i = 0; i < tabContents.length; i++) {
-        tabContents[i].style.display = "none";
-        tabContents[i].classList.remove("active");
-    }
-
-    const tabButtons = document.getElementsByClassName("tab-btn");
-    for (let i = 0; i < tabButtons.length; i++) {
-        tabButtons[i].classList.remove("active");
-    }
-
+    document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    
     document.getElementById(tabName).style.display = "block";
-    document.getElementById(tabName).classList.add("active");
-    evt.currentTarget.classList.add("active");
+    if (evt && evt.currentTarget) evt.currentTarget.classList.add("active");
 }
-/**
- * ฟังก์ชันแสดงหน้าคู่มือการเรียน 
- */
+
+// --- 4. การจัดการไฟล์เอกสารและวิดีโอ ---
+function downloadLesson(fileName) {
+    const filePath = 'docs/' + fileName;
+    window.open(filePath, '_blank');
+}
+
+function downloadCourseLesson() {
+    const lessonByCourse = {
+        'คณิตศาสตร์': 'lesson-math.pdf',
+        'ภาษาไทย': 'lesson-thai.pdf',
+        'วิทยาศาสตร์': 'lesson-science.pdf',
+        'สังคมศึกษา': 'lesson-social.pdf',
+        'ภาษาอังกฤษ': 'lesson-english.pdf'
+    };
+
+    const fallbackLesson = 'lesson1.pdf';
+    const selectedLesson = lessonByCourse[currentCourseName] || fallbackLesson;
+    downloadLesson(selectedLesson);
+}
+
+function openLocalVideo(fileName) {
+    const modal = document.getElementById('modal-overlay');
+    const body = document.getElementById('modal-body');
+    const videoPath = 'videos/' + fileName; 
+
+    body.innerHTML = `
+        <h3 style="margin-bottom:15px; color:#E67E22;">🎥 วิดีโอบทเรียน</h3>
+        <video width="100%" controls autoplay style="border-radius:10px; background:#000;">
+            <source src="${videoPath}" type="video/mp4">
+            เบราว์เซอร์ไม่รองรับวิดีโอ
+        </video>
+    `;
+    modal.style.display = 'flex';
+}
+
+// --- 5. ระบบ Modal & Quiz ---
+function startQuiz() {
+    const modal = document.getElementById('modal-overlay');
+    const body = document.getElementById('modal-body');
+    body.innerHTML = `
+        <h3 style="margin-bottom:20px; color:#E67E22;">📝 แบบทดสอบหลังเรียน</h3>
+        <div style="text-align:left; background:#f9f9f9; padding:20px; border-radius:10px;">
+            <p><b>ข้อที่ 1:</b> ข้อใดคือหลักการของ Flexible Hub?</p>
+            <label style="display:block; margin:10px 0;"><input type="radio" name="q1"> ก. เรียนที่ไหน เมื่อไหร่ก็ได้</label>
+            <label style="display:block; margin:10px 0;"><input type="radio" name="q1"> ข. ต้องเข้าเรียนตามเวลา</label>
+        </div>
+        <button class="btn-enroll" style="margin-top:20px; width:100%;" onclick="submitQuiz()">ส่งคำตอบ</button>
+    `;
+    modal.style.display = 'flex';
+}
+
+function submitQuiz() {
+    alert('บันทึกคะแนนเรียบร้อยแล้ว!');
+    closeModal();
+}
+
+function closeModal() {
+    const modalBody = document.getElementById('modal-body');
+    if(modalBody) modalBody.innerHTML = '';
+    document.getElementById('modal-overlay').style.display = 'none';
+}
+
+// --- 6. คู่มือและติดต่อ ---
 function showGuide(type) {
     const title = document.getElementById('guide-title');
     const content = document.getElementById('guide-content');
-    
-    if (type === 'register') {
-        title.innerText = 'ขั้นตอนการสมัครสมาชิก';
-        content.innerHTML = `
-            <div class="info-card">
-                <h4 style="color:var(--primary-orange); margin-bottom:15px;">📝 วิธีเริ่มใช้งาน</h4>
-                <p>1. คลิกปุ่ม <b>Login</b> มุมขวาบนของหน้าจอ</p>
-                <p>2. กรอกรายละเอียดเพื่อสมัครสมาชิกด้วย Email หรือเลือกใช้งานผ่านระบบ Google</p>
-                <p>3. ยืนยันตัวตนแล้วเริ่มเรียนได้ทันที</p>
-            </div>`;
-    } else if (type === 'search') {
-        title.innerText = 'วิธีค้นหาบทเรียน';
-        content.innerHTML = `
-            <div class="info-card">
-                <h4 style="color:var(--primary-orange); margin-bottom:15px;">🔍 การค้นหา</h4>
-                <p>ท่านสามารถค้นหาบทเรียนได้โดยพิมพ์ชื่อวิชาในช่อง Search หรือเลือกดูตามหมวดหมู่ที่เมนูด้านบน</p>
-            </div>`;
-    } else if (type === 'certificate') {
-        title.innerText = 'การรับใบประกาศ';
-        content.innerHTML = `
-            <div class="info-card">
-                <h4 style="color:var(--primary-orange); margin-bottom:15px;">🎓 วุฒิบัตรดิจิทัล</h4>
-                <p>เมื่อเรียนจบครบ 100% และสอบผ่านเกณฑ์ ระบบจะให้ดาวน์โหลดใบประกาศทันทีในหน้าสรุปผล</p>
-            </div>`;
-    }
-    
+    const guides = {
+        'register': ['ขั้นตอนการสมัคร', '1. กด Login <br> 2. กรอก Email <br> 3. เริ่มเรียน'],
+        'search': ['วิธีค้นหาบทเรียน', 'ใช้ช่อง Search พิมพ์ชื่อวิชาที่สนใจ'],
+        'certificate': ['การรับใบประกาศ', 'เรียนจบ 100% ดาวน์โหลดได้ทันที']
+    };
+    title.innerText = guides[type][0];
+    content.innerHTML = `<div class="info-card">${guides[type][1]}</div>`;
     showPage('page-guide');
 }
 
-/**
- * ฟังก์ชันแสดงหน้าติดต่อเรา (ปรับปรุงเพื่อให้จัดกึ่งกลางตาม CSS ใหม่)
- */
 function showContact(type) {
     const title = document.getElementById('contact-title');
     const content = document.getElementById('contact-content');
-    
-    if (type === 'channel') {
+    if(type === 'channel') {
         title.innerText = 'ช่องทางการติดต่อ';
-        content.innerHTML = `
-            <div class="info-card">
-                <h4 style="color:var(--primary-orange); margin-bottom:15px;">📞 ข้อมูลติดต่อ</h4>
-                <p><b>อีเมล:</b> @flexiblehub.kbu</p>
-                <p><b>Line:</b> @flexiblehub</p>
-            </div>`;
-    } else if (type === 'location') {
+        content.innerHTML = `<div class="info-card">Email: Flexible@hub.com <br> Line: @FlexibleHub/div>`;
+    } else {
         title.innerText = 'สถานที่ตั้ง';
-        content.innerHTML = `
-            <div class="info-card">
-                <h4 style="color:var(--primary-orange); margin-bottom:15px;">📍 ที่อยู่สำนักงาน</h4>
-                <p>อาคารflexblehub ชั้น 10 กรุงเทพมหานคร</p>
-            </div>`;
+        content.innerHTML = `<div class="info-card">อาคาร Flexible Hub ชั้น 10 กรุงเทพฯ</div>`;
     }
-    
     showPage('page-contact');
 }
 
-/**
- * ฟังก์ชันสลับ Tab (Overview, Curriculum, Instructor)
- */
-function openTab(evt, tabName) {
-    // 1. ซ่อนเนื้อหา Tab ทั้งหมด
-    const tabContents = document.getElementsByClassName("tab-content");
-    for (let i = 0; i < tabContents.length; i++) {
-        tabContents[i].style.display = "none";
-        tabContents[i].classList.remove("active");
-    }
+function openCourseVideo() {
+    const videoByCourse = {
+        'คณิตศาสตร์': 'lesson-math.mp4',
+        'ภาษาไทย': 'lesson-thai.mp4',
+        'วิทยาศาสตร์': 'lesson-science.mp4',
+        'สังคมศึกษา': 'lesson-social.mp4',
+        'ภาษาอังกฤษ': 'lesson-english.mp4'
+    };
 
-    // 2. เอาคลาส 'active' ออกจากปุ่มทั้งหมด
-    const tabButtons = document.getElementsByClassName("tab-btn");
-    for (let i = 0; i < tabButtons.length; i++) {
-        tabButtons[i].className = tabButtons[i].className.replace(" active", "");
-    }
-
-    // 3. แสดงเนื้อหา Tab ที่เลือก และเพิ่มคลาส 'active' ให้ปุ่มที่กด
-    document.getElementById(tabName).style.display = "block";
-    document.getElementById(tabName).classList.add("active");
-    evt.currentTarget.className += " active";
+    const fallbackVideo = 'lesson1.mp4';
+    const selectedVideo = videoByCourse[currentCourseName] || fallbackVideo;
+    openLocalVideo(selectedVideo);
 }
