@@ -111,19 +111,7 @@
           </div>
           <span class="error-msg" id="level-error"></span>
         </div>
-
-        <div class="field role-field teacher-field" id="field-subject" style="display:none;">
-          <label class="label" for="subject">วิชาที่สอน<span class="required">*</span></label>
-          <div class="input-wrap">
-            <span class="input-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-            </span>
-            <input type="text" id="subject" name="subject" placeholder="เช่น คณิตศาสตร์, ฟิสิกส์" />
-            <span class="focus-bar"></span>
-          </div>
-          <span class="error-msg" id="subject-error"></span>
-        </div>
-
+        
         <div class="field role-field parent-field" id="field-relation" style="display:none;">
           <label class="label" for="relation">ความสัมพันธ์กับนักเรียน<span class="required">*</span></label>
           <div class="input-wrap">

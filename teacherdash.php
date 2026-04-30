@@ -73,10 +73,10 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
     </div>
 
     <nav class="sidebar-nav">
-        <a href="#" class="nav-item active" data-section="dashboard">
+        <a href="#" class="nav-item active" data-view="dashboard">
             <span class="nav-icon">⊞</span><span>แดชบอร์ด</span>
         </a>
-        <a href="#" class="nav-item" data-section="lessons">
+        <a href="#" class="nav-item" data-view="lessons">
             <span class="nav-icon">📘</span><span>บทเรียน</span>
         </a>
         <a href="#" class="nav-item" data-section="students">
@@ -109,6 +109,9 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
 <!-- Main Content -->
 <main class="main">
 
+    <!-- ══ VIEW: DASHBOARD ══ -->
+    <div id="view-dashboard" class="page-view">
+
     <!-- Topbar -->
     <header class="topbar">
         <div class="topbar-left">
@@ -116,9 +119,6 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
             <span class="page-sub">ยินดีต้อนรับกลับมา, <?= explode(' ', $teacher['name'])[1] ?> 👋</span>
         </div>
         <div class="topbar-right">
-            <button class="btn-add-lesson" id="openModalBtn">
-                <span class="plus">+</span> เพิ่มบทเรียน
-            </button>
             <div class="notif-btn" id="notifBtn">
                 🔔<span class="notif-dot"></span>
             </div>
@@ -153,31 +153,145 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
         </div>
     </section>
 
-    <!-- Lessons + Activity -->
-    <section class="content-grid">
+    <!-- Students (dashboard only) -->
+    <section class="card students-card">
+        <div class="card-header">
+            <h2 class="card-title">นักเรียนในความดูแล</h2>
+            <input class="search-input" type="text" id="studentSearch" placeholder="🔍 ค้นหานักเรียน...">
+        </div>
+        <div class="table-wrap">
+            <table class="lessons-table" id="studentTable">
+                <thead>
+                    <tr>
+                        <th> </th>
+                        <th>ชื่อ-นามสกุล</th>
+                        <th>ชั้น</th>
+                        <th>คะแนน</th>
+                        <th>ระดับ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($students as $i => $s): ?>
+                    <tr class="lesson-row">
+                        <td class="mono"><?= str_pad($i+1, 2, '0', STR_PAD_LEFT) ?></td>
+                        <td><?= htmlspecialchars($s['name']) ?></td>
+                        <td><?= htmlspecialchars($s['class']) ?></td>
+                        <td class="mono score-cell"><?= $s['score'] ?></td>
+                        <td><span class="badge badge-<?= $s['status'] ?>"><?= $score_labels[$s['status']] ?></span></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </section>
 
-        <!-- Lessons Table -->
-        <div class="card lessons-card">
-            <div class="card-header">
-                <h2 class="card-title">บทเรียนของฉัน</h2>
-                <button class="btn-text" id="openModalBtn2">+ เพิ่มใหม่</button>
+
+    <!-- Lessons summary (dashboard only – no filter, no add button) -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">บทเรียนของฉัน</h2>
+            <input class="search-input" type="text" id="dashLessonSearch" placeholder="🔍 ค้นหาบทเรียน...">
+        </div>
+        <div class="table-wrap">
+            <table class="lessons-table" id="dashLessonsTable">
+                <thead>
+                    <tr>
+                        <th>ชื่อบทเรียน</th>
+                        <th>วิชา / ระดับชั้น</th>
+                        <th>นักเรียน</th>
+                        <th>ความคืบหน้า</th>
+                        <th>สถานะ</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($lessons as $lesson): ?>
+                    <tr class="lesson-row dash-lesson-row" data-id="<?= $lesson['id'] ?>">
+                        <td class="lesson-title-cell"><?= htmlspecialchars($lesson['title']) ?></td>
+                        <td class="lesson-subject"><?= htmlspecialchars($lesson['subject']) ?></td>
+                        <td><?= $lesson['students'] ?> คน</td>
+                        <td>
+                            <div class="progress-wrap">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="--pct:<?= $lesson['progress'] ?>%"></div>
+                                </div>
+                                <span class="progress-num"><?= $lesson['progress'] ?>%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge badge-<?= $lesson['status'] ?>">
+                                <?= $lesson['status'] === 'active' ? 'เผยแพร่' : 'ฉบับร่าง' ?>
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="btn-icon btn-dash-view-lesson" title="ดูรายละเอียด" data-id="<?= $lesson['id'] ?>">👁</button>
+                                <button class="btn-icon btn-dash-edit-lesson" title="แก้ไข" data-id="<?= $lesson['id'] ?>">✏️</button>
+                                <button class="btn-icon btn-del" title="ลบ">🗑</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <div id="dashLessonNoResult" style="display:none;text-align:center;padding:28px;color:var(--text-muted);font-size:13px">
+                ไม่พบบทเรียนที่ตรงกับการค้นหา
             </div>
+        </div>
+    </div>
+
+    </div><!-- /view-dashboard -->
+
+    <!-- ══ VIEW: LESSONS ══ -->
+    <div id="view-lessons" class="page-view" style="display:none">
+
+    <!-- Topbar -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <h1 class="page-title" id="lessonsPageTitle">บทเรียน</h1>
+            <span class="page-sub" id="lessonsPageSub">จัดการบทเรียนทั้งหมดของคุณ</span>
+        </div>
+        <div class="topbar-right">
+            <div class="notif-btn">🔔</div>
+        </div>
+    </header>
+
+    <!-- Lessons List -->
+    <div id="lessonsSection">
+        <div class="card lessons-card">
+            <div class="card-header" style="flex-wrap:wrap;gap:10px">
+                <h2 class="card-title">บทเรียนของฉัน</h2>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <input class="search-input" type="text" id="lessonSearch" placeholder="🔍 ค้นหาบทเรียน...">
+                    <select class="search-input" id="lessonFilterStatus" style="width:140px">
+                        <option value="">สถานะทั้งหมด</option>
+                        <option value="active">เผยแพร่แล้ว</option>
+                        <option value="draft">ฉบับร่าง</option>
+                    </select>
+                    <button class="btn-add-lesson" id="openModalBtn">
+                        <span class="plus">+</span> เพิ่มบทเรียน
+                    </button>
+                </div>
+            </div>
+
             <div class="table-wrap">
-                <table class="lessons-table">
+                <table class="lessons-table" id="lessonsTable">
                     <thead>
                         <tr>
                             <th>ชื่อบทเรียน</th>
-                            <th>วิชา</th>
+                            <th>วิชา / ระดับชั้น</th>
                             <th>นักเรียน</th>
                             <th>ความคืบหน้า</th>
                             <th>สถานะ</th>
                             <th></th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="lessonsTableBody">
                         <?php foreach ($lessons as $lesson): ?>
-                        <tr class="lesson-row">
-                            <td class="lesson-title-cell"><?= htmlspecialchars($lesson['title']) ?></td>
+                        <tr class="lesson-row" data-id="<?= $lesson['id'] ?>" data-status="<?= $lesson['status'] ?>">
+                            <td>
+                                <div class="lesson-title-cell"><?= htmlspecialchars($lesson['title']) ?></div>
+                            </td>
                             <td class="lesson-subject"><?= htmlspecialchars($lesson['subject']) ?></td>
                             <td><?= $lesson['students'] ?> คน</td>
                             <td>
@@ -195,10 +309,78 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
                             </td>
                             <td>
                                 <div class="action-btns">
-                                    <button class="btn-icon" title="แก้ไข">✏️</button>
-                                    <button class="btn-icon btn-del" title="ลบ">🗑️</button>
+                                    <button class="btn-icon btn-view-lesson" title="ดูรายละเอียด" data-id="<?= $lesson['id'] ?>">👁</button>
+                                    <button class="btn-icon btn-edit-lesson" title="แก้ไข" data-id="<?= $lesson['id'] ?>">✏️</button>
+                                    <button class="btn-icon btn-del" title="ลบ">🗑</button>
                                 </div>
                             </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <div id="lessonNoResult" style="display:none;text-align:center;padding:32px;color:var(--text-muted);font-size:13px">
+                    ไม่พบบทเรียนที่ตรงกับการค้นหา
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lesson Detail View (hidden by default) -->
+    <div id="lessonDetailSection" style="display:none;flex-direction:column;gap:20px">
+
+        <!-- Back + Detail Header -->
+        <div style="display:flex;align-items:center;gap:12px">
+            <button class="btn-add-lesson" id="backToLessonsBtn" style="background:var(--bg2);border:1px solid var(--border);color:var(--text-dim)">
+                ← กลับ
+            </button>
+            <span style="font-size:13px;color:var(--text-muted)">บทเรียนของฉัน</span>
+        </div>
+
+        <div class="card" id="lessonDetailHeader"></div>
+
+        <!-- Tabs -->
+        <div class="lesson-tabs" style="display:flex;gap:0;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--bg2)">
+            <button class="lesson-tab-btn active" data-tab="overview" style="flex:1;padding:11px;background:none;border:none;border-right:1px solid var(--border);color:var(--text-dim);font-family:'Kanit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s">
+                📋 ภาพรวม
+            </button>
+            <button class="lesson-tab-btn" data-tab="students" style="flex:1;padding:11px;background:none;border:none;border-right:1px solid var(--border);color:var(--text-dim);font-family:'Kanit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s">
+                👥 นักเรียน
+            </button>
+            <button class="lesson-tab-btn" data-tab="quiz" style="flex:1;padding:11px;background:none;border:none;color:var(--text-dim);font-family:'Kanit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s">
+                🧪 แบบทดสอบ
+            </button>
+        </div>
+
+        <!-- Tab: Overview -->
+        <div class="lesson-tab-content card" id="lessonTab-overview">
+            <div id="lessonOverviewBody"></div>
+        </div>
+
+        <!-- Tab: Students -->
+        <div class="lesson-tab-content card" id="lessonTab-students" style="display:none">
+            <div class="card-header">
+                <h3 class="card-title" style="font-size:14px">นักเรียนในบทเรียนนี้</h3>
+                <input class="search-input" type="text" id="detailStudentSearch" placeholder="🔍 ค้นหานักเรียน...">
+            </div>
+            <div class="table-wrap">
+                <table class="lessons-table" id="detailStudentTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ชื่อ-นามสกุล</th>
+                            <th>ชั้น</th>
+                            <th>คะแนน</th>
+                            <th>ระดับ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($students as $i => $s): ?>
+                        <tr class="lesson-row detail-student-row">
+                            <td class="mono"><?= str_pad($i+1, 2, '0', STR_PAD_LEFT) ?></td>
+                            <td><?= htmlspecialchars($s['name']) ?></td>
+                            <td><?= htmlspecialchars($s['class']) ?></td>
+                            <td class="mono score-cell"><?= $s['score'] ?></td>
+                            <td><span class="badge badge-<?= $s['status'] ?>"><?= $score_labels[$s['status']] ?></span></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -206,63 +388,105 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
             </div>
         </div>
 
-        <!-- Activity Feed -->
-        <div class="card activity-card">
+        <!-- Tab: Quiz -->
+        <div class="lesson-tab-content card" id="lessonTab-quiz" style="display:none">
             <div class="card-header">
-                <h2 class="card-title">กิจกรรมล่าสุด</h2>
+                <h3 class="card-title" style="font-size:14px">แบบทดสอบ</h3>
+                <button class="btn-add-lesson" id="openQuizModalBtn" style="font-size:12px;padding:8px 14px">
+                    <span class="plus">+</span> เพิ่มคำถาม
+                </button>
             </div>
-            <ul class="activity-list">
-                <?php foreach ($activities as $a): ?>
-                <li class="activity-item">
-                    <div class="activity-icon"><?= $a['icon'] ?></div>
-                    <div class="activity-content">
-                        <div class="activity-text"><?= htmlspecialchars($a['text']) ?></div>
-                        <div class="activity-time"><?= htmlspecialchars($a['time']) ?></div>
-                    </div>
-                </li>
-                <?php endforeach; ?>
-            </ul>
+            <div id="quizList" style="display:flex;flex-direction:column;gap:10px">
+                <div id="quizEmpty" style="text-align:center;padding:36px;color:var(--text-muted);font-size:13px">
+                    ยังไม่มีแบบทดสอบ — กด "เพิ่มคำถาม" เพื่อเริ่มต้น
+                </div>
+            </div>
         </div>
-    </section>
 
-    <!-- Students -->
-    <section class="card students-card">
-        <div class="card-header">
-            <h2 class="card-title">นักเรียนในความดูแล</h2>
-            <input class="search-input" type="text" id="studentSearch" placeholder="🔍 ค้นหานักเรียน...">
+    </div>
+
+    <!-- Edit Lesson Modal -->
+    <div class="modal-overlay" id="editLessonOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="editLessonTitle">✏️ แก้ไขบทเรียน</h3>
+                <button class="modal-close" id="closeEditLessonBtn">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editLessonId">
+                <div class="form-group">
+                    <label>ชื่อบทเรียน</label>
+                    <input type="text" class="form-input" id="editLessonName" placeholder="เช่น สมการกำลังสอง">
+                </div>
+                <div class="form-group">
+                    <label>วิชา / ระดับชั้น</label>
+                    <input type="text" class="form-input" id="editLessonSubject" placeholder="เช่น คณิตศาสตร์ ม.4">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>ความคืบหน้า (%)</label>
+                        <input type="number" class="form-input" id="editLessonProgress" min="0" max="100" placeholder="0–100">
+                    </div>
+                    <div class="form-group">
+                        <label>สถานะ</label>
+                        <select class="form-input" id="editLessonStatus">
+                            <option value="draft">ฉบับร่าง</option>
+                            <option value="active">เผยแพร่</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="closeEditLessonBtn2">ยกเลิก</button>
+                <button class="btn-save" id="saveEditLessonBtn">💾 บันทึกการแก้ไข</button>
+            </div>
         </div>
-        <div class="table-wrap">
-            <table class="lessons-table" id="studentTable">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>ชื่อ-นามสกุล</th>
-                        <th>ชั้น</th>
-                        <th>คะแนน</th>
-                        <th>ระดับ</th>
-                        <th>การดำเนินการ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($students as $i => $s): ?>
-                    <tr class="lesson-row">
-                        <td class="mono"><?= str_pad($i+1, 2, '0', STR_PAD_LEFT) ?></td>
-                        <td><?= htmlspecialchars($s['name']) ?></td>
-                        <td><?= htmlspecialchars($s['class']) ?></td>
-                        <td class="mono score-cell"><?= $s['score'] ?></td>
-                        <td><span class="badge badge-<?= $s['status'] ?>"><?= $score_labels[$s['status']] ?></span></td>
-                        <td>
-                            <div class="action-btns">
-                                <button class="btn-icon" title="ดูรายละเอียด">👁️</button>
-                                <button class="btn-icon" title="ส่งข้อความ">💬</button>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+    </div>
+
+    <!-- Add Quiz Modal -->
+    <div class="modal-overlay" id="quizModalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">🧪 เพิ่มคำถามแบบทดสอบ</h3>
+                <button class="modal-close" id="closeQuizModalBtn">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>คำถาม</label>
+                    <textarea class="form-input" id="quizQuestion" rows="3" placeholder="พิมพ์คำถาม..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>ประเภทคำถาม</label>
+                        <select class="form-input" id="quizType">
+                            <option value="choice">ตัวเลือก (MCQ)</option>
+                            <option value="truefalse">ถูก / ผิด</option>
+                            <option value="short">เติมคำสั้น</option>
+                            <option value="essay">อัตนัย</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>คะแนน</label>
+                        <input type="number" class="form-input" id="quizScore" value="1" min="1" max="100">
+                    </div>
+                </div>
+                <div class="form-group" id="quizChoicesGroup">
+                    <label>ตัวเลือก (คั่นด้วย Enter)</label>
+                    <textarea class="form-input" id="quizChoices" rows="4" placeholder="ตัวเลือก ก&#10;ตัวเลือก ข&#10;ตัวเลือก ค&#10;ตัวเลือก ง"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>เฉลย (ถ้ามี)</label>
+                    <input type="text" class="form-input" id="quizAnswer" placeholder="คำตอบที่ถูกต้อง">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="closeQuizModalBtn2">ยกเลิก</button>
+                <button class="btn-save" id="saveQuizBtn">➕ เพิ่มคำถาม</button>
+            </div>
         </div>
-    </section>
+    </div>
+
+    </div><!-- /view-lessons -->
 
 </main><!-- /main -->
 
