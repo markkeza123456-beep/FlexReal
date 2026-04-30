@@ -522,4 +522,11 @@ document.addEventListener('DOMContentLoaded', () => {
         closeQuizModal();
     });
 
+    // ── Save Profile (settings) ────────────────────────
+    document.getElementById('saveProfileBtn')?.addEventListener('click', () => {
+        const btn = document.getElementById('saveProfileBtn');
+        btn.textContent = '✅ บันทึกแล้ว!';
+        setTimeout(() => { btn.textContent = '💾 บันทึกข้อมูล'; }, 1500);
+    });
+
 });

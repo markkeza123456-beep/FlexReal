@@ -36,6 +36,27 @@ $students = [
     ['name'=>'นายธนพล รุ่งเรือง',      'class'=>'ม.6/1','score'=>88,'status'=>'good'],
 ];
 
+$sub_lessons = [
+    1 => [
+        ['id'=>'1-1','title'=>'จำนวนจริงและพีชคณิต',     'duration'=>'45 นาที','status'=>'active'],
+        ['id'=>'1-2','title'=>'นิพจน์และสมการ',           'duration'=>'60 นาที','status'=>'active'],
+        ['id'=>'1-3','title'=>'อสมการและค่าสัมบูรณ์',     'duration'=>'50 นาที','status'=>'draft'],
+    ],
+    2 => [
+        ['id'=>'2-1','title'=>'สมการเชิงเส้นตัวแปรเดียว', 'duration'=>'40 นาที','status'=>'active'],
+        ['id'=>'2-2','title'=>'ระบบสมการเชิงเส้น',         'duration'=>'55 นาที','status'=>'active'],
+    ],
+    3 => [
+        ['id'=>'3-1','title'=>'อัตราส่วนตรีโกณมิติ',       'duration'=>'50 นาที','status'=>'active'],
+        ['id'=>'3-2','title'=>'กฎของไซน์และโคไซน์',       'duration'=>'60 นาที','status'=>'draft'],
+        ['id'=>'3-3','title'=>'ฟังก์ชันตรีโกณมิติ',        'duration'=>'65 นาที','status'=>'draft'],
+    ],
+    4 => [
+        ['id'=>'4-1','title'=>'ลิมิตและความต่อเนื่อง',    'duration'=>'60 นาที','status'=>'draft'],
+        ['id'=>'4-2','title'=>'อนุพันธ์เบื้องต้น',         'duration'=>'70 นาที','status'=>'draft'],
+    ],
+];
+
 $activities = [
     ['icon'=>'📘','text'=>'เพิ่มบทเรียน "ตรีโกณมิติ" สำเร็จ',   'time'=>'10 นาทีที่แล้ว'],
     ['icon'=>'✅','text'=>'ตรวจงาน 15 ชิ้นเสร็จแล้ว',             'time'=>'1 ชั่วโมงที่แล้ว'],
@@ -88,22 +109,19 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
         <a href="#" class="nav-item" data-section="reports">
             <span class="nav-icon">📊</span><span>รายงาน</span>
         </a>
-        <a href="#" class="nav-item" data-section="settings">
-            <span class="nav-icon">⚙️</span><span>ตั้งค่า</span>
-        </a>
     </nav>
 
     <a href="logout.php" class="sidebar-logout">
         <span>🚪</span><span>ออกจากระบบ</span>
     </a>
 
-    <div class="sidebar-profile">
+    <a href="#" class="sidebar-profile nav-item" data-view="settings" style="text-decoration:none">
         <div class="profile-avatar"><?= $teacher['avatar'] ?></div>
         <div class="profile-info">
             <div class="profile-name"><?= htmlspecialchars($teacher['name']) ?></div>
             <div class="profile-role">อาจารย์ · <?= htmlspecialchars($teacher['subject']) ?></div>
         </div>
-    </div>
+    </a>
 </aside>
 
 <!-- Main Content -->
@@ -287,10 +305,20 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
                         </tr>
                     </thead>
                     <tbody id="lessonsTableBody">
-                        <?php foreach ($lessons as $lesson): ?>
-                        <tr class="lesson-row" data-id="<?= $lesson['id'] ?>" data-status="<?= $lesson['status'] ?>">
-                            <td>
-                                <div class="lesson-title-cell"><?= htmlspecialchars($lesson['title']) ?></div>
+                        <?php foreach ($lessons as $lesson):
+                            $subs = $sub_lessons[$lesson['id']] ?? [];
+                        ?>
+                        <tr class="lesson-row lesson-main-row" data-id="<?= $lesson['id'] ?>" data-status="<?= $lesson['status'] ?>" data-expanded="false">
+                            <td class="lesson-title-cell">
+                                <div style="display:flex;align-items:center;gap:8px">
+                                    <?php if (!empty($subs)): ?>
+                                    <button class="btn-expand-sub" data-id="<?= $lesson['id'] ?>" title="ดูบทย่อย"
+                                        style="background:none;border:none;color:var(--text-muted);font-size:11px;cursor:pointer;padding:2px 4px;transition:transform .2s;line-height:1">▶</button>
+                                    <?php else: ?>
+                                    <span style="display:inline-block;width:20px"></span>
+                                    <?php endif; ?>
+                                    <span><?= htmlspecialchars($lesson['title']) ?></span>
+                                </div>
                             </td>
                             <td class="lesson-subject"><?= htmlspecialchars($lesson['subject']) ?></td>
                             <td><?= $lesson['students'] ?> คน</td>
@@ -315,6 +343,26 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
                                 </div>
                             </td>
                         </tr>
+                        <?php foreach ($subs as $sub): ?>
+                        <tr class="sub-lesson-row" data-parent="<?= $lesson['id'] ?>" style="display:none">
+                            <td style="padding-left:48px">
+                                <div style="display:flex;align-items:center;gap:6px">
+                                    <span style="color:var(--text-muted);font-size:11px">└</span>
+                                    <span style="font-size:13px;color:var(--text-dim)"><?= htmlspecialchars($sub['title']) ?></span>
+                                </div>
+                            </td>
+                            <td style="font-size:12px;color:var(--text-muted)">⏱ <?= $sub['duration'] ?></td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td><span class="badge badge-<?= $sub['status'] ?>"><?= $sub['status'] === 'active' ? 'เผยแพร่' : 'ฉบับร่าง' ?></span></td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="btn-icon" title="แก้ไขบทย่อย" style="font-size:12px">✏️</button>
+                                    <button class="btn-icon btn-del" title="ลบบทย่อย" style="font-size:12px">🗑</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
@@ -488,6 +536,117 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
 
     </div><!-- /view-lessons -->
 
+    <!-- ══ VIEW: SETTINGS ══ -->
+    <div id="view-settings" class="page-view" style="display:none">
+
+    <header class="topbar">
+        <div class="topbar-left">
+            <h1 class="page-title">ตั้งค่า</h1>
+            <span class="page-sub">จัดการโปรไฟล์และการตั้งค่าของคุณ</span>
+        </div>
+        <div class="topbar-right">
+            <div class="notif-btn">🔔</div>
+        </div>
+    </header>
+
+    <div style="display:flex;flex-direction:column;gap:20px;max-width:600px;margin:0 auto;width:100%">
+
+    <!-- Profile Card -->
+    <div class="card" style="margin:0">
+        <div class="card-header">
+            <h2 class="card-title">👤 โปรไฟล์</h2>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;padding:8px 0 24px">
+            <!-- Avatar picker -->
+            <div style="position:relative;flex-shrink:0;cursor:pointer" onclick="document.getElementById('avatarInput').click()" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
+                <div id="avatarDisplay" class="profile-avatar" style="width:72px;height:72px;font-size:28px;overflow:hidden;padding:0">
+                    <img id="avatarImg" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%">
+                    <span id="avatarInitial"><?= $teacher['avatar'] ?></span>
+                </div>
+                <div style="position:absolute;bottom:0;right:0;width:22px;height:22px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid var(--bg2)">✏️</div>
+                <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="previewAvatar(this)">
+            </div>
+            <div>
+                <div style="font-size:18px;font-weight:600;color:var(--text)"><?= htmlspecialchars($teacher['name']) ?></div>
+                <div style="font-size:13px;color:var(--text-dim);margin-top:2px">อาจารย์ · <?= htmlspecialchars($teacher['subject']) ?></div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:4px">คลิกที่รูปเพื่อเปลี่ยน</div>
+            </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="form-group" style="margin:0">
+                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">ชื่อ-นามสกุล</label>
+                <input type="text" class="form-input" value="<?= htmlspecialchars($teacher['name']) ?>">
+            </div>
+            <div class="form-group" style="margin:0">
+                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">วิชาที่สอน</label>
+                <input type="text" class="form-input" value="<?= htmlspecialchars($teacher['subject']) ?>" readonly style="opacity:.5;cursor:not-allowed">
+            </div>
+            <!-- Password Change Section -->
+            <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
+                <div style="font-size:12px;color:var(--text-muted);font-weight:600;margin-bottom:14px;letter-spacing:.04em">🔐 เปลี่ยนรหัสผ่าน</div>
+                <div style="display:flex;flex-direction:column;gap:12px">
+                    <div class="form-group" style="margin:0">
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">รหัสผ่านปัจจุบัน</label>
+                        <div style="position:relative">
+                            <input type="password" class="form-input" id="pwdCurrent" placeholder="ใส่รหัสผ่านปัจจุบัน" style="padding-right:42px">
+                            <button type="button" onclick="togglePwd('pwdCurrent',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-muted);line-height:1">👁</button>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin:0">
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">รหัสผ่านใหม่</label>
+                        <div style="position:relative">
+                            <input type="password" class="form-input" id="pwdNew" placeholder="อย่างน้อย 8 ตัว, มีตัวเลขและตัวพิมพ์ใหญ่" style="padding-right:42px" oninput="checkPwdStrength(this.value)">
+                            <button type="button" onclick="togglePwd('pwdNew',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-muted);line-height:1">👁</button>
+                        </div>
+                        <!-- Strength bar -->
+                        <div id="pwdStrengthWrap" style="display:none;margin-top:8px">
+                            <div style="height:4px;border-radius:2px;background:var(--bg3);overflow:hidden">
+                                <div id="pwdStrengthBar" style="height:100%;width:0%;transition:width .3s,background .3s;border-radius:2px"></div>
+                            </div>
+                            <div id="pwdStrengthLabel" style="font-size:11px;color:var(--text-muted);margin-top:4px"></div>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin:0">
+                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">ยืนยันรหัสผ่านใหม่</label>
+                        <div style="position:relative">
+                            <input type="password" class="form-input" id="pwdConfirm" placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง" style="padding-right:42px" oninput="checkPwdMatch()">
+                            <button type="button" onclick="togglePwd('pwdConfirm',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-muted);line-height:1">👁</button>
+                        </div>
+                        <div id="pwdMatchMsg" style="font-size:11px;margin-top:4px"></div>
+                    </div>
+                </div>
+            </div>
+            <div style="padding-top:4px">
+                <button class="btn-add-lesson" id="saveProfileBtn">💾 บันทึกข้อมูล</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Card -->
+    <div class="card" style="margin:0">
+        <div class="card-header">
+            <h2 class="card-title">🔔 การแจ้งเตือน</h2>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;padding-top:4px">
+            <?php
+            $notifs = [
+                ['id'=>'notif1','label'=>'นักเรียนส่งงาน',        'checked'=>true],
+                ['id'=>'notif2','label'=>'นักเรียนใหม่เข้าร่วม',   'checked'=>true],
+                ['id'=>'notif3','label'=>'ผลการเรียนต่ำกว่าเกณฑ์', 'checked'=>false],
+            ];
+            foreach ($notifs as $n): ?>
+            <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-size:14px;color:var(--text-dim)">
+                <input type="checkbox" <?= $n['checked'] ? 'checked' : '' ?> style="accent-color:var(--orange);width:16px;height:16px">
+                <?= $n['label'] ?>
+            </label>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
+    </div><!-- /settings-inner -->
+
+    </div><!-- /view-settings -->
+
 </main><!-- /main -->
 
 <!-- Add Lesson Modal -->
@@ -532,5 +691,84 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
 </div>
 
 <script src="teacherdash.js"></script>
+<script>
+// ── Avatar preview ─────────────────────────────────
+function previewAvatar(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        const img     = document.getElementById('avatarImg');
+        const initial = document.getElementById('avatarInitial');
+        img.src          = e.target.result;
+        img.style.display    = 'block';
+        initial.style.display = 'none';
+        // Update sidebar avatar too
+        const sideAvatar = document.querySelector('.sidebar-profile .profile-avatar');
+        if (sideAvatar) {
+            sideAvatar.style.background    = 'none';
+            sideAvatar.style.padding       = '0';
+            sideAvatar.style.overflow      = 'hidden';
+            sideAvatar.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+// ── Toggle password visibility ─────────────────────
+function togglePwd(id, btn) {
+    const inp = document.getElementById(id);
+    if (!inp) return;
+    const show = inp.type === 'password';
+    inp.type   = show ? 'text' : 'password';
+    btn.textContent = show ? '🙈' : '👁';
+}
+
+// ── Password strength checker ──────────────────────
+function checkPwdStrength(val) {
+    const wrap  = document.getElementById('pwdStrengthWrap');
+    const bar   = document.getElementById('pwdStrengthBar');
+    const label = document.getElementById('pwdStrengthLabel');
+    if (!val) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+
+    let score = 0;
+    if (val.length >= 8)                        score++;
+    if (val.length >= 12)                       score++;
+    if (/[A-Z]/.test(val))                      score++;
+    if (/[0-9]/.test(val))                      score++;
+    if (/[^A-Za-z0-9]/.test(val))              score++;
+
+    const levels = [
+        { pct:'20%', color:'#ef4444', text:'อ่อนมาก' },
+        { pct:'40%', color:'#f97316', text:'อ่อน' },
+        { pct:'60%', color:'#eab308', text:'ปานกลาง' },
+        { pct:'80%', color:'#3b82f6', text:'ดี' },
+        { pct:'100%',color:'#10b981', text:'แข็งแกร่งมาก' },
+    ];
+    const lv = levels[Math.min(score - 1, 4)] || levels[0];
+    bar.style.width      = lv.pct;
+    bar.style.background = lv.color;
+    label.style.color    = lv.color;
+    label.textContent    = `ความแข็งแกร่ง: ${lv.text}`;
+    checkPwdMatch();
+}
+
+// ── Password match checker ─────────────────────────
+function checkPwdMatch() {
+    const newPwd  = document.getElementById('pwdNew')?.value;
+    const confirm = document.getElementById('pwdConfirm')?.value;
+    const msg     = document.getElementById('pwdMatchMsg');
+    if (!msg || !confirm) return;
+    if (newPwd === confirm) {
+        msg.style.color   = '#10b981';
+        msg.textContent   = '✓ รหัสผ่านตรงกัน';
+    } else {
+        msg.style.color   = '#ef4444';
+        msg.textContent   = '✗ รหัสผ่านไม่ตรงกัน';
+    }
+}
+</script>
 </body>
 </html>
