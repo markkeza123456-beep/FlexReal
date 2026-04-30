@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
@@ -17,13 +17,9 @@
         
         <div class="dropdown">
             <button class="dropbtn">หมวดหมู่ ▾</button>
-            <div class="dropdown-content">
-                <a href="#" onclick="showCourse('ภาษาไทย')">ภาษาไทย</a>
-                <a href="#" onclick="showCourse('คณิตศาสตร์')">คณิตศาสตร์</a>
-                <a href="#" onclick="showCourse('วิทยาศาสตร์')">วิทยาศาสตร์</a>
-                <a href="#" onclick="showCourse('สังคมศึกษา')">สังคมศึกษา</a>
-                <a href="#" onclick="showCourse('ภาษาอังกฤษ')">ภาษาอังกฤษ</a>
-            </div> 
+            <div class="dropdown-content" id="course-dropdown">
+                <a href="#" onclick="return false;">กำลังโหลดรายวิชา...</a>
+            </div>
         </div>
 
         <div class="dropdown">
@@ -120,7 +116,40 @@
 
     <div id="curriculum" class="tab-content">
     <div class="info-card">
-        <div id="course-curriculum-lesson-list" class="lesson-text-list"></div>
+        <p id="curriculum-locked-msg" style="color:var(--text-gray);">กรุณาลงทะเบียนรายวิชาก่อน เพื่อปลดล็อกสื่อการสอนและแบบทดสอบ</p>
+        <div id="course-curriculum-lesson-list" class="lesson-text-list" style="display:none;"></div>
+        <div id="course-curriculum-actions" class="curriculum-list" style="display:none;">
+            <div class="curriculum-item">
+                <div class="curr-left">
+                    <span class="curr-icon">📄</span>
+                    <div class="curr-text">
+                        <b>เอกสารประกอบการเรียน</b>
+                        <p>ดาวน์โหลดสรุปเนื้อหาประจำวิชา</p>
+                    </div>
+                </div>
+                <button class="btn-orange" onclick="downloadCourseLesson()">ดาวน์โหลดเอกสาร</button>
+            </div>
+            <div class="curriculum-item">
+                <div class="curr-left">
+                    <span class="curr-icon">🎬</span>
+                    <div class="curr-text">
+                        <b>วิดีโอสรุปบทเรียน</b>
+                        <p>รับชมวิดีโอประกอบการเรียน</p>
+                    </div>
+                </div>
+                <button class="btn-orange" onclick="openCourseVideo()">ชมวิดีโอ</button>
+            </div>
+            <div class="curriculum-item">
+                <div class="curr-left">
+                    <span class="curr-icon">📝</span>
+                    <div class="curr-text">
+                        <b>แบบทดสอบวัดความรู้</b>
+                        <p>ทำแบบทดสอบเพื่อรับใบประกาศ</p>
+                    </div>
+                </div>
+                <button class="btn-outline-orange" onclick="startQuiz()">เริ่มทำ Quiz</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -142,7 +171,7 @@
             <div class="course-sidebar">
                 <div class="sidebar-card">
                     <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--deep-blue);">Free</h2>
-                    <button class="btn-enroll" id="enroll-course-btn" onclick="enrollCourseAndOpenLearning()">ลงรายวิชา</button>
+                    <button class="btn-enroll" id="enroll-course-btn" onclick="enrollCourseAndOpenLearning()">ลงทะเบียน</button>
                     
                     <div class="meta-list">
                         <div class="meta-item"><span>🕒 Duration</span> <b id="detail-duration">5 ชั่วโมง</b></div>

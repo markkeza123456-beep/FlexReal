@@ -37,6 +37,18 @@ function findSubjectIdByCourseName(PDO $conn, string $courseName): ?string
     return $id === false ? null : (string) $id;
 }
 
+function ensureEnrollmentLogTable(PDO $conn): void
+{
+    $conn->exec(
+        'CREATE TABLE IF NOT EXISTS public.student_subject_enrollment_logs (
+            log_id BIGSERIAL PRIMARY KEY,
+            student_id VARCHAR(50) NOT NULL,
+            subjects_id VARCHAR(50) NOT NULL,
+            enrolled_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )'
+    );
+}
+
 $subjectIdInput = trim((string) ($_POST['subject_id'] ?? $_GET['subject_id'] ?? ''));
 $courseName = trim((string) ($_POST['course_name'] ?? $_GET['course_name'] ?? ''));
 if ($subjectIdInput === '' && $courseName === '') {
@@ -55,6 +67,8 @@ if ($studentId === null) {
 }
 
 try {
+    ensureEnrollmentLogTable($conn);
+
     $subjectId = $subjectIdInput;
     if ($subjectId === '') {
         $subjectId = findSubjectIdByCourseName($conn, $courseName);
@@ -76,6 +90,16 @@ try {
             ':student_id' => $studentId,
             ':subjects_id' => $subjectId,
         ]);
+        if ($stmt->rowCount() > 0) {
+            $stmtLog = $conn->prepare(
+                'INSERT INTO public.student_subject_enrollment_logs (student_id, subjects_id, enrolled_at)
+                 VALUES (:student_id, :subjects_id, NOW())'
+            );
+            $stmtLog->execute([
+                ':student_id' => $studentId,
+                ':subjects_id' => $subjectId,
+            ]);
+        }
 
         jsonResponse([
             'status' => 'success',

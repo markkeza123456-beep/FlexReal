@@ -153,6 +153,7 @@ const quizBank = {
 
 const params = new URLSearchParams(window.location.search);
 const courseName = params.get('course') || 'ภาษาไทย';
+const subjectId = params.get('subject_id') || '';
 const quiz = quizBank[courseName] || quizBank['ภาษาไทย'];
 const answers = new Array(quiz.questions.length).fill(null);
 
@@ -171,7 +172,9 @@ const backToCourse = document.getElementById('backToCourse');
 
 quizTitle.innerText = `แบบทดสอบวิชา${courseName}`;
 quizSubtitle.innerText = quiz.subtitle;
-backToCourse.href = `web.html?course=${encodeURIComponent(courseName)}`;
+backToCourse.href = subjectId
+    ? `web.html?subject_id=${encodeURIComponent(subjectId)}&course=${encodeURIComponent(courseName)}`
+    : `web.html?course=${encodeURIComponent(courseName)}`;
 
 function renderQuestion() {
     const item = quiz.questions[currentQuestion];

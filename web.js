@@ -3,6 +3,7 @@ let currentSubjectId = '';
 let currentCourseName = '';
 let enrolledCourses = {};
 let courseIdByName = {};
+let currentLessonsHtml = '';
 
 function pick(obj, ...keys) {
     for (const key of keys) {
@@ -33,9 +34,11 @@ async function loadAllCourses() {
         
         if (result.status === 'success') {
             const grid = document.getElementById('course-grid');
+            const dropdown = document.getElementById('course-dropdown');
             if(!grid) return; // ป้องกัน error ถ้าไม่มี element นี้
             
             grid.innerHTML = ''; 
+            if (dropdown) dropdown.innerHTML = '';
             
             result.data.forEach(course => {
                 const subjectId = String(pick(course, 'Subjects_ID', 'subjects_id'));
@@ -57,7 +60,22 @@ async function loadAllCourses() {
                     </div>
                 `;
                 grid.innerHTML += cardHtml;
+
+                if (dropdown && subjectId) {
+                    const a = document.createElement('a');
+                    a.href = '#';
+                    a.textContent = subjectName || subjectId;
+                    a.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        showCourse(subjectId);
+                    });
+                    dropdown.appendChild(a);
+                }
             });
+
+            if (dropdown && dropdown.children.length === 0) {
+                dropdown.innerHTML = '<a href="#" onclick="return false;">ยังไม่มีรายวิชา</a>';
+            }
         }
     } catch (error) {
         console.error("Error loading courses:", error);
@@ -90,13 +108,16 @@ async function showCourse(subjectId) {
             // วาดรายการบทเรียนในแท็บ "เนื้อหาในคอร์ส"
             const lessonContainer = document.getElementById('course-curriculum-lesson-list');
             if (lessons.length > 0) {
-                lessonContainer.innerHTML = lessons.map((lesson, index) => `<p>${index + 1}. ${pick(lesson, 'Lessons_Name', 'lessons_name') || '-'}</p>`).join('');
+                currentLessonsHtml = lessons.map((lesson, index) => `<p>${index + 1}. ${pick(lesson, 'Lessons_Name', 'lessons_name') || '-'}</p>`).join('');
+                lessonContainer.innerHTML = currentLessonsHtml;
             } else {
-                lessonContainer.innerHTML = '<p style="color: gray;">ยังไม่มีการเพิ่มเนื้อหาบทเรียนสำหรับวิชานี้</p>';
+                currentLessonsHtml = '';
+                lessonContainer.innerHTML = '';
             }
 
             // จัดการสถานะปุ่มลงทะเบียน
             updateEnrollButton(false);
+            setCurriculumAccess(false);
             checkCourseEnrollment(subjectId); 
 
             // สลับไปหน้า Detail และเปิดแท็บ Overview
@@ -108,7 +129,7 @@ async function showCourse(subjectId) {
             url.searchParams.set('subject_id', subjectId);
             window.history.replaceState({}, '', url);
         } else {
-            alert('ไม่พบข้อมูลรายวิชา: ' + result.message);
+            console.warn('ไม่พบข้อมูลรายวิชา:', result.message);
         }
     } catch (error) {
         console.error("Error fetching course detail:", error);
@@ -145,13 +166,16 @@ async function checkCourseEnrollment(subjectId) {
         if (result.status === 'success') {
             enrolledCourses[subjectId] = Boolean(result.enrolled);
             updateEnrollButton(Boolean(result.enrolled));
+            setCurriculumAccess(Boolean(result.enrolled));
         } else if (result.status === 'unauthorized') {
             enrolledCourses[subjectId] = false;
             updateEnrollButton(false);
+            setCurriculumAccess(false);
         }
     } catch (error) {
         enrolledCourses[subjectId] = false;
         updateEnrollButton(false);
+        setCurriculumAccess(false);
     }
 }
 
@@ -160,10 +184,10 @@ function updateEnrollButton(isEnrolled) {
     if (!button) return;
     
     if(isEnrolled) {
-        button.innerText = 'เข้าเรียน';
+        button.innerText = 'ลงทะเบียนแล้ว';
         button.classList.add('is-enrolled');
     } else {
-        button.innerText = 'ลงรายวิชา';
+        button.innerText = 'ลงทะเบียน';
         button.classList.remove('is-enrolled');
     }
 }
@@ -172,7 +196,8 @@ async function enrollCourseAndOpenLearning() {
     if (!currentSubjectId) return;
 
     if (enrolledCourses[currentSubjectId]) {
-        goToCourseLearning();
+        openTab({ currentTarget: document.querySelector(".tab-btn[onclick*='curriculum']") }, 'curriculum');
+        setCurriculumAccess(true);
         return;
     }
 
@@ -202,7 +227,8 @@ async function enrollCourseAndOpenLearning() {
 
         enrolledCourses[currentSubjectId] = true;
         updateEnrollButton(true);
-        goToCourseLearning();
+        setCurriculumAccess(true);
+        openTab({ currentTarget: document.querySelector(".tab-btn[onclick*='curriculum']") }, 'curriculum');
     } catch (error) {
         alert('เชื่อมต่อระบบลงรายวิชาไม่ได้ กรุณาลองใหม่อีกครั้ง');
     }
@@ -269,16 +295,31 @@ function startQuiz() {
         alert('กรุณาลงรายวิชาก่อนทำแบบทดสอบ');
         return;
     }
-    const modal = document.getElementById('modal-overlay');
-    const body = document.getElementById('modal-body');
-    body.innerHTML = `
-        <h3 style="margin-bottom:20px; color:#E67E22;">📝 แบบทดสอบหลังเรียน</h3>
-        <div style="text-align:left; background:#f9f9f9; padding:20px; border-radius:10px;">
-            <p>ระบบเตรียมแสดงแบบทดสอบสำหรับรายวิชานี้...</p>
-        </div>
-        <button class="btn-enroll" style="margin-top:20px; width:100%;" onclick="closeModal()">ปิดหน้าต่าง</button>
-    `;
-    modal.style.display = 'flex';
+    const url = new URL('test.html', window.location.href);
+    if (currentCourseName) {
+        url.searchParams.set('course', currentCourseName);
+    }
+    if (currentSubjectId) {
+        url.searchParams.set('subject_id', currentSubjectId);
+    }
+    window.location.href = url.pathname.split('/').pop() + url.search;
+}
+
+function setCurriculumAccess(isEnrolled) {
+    const lockedMsg = document.getElementById('curriculum-locked-msg');
+    const lessonList = document.getElementById('course-curriculum-lesson-list');
+    const actionList = document.getElementById('course-curriculum-actions');
+    if (!lockedMsg || !lessonList || !actionList) return;
+
+    if (isEnrolled) {
+        lockedMsg.style.display = 'none';
+        lessonList.style.display = currentLessonsHtml ? 'grid' : 'none';
+        actionList.style.display = 'flex';
+    } else {
+        lockedMsg.style.display = 'block';
+        lessonList.style.display = 'none';
+        actionList.style.display = 'none';
+    }
 }
 
 function closeModal() {
@@ -351,7 +392,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // เช็คว่ามี Parameter การเข้าถึงวิชาตรงๆ ไหม (เช่น ตอนแชร์ลิงก์ให้เพื่อน)
     const params = new URLSearchParams(window.location.search);
     const subjectId = params.get('subject_id');
+    const courseName = params.get('course');
     if (subjectId) {
-        setTimeout(() => { showCourse(subjectId); }, 300); // ดีเลย์นิดนึงรอให้หน้าเตรียมตัวเสร็จ
+        setTimeout(() => { showCourse(subjectId); }, 300);
+    } else if (courseName) {
+        // รองรับลิงก์ย้อนกลับจาก test.html ที่ส่งชื่อวิชามา
+        setTimeout(() => { showCourse(courseName); }, 400);
     }
 });
