@@ -43,7 +43,17 @@
             </div> 
         </div>
 
-        <a href="login.php" class="btn-orange" style="text-decoration: none; padding: 8px 20px; background: var(--primary-orange); color: white; border: none; border-radius: 5px; cursor: pointer; display: inline-block;">Login</a>
+        <a href="login.php" id="loginBtn" class="btn-orange" style="text-decoration: none; padding: 8px 20px; background: var(--primary-orange); color: white; border: none; border-radius: 5px; cursor: pointer; display: inline-block;">Login</a>
+        <div id="userProfile" class="user-profile-wrap" style="display:none;">
+            <button type="button" id="userProfileBtn" class="user-profile">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <span id="userName">ผู้ใช้งาน</span>
+            </button>
+            <div id="userMenu" class="user-menu">
+                <a href="student_dashboard.php">ข้อมูลส่วนตัว</a>
+                <a href="logout.php?return=web.html">ออกจากระบบ</a>
+            </div>
+        </div>
     </div>
 </nav>
 

@@ -19,7 +19,7 @@ try {
         exit;
     }
 
-    $redirectUrl = 'student_dashboard.php';
+    $redirectUrl = 'web.html';
     $userData = null;
 
     switch ($role) {
