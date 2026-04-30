@@ -147,48 +147,7 @@
 
     <div id="curriculum" class="tab-content">
     <div class="info-card">
-        <div class="curriculum-list">
-
-        <div class="curriculum-item">
-    <div class="curr-left">
-        <span class="curr-icon">📖</span>
-        <div class="curr-text">
-            <b>บทที่ 1: บทเรียน </b>
-            <p>อ่านสรุปเนื้อหาบทเรียนที่ 1 และ 2</p>
-        </div>
-    </div>
-    <button class="btn-orange" onclick="downloadCourseLesson()">ดาวน์โหลดเอกสาร</button>
-</div>
-            <div class="curriculum-item">
-                <div class="curr-left">
-                    <span class="curr-icon">🎬</span>
-                    <div class="curr-text">
-                        <b>บทที่ 2: วิดีโอสรุปบทเรียน</b>
-                        <p>คลิกเพื่อรับชมวิดีโอประกอบการสอน</p>
-                    </div>
-                </div>
-            <button class="btn-orange" onclick="openCourseVideo()">ชมวิดีโอ</button>
-            </div>
-
-            <div class="curriculum-item">
-                <div class="curr-left">
-                    <span class="curr-icon">📝</span>
-                    <div class="curr-text">
-                        <b>แบบทดสอบวัดความรู้</b>
-                        <p>ทำแบบทดสอบเพื่อรับใบประกาศ</p>
-                    </div>
-                </div>
-                <button class="btn-outline-orange" onclick="startQuiz()">เริ่มทำ Quiz</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="modal-overlay" class="modal-overlay">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeModal()">&times;</span>
-        <div id="modal-body">
-            </div>
+        <div id="course-curriculum-lesson-list" class="lesson-text-list"></div>
     </div>
 </div>
 
@@ -210,7 +169,7 @@
             <div class="course-sidebar">
                 <div class="sidebar-card">
                     <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--deep-blue);">Free</h2>
-                    <button class="btn-enroll">ไปยังรายวิชา</button>
+                    <button class="btn-enroll" id="enroll-course-btn" onclick="enrollCourseAndOpenLearning()">ลงรายวิชา</button>
                     
                     <div class="meta-list">
                         <div class="meta-item"><span>🕒 Duration</span> <b id="detail-duration">5 ชั่วโมง</b></div>
@@ -230,6 +189,112 @@
             </div>
 
         </div>
+    </div>
+</div>
+
+<div id="course-learning" class="page">
+    <div class="container">
+        <div class="course-layout-grid">
+            <div class="course-main-content">
+                <h1 id="learning-title" style="font-size: 32px; margin-bottom: 5px;">ชื่อวิชา</h1>
+                <p id="learning-desc-top" style="color:var(--text-gray); margin-bottom: 25px;">เริ่มเรียนรายวิชา</p>
+
+                <div class="tabs">
+                    <button class="tab-btn" onclick="openLearningTab(event, 'learning-overview')">รายละเอียด</button>
+                    <button class="tab-btn active" onclick="openLearningTab(event, 'learning-curriculum')">เนื้อหาในคอร์ส</button>
+                    <button class="tab-btn" onclick="openLearningTab(event, 'learning-instructor')">ผู้สอน</button>
+                </div>
+
+                <div id="learning-overview" class="learning-tab-content">
+                    <div class="info-card" style="margin-top: 25px;">
+                        <h3 class="section-title" style="border-left: 4px solid var(--primary-orange); padding-left: 10px; font-size: 20px; margin-bottom: 20px;">คำอธิบายรายวิชา</h3>
+                        <p id="learning-desc">เริ่มต้นเรียนรู้และพัฒนาทักษะไปกับหลักสูตรคุณภาพจากผู้เชี่ยวชาญ</p>
+                    </div>
+                </div>
+
+                <div id="learning-curriculum" class="learning-tab-content active">
+                    <div class="info-card">
+                        <div id="learning-lesson-text-list" class="lesson-text-list"></div>
+                        <div class="curriculum-list">
+                            <div class="curriculum-item">
+                                <div class="curr-left">
+                                    <span class="curr-icon">📖</span>
+                                    <div class="curr-text">
+                                        <b>บทที่ 1: บทเรียน</b>
+                                        <p>อ่านสรุปเนื้อหาบทเรียนที่ 1 และ 2</p>
+                                    </div>
+                                </div>
+                                <button class="btn-orange" onclick="downloadCourseLesson()">ดาวน์โหลดเอกสาร</button>
+                            </div>
+
+                            <div class="curriculum-item">
+                                <div class="curr-left">
+                                    <span class="curr-icon">🎬</span>
+                                    <div class="curr-text">
+                                        <b>บทที่ 2: วิดีโอสรุปบทเรียน</b>
+                                        <p>คลิกเพื่อรับชมวิดีโอประกอบการสอน</p>
+                                    </div>
+                                </div>
+                                <button class="btn-orange" onclick="openCourseVideo()">ชมวิดีโอ</button>
+                            </div>
+
+                            <div class="curriculum-item">
+                                <div class="curr-left">
+                                    <span class="curr-icon">📝</span>
+                                    <div class="curr-text">
+                                        <b>แบบทดสอบวัดความรู้</b>
+                                        <p>ทำแบบทดสอบเพื่อรับใบประกาศ</p>
+                                    </div>
+                                </div>
+                                <button class="btn-outline-orange" onclick="startQuiz()">เริ่มทำ Quiz</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="learning-instructor" class="learning-tab-content">
+                    <div class="info-card" style="margin-top: 25px;">
+                        <h3 class="section-title" style="border-left: 4px solid var(--primary-orange); padding-left: 10px; font-size: 20px; margin-bottom: 20px;">อาจารย์ผู้สอน</h3>
+                        <div style="display:flex; gap:20px; align-items:center;">
+                            <div style="width:80px; height:80px; background:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px;">👨‍🏫</div>
+                            <div>
+                                <b>อาจารย์ผู้เชี่ยวชาญประจำหลักสูตร</b>
+                                <p style="color:var(--text-gray); font-size:14px;">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="course-sidebar">
+                <div class="sidebar-card">
+                    <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--deep-blue);">Free</h2>
+                    <button class="btn-enroll is-enrolled">ลงรายวิชาแล้ว</button>
+
+                    <div class="meta-list">
+                        <div class="meta-item"><span>🕒 Duration</span> <b id="learning-duration">5 ชั่วโมง</b></div>
+                        <div class="meta-item"><span>📖 Lessons</span> <b>3 บทเรียน</b></div>
+                        <div class="meta-item"><span>📝 Quizzes</span> <b>1 ชุด</b></div>
+                        <div class="meta-item"><span>🌐 Language</span> <b>ภาษาไทย</b></div>
+                        <div class="meta-item"><span>📊 Skill level</span> <b>ระดับต้น</b></div>
+                        <div class="meta-item"><span>🎓 Certificate</span> <b>yes</b></div>
+                    </div>
+
+                    <div style="margin-top: 20px; display: flex; justify-content: center; gap: 20px; color: var(--text-gray);">
+                        <i class="fab fa-facebook" style="cursor:pointer;"></i>
+                        <i class="fab fa-twitter" style="cursor:pointer;"></i>
+                        <i class="fab fa-linkedin" style="cursor:pointer;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-overlay" class="modal-overlay">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <div id="modal-body"></div>
     </div>
 </div>
 

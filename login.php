@@ -78,10 +78,6 @@
           <a href="forgot_password.php" class="link">ลืมรหัสผ่าน?</a>
         </div>
 
-        <div class="options-row">
-          <a href="forgot_password.php" class="link">ลืมรหัสผ่าน?</a>
-        </div>
-
         <button type="submit" class="btn-submit" id="submitBtn">
           <span class="btn-text">เข้าสู่ระบบ</span>
           <span class="btn-arrow" id="btnArrow">→</span>

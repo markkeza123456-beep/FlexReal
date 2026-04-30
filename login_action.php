@@ -107,6 +107,15 @@ try {
         $_SESSION['current_student_id'] = $userData['student_id'] ?? null;
     }
 
+    if ($role === 'student' && !empty($_SESSION['after_login_return'])) {
+        $returnUrl = (string) $_SESSION['after_login_return'];
+        unset($_SESSION['after_login_return']);
+
+        if (preg_match('/^web\.html\?course=/', $returnUrl)) {
+            $redirectUrl = $returnUrl;
+        }
+    }
+
     echo json_encode([
         'status' => 'success',
         'redirect_url' => $redirectUrl,

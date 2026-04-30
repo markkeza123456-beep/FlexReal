@@ -16,6 +16,12 @@ try {
     $stmt = $conn->prepare("SELECT * FROM public.student WHERE student_id = :id");
     $stmt->execute(['id' => $student_id]);
     $student = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$student) {
+        $student = [
+            'student_id' => $student_id,
+            'student_level' => '-',
+        ];
+    }
 
     // 3. ดึงคะแนนสอบ (ตาราง 3.15) [cite: 1178]
     $stmt_test = $conn->prepare("SELECT * FROM public.test WHERE student_id = :id ORDER BY test_id DESC");

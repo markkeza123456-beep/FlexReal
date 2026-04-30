@@ -9,6 +9,7 @@
   const btnArrow = submitBtn.querySelector('.btn-arrow');
   const toast = document.getElementById('toast');
   const roleTabs = document.querySelectorAll('.role-tab');
+  const returnUrl = new URLSearchParams(window.location.search).get('return');
 
   let activeRole = 'student';
 
@@ -36,6 +37,18 @@
     if (loginLabel) loginLabel.textContent = idCardLabel;
     loginInput.placeholder = idCardPlaceholder;
     loginInput.value = '';
+  }
+
+  function getSafeReturnUrl() {
+    if (!returnUrl) return '';
+
+    try {
+      const url = new URL(returnUrl, window.location.href);
+      if (url.origin !== window.location.origin) return '';
+      return url.href;
+    } catch (error) {
+      return '';
+    }
   }
 
   roleTabs.forEach((tab) => {
@@ -78,7 +91,7 @@
       if (result.status === 'success') {
         showToast('เข้าสู่ระบบสำเร็จ', 'success');
         setTimeout(() => {
-          window.location.href = result.redirect_url;
+          window.location.href = getSafeReturnUrl() || result.redirect_url;
         }, 1000);
       } else {
         throw new Error(result.message);
