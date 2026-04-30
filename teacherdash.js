@@ -547,8 +547,8 @@ function saveProfile() {
         showFeedback('error', '✗ รหัสผ่านใหม่ไม่ตรงกัน');
         return;
     }
-    if (newPwd && newPwd.length < 8) {
-        showFeedback('error', '✗ รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
+    if (newPwd && newPwd.length < 6) {
+        showFeedback('error', '✗ รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
         return;
     }
     if (newPwd && !current) {

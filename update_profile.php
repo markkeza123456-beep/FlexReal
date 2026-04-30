@@ -1,73 +1,50 @@
 <?php
 session_start();
+header('Content-Type: application/json; charset=utf-8');
+require_once 'db_connect.php'; // ไฟล์เชื่อมต่อฐานข้อมูล
 
-function json_out(array $data): void {
-    if (ob_get_length() !== false) ob_clean();
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+// เช็คว่าล็อกอินเป็นอาจารย์จริงไหม
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
+    echo json_encode(['success' => false, 'message' => 'กรุณาล็อกอินใหม่']);
     exit;
 }
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
-    json_out(['success' => false, 'message' => 'ไม่มีสิทธิ์เข้าถึง']);
-}
+$user_id = $_SESSION['user_id'];
+$name = $_POST['name'] ?? '';
+$pwd_current = $_POST['pwd_current'] ?? '';
+$pwd_new = $_POST['pwd_new'] ?? '';
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    json_out(['success' => false, 'message' => 'Method ไม่ถูกต้อง']);
-}
-
-$teacherId  = $_SESSION['user_id'];
-$name       = trim($_POST['name']       ?? '');
-$pwdCurrent = trim($_POST['pwd_current'] ?? '');
-$pwdNew     = trim($_POST['pwd_new']     ?? '');
-
-if ($name === '') {
-    json_out(['success' => false, 'message' => 'กรุณาใส่ชื่อ-นามสกุล']);
-}
-
-require_once 'db_connect.php';
-$pdo = $conn;
-
-$stmt = $pdo->prepare('SELECT "Password", "Teachers_Name" FROM "Teachers" WHERE "Teachers_ID" = ?');
-$stmt->execute([$teacherId]);
-$teacher = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$teacher) {
-    json_out(['success' => false, 'message' => 'ไม่พบข้อมูลอาจารย์']);
-}
-
-$changePwd = ($pwdNew !== '');
-
-if ($changePwd) {
-    if (strlen($pwdNew) < 8) {
-        json_out(['success' => false, 'message' => 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร']);
-    }
-    if (!preg_match('/[A-Z]/', $pwdNew)) {
-        json_out(['success' => false, 'message' => 'รหัสผ่านต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว']);
-    }
-    if (!preg_match('/[0-9]/', $pwdNew)) {
-        json_out(['success' => false, 'message' => 'รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว']);
+try {
+    // 1. อัปเดตชื่อ-นามสกุล (ถ้ามีการพิมพ์มา)
+    if (!empty($name)) {
+        $stmt = $conn->prepare("UPDATE public.teachers SET teachers_name = :name WHERE teachers_id = :uid");
+        $stmt->execute(['name' => $name, 'uid' => $user_id]);
+        $_SESSION['name'] = $name; // อัปเดต session เพื่อให้ชื่อมุมขวาบนเปลี่ยนด้วย
     }
 
-    $storedPwd = $teacher['Password'];
-    $isHashed  = strlen($storedPwd) >= 60 && str_starts_with($storedPwd, '$2');
-    $currentOk = $isHashed
-        ? password_verify($pwdCurrent, $storedPwd)
-        : ($pwdCurrent === $storedPwd);
+    // 2. อัปเดตรหัสผ่าน (ถ้ามีการกรอกรหัสใหม่มา)
+    if (!empty($pwd_new)) {
+        // ดึงรหัสผ่านเก่าจากตาราง User มาเช็คก่อนว่าตรงกับที่พิมพ์มาไหม
+        $stmt = $conn->prepare('SELECT password FROM public."User" WHERE user_id = :uid');
+        $stmt->execute(['uid' => $user_id]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$currentOk) {
-        json_out(['success' => false, 'message' => 'รหัสผ่านปัจจุบันไม่ถูกต้อง']);
+        if ($user && $user['password'] === $pwd_current) {
+            // อัปเดตรหัสผ่านใหม่ลงตารางหลัก "User"
+            $stmt_upd1 = $conn->prepare('UPDATE public."User" SET password = :pass WHERE user_id = :uid');
+            $stmt_upd1->execute(['pass' => $pwd_new, 'uid' => $user_id]);
+            
+            // อัปเดตรหัสผ่านใหม่ลงตารางย่อย "teachers" ด้วย
+            $stmt_upd2 = $conn->prepare('UPDATE public.teachers SET password = :pass WHERE teachers_id = :uid');
+            $stmt_upd2->execute(['pass' => $pwd_new, 'uid' => $user_id]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'รหัสผ่านปัจจุบันไม่ถูกต้อง']);
+            exit;
+        }
     }
 
-    $hashedNew = password_hash($pwdNew, PASSWORD_BCRYPT, ['cost' => 12]);
-    $update = $pdo->prepare('UPDATE "Teachers" SET "Teachers_Name" = ?, "Password" = ? WHERE "Teachers_ID" = ?');
-    $update->execute([$name, $hashedNew, $teacherId]);
-
-} else {
-    $update = $pdo->prepare('UPDATE "Teachers" SET "Teachers_Name" = ? WHERE "Teachers_ID" = ?');
-    $update->execute([$name, $teacherId]);
+    echo json_encode(['success' => true, 'message' => 'บันทึกข้อมูลสำเร็จ!']);
+} catch (Exception $e) {
+    echo json_encode(['success' => false, 'message' => 'ระบบฐานข้อมูลผิดพลาด: ' . $e->getMessage()]);
 }
-
-$_SESSION['name'] = $name;
-$msg = $changePwd ? 'บันทึกข้อมูลและเปลี่ยนรหัสผ่านสำเร็จ' : 'บันทึกข้อมูลสำเร็จ';
-json_out(['success' => true, 'message' => $msg]);
+?>

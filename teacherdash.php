@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
     header('Location: login.php');
     exit;
@@ -579,12 +581,7 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
     </div>
 </div>
 <?php
-session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
-    header('Location: login.php');
-    exit;
-}
-
+ 
 // ดึงชื่ออาจารย์จาก session แทน mock data
 $teacher = [
     'name'    => $_SESSION['name'],
@@ -1129,7 +1126,7 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
         </div>
     </header>
 
-    <div style="display:flex;flex-direction:column;gap:20px;max-width:600px;margin:0 auto;width:100%">
+    <div style="display:flex;flex-direction:column;gap:20px;max-width:600px;width:100%">
 
     <!-- Profile Card -->
     <div class="card" style="margin:0">
@@ -1175,7 +1172,7 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
                     <div class="form-group" style="margin:0">
                         <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">รหัสผ่านใหม่</label>
                         <div style="position:relative">
-                            <input type="password" class="form-input" id="pwdNew" placeholder="อย่างน้อย 8 ตัว, มีตัวเลขและตัวพิมพ์ใหญ่" style="padding-right:42px" oninput="checkPwdStrength(this.value)">
+                            <input type="password" class="form-input" id="pwdNew" placeholder="อย่างน้อย 6 ตัวอักษร" style="padding-right:42px" oninput="checkPwdStrength(this.value)">
                             <button type="button" onclick="togglePwd('pwdNew',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-muted);line-height:1">👁</button>
                         </div>
                         <!-- Strength bar -->
