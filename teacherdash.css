@@ -560,3 +560,9 @@ html, body {
     color: var(--orange) !important;
 }/* Page view switcher */
 .page-view { display: flex; flex-direction: column; gap: 24px; }
+
+/* Sub-lesson rows */
+.sub-lesson-row td { background: color-mix(in srgb, var(--bg3) 60%, transparent); border-bottom: 1px solid var(--border); }
+.sub-lesson-row:last-of-type td { border-bottom: 1px solid var(--border); }
+.lesson-main-row[data-expanded="true"] .lesson-title-cell { color: var(--orange); }
+.btn-expand-sub { flex-shrink: 0; }
