@@ -1,0 +1,110 @@
+:root {
+    --bg-dark: #121212;
+    --card-bg: #1e1e1e;
+    --sidebar-bg: #1a1a1a;
+    --accent-orange: #ff7a00;
+    --text-main: #ffffff;
+    --text-muted: #888888;
+    --border-color: #2d2d2d;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Kanit', sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    overflow: hidden;
+}
+
+.dashboard-container { display: flex; height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+    width: 260px;
+    background-color: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.logo-section h2 { color: var(--accent-orange); letter-spacing: 1px; font-size: 1.5rem; }
+.logo-section span { font-size: 0.7rem; color: var(--text-muted); font-weight: 300; }
+
+.menu { margin-top: 2.5rem; flex: 1; }
+.menu-item {
+    padding: 0.8rem 1rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: 0.3s;
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.menu-item.active { color: white; background: rgba(255, 122, 0, 0.15); font-weight: 500; }
+.menu-item:hover:not(.active) { color: white; background: rgba(255, 255, 255, 0.05); }
+
+.user-profile {
+    display: flex; align-items: center; gap: 12px;
+    padding-top: 1.5rem; border-top: 1px solid var(--border-color);
+}
+.avatar {
+    width: 42px; height: 42px; background: var(--accent-orange);
+    border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-weight: bold; font-size: 1.2rem;
+}
+.role { font-size: 0.75rem; color: var(--text-muted); }
+
+/* Main Content */
+.main-content { flex: 1; padding: 2.5rem; overflow-y: auto; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+.welcome h1 { font-size: 1.8rem; margin-bottom: 4px; }
+.welcome p { color: var(--text-muted); font-size: 0.9rem; }
+
+/* Stats Cards */
+.stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem; margin-bottom: 2.5rem;
+}
+.stat-card {
+    background: var(--card-bg); padding: 1.5rem; border-radius: 14px;
+    border-left: 4px solid var(--accent-orange);
+}
+.stat-card.blue { border-color: #3b82f6; }
+.stat-card.green { border-color: #22c55e; }
+.stat-card.purple { border-color: #a855f7; }
+.stat-card .value { font-size: 2.2rem; font-weight: 700; margin: 0.4rem 0; }
+.stat-card .label { color: var(--text-muted); font-size: 0.85rem; }
+.stat-card .sub-value { font-size: 0.75rem; color: #22c55e; }
+
+/* Table & Lesson Cards */
+.content-card { background: var(--card-bg); padding: 2rem; border-radius: 16px; }
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+#courseSearch {
+    background: #2d2d2d; border: 1px solid #3d3d3d; color: white;
+    padding: 0.6rem 1.2rem; border-radius: 20px; outline: none; width: 250px;
+}
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th { text-align: left; color: var(--text-muted); padding-bottom: 1.2rem; border-bottom: 1px solid var(--border-color); font-weight: 400; }
+.data-table td { padding: 1.2rem 0; border-bottom: 1px solid #252525; }
+
+/* Lesson Page Specifics */
+.lessons-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+.lesson-card { background: var(--card-bg); padding: 1.8rem; border-radius: 18px; border: 1px solid var(--border-color); transition: 0.3s; }
+.lesson-card:hover { border-color: var(--accent-orange); transform: translateY(-5px); }
+.progress-bar-bg { background: #333; height: 8px; border-radius: 10px; margin: 12px 0; overflow: hidden; }
+.progress-bar-fill { background: var(--accent-orange); height: 100%; transition: width 0.6s ease; }
+.btn-learn {
+    background: var(--accent-orange); color: white; border: none; font-weight: 500;
+    padding: 0.8rem; border-radius: 10px; width: 100%; cursor: pointer; margin-top: 1rem;
+}
+
+/* Badges */
+.status-label { padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; font-weight: 500; }
+.excellent { background: rgba(255, 122, 0, 0.1); color: var(--accent-orange); }
+.good { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.average { background: rgba(234, 179, 8, 0.1); color: #eab308; }
+.warning { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
