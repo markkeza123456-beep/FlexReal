@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard - Flexible Learning Hub</title>
+    <title>Flexible Learning Hub - Student Portal</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
@@ -22,7 +22,7 @@
                 <div class="menu-item" id="btn-lessons">
                     <span class="icon">📘</span> บทเรียน
                 </div>
-                <div class="menu-item">
+                <div class="menu-item" id="btn-assignments">
                     <span class="icon">📝</span> งานที่มอบหมาย
                 </div>
                 <div class="menu-item">
@@ -41,8 +41,8 @@
         <!-- Main Content Area -->
         <main class="main-content">
             
-            <!-- SECTION: Dashboard Page -->
-            <section id="dashboard-page">
+            <!-- SECTION: Dashboard -->
+            <section id="dashboard-page" class="content-section">
                 <header class="header">
                     <div class="welcome">
                         <h1>แดชบอร์ด</h1>
@@ -90,26 +90,32 @@
                                     <th>สถานะ</th>
                                 </tr>
                             </thead>
-                            <tbody id="courseTableBody">
-                                <!-- JS rendering data here -->
-                            </tbody>
+                            <tbody id="courseTableBody"></tbody>
                         </table>
                     </div>
                 </section>
             </section>
 
-            <!-- SECTION: Lessons Page (Hidden by default) -->
-            <section id="lesson-page" style="display: none;">
+            <!-- SECTION: Lessons -->
+            <section id="lesson-page" class="content-section" style="display: none;">
                 <header class="header">
                     <div class="welcome">
                         <h1>บทเรียนของฉัน</h1>
-                        <p>ติดตามความคืบหน้าของคอร์สที่คุณลงทะเบียนเรียน</p>
+                        <p>คอร์สที่คุณลงทะเบียนเรียนทั้งหมด</p>
                     </div>
                 </header>
-                
-                <div class="lessons-container" id="lessons-list">
-                    <!-- JS rendering lessons cards here -->
-                </div>
+                <div class="lessons-container" id="lessons-list"></div>
+            </section>
+
+            <!-- SECTION: Assignments -->
+            <section id="assignment-page" class="content-section" style="display: none;">
+                <header class="header">
+                    <div class="welcome">
+                        <h1>งานที่มอบหมาย</h1>
+                        <p>รายการงานและแบบฝึกหัดที่ต้องส่ง</p>
+                    </div>
+                </header>
+                <div class="assignment-list" id="assignment-container"></div>
             </section>
 
         </main>
