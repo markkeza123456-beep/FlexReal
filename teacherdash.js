@@ -30,28 +30,52 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Escape') closeModal();
     });
 
-    // ── Save lesson (demo) ─────────────────────────────
+    // ── Save lesson (ส่งเข้าฐานข้อมูล) ─────────────────────────────
     const saveBtn = overlay?.querySelector('.btn-save');
     if (saveBtn && overlay) {
         saveBtn.addEventListener('click', () => {
             const inputs = overlay.querySelectorAll('.form-input');
-            let allFilled = true;
-            inputs.forEach(inp => {
-                if (!inp.value.trim()) {
-                    inp.style.borderColor = '#ef4444';
-                    allFilled = false;
-                } else {
-                    inp.style.borderColor = '';
-                }
-            });
-            if (!allFilled) return;
+            const lessonName = inputs[0].value.trim(); // ช่องชื่อบทเรียน
+            const subjectId = inputs[1].value.trim();  // รหัสวิชา หรือ ชื่อวิชา
 
-            saveBtn.textContent = '✅ บันทึกแล้ว!';
-            setTimeout(() => {
-                saveBtn.textContent = '💾 บันทึกบทเรียน';
-                inputs.forEach(inp => (inp.value = ''));
-                closeModal();
-            }, 1200);
+            if (!lessonName) {
+                inputs[0].style.borderColor = '#ef4444';
+                return;
+            }
+            inputs[0].style.borderColor = '';
+
+            saveBtn.textContent = '⏳ กำลังบันทึก...';
+            saveBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('action', 'add_lesson');
+            formData.append('lesson_name', lessonName);
+            formData.append('subject_id', currentDetailLessonId || subjectId || 'SUB001'); // ส่ง ID วิชาไป
+
+            fetch('teacher_api.php', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        saveBtn.textContent = '✅ บันทึกแล้ว!';
+                        setTimeout(() => {
+                            saveBtn.textContent = '💾 บันทึกบทเรียน';
+                            saveBtn.disabled = false;
+                            inputs.forEach(inp => (inp.value = ''));
+                            closeModal();
+                            location.reload(); // รีเฟรชเพื่อดึงข้อมูลใหม่มาแสดง
+                        }, 1200);
+                    } else {
+                        alert('เกิดข้อผิดพลาด: ' + data.message);
+                        saveBtn.textContent = '💾 บันทึกบทเรียน';
+                        saveBtn.disabled = false;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+                    saveBtn.textContent = '💾 บันทึกบทเรียน';
+                    saveBtn.disabled = false;
+                });
         });
     }
 
@@ -72,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Init: show dashboard first so counters & observers see visible elements
+    // Init: show dashboard first
     switchView('dashboard');
 
     // ── Animated counters ──────────────────────────────
@@ -105,7 +129,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Keep other nav items (no data-view) just toggle active style
     document.querySelectorAll('.nav-item[data-section]').forEach(item => {
         item.addEventListener('click', e => {
             e.preventDefault();
@@ -141,7 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
         f.style.width = '0%';
         progObs.observe(f);
     });
-    // Re-trigger after tiny delay so CSS transition fires
     setTimeout(() => {
         fills.forEach(f => {
             const pct = f.style.cssText.match(/--pct:\s*([^;]+)/)?.[1] || '0%';
@@ -152,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Delete lesson row confirmation (demo) ──────────
     document.querySelectorAll('.btn-del').forEach(btn => {
         btn.addEventListener('click', () => {
+            if(!confirm("ต้องการลบข้อมูลนี้หรือไม่?")) return;
             const row = btn.closest('tr');
             if (!row) return;
             row.style.opacity = '0.4';
@@ -192,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const lessonsSection     = document.getElementById('lessonsSection');
     const lessonDetailSection = document.getElementById('lessonDetailSection');
 
-    // ── Lesson data store (mirrors PHP $lessons, extended client-side) ──
+    // ── Lesson data store (mirrors PHP $lessons) ──
     const lessonData = {};
     document.querySelectorAll('#lessonsTableBody tr[data-id]').forEach(row => {
         const id = row.dataset.id;
@@ -202,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
             title:    row.querySelector('.lesson-title-cell').textContent.trim(),
             subject:  row.querySelector('.lesson-subject').textContent.trim(),
             students: parseInt(row.dataset.studentCount || row.cells[2].textContent, 10) || 0,
-            progress: parseInt(row.querySelector('.progress-num').textContent),
+            progress: parseInt(row.querySelector('.progress-num').textContent) || 0,
             status:   row.dataset.status,
             quizzes:  [],
         };
@@ -216,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function filterLessons() {
         const q  = lessonSearch.value.toLowerCase();
         const st = lessonFilterStatus.value;
-        const rows = document.querySelectorAll('#lessonsTableBody tr[data-id]');
+        const rows = document.querySelectorAll('#lessonsTableBody tr.lesson-main-row');
         let visible = 0;
         rows.forEach(row => {
             const text   = row.textContent.toLowerCase();
@@ -237,7 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!lesson) return;
         currentDetailLessonId = lesson.subjectId || id;
 
-        // Header
         const statusLabel = lesson.status === 'active' ? 'เผยแพร่' : 'ฉบับร่าง';
         const statusClass = lesson.status === 'active' ? 'badge-active' : 'badge-draft';
         const detailHeader = document.getElementById('lessonDetailHeader');
@@ -262,11 +284,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `;
-        // Overview body
+        
         document.getElementById('lessonOverviewBody').innerHTML = `
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
                 <div>
-                    <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:6px;font-weight:500">ข้อมูลบทเรียน</div>
+                    <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:6px;font-weight:500">ข้อมูลรายวิชา/บทเรียน</div>
                     <div style="font-size:13.5px;color:var(--text);line-height:1.7">
                         <div><span style="color:var(--text-dim)">ชื่อ:</span> ${lesson.title}</div>
                         <div><span style="color:var(--text-dim)">วิชา:</span> ${lesson.subject}</div>
@@ -274,18 +296,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div>
-                    <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:6px;font-weight:500">สถิติ</div>
+                    <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:6px;font-weight:500">สถิติเบื้องต้น</div>
                     <div style="display:flex;flex-direction:column;gap:8px;font-size:13.5px">
                         <div style="display:flex;justify-content:space-between">
                             <span style="color:var(--text-dim)">นักเรียน</span>
                             <span class="mono" style="color:#fff">${lesson.students} คน</span>
                         </div>
                         <div style="display:flex;justify-content:space-between">
-                            <span style="color:var(--text-dim)">แบบทดสอบ</span>
-                            <span class="mono" style="color:#fff" id="overviewQuizCount">${lesson.quizzes.length} ข้อ</span>
-                        </div>
-                        <div style="display:flex;justify-content:space-between">
-                            <span style="color:var(--text-dim)">ความคืบหน้า</span>
+                            <span style="color:var(--text-dim)">ความคืบหน้าเฉลี่ย</span>
                             <span class="mono" style="color:var(--orange)">${lesson.progress}%</span>
                         </div>
                     </div>
@@ -296,15 +314,12 @@ document.addEventListener('DOMContentLoaded', () => {
         renderQuizList(id);
         applyDetailStudentFilter();
 
-        // Update topbar title
         document.getElementById('lessonsPageTitle').textContent = lesson.title;
         document.getElementById('lessonsPageSub').textContent   = lesson.subject;
 
-        // Show detail, hide lessons list
         lessonsSection.style.display      = 'none';
         lessonDetailSection.style.display = 'flex';
 
-        // Re-animate progress bars
         setTimeout(() => {
             lessonDetailSection.querySelectorAll('.progress-fill').forEach(f => {
                 const pct = f.style.cssText.match(/--pct:\s*([^;]+)/)?.[1] || '0%';
@@ -313,7 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }, 80);
 
-        // Switch to overview tab
         switchLessonTab('overview');
     }
 
@@ -321,17 +335,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => openLessonDetail(btn.dataset.id));
     });
 
-    // Dashboard shortcuts → switch to lessons view then open detail/edit
     document.querySelectorAll('.btn-dash-view-lesson').forEach(btn => {
         btn.addEventListener('click', () => {
             switchView('lessons');
             openLessonDetail(btn.dataset.id);
-        });
-    });
-    document.querySelectorAll('.btn-dash-edit-lesson').forEach(btn => {
-        btn.addEventListener('click', () => {
-            switchView('lessons');
-            openEditLesson(btn.dataset.id);
         });
     });
 
@@ -368,19 +375,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyDetailStudentFilter() {
         const q = (detailStudentSearch?.value || '').toLowerCase();
         document.querySelectorAll('.detail-student-row').forEach(row => {
-            const subjectIds = (row.dataset.subjectIds || '')
-                .split(',')
-                .map(item => item.trim())
-                .filter(Boolean);
+            const subjectIds = (row.dataset.subjectIds || '').split(',').map(item => item.trim()).filter(Boolean);
             const matchSubject = !currentDetailLessonId || subjectIds.includes(currentDetailLessonId);
             const matchSearch = row.textContent.toLowerCase().includes(q);
             row.style.display = matchSubject && matchSearch ? '' : 'none';
         });
     }
     if (detailStudentSearch) {
-        detailStudentSearch.addEventListener('input', () => {
-            applyDetailStudentFilter();
-        });
+        detailStudentSearch.addEventListener('input', applyDetailStudentFilter);
     }
 
     // ── Edit Lesson Modal ──────────────────────────────
@@ -402,51 +404,20 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.btn-edit-lesson').forEach(btn => {
         btn.addEventListener('click', () => openEditLesson(btn.dataset.id));
     });
+    document.querySelectorAll('.btn-dash-edit-lesson').forEach(btn => {
+        btn.addEventListener('click', () => openEditLesson(btn.dataset.id));
+    });
+
     document.getElementById('closeEditLessonBtn') ?.addEventListener('click', closeEditLesson);
     document.getElementById('closeEditLessonBtn2')?.addEventListener('click', closeEditLesson);
     editLessonOverlay?.addEventListener('click', e => { if (e.target === editLessonOverlay) closeEditLesson(); });
 
     document.getElementById('saveEditLessonBtn')?.addEventListener('click', () => {
-        const id       = document.getElementById('editLessonId').value;
-        const name     = document.getElementById('editLessonName').value.trim();
-        const subject  = document.getElementById('editLessonSubject').value.trim();
-        const progress = parseInt(document.getElementById('editLessonProgress').value) || 0;
-        const status   = document.getElementById('editLessonStatus').value;
-
-        if (!name || !subject) {
-            [document.getElementById('editLessonName'), document.getElementById('editLessonSubject')].forEach(inp => {
-                if (!inp.value.trim()) inp.style.borderColor = '#ef4444';
-            });
-            return;
-        }
-
-        // Update data store
-        lessonData[id].title    = name;
-        lessonData[id].subject  = subject;
-        lessonData[id].progress = Math.min(100, Math.max(0, progress));
-        lessonData[id].status   = status;
-
-        // Update table row
-        const row = document.querySelector(`#lessonsTableBody tr[data-id="${id}"]`);
-        if (row) {
-            row.querySelector('.lesson-title-cell').textContent = name;
-            row.querySelector('.lesson-subject').textContent    = subject;
-            row.querySelector('.progress-num').textContent      = progress + '%';
-            row.querySelector('.progress-fill').style.setProperty('--pct', progress + '%');
-            row.querySelector('.progress-fill').style.width = progress + '%';
-            row.dataset.status = status;
-            const badge = row.querySelector('.badge');
-            badge.className   = `badge badge-${status}`;
-            badge.textContent = status === 'active' ? 'เผยแพร่' : 'ฉบับร่าง';
-        }
-
         closeEditLesson();
+        alert('ระบบจำลองการแก้ไขสำเร็จ');
     });
 
-    // ── Delete lesson ──────────────────────────────────
-    // (already handled by existing .btn-del logic above — just extra rows now have the class)
-
-    // ── Quiz Modal ─────────────────────────────────────
+    // ── Quiz Modal (ส่งเข้าฐานข้อมูล) ─────────────────────────────────────
     const quizModalOverlay = document.getElementById('quizModalOverlay');
     const quizTypeSelect   = document.getElementById('quizType');
     const quizChoicesGroup = document.getElementById('quizChoicesGroup');
@@ -474,11 +445,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const existing = list.querySelectorAll('.quiz-item');
         existing.forEach(el => el.remove());
 
-        if (!lesson.quizzes.length) {
-            empty.style.display = 'block';
+        if (!lesson || !lesson.quizzes.length) {
+            if(empty) empty.style.display = 'block';
             return;
         }
-        empty.style.display = 'none';
+        if(empty) empty.style.display = 'none';
 
         const typeLabels = { choice:'ตัวเลือก (MCQ)', truefalse:'ถูก/ผิด', short:'เติมคำสั้น', essay:'อัตนัย' };
 
@@ -493,48 +464,92 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap">
                         <span class="badge badge-draft">${typeLabels[q.type] || q.type}</span>
                         ${q.answer ? `<span style="font-size:11.5px;color:var(--text-dim)">เฉลย: <span style="color:#10b981">${q.answer}</span></span>` : ''}
-                        <span style="font-size:11.5px;color:var(--text-muted)">${q.score} คะแนน</span>
+                        <span style="font-size:11.5px;color:var(--text-muted)">${q.score || 1} คะแนน</span>
                     </div>
                 </div>
-                <button class="btn-icon btn-del" data-quiz-index="${i}" style="flex-shrink:0" title="ลบ">🗑</button>
             `;
-            item.querySelector('.btn-del').addEventListener('click', () => {
-                lesson.quizzes.splice(i, 1);
-                renderQuizList(id);
-                const oc = document.getElementById('overviewQuizCount');
-                if (oc) oc.textContent = lesson.quizzes.length + ' ข้อ';
-            });
             list.appendChild(item);
         });
     }
 
+    // ส่งคำถามเข้า API
     document.getElementById('saveQuizBtn')?.addEventListener('click', () => {
         const question = document.getElementById('quizQuestion').value.trim();
-        const type     = document.getElementById('quizType').value;
-        const score    = parseInt(document.getElementById('quizScore').value) || 1;
+        const choices  = document.getElementById('quizChoices').value.trim();
         const answer   = document.getElementById('quizAnswer').value.trim();
+        const btn      = document.getElementById('saveQuizBtn');
 
         if (!question) {
             document.getElementById('quizQuestion').style.borderColor = '#ef4444';
             return;
         }
+        document.getElementById('quizQuestion').style.borderColor = '';
 
-        const id = getCurrentLessonId();
-        if (!id || !lessonData[id]) return;
+        const lessonId = getCurrentLessonId(); 
+        if (!lessonId) {
+            alert('กรุณาเลือกวิชา/บทเรียนก่อนเพิ่มคำถาม');
+            return;
+        }
 
-        lessonData[id].quizzes.push({ question, type, score, answer });
-        renderQuizList(id);
+        btn.textContent = '⏳ กำลังบันทึก...';
+        btn.disabled = true;
 
-        const oc = document.getElementById('overviewQuizCount');
-        if (oc) oc.textContent = lessonData[id].quizzes.length + ' ข้อ';
+        const formData = new FormData();
+        formData.append('action', 'add_quiz');
+        formData.append('lesson_id', lessonId); 
+        formData.append('question', question);
+        formData.append('choices', choices);
+        formData.append('answer', answer);
 
-        // Reset form
-        document.getElementById('quizQuestion').value = '';
-        document.getElementById('quizAnswer').value   = '';
-        document.getElementById('quizScore').value    = '1';
-        closeQuizModal();
+        fetch('teacher_api.php', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    btn.textContent = '✅ สำเร็จ!';
+                    // จำลองการเพิ่มลงในหน้าจอทันทีเพื่อให้เห็นผล
+                    if(lessonData[lessonId]) {
+                        lessonData[lessonId].quizzes.push({ question, type: 'choice', score: 1, answer });
+                        renderQuizList(lessonId);
+                    }
+                    setTimeout(() => {
+                        document.getElementById('quizQuestion').value = '';
+                        document.getElementById('quizChoices').value   = '';
+                        document.getElementById('quizAnswer').value    = '';
+                        btn.textContent = '➕ เพิ่มคำถาม';
+                        btn.disabled = false;
+                        closeQuizModal();
+                    }, 1000);
+                } else {
+                    alert('Error: ' + data.message);
+                    btn.textContent = '➕ เพิ่มคำถาม';
+                    btn.disabled = false;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+                btn.textContent = '➕ เพิ่มคำถาม';
+                btn.disabled = false;
+            });
     });
 
+    // ── Sub-lesson toggle ──
+    document.querySelectorAll('.btn-expand-sub').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const tr = btn.closest('tr.lesson-main-row');
+            const parentId = tr.dataset.id;
+            const subs = document.querySelectorAll(`tr.sub-lesson-row[data-parent="${parentId}"]`);
+            const isExpanded = tr.dataset.expanded === 'true';
+            
+            tr.dataset.expanded = !isExpanded;
+            btn.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(90deg)';
+            
+            subs.forEach(sub => {
+                sub.style.display = isExpanded ? 'none' : 'table-row';
+            });
+        });
+    });
 });
 
 // ── Save Profile via AJAX (global scope) ───────────
@@ -555,7 +570,6 @@ function saveProfile() {
         setTimeout(() => { feedback.style.display = 'none'; }, 4000);
     }
 
-    // Client-side validation
     if (newPwd && newPwd !== confirm) {
         showFeedback('error', '✗ รหัสผ่านใหม่ไม่ตรงกัน');
         return;
@@ -603,3 +617,228 @@ function saveProfile() {
             btn.textContent = '💾 บันทึกข้อมูล';
         });
 }
+
+// ═══════════════════════════════════════════════════
+// CROP MODAL (Avatar)
+// ═══════════════════════════════════════════════════
+(function () {
+    let srcDataUrl = '';
+    let imgNatW = 0, imgNatH = 0;
+    let posX = 0, posY = 0, scale = 1;
+    let dragging = false, startX = 0, startY = 0, startPX = 0, startPY = 0;
+    const CROP_SIZE = 240; 
+
+    const modalHTML = `
+<div id="cropOverlay" style="display:none;position:fixed;inset:0;z-index:9999;
+     background:rgba(0,0,0,.72);align-items:center;justify-content:center">
+  <div style="background:var(--bg2,#1e2130);border-radius:16px;padding:28px 24px 22px;
+       width:min(92vw,360px);box-shadow:0 24px 60px rgba(0,0,0,.5);text-align:center">
+    <div style="font-size:15px;font-weight:700;color:var(--text,#f1f5f9);margin-bottom:18px">
+      ✂️ ครอปรูปโปรไฟล์
+    </div>
+    <div id="cropViewport" style="
+         position:relative;width:${CROP_SIZE}px;height:${CROP_SIZE}px;margin:0 auto 14px;
+         border-radius:50%;overflow:hidden;cursor:grab;
+         box-shadow:0 0 0 4px var(--orange,#f97316),0 0 0 7px rgba(249,115,22,.2);
+         background:#000;touch-action:none">
+      <img id="cropImg" draggable="false" style="
+           position:absolute;transform-origin:top left;user-select:none;
+           -webkit-user-select:none;pointer-events:none">
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <span style="font-size:13px;color:var(--text-muted,#94a3b8)">🔍</span>
+      <input type="range" id="cropZoom" min="1" max="3" step="0.01" value="1"
+             style="flex:1;accent-color:var(--orange,#f97316)">
+      <span style="font-size:13px;color:var(--text-muted,#94a3b8)">🔎</span>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button id="cropCancelBtn" style="
+              flex:1;padding:10px;border-radius:8px;border:1px solid var(--border,#334155);
+              background:transparent;color:var(--text,#f1f5f9);cursor:pointer;font-size:13px">
+        ยกเลิก
+      </button>
+      <button id="cropConfirmBtn" style="
+              flex:1;padding:10px;border-radius:8px;border:none;
+              background:var(--orange,#f97316);color:#fff;cursor:pointer;
+              font-size:13px;font-weight:600">
+        ✓ ใช้รูปนี้
+      </button>
+    </div>
+    <div id="cropUploadMsg" style="font-size:12px;margin-top:10px;color:var(--text-muted,#94a3b8);
+         min-height:18px"></div>
+  </div>
+</div>`;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    const overlay     = document.getElementById('cropOverlay');
+    const viewport    = document.getElementById('cropViewport');
+    const cropImg     = document.getElementById('cropImg');
+    const zoomSlider  = document.getElementById('cropZoom');
+    const cancelBtn   = document.getElementById('cropCancelBtn');
+    const confirmBtn  = document.getElementById('cropConfirmBtn');
+    const uploadMsg   = document.getElementById('cropUploadMsg');
+
+    window.openCropModal = function (dataUrl) {
+        srcDataUrl = dataUrl;
+        scale = 1;
+        zoomSlider.value = 1;
+        uploadMsg.textContent = '';
+
+        const tmp = new Image();
+        tmp.onload = () => {
+            imgNatW = tmp.naturalWidth;
+            imgNatH = tmp.naturalHeight;
+            const minFit = CROP_SIZE / Math.min(imgNatW, imgNatH);
+            scale = minFit;
+            zoomSlider.min = minFit.toFixed(3);
+            zoomSlider.value = minFit;
+
+            cropImg.src = dataUrl;
+            applyTransform();
+            centerImage();
+            overlay.style.display = 'flex';
+        };
+        tmp.src = dataUrl;
+    };
+
+    function applyTransform() {
+        cropImg.style.width  = (imgNatW * scale) + 'px';
+        cropImg.style.height = (imgNatH * scale) + 'px';
+        cropImg.style.transform = `translate(${posX}px, ${posY}px)`;
+    }
+
+    function centerImage() {
+        posX = (CROP_SIZE - imgNatW * scale) / 2;
+        posY = (CROP_SIZE - imgNatH * scale) / 2;
+        applyTransform();
+    }
+
+    function clamp() {
+        const w = imgNatW * scale;
+        const h = imgNatH * scale;
+        if (posX > 0) posX = 0;
+        if (posY > 0) posY = 0;
+        if (posX + w < CROP_SIZE) posX = CROP_SIZE - w;
+        if (posY + h < CROP_SIZE) posY = CROP_SIZE - h;
+    }
+
+    zoomSlider.addEventListener('input', () => {
+        const newScale = parseFloat(zoomSlider.value);
+        const cx = CROP_SIZE / 2;
+        const cy = CROP_SIZE / 2;
+        const ratio = newScale / scale;
+        posX = cx - ratio * (cx - posX);
+        posY = cy - ratio * (cy - posY);
+        scale = newScale;
+        clamp();
+        applyTransform();
+    });
+
+    viewport.addEventListener('mousedown', e => {
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        startPX = posX;     startPY = posY;
+        viewport.style.cursor = 'grabbing';
+        e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        posX = startPX + (e.clientX - startX);
+        posY = startPY + (e.clientY - startY);
+        clamp();
+        applyTransform();
+    });
+    document.addEventListener('mouseup', () => {
+        dragging = false;
+        viewport.style.cursor = 'grab';
+    });
+
+    viewport.addEventListener('touchstart', e => {
+        if (e.touches.length !== 1) return;
+        dragging = true;
+        startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+        startPX = posX; startPY = posY;
+        e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchmove', e => {
+        if (!dragging || e.touches.length !== 1) return;
+        posX = startPX + (e.touches[0].clientX - startX);
+        posY = startPY + (e.touches[0].clientY - startY);
+        clamp();
+        applyTransform();
+        e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchend', () => { dragging = false; });
+
+    cancelBtn.addEventListener('click', () => {
+        overlay.style.display = 'none';
+    });
+
+    confirmBtn.addEventListener('click', () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = CROP_SIZE;
+        const ctx = canvas.getContext('2d');
+
+        ctx.beginPath();
+        ctx.arc(CROP_SIZE/2, CROP_SIZE/2, CROP_SIZE/2, 0, Math.PI*2);
+        ctx.clip();
+
+        const tmp = new Image();
+        tmp.onload = () => {
+            ctx.drawImage(tmp, posX, posY, imgNatW * scale, imgNatH * scale);
+            const croppedDataUrl = canvas.toDataURL('image/png');
+
+            const avatarImg     = document.getElementById('avatarImg');
+            const avatarInitial = document.getElementById('avatarInitial');
+            if (avatarImg) {
+                avatarImg.src = croppedDataUrl;
+                avatarImg.style.display = 'block';
+            }
+            if (avatarInitial) avatarInitial.style.display = 'none';
+
+            document.querySelectorAll('.sidebar-profile .profile-avatar').forEach(el => {
+                el.style.background = 'none';
+                el.style.padding    = '0';
+                el.style.overflow   = 'hidden';
+                el.innerHTML = `<img src="${croppedDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+            });
+
+            overlay.style.display = 'none';
+            uploadMsg.textContent = '⏳ กำลังอัปโหลด...';
+            overlay.style.display = 'flex';
+            confirmBtn.disabled = true;
+            cancelBtn.disabled  = true;
+
+            fetch('uploadavatar.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: croppedDataUrl })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    uploadMsg.style.color = '#10b981';
+                    uploadMsg.textContent = '✓ อัปโหลดสำเร็จ!';
+                    if (data.url) {
+                        if (avatarImg) avatarImg.src = data.url;
+                        document.querySelectorAll('.sidebar-profile .profile-avatar img').forEach(img => img.src = data.url);
+                    }
+                    setTimeout(() => { overlay.style.display = 'none'; }, 1000);
+                } else {
+                    uploadMsg.style.color = '#ef4444';
+                    uploadMsg.textContent = '✗ ' + (data.message || 'อัปโหลดล้มเหลว');
+                }
+            })
+            .catch(() => {
+                uploadMsg.style.color = '#ef4444';
+                uploadMsg.textContent = '✗ เกิดข้อผิดพลาด กรุณาลองใหม่';
+            })
+            .finally(() => {
+                confirmBtn.disabled = false;
+                cancelBtn.disabled  = false;
+            });
+        };
+        tmp.src = srcDataUrl;
+    });
+})();

@@ -177,7 +177,6 @@ foreach ($studentStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     $completedLessons = (int) $row['completed_lessons'];
     $progressPct = $totalLessons > 0 ? round(($completedLessons / $totalLessons) * 100) : 0;
     
-    // เตรียมข้อมูลชื่อบทเรียนที่เรียนไปแล้วเพื่อส่งให้ JavaScript แสดงผล
     $completedNames = $row['completed_lesson_names'] ? explode('||', $row['completed_lesson_names']) : [];
 
     $students[] = [
@@ -194,7 +193,6 @@ foreach ($studentStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     ];
 }
 
-// คำนวณค่าเฉลี่ยรวมของนักเรียนทุกคน
 $overallAvgScore = count($students) > 0 ? round($sumScore / count($students), 1) : 0;
 
 // 5. ดึงประวัติการเข้าเรียนของนักเรียน (จากตาราง Learning_Records)
@@ -275,6 +273,7 @@ $stats = [
     <nav class="sidebar-nav">
         <a href="#" class="nav-item active" data-view="dashboard"><span class="nav-icon">⊞</span><span>แดชบอร์ด</span></a>
         <a href="#" class="nav-item" data-view="lessons"><span class="nav-icon">📘</span><span>บทเรียน</span></a>
+        <a href="#" class="nav-item" data-view="reports"><span class="nav-icon">📊</span><span>ออกรายงาน</span></a>
     </nav>
 
     <a href="logout.php" class="sidebar-logout">
@@ -362,7 +361,6 @@ $stats = [
                         <tr class="lesson-row">
                             <td class="mono"><?= str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) ?></td>
                             <td>
-                                <!-- ทำให้ชื่อนักเรียนคลิกได้เพื่อเปิด Modal ดูรายละเอียด -->
                                 <a href="#" class="student-progress-link" 
                                    data-name="<?= h($student['name']) ?>"
                                    data-completed="<?= h($student['completed_lessons']) ?>"
@@ -375,7 +373,6 @@ $stats = [
                             </td>
                             <td><?= h($student['class']) ?></td>
                             <td>
-                                <!-- หลอด Progress Bar -->
                                 <div class="progress-wrap">
                                     <div class="progress-bar">
                                         <div class="progress-fill" style="--pct:<?= $student['progress_pct'] ?>%"></div>
@@ -538,9 +535,15 @@ $stats = [
         </div>
 
         <div id="lessonDetailSection" style="display:none;flex-direction:column;gap:20px">
-            <div style="display:flex;align-items:center;gap:12px">
-                <button class="btn-add-lesson" id="backToLessonsBtn" style="background:var(--bg2);border:1px solid var(--border);color:var(--text-dim)">← กลับ</button>
-                <span style="font-size:13px;color:var(--text-muted)">รายละเอียดบทเรียน</span>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                <div style="display:flex;align-items:center;gap:12px">
+                    <button class="btn-add-lesson" id="backToLessonsBtn" style="background:var(--bg2);border:1px solid var(--border);color:var(--text-dim)">← กลับ</button>
+                    <span style="font-size:13px;color:var(--text-muted)">รายละเอียดวิชา</span>
+                </div>
+                <!-- ปุ่มเพิ่มบทเรียนย่อย -->
+                <button class="btn-add-lesson" id="openModalBtn" style="font-size:13px;padding:8px 14px">
+                    <span class="plus">+</span> เพิ่มบทเรียนย่อย
+                </button>
             </div>
 
             <div class="card" id="lessonDetailHeader"></div>
@@ -577,7 +580,6 @@ $stats = [
                             <tr class="lesson-row detail-student-row" data-subject-ids="<?= h($student['subject_ids']) ?>">
                                 <td class="mono"><?= str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) ?></td>
                                 <td>
-                                    <!-- ทำให้ชื่อนักเรียนคลิกได้เพื่อเปิด Modal -->
                                     <a href="#" class="student-progress-link" 
                                        data-name="<?= h($student['name']) ?>"
                                        data-completed="<?= h($student['completed_lessons']) ?>"
@@ -590,7 +592,6 @@ $stats = [
                                 </td>
                                 <td><?= h($student['class']) ?></td>
                                 <td>
-                                    <!-- หลอด Progress Bar -->
                                     <div class="progress-wrap">
                                         <div class="progress-bar">
                                             <div class="progress-fill" style="--pct:<?= $student['progress_pct'] ?>%"></div>
@@ -625,6 +626,33 @@ $stats = [
             </div>
         </div>
 
+        <!-- Modal เพิ่มบทเรียนย่อย -->
+        <div class="modal-overlay" id="modalOverlay">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">➕ เพิ่มบทเรียนย่อย (Lesson)</h3>
+                    <button class="modal-close" id="closeModalBtn">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>ชื่อบทเรียนย่อย</label>
+                        <input type="text" class="form-input" placeholder="เช่น 1.1 ตรรกศาสตร์เบื้องต้น">
+                    </div>
+                    <input type="hidden" class="form-input" value="">
+                    
+                    <div class="form-group">
+                        <label>คำอธิบาย (ทางเลือก)</label>
+                        <textarea class="form-input" rows="3" placeholder="รายละเอียด..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" id="closeModalBtn2">ยกเลิก</button>
+                    <button class="btn-save">💾 บันทึกบทเรียน</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal เพิ่มแบบทดสอบ -->
         <div class="modal-overlay" id="quizModalOverlay">
             <div class="modal">
                 <div class="modal-header">
@@ -667,7 +695,34 @@ $stats = [
             </div>
         </div>
     </div>
+    
+    <!-- ══ VIEW: REPORTS (หน้าออกรายงาน) ══ -->
+    <div id="view-reports" class="page-view" style="display:none">
+        <header class="topbar">
+            <div class="topbar-left">
+                <h1 class="page-title">ออกรายงาน</h1>
+                <span class="page-sub">ดาวน์โหลดและส่งออกรายงานผลการเรียน</span>
+            </div>
+            <div class="topbar-right">
+                <div class="notif-btn">🔔</div>
+            </div>
+        </header>
 
+        <div class="content-grid" style="grid-template-columns: 1fr;">
+            <div class="card" style="text-align: center; padding: 60px 20px;">
+                <div style="font-size: 48px; margin-bottom: 20px;">📊</div>
+                <h2 style="color: #fff; margin-bottom: 10px;">ระบบออกรายงานกำลังอยู่ระหว่างการพัฒนา</h2>
+                <p style="color: var(--text-dim); max-width: 500px; margin: 0 auto 30px;">
+                    ในอนาคตคุณจะสามารถกดปุ่มเพื่อส่งออกข้อมูลคะแนนนักเรียน ความคืบหน้า และสถิติย้อนหลัง ออกมาเป็นไฟล์ PDF หรือ Excel ได้จากหน้านี้
+                </p>
+                <button class="btn-add-lesson" style="margin: 0 auto; background: var(--bg3); color: var(--text-muted); cursor: not-allowed;">
+                    📥 ส่งออกรายงาน (เร็วๆ นี้)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ VIEW: SETTINGS ══ -->
     <div id="view-settings" class="page-view" style="display:none">
         <header class="topbar">
             <div class="topbar-left">
