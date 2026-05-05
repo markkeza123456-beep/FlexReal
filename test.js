@@ -154,6 +154,7 @@ const quizBank = {
 const params = new URLSearchParams(window.location.search);
 const courseName = params.get('course') || 'ภาษาไทย';
 const subjectId = params.get('subject_id') || '';
+const lessonIndex = Number(params.get('lesson') || 1);
 const quiz = quizBank[courseName] || quizBank['ภาษาไทย'];
 const answers = new Array(quiz.questions.length).fill(null);
 
@@ -212,6 +213,8 @@ async function saveTestResult(score) {
         },
         body: JSON.stringify({
             course_name: courseName,
+            subject_id: subjectId,
+            lesson_index: lessonIndex,
             score,
             total_score: quiz.questions.length,
             answers

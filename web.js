@@ -4,6 +4,7 @@ let currentCourseName = '';
 let enrolledCourses = {};
 let courseIdByName = {};
 let currentLessonsData = [];
+let currentProgressSummary = null;
 const LESSON_COUNT = 5;
 const LESSON_VIDEO_FILES = [
     'videos/lesson1.mp4.mp4',
@@ -31,7 +32,8 @@ function escapeHtml(text) {
 
 function buildFixedLessons(lessons) {
     const fixedLessons = [];
-    for (let index = 0; index < LESSON_COUNT; index++) {
+    const totalLessons = Array.isArray(lessons) && lessons.length > 0 ? lessons.length : LESSON_COUNT;
+    for (let index = 0; index < totalLessons; index++) {
         const rawName = lessons[index] ? pick(lessons[index], 'Lessons_Name', 'lessons_name') : '';
         const lessonName = String(rawName || '').trim() || `Lesson ${index + 1}`;
         fixedLessons.push({
@@ -101,6 +103,91 @@ function renderLessonAccordion(containerId) {
 function renderAllLessonAccordions() {
     renderLessonAccordion('course-curriculum-lesson-list');
     renderLessonAccordion('learning-lesson-text-list');
+}
+
+function setText(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = value;
+    }
+}
+
+function updateInstructorInfo(course) {
+    const teacherName = String(pick(course, 'teachers_name', 'Teachers_Name')).trim() || 'ยังไม่กำหนดอาจารย์ผู้สอน';
+    const teacherRole = teacherName === 'ยังไม่กำหนดอาจารย์ผู้สอน'
+        ? 'รอการกำหนดบทบาทอาจารย์ประจำวิชา'
+        : 'อาจารย์ประจำวิชา';
+
+    setText('detail-instructor-name', teacherName);
+    setText('detail-instructor-role', teacherRole);
+    setText('learning-instructor-name', teacherName);
+    setText('learning-instructor-role', teacherRole);
+}
+
+function updateCourseMeta(course, lessons) {
+    const lessonCount = Number(pick(course, 'lesson_count')) || (Array.isArray(lessons) ? lessons.length : 0);
+    const quizCount = lessonCount > 0 ? lessonCount : currentLessonsData.length;
+    setText('detail-lesson-count', `${lessonCount} บทเรียน`);
+    setText('detail-quiz-count', `${quizCount} ชุด`);
+    setText('learning-lesson-count', `${lessonCount} บทเรียน`);
+    setText('learning-quiz-count', `${quizCount} ชุด`);
+}
+
+function applyCourseProgressSummary(summary) {
+    currentProgressSummary = summary || null;
+    const progressText = `${Number(summary?.progress_percent || 0).toFixed(1)}%`;
+    const scoreText = `${Number(summary?.best_score_percent || 0).toFixed(1)}%`;
+    setText('detail-progress', progressText);
+    setText('detail-score', scoreText);
+    setText('learning-progress', progressText);
+    setText('learning-score', scoreText);
+}
+
+async function fetchCourseProgress(subjectId) {
+    if (!subjectId || !enrolledCourses[subjectId]) {
+        applyCourseProgressSummary(null);
+        return;
+    }
+
+    try {
+        const response = await fetch(`student_learning_api.php?action=summary&subject_id=${encodeURIComponent(subjectId)}`, {
+            credentials: 'same-origin'
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            applyCourseProgressSummary(result.summary || null);
+        }
+    } catch (error) {
+        applyCourseProgressSummary(null);
+    }
+}
+
+async function recordLearningEvent(activityType, lessonIndex = 1) {
+    if (!currentSubjectId || !enrolledCourses[currentSubjectId]) {
+        return;
+    }
+
+    try {
+        const lesson = currentLessonsData.find((item) => item.index === Number(lessonIndex));
+        const formData = new FormData();
+        formData.append('action', 'record');
+        formData.append('subject_id', currentSubjectId);
+        formData.append('lesson_index', String(lessonIndex || 1));
+        formData.append('lesson_title', lesson ? lesson.title : `${currentCourseName} บทที่ ${lessonIndex || 1}`);
+        formData.append('activity_type', activityType);
+
+        const response = await fetch('student_learning_api.php', {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin'
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            applyCourseProgressSummary(result.summary || null);
+        }
+    } catch (error) {
+        // keep UI usable even if tracking fails
+    }
 }
 
 function toggleLesson(lessonIndex) {
@@ -205,9 +292,12 @@ async function showCourse(subjectId) {
             document.getElementById('detail-desc-top').innerText = String(pick(course, 'Subjects_Description', 'subjects_description')) || 'รายละเอียดเบื้องต้น';
             document.getElementById('detail-desc').innerText = String(pick(course, 'Subjects_Description', 'subjects_description')) || 'คำอธิบายรายวิชา...';
             document.getElementById('detail-duration').innerText = course.duration || 'ไม่ระบุเวลา';
+            updateInstructorInfo(course);
             
             currentLessonsData = buildFixedLessons(Array.isArray(lessons) ? lessons : []);
+            updateCourseMeta(course, lessons);
             renderAllLessonAccordions();
+            applyCourseProgressSummary(null);
 
             // จัดการสถานะปุ่มลงทะเบียน
             updateEnrollButton(false);
@@ -247,6 +337,7 @@ function goToCourseLearning() {
 
     showPage('course-learning');
     openLearningTab({ currentTarget: document.querySelector("#course-learning .tab-btn[onclick*='learning-curriculum']") }, 'learning-curriculum');
+    recordLearningEvent('course_enter', 1);
 }
 
 // --- 4. ระบบเช็คและลงทะเบียนเรียน ---
@@ -261,15 +352,20 @@ async function checkCourseEnrollment(subjectId) {
             enrolledCourses[subjectId] = Boolean(result.enrolled);
             updateEnrollButton(Boolean(result.enrolled));
             setCurriculumAccess(Boolean(result.enrolled));
+            if (result.enrolled) {
+                fetchCourseProgress(subjectId);
+            }
         } else if (result.status === 'unauthorized') {
             enrolledCourses[subjectId] = false;
             updateEnrollButton(false);
             setCurriculumAccess(false);
+            applyCourseProgressSummary(null);
         }
     } catch (error) {
         enrolledCourses[subjectId] = false;
         updateEnrollButton(false);
         setCurriculumAccess(false);
+        applyCourseProgressSummary(null);
     }
 }
 
@@ -278,7 +374,7 @@ function updateEnrollButton(isEnrolled) {
     if (!button) return;
     
     if(isEnrolled) {
-        button.innerText = 'ลงทะเบียนแล้ว';
+        button.innerText = 'เข้าเรียน';
         button.classList.add('is-enrolled');
     } else {
         button.innerText = 'ลงทะเบียน';
@@ -290,8 +386,7 @@ async function enrollCourseAndOpenLearning() {
     if (!currentSubjectId) return;
 
     if (enrolledCourses[currentSubjectId]) {
-        openTab({ currentTarget: document.querySelector(".tab-btn[onclick*='curriculum']") }, 'curriculum');
-        setCurriculumAccess(true);
+        goToCourseLearning();
         return;
     }
 
@@ -322,7 +417,8 @@ async function enrollCourseAndOpenLearning() {
         enrolledCourses[currentSubjectId] = true;
         updateEnrollButton(true);
         setCurriculumAccess(true);
-        openTab({ currentTarget: document.querySelector(".tab-btn[onclick*='curriculum']") }, 'curriculum');
+        fetchCourseProgress(currentSubjectId);
+        goToCourseLearning();
     } catch (error) {
         alert('เชื่อมต่อระบบลงรายวิชาไม่ได้ กรุณาลองใหม่อีกครั้ง');
     }
@@ -410,6 +506,7 @@ function openCourseVideo(lessonIndex) {
     const modal = document.getElementById('modal-overlay');
     renderVideoModalBody(lessonIndex || 1);
     modal.style.display = 'flex';
+    recordLearningEvent('video_open', lessonIndex || 1);
 }
 
 function startQuiz(lessonIndex) {
@@ -427,6 +524,7 @@ function startQuiz(lessonIndex) {
     if (lessonIndex) {
         url.searchParams.set('lesson', String(lessonIndex));
     }
+    recordLearningEvent('lesson_open', lessonIndex || 1);
     window.location.href = url.pathname.split('/').pop() + url.search;
 }
 

@@ -1,6 +1,7 @@
 /* ===== teacherdash.js ===== */
 
 document.addEventListener('DOMContentLoaded', () => {
+    let currentDetailLessonId = '';
 
     // ── Modal ──────────────────────────────────────────
     const overlay      = document.getElementById('modalOverlay');
@@ -13,23 +14,25 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('closeModalBtn2'),
     ];
 
-    function openModal()  { overlay.classList.add('open'); }
-    function closeModal() { overlay.classList.remove('open'); }
+    function openModal()  { if (overlay) overlay.classList.add('open'); }
+    function closeModal() { if (overlay) overlay.classList.remove('open'); }
 
     openBtns.forEach(btn  => btn && btn.addEventListener('click', openModal));
     closeBtns.forEach(btn => btn && btn.addEventListener('click', closeModal));
 
-    overlay.addEventListener('click', e => {
-        if (e.target === overlay) closeModal();
-    });
+    if (overlay) {
+        overlay.addEventListener('click', e => {
+            if (e.target === overlay) closeModal();
+        });
+    }
 
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') closeModal();
     });
 
     // ── Save lesson (demo) ─────────────────────────────
-    const saveBtn = document.querySelector('.btn-save');
-    if (saveBtn) {
+    const saveBtn = overlay?.querySelector('.btn-save');
+    if (saveBtn && overlay) {
         saveBtn.addEventListener('click', () => {
             const inputs = overlay.querySelectorAll('.form-input');
             let allFilled = true;
@@ -195,9 +198,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = row.dataset.id;
         lessonData[id] = {
             id,
+            subjectId: row.dataset.subjectId || id,
             title:    row.querySelector('.lesson-title-cell').textContent.trim(),
             subject:  row.querySelector('.lesson-subject').textContent.trim(),
-            students: parseInt(row.cells[2].textContent),
+            students: parseInt(row.dataset.studentCount || row.cells[2].textContent, 10) || 0,
             progress: parseInt(row.querySelector('.progress-num').textContent),
             status:   row.dataset.status,
             quizzes:  [],
@@ -231,11 +235,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function openLessonDetail(id) {
         const lesson = lessonData[id];
         if (!lesson) return;
+        currentDetailLessonId = lesson.subjectId || id;
 
         // Header
         const statusLabel = lesson.status === 'active' ? 'เผยแพร่' : 'ฉบับร่าง';
         const statusClass = lesson.status === 'active' ? 'badge-active' : 'badge-draft';
-        document.getElementById('lessonDetailHeader').innerHTML = `
+        const detailHeader = document.getElementById('lessonDetailHeader');
+        detailHeader.dataset.id = id;
+        detailHeader.innerHTML = `
             <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
                 <div>
                     <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px">${lesson.title}</div>
@@ -245,9 +252,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="badge ${statusClass}">${statusLabel}</span>
                     </div>
                 </div>
-                <button class="btn-add-lesson" id="detailEditBtn"
-                    style="background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:13px"
-                    data-id="${id}">✏️ แก้ไข</button>
             </div>
             <div style="margin-top:14px">
                 <div class="progress-wrap">
@@ -258,8 +262,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `;
-        document.getElementById('detailEditBtn').addEventListener('click', () => openEditLesson(id));
-
         // Overview body
         document.getElementById('lessonOverviewBody').innerHTML = `
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
@@ -292,6 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         renderQuizList(id);
+        applyDetailStudentFilter();
 
         // Update topbar title
         document.getElementById('lessonsPageTitle').textContent = lesson.title;
@@ -334,10 +337,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Back to lessons list ───────────────────────────
     document.getElementById('backToLessonsBtn')?.addEventListener('click', () => {
+        currentDetailLessonId = '';
+        if (detailStudentSearch) detailStudentSearch.value = '';
         document.getElementById('lessonDetailSection').style.display = 'none';
         document.getElementById('lessonsSection').style.display      = 'block';
         document.getElementById('lessonsPageTitle').textContent = 'บทเรียน';
-        document.getElementById('lessonsPageSub').textContent   = 'จัดการบทเรียนทั้งหมดของคุณ';
+        document.getElementById('lessonsPageSub').textContent   = 'จัดการบทเรียนที่อยู่ในความดูแลของคุณ';
     });
 
     // ── Tabs ───────────────────────────────────────────
@@ -360,12 +365,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Student search inside detail ───────────────────
     const detailStudentSearch = document.getElementById('detailStudentSearch');
+    function applyDetailStudentFilter() {
+        const q = (detailStudentSearch?.value || '').toLowerCase();
+        document.querySelectorAll('.detail-student-row').forEach(row => {
+            const subjectIds = (row.dataset.subjectIds || '')
+                .split(',')
+                .map(item => item.trim())
+                .filter(Boolean);
+            const matchSubject = !currentDetailLessonId || subjectIds.includes(currentDetailLessonId);
+            const matchSearch = row.textContent.toLowerCase().includes(q);
+            row.style.display = matchSubject && matchSearch ? '' : 'none';
+        });
+    }
     if (detailStudentSearch) {
         detailStudentSearch.addEventListener('input', () => {
-            const q = detailStudentSearch.value.toLowerCase();
-            document.querySelectorAll('.detail-student-row').forEach(row => {
-                row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-            });
+            applyDetailStudentFilter();
         });
     }
 
@@ -390,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('closeEditLessonBtn') ?.addEventListener('click', closeEditLesson);
     document.getElementById('closeEditLessonBtn2')?.addEventListener('click', closeEditLesson);
-    editLessonOverlay.addEventListener('click', e => { if (e.target === editLessonOverlay) closeEditLesson(); });
+    editLessonOverlay?.addEventListener('click', e => { if (e.target === editLessonOverlay) closeEditLesson(); });
 
     document.getElementById('saveEditLessonBtn')?.addEventListener('click', () => {
         const id       = document.getElementById('editLessonId').value;
@@ -450,8 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function getCurrentLessonId() {
-        return document.getElementById('lessonDetailHeader')
-            ?.querySelector('[data-id]')?.dataset.id;
+        return document.getElementById('lessonDetailHeader')?.dataset.id;
     }
 
     function renderQuizList(id) {

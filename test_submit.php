@@ -3,6 +3,7 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/learning_progress_lib.php';
 
 function jsonResponse(array $payload, int $statusCode = 200): void
 {
@@ -20,9 +21,16 @@ function ensureTestTable(PDO $conn): void
             test_attempt INTEGER,
             status VARCHAR(50),
             student_id VARCHAR(50),
-            course_name TEXT
+            course_name TEXT,
+            total_score INTEGER,
+            answers JSONB,
+            submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )'
     );
+
+    $conn->exec('ALTER TABLE public.test ADD COLUMN IF NOT EXISTS total_score INTEGER');
+    $conn->exec('ALTER TABLE public.test ADD COLUMN IF NOT EXISTS answers JSONB');
+    $conn->exec('ALTER TABLE public.test ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()');
 }
 
 function nextTestId(PDO $conn): int
@@ -81,10 +89,12 @@ if (!is_array($input)) {
 }
 
 $courseName = trim((string) ($input['course_name'] ?? ''));
+$subjectId = trim((string) ($input['subject_id'] ?? ''));
+$lessonIndex = (int) ($input['lesson_index'] ?? 1);
 $score = (int) ($input['score'] ?? -1);
 $totalScore = (int) ($input['total_score'] ?? 0);
 
-if ($courseName === '' || $score < 0 || $totalScore <= 0) {
+if ($courseName === '' || $subjectId === '' || $score < 0 || $totalScore <= 0) {
     jsonResponse(['status' => 'error', 'message' => 'ข้อมูลแบบทดสอบไม่ครบถ้วน'], 400);
 }
 
@@ -97,8 +107,8 @@ try {
     $status = $score >= 3 ? 'pass' : 'fail';
 
     $stmt = $conn->prepare(
-        'INSERT INTO public.test (test_id, score, test_attempt, status, student_id, course_name)
-         VALUES (:test_id, :score, :test_attempt, :status, :student_id, :course_name)
+        'INSERT INTO public.test (test_id, score, test_attempt, status, student_id, course_name, total_score, answers, submitted_at)
+         VALUES (:test_id, :score, :test_attempt, :status, :student_id, :course_name, :total_score, :answers, NOW())
          RETURNING test_id'
     );
     $stmt->execute([
@@ -108,7 +118,20 @@ try {
         ':status' => $status,
         ':student_id' => $studentId,
         ':course_name' => $courseName,
+        ':total_score' => $totalScore,
+        ':answers' => json_encode($input['answers'] ?? [], JSON_UNESCAPED_UNICODE),
     ]);
+
+    recordLearningActivity(
+        $conn,
+        $studentId,
+        $subjectId,
+        $lessonIndex > 0 ? $lessonIndex : 1,
+        'quiz_submit',
+        $courseName . ' บทที่ ' . ($lessonIndex > 0 ? $lessonIndex : 1),
+        $score,
+        $totalScore
+    );
 
     jsonResponse([
         'status' => 'success',

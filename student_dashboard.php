@@ -47,7 +47,7 @@
                 <header class="header">
                     <div class="welcome">
                         <h1>แดชบอร์ด</h1>
-                        <p>ยินดีต้อนรับกลับมา, สมชาย 👋</p>
+                        <p id="dashboardWelcome">ยินดีต้อนรับกลับมา 👋</p>
                     </div>
                     <div class="notif-icon">🔔</div>
                 </header>
@@ -55,23 +55,23 @@
                 <section class="stats-grid">
                     <div class="stat-card orange">
                         <p class="label">วิชาที่กำลังเรียน</p>
-                        <p class="value">5</p>
-                        <span class="sub-value">↑ +1 สัปดาห์นี้</span>
+                        <p class="value" id="statCourseCount">0</p>
+                        <span class="sub-value">จำนวนบทเรียนที่ลงทะเบียน</span>
                     </div>
                     <div class="stat-card blue">
-                        <p class="label">งานที่ค้างส่ง</p>
-                        <p class="value">3</p>
-                        <span class="sub-value">รอส่ง 2 งาน</span>
+                        <p class="label">ความคืบหน้าเฉลี่ย</p>
+                        <p class="value" id="statAvgProgress">0%</p>
+                        <span class="sub-value">อัปเดตจากการเข้าเรียนล่าสุด</span>
                     </div>
                     <div class="stat-card green">
-                        <p class="label">ชั่วโมงสะสม</p>
-                        <p class="value">42.5</p>
-                        <span class="sub-value">↑ +5.2 ชม.</span>
+                        <p class="label">คะแนนเฉลี่ย</p>
+                        <p class="value" id="statAvgScore">0%</p>
+                        <span class="sub-value">ดึงจากแบบทดสอบที่ทำแล้ว</span>
                     </div>
                     <div class="stat-card purple">
-                        <p class="label">คะแนนเฉลี่ย</p>
-                        <p class="value">88.2%</p>
-                        <span class="sub-value">↑ +2.3%</span>
+                        <p class="label">สถานะการเรียน</p>
+                        <p class="value" id="statLearningState">เริ่มต้น</p>
+                        <span class="sub-value">พร้อมติดตามทุกบทเรียน</span>
                     </div>
                 </section>
 
@@ -102,7 +102,7 @@
                 <header class="header">
                     <div class="welcome">
                         <h1>บทเรียนของฉัน</h1>
-                        <p>คอร์สที่คุณลงทะเบียนเรียนทั้งหมด</p>
+                        <p>บทเรียนที่คุณลงทะเบียนและมีความคืบหน้าจากระบบจริง</p>
                     </div>
                 </header>
                 <div class="lessons-container" id="lessons-list"></div>

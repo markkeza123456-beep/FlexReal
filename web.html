@@ -127,8 +127,8 @@
                         <div style="display:flex; gap:20px; align-items:center;">
                             <div style="width:80px; height:80px; background:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px;">👨‍🏫</div>
                             <div>
-                                <b>อาจารย์ผู้เชี่ยวชาญประจำหลักสูตร</b>
-                                <p style="color:var(--text-gray); font-size:14px;">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
+                                <b id="detail-instructor-name">อาจารย์ผู้เชี่ยวชาญประจำหลักสูตร</b>
+                                <p id="detail-instructor-role" style="color:var(--text-gray); font-size:14px;">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
                             </div>
                         </div>
                     </div>
@@ -143,10 +143,11 @@
                     
                     <div class="meta-list">
                         <div class="meta-item"><span>🕒 Duration</span> <b id="detail-duration">5 ชั่วโมง</b></div>
-                        <div class="meta-item"><span>📖 Lessons</span> <b>3 บทเรียน</b></div>
-                        <div class="meta-item"><span>📝 Quizzes</span> <b>1 ชุด</b></div>
+                        <div class="meta-item"><span>📖 Lessons</span> <b id="detail-lesson-count">0 บทเรียน</b></div>
+                        <div class="meta-item"><span>📝 Quizzes</span> <b id="detail-quiz-count">0 ชุด</b></div>
                         <div class="meta-item"><span>🌐 Language</span> <b>ภาษาไทย</b></div>
-                        <div class="meta-item"><span>📊 Skill level</span> <b>ระดับต้น</b></div>
+                        <div class="meta-item"><span>📊 Progress</span> <b id="detail-progress">0%</b></div>
+                        <div class="meta-item"><span>🎯 Best score</span> <b id="detail-score">0%</b></div>
                         <div class="meta-item"><span>🎓 Certificate</span> <b>yes</b></div>
                     </div>
                     
@@ -194,8 +195,8 @@
                         <div style="display:flex; gap:20px; align-items:center;">
                             <div style="width:80px; height:80px; background:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px;">👨‍🏫</div>
                             <div>
-                                <b>อาจารย์ผู้เชี่ยวชาญประจำหลักสูตร</b>
-                                <p style="color:var(--text-gray); font-size:14px;">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
+                                <b id="learning-instructor-name">อาจารย์ผู้เชี่ยวชาญประจำหลักสูตร</b>
+                                <p id="learning-instructor-role" style="color:var(--text-gray); font-size:14px;">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
                             </div>
                         </div>
                     </div>
@@ -205,14 +206,15 @@
             <div class="course-sidebar">
                 <div class="sidebar-card">
                     <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--deep-blue);">Free</h2>
-                    <button class="btn-enroll is-enrolled">ลงรายวิชาแล้ว</button>
+                    <button class="btn-enroll is-enrolled">กำลังเรียน</button>
 
                     <div class="meta-list">
                         <div class="meta-item"><span>🕒 Duration</span> <b id="learning-duration">5 ชั่วโมง</b></div>
-                        <div class="meta-item"><span>📖 Lessons</span> <b>3 บทเรียน</b></div>
-                        <div class="meta-item"><span>📝 Quizzes</span> <b>1 ชุด</b></div>
+                        <div class="meta-item"><span>📖 Lessons</span> <b id="learning-lesson-count">0 บทเรียน</b></div>
+                        <div class="meta-item"><span>📝 Quizzes</span> <b id="learning-quiz-count">0 ชุด</b></div>
                         <div class="meta-item"><span>🌐 Language</span> <b>ภาษาไทย</b></div>
-                        <div class="meta-item"><span>📊 Skill level</span> <b>ระดับต้น</b></div>
+                        <div class="meta-item"><span>📊 Progress</span> <b id="learning-progress">0%</b></div>
+                        <div class="meta-item"><span>🎯 Best score</span> <b id="learning-score">0%</b></div>
                         <div class="meta-item"><span>🎓 Certificate</span> <b>yes</b></div>
                     </div>
 

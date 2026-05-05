@@ -49,6 +49,32 @@ function ensureEnrollmentLogTable(PDO $conn): void
     );
 }
 
+function assignTeacherToStudentIfMissing(PDO $conn, string $studentId, string $subjectId): void
+{
+    $teacherStmt = $conn->prepare(
+        'SELECT teachers_id
+         FROM public.subjects
+         WHERE subjects_id = :subjects_id
+         LIMIT 1'
+    );
+    $teacherStmt->execute([':subjects_id' => $subjectId]);
+    $teacherId = trim((string) $teacherStmt->fetchColumn());
+    if ($teacherId === '') {
+        return;
+    }
+
+    $updateStmt = $conn->prepare(
+        'UPDATE public.student
+         SET teacher_id = :teacher_id
+         WHERE student_id = :student_id
+           AND (teacher_id IS NULL OR TRIM(teacher_id) = \'\')'
+    );
+    $updateStmt->execute([
+        ':teacher_id' => $teacherId,
+        ':student_id' => $studentId,
+    ]);
+}
+
 function enrollmentExists(PDO $conn, string $studentId, string $subjectId): bool
 {
     $stmt = $conn->prepare(
@@ -110,6 +136,7 @@ try {
         }
 
         if ($wasInserted) {
+            assignTeacherToStudentIfMissing($conn, $studentId, $subjectId);
             $stmtLog = $conn->prepare(
                 'INSERT INTO public.student_subject_enrollment_logs (student_id, subjects_id, enrolled_at)
                  VALUES (:student_id, :subjects_id, NOW())'
