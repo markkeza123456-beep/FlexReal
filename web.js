@@ -3,13 +3,114 @@ let currentSubjectId = '';
 let currentCourseName = '';
 let enrolledCourses = {};
 let courseIdByName = {};
-let currentLessonsHtml = '';
+let currentLessonsData = [];
+const LESSON_COUNT = 5;
+const LESSON_VIDEO_FILES = [
+    'videos/lesson1.mp4.mp4',
+    'videos/lesson-thai.mp4',
+    'videos/lesson-english.mp4',
+    'videos/lesson-math.mp4',
+    'videos/lesson-science.mp4'
+];
 
 function pick(obj, ...keys) {
     for (const key of keys) {
         if (obj && obj[key] !== undefined && obj[key] !== null) return obj[key];
     }
     return '';
+}
+
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function buildFixedLessons(lessons) {
+    const fixedLessons = [];
+    for (let index = 0; index < LESSON_COUNT; index++) {
+        const rawName = lessons[index] ? pick(lessons[index], 'Lessons_Name', 'lessons_name') : '';
+        const lessonName = String(rawName || '').trim() || `Lesson ${index + 1}`;
+        fixedLessons.push({
+            index: index + 1,
+            title: lessonName,
+            expanded: false
+        });
+    }
+    return fixedLessons;
+}
+
+function renderLessonAccordion(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!currentLessonsData.length) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const html = currentLessonsData.map((lesson) => `
+        <div class="lesson-accordion ${lesson.expanded ? 'is-expanded' : 'is-collapsed'}">
+            <button type="button" class="lesson-header" onclick="toggleLesson(${lesson.index})" aria-expanded="${lesson.expanded ? 'true' : 'false'}">
+                <span>บทที่ ${lesson.index}: ${escapeHtml(lesson.title)}</span>
+                <span class="lesson-chevron">${lesson.expanded ? '▴' : '▾'}</span>
+            </button>
+            <div class="lesson-body">
+                <div class="curriculum-list">
+                    <div class="curriculum-item">
+                        <div class="curr-left">
+                            <span class="curr-icon">📄</span>
+                            <div class="curr-text">
+                                <b>เอกสารประกอบบทที่ ${lesson.index}</b>
+                                <p>ดาวน์โหลดเอกสารประกอบบทเรียนนี้</p>
+                            </div>
+                        </div>
+                        <button class="btn-orange" onclick="downloadCourseLesson()">ดาวน์โหลดเอกสาร</button>
+                    </div>
+                    <div class="curriculum-item">
+                        <div class="curr-left">
+                            <span class="curr-icon">🎬</span>
+                            <div class="curr-text">
+                                <b>วิดีโอสรุปบทที่ ${lesson.index}</b>
+                                <p>รับชมวิดีโอประกอบบทเรียนนี้</p>
+                            </div>
+                        </div>
+                        <button class="btn-orange" onclick="openCourseVideo(${lesson.index})">ชมวิดีโอ</button>
+                    </div>
+                    <div class="curriculum-item">
+                        <div class="curr-left">
+                            <span class="curr-icon">📝</span>
+                            <div class="curr-text">
+                                <b>แบบทดสอบบทที่ ${lesson.index}</b>
+                                <p>ทำแบบทดสอบเพื่อทบทวนความเข้าใจของบทนี้</p>
+                            </div>
+                        </div>
+                        <button class="btn-outline-orange" onclick="startQuiz(${lesson.index})">เริ่มทำ Quiz</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = html;
+}
+
+function renderAllLessonAccordions() {
+    renderLessonAccordion('course-curriculum-lesson-list');
+    renderLessonAccordion('learning-lesson-text-list');
+}
+
+function toggleLesson(lessonIndex) {
+    currentLessonsData = currentLessonsData.map((lesson) => {
+        if (lesson.index === lessonIndex) {
+            return { ...lesson, expanded: !lesson.expanded };
+        }
+        return lesson;
+    });
+    renderAllLessonAccordions();
 }
 
 // --- 1. ระบบจัดการหน้าและ URL ---
@@ -105,15 +206,8 @@ async function showCourse(subjectId) {
             document.getElementById('detail-desc').innerText = String(pick(course, 'Subjects_Description', 'subjects_description')) || 'คำอธิบายรายวิชา...';
             document.getElementById('detail-duration').innerText = course.duration || 'ไม่ระบุเวลา';
             
-            // วาดรายการบทเรียนในแท็บ "เนื้อหาในคอร์ส"
-            const lessonContainer = document.getElementById('course-curriculum-lesson-list');
-            if (lessons.length > 0) {
-                currentLessonsHtml = lessons.map((lesson, index) => `<p>${index + 1}. ${pick(lesson, 'Lessons_Name', 'lessons_name') || '-'}</p>`).join('');
-                lessonContainer.innerHTML = currentLessonsHtml;
-            } else {
-                currentLessonsHtml = '';
-                lessonContainer.innerHTML = '';
-            }
+            currentLessonsData = buildFixedLessons(Array.isArray(lessons) ? lessons : []);
+            renderAllLessonAccordions();
 
             // จัดการสถานะปุ่มลงทะเบียน
             updateEnrollButton(false);
@@ -149,7 +243,7 @@ function goToCourseLearning() {
     document.getElementById('learning-desc-top').innerText = document.getElementById('detail-desc-top').innerText;
     document.getElementById('learning-desc').innerText = document.getElementById('detail-desc').innerText;
     document.getElementById('learning-duration').innerText = document.getElementById('detail-duration').innerText;
-    document.getElementById('learning-lesson-text-list').innerHTML = document.getElementById('course-curriculum-lesson-list').innerHTML;
+    renderAllLessonAccordions();
 
     showPage('course-learning');
     openLearningTab({ currentTarget: document.querySelector("#course-learning .tab-btn[onclick*='learning-curriculum']") }, 'learning-curriculum');
@@ -270,27 +364,55 @@ function downloadCourseLesson() {
     window.open(`download_course_lesson.php?subject_id=${encodeURIComponent(currentSubjectId)}`, '_blank');
 }
 
-function openCourseVideo() {
-    if (!enrolledCourses[currentSubjectId]) {
-        alert('กรุณาลงรายวิชาก่อนชมวิดีโอ');
-        return;
-    }
-    const modal = document.getElementById('modal-overlay');
+function getLessonVideoPath(lessonIndex) {
+    const safeIndex = Math.max(1, Math.min(LESSON_COUNT, Number(lessonIndex) || 1));
+    const fallbackPath = LESSON_VIDEO_FILES[0];
+    return LESSON_VIDEO_FILES[safeIndex - 1] || fallbackPath;
+}
+
+function renderVideoModalBody(lessonIndex) {
     const body = document.getElementById('modal-body');
-    // อนาคตสามารถดึง URL วิดีโอจาก DB มาใส่ตรงนี้ได้
-    const videoPath = 'lesson1.mp4'; 
+    if (!body) return;
+
+    const safeIndex = Math.max(1, Math.min(LESSON_COUNT, Number(lessonIndex) || 1));
+    const selectedLesson = currentLessonsData.find((lesson) => lesson.index === safeIndex);
+    const selectedTitle = selectedLesson ? selectedLesson.title : `Lesson ${safeIndex}`;
+    const videoPath = getLessonVideoPath(safeIndex);
+    const selectorOptions = currentLessonsData.map((lesson) => `
+        <option value="${lesson.index}" ${lesson.index === safeIndex ? 'selected' : ''}>
+            บทที่ ${lesson.index}: ${escapeHtml(lesson.title)}
+        </option>
+    `).join('');
 
     body.innerHTML = `
-        <h3 style="margin-bottom:15px; color:#E67E22;">🎥 วิดีโอบทเรียน</h3>
+        <h3 style="margin-bottom:10px; color:#E67E22;">🎥 วิดีโอบทเรียน</h3>
+        <p style="margin-bottom:12px; color:#636e72;">กำลังดู: บทที่ ${safeIndex} - ${escapeHtml(selectedTitle)}</p>
+        <label for="video-lesson-select" style="display:block; margin-bottom:8px; font-weight:600; color:#2d3436;">เปลี่ยนบทเรียน</label>
+        <select id="video-lesson-select" onchange="changeModalLessonVideo(this.value)" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; margin-bottom:14px;">
+            ${selectorOptions}
+        </select>
         <video width="100%" controls autoplay style="border-radius:10px; background:#000;">
             <source src="${videoPath}" type="video/mp4">
             เบราว์เซอร์ไม่รองรับวิดีโอ
         </video>
     `;
+}
+
+function changeModalLessonVideo(lessonIndex) {
+    renderVideoModalBody(lessonIndex);
+}
+
+function openCourseVideo(lessonIndex) {
+    if (!enrolledCourses[currentSubjectId]) {
+        alert('กรุณาลงรายวิชาก่อนชมวิดีโอ');
+        return;
+    }
+    const modal = document.getElementById('modal-overlay');
+    renderVideoModalBody(lessonIndex || 1);
     modal.style.display = 'flex';
 }
 
-function startQuiz() {
+function startQuiz(lessonIndex) {
     if (!enrolledCourses[currentSubjectId]) {
         alert('กรุณาลงรายวิชาก่อนทำแบบทดสอบ');
         return;
@@ -302,23 +424,23 @@ function startQuiz() {
     if (currentSubjectId) {
         url.searchParams.set('subject_id', currentSubjectId);
     }
+    if (lessonIndex) {
+        url.searchParams.set('lesson', String(lessonIndex));
+    }
     window.location.href = url.pathname.split('/').pop() + url.search;
 }
 
 function setCurriculumAccess(isEnrolled) {
     const lockedMsg = document.getElementById('curriculum-locked-msg');
     const lessonList = document.getElementById('course-curriculum-lesson-list');
-    const actionList = document.getElementById('course-curriculum-actions');
-    if (!lockedMsg || !lessonList || !actionList) return;
+    if (!lockedMsg || !lessonList) return;
 
     if (isEnrolled) {
         lockedMsg.style.display = 'none';
-        lessonList.style.display = currentLessonsHtml ? 'grid' : 'none';
-        actionList.style.display = 'flex';
+        lessonList.style.display = currentLessonsData.length ? 'grid' : 'none';
     } else {
         lockedMsg.style.display = 'block';
         lessonList.style.display = 'none';
-        actionList.style.display = 'none';
     }
 }
 
