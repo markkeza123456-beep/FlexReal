@@ -81,8 +81,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $stmt_user->execute([$userid, $password, 'Parent']);
 
             // Step 3: บันทึกลงตาราง Parents
-            $stmt_parent = $conn->prepare("INSERT INTO Parents (Parents_ID, Password, Parents_Name, Email, Tel, Parents_Address) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt_parent->execute([$userid, $password, $fullname, $email, $phone, $address]);
+            $stmt_parent = $conn->prepare("INSERT INTO Parents (Parents_ID, Password, Parents_Name, Email, Tel, Parents_Address, PIN) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt_parent->execute([$userid, $password, $fullname, $email, $phone, $address, $link_student_pin]);
 
             // Step 4: **ไฮไลท์สำคัญ** อัปเดตตาราง Student เพื่อโยงรหัส Parent_ID เข้ากับตัวนักเรียน
             $link_update = $conn->prepare("UPDATE Student SET Parent_ID = ? WHERE Student_ID = ?");
