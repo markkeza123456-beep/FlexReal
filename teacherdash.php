@@ -9,28 +9,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
     exit;
 }
 
-<<<<<<< HEAD
 require_once __DIR__ . '/db_connect.php';
-=======
-// ดึงชื่ออาจารย์จาก session แทน mock data
-// ดึง avatar_url จากฐานข้อมูล
-$avatar_url = '';
-try {
-    require_once 'db_connect.php';
-    $stmtAv = $conn->prepare("SELECT avatar_url FROM public.teachers WHERE teachers_id = :uid");
-    $stmtAv->execute(['uid' => $_SESSION['user_id']]);
-    $rowAv = $stmtAv->fetch(PDO::FETCH_ASSOC);
-    $avatar_url = $rowAv['avatar_url'] ?? '';
-} catch (Exception $e) { $avatar_url = ''; }
-
-$teacher = [
-    'name'       => $_SESSION['name'],
-    'subject'    => 'คณิตศาสตร์',
-    'avatar'     => mb_substr($_SESSION['name'], 0, 1),
-    'avatar_url' => $avatar_url,
-    'id'         => $_SESSION['user_id'],
-];
->>>>>>> 52849ed3e843d8c643645e10466ce145d3336c4f
 
 // ฟังก์ชันป้องกัน XSS
 function h(?string $value): string {
@@ -242,9 +221,6 @@ $stats = [
     </a>
 
     <a href="#" class="sidebar-profile nav-item" data-view="settings" style="text-decoration:none">
-<<<<<<< HEAD
-        <div class="profile-avatar"><?= h($teacherAvatar) ?></div>
-=======
         <div class="profile-avatar" id="sidebarAvatarWrap" style="overflow:hidden;padding:0">
             <?php if (!empty($teacher['avatar_url'])): ?>
             <img src="<?= htmlspecialchars($teacher['avatar_url']) ?>" style="width:100%;height:100%;object-fit:cover;border-radius:50%" id="sidebarAvatarImg">
@@ -252,7 +228,6 @@ $stats = [
             <span id="sidebarAvatarInitial"><?= $teacher['avatar'] ?></span>
             <?php endif; ?>
         </div>
->>>>>>> 52849ed3e843d8c643645e10466ce145d3336c4f
         <div class="profile-info">
             <div class="profile-name"><?= h($teacherName) ?></div>
             <div class="profile-role">อาจารย์ • <?= h($teacherSubjectText) ?></div>
@@ -415,8 +390,6 @@ $stats = [
         </div>
     </div>
 
-<<<<<<< HEAD
-=======
     <!-- Lesson Detail View (hidden by default) -->
     <div id="lessonDetailSection" style="display:none;flex-direction:column;gap:20px">
 
@@ -881,7 +854,6 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
     </div><!-- /view-dashboard -->
 
     <!-- ══ VIEW: LESSONS ══ -->
->>>>>>> 52849ed3e843d8c643645e10466ce145d3336c4f
     <div id="view-lessons" class="page-view" style="display:none">
         <header class="topbar">
             <div class="topbar-left">
@@ -1093,12 +1065,6 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
             </div>
         </header>
 
-<<<<<<< HEAD
-        <div style="display:flex;flex-direction:column;gap:20px;max-width:600px;width:100%">
-            <div class="card" style="margin:0">
-                <div class="card-header">
-                    <h2 class="card-title">โปรไฟล์</h2>
-=======
     <header class="topbar">
         <div class="topbar-left">
             <h1 class="page-title">ตั้งค่า</h1>
@@ -1122,7 +1088,6 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
                 <div id="avatarDisplay" class="profile-avatar" style="width:72px;height:72px;font-size:28px;overflow:hidden;padding:0">
                     <img id="avatarImg" src="<?= htmlspecialchars($teacher['avatar_url']) ?>" alt="" style="<?= !empty($teacher['avatar_url']) ? 'display:block' : 'display:none' ?>;width:100%;height:100%;object-fit:cover;border-radius:50%">
                     <span id="avatarInitial" style="<?= !empty($teacher['avatar_url']) ? 'display:none' : '' ?>"><?= $teacher['avatar'] ?></span>
->>>>>>> 52849ed3e843d8c643645e10466ce145d3336c4f
                 </div>
                 <div style="display:flex;align-items:center;gap:20px;padding:8px 0 24px">
                     <div style="position:relative;flex-shrink:0;cursor:pointer" onclick="document.getElementById('avatarInput').click()" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
@@ -1201,24 +1166,7 @@ function previewAvatar(input) {
     const file = input.files[0];
     if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
-<<<<<<< HEAD
-    reader.onload = e => {
-        const img = document.getElementById('avatarImg');
-        const initial = document.getElementById('avatarInitial');
-        img.src = e.target.result;
-        img.style.display = 'block';
-        initial.style.display = 'none';
-        const sideAvatar = document.querySelector('.sidebar-profile .profile-avatar');
-        if (sideAvatar) {
-            sideAvatar.style.background = 'none';
-            sideAvatar.style.padding = '0';
-            sideAvatar.style.overflow = 'hidden';
-            sideAvatar.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-        }
-    };
-=======
     reader.onload = e => openCropModal(e.target.result);
->>>>>>> 52849ed3e843d8c643645e10466ce145d3336c4f
     reader.readAsDataURL(file);
     // reset input so same file can be re-selected
     input.value = '';
