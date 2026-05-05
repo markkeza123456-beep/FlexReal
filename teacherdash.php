@@ -734,8 +734,9 @@ $stats = [
             </div>
         </header>
 
+        <div style="display:flex;justify-content:center;align-items:flex-start;padding:8px 0 40px">
         <div style="display:flex;flex-direction:column;gap:20px;max-width:600px;width:100%">
-            <div class="card" style="margin:0">
+            <div class="card" style="margin:0;box-shadow:0 4px 24px rgba(0,0,0,.35);border-color:#2a2a2a">
                 <div class="card-header">
                     <h2 class="card-title">👤 โปรไฟล์</h2>
                 </div>
@@ -801,6 +802,7 @@ $stats = [
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </div>
 </main>
