@@ -49,6 +49,21 @@ function ensureEnrollmentLogTable(PDO $conn): void
     );
 }
 
+function enrollmentExists(PDO $conn, string $studentId, string $subjectId): bool
+{
+    $stmt = $conn->prepare(
+        'SELECT 1 FROM public.student_subject
+         WHERE student_id = :student_id AND subjects_id = :subjects_id
+         LIMIT 1'
+    );
+    $stmt->execute([
+        ':student_id' => $studentId,
+        ':subjects_id' => $subjectId,
+    ]);
+
+    return (bool) $stmt->fetchColumn();
+}
+
 $subjectIdInput = trim((string) ($_POST['subject_id'] ?? $_GET['subject_id'] ?? ''));
 $courseName = trim((string) ($_POST['course_name'] ?? $_GET['course_name'] ?? ''));
 if ($subjectIdInput === '' && $courseName === '') {
@@ -81,16 +96,20 @@ try {
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $stmt = $conn->prepare(
-            'INSERT INTO public.student_subject (student_id, subjects_id)
-             VALUES (:student_id, :subjects_id)
-             ON CONFLICT (student_id, subjects_id) DO NOTHING'
-        );
-        $stmt->execute([
-            ':student_id' => $studentId,
-            ':subjects_id' => $subjectId,
-        ]);
-        if ($stmt->rowCount() > 0) {
+        $wasInserted = false;
+        if (!enrollmentExists($conn, $studentId, $subjectId)) {
+            $stmt = $conn->prepare(
+                'INSERT INTO public.student_subject (student_id, subjects_id)
+                 VALUES (:student_id, :subjects_id)'
+            );
+            $stmt->execute([
+                ':student_id' => $studentId,
+                ':subjects_id' => $subjectId,
+            ]);
+            $wasInserted = $stmt->rowCount() > 0;
+        }
+
+        if ($wasInserted) {
             $stmtLog = $conn->prepare(
                 'INSERT INTO public.student_subject_enrollment_logs (student_id, subjects_id, enrolled_at)
                  VALUES (:student_id, :subjects_id, NOW())'
@@ -109,19 +128,9 @@ try {
         ]);
     }
 
-    $stmt = $conn->prepare(
-        'SELECT 1 FROM public.student_subject
-         WHERE student_id = :student_id AND subjects_id = :subjects_id
-         LIMIT 1'
-    );
-    $stmt->execute([
-        ':student_id' => $studentId,
-        ':subjects_id' => $subjectId,
-    ]);
-
     jsonResponse([
         'status' => 'success',
-        'enrolled' => (bool) $stmt->fetchColumn(),
+        'enrolled' => enrollmentExists($conn, $studentId, $subjectId),
         'course_name' => $courseName,
         'subject_id' => $subjectId,
     ]);
