@@ -19,7 +19,6 @@ const pages = {
 };
 
 function showPage(pageKey) {
-<<<<<<< HEAD
     Object.keys(pages).forEach((key) => {
         pages[key].style.display = key === pageKey ? 'block' : 'none';
         if (navBtns[key]) {
@@ -32,31 +31,6 @@ function showPage(pageKey) {
     } else if (pageKey === 'assignments') {
         renderAssignments(dashboardState.assignments);
     }
-=======
-    // Hide all pages
-    Object.keys(pages).forEach(key => {
-        pages[key].style.display = 'none';
-    });
-
-    // Show target page
-    if (pages[pageKey]) pages[pageKey].style.display = 'block';
-
-    // Update active state on menu items (menu-item class)
-    document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-
-    // Update active state for settings button (user-profile)
-    const settingsBtn = document.getElementById('btn-settings');
-    settingsBtn.classList.remove('active');
-
-    if (pageKey === 'settings') {
-        settingsBtn.classList.add('active');
-    } else if (navBtns[pageKey]) {
-        navBtns[pageKey].classList.add('active');
-    }
-
-    if (pageKey === 'lessons') renderLessons();
-    if (pageKey === 'assignments') renderAssignments();
->>>>>>> 52849ed3e843d8c643645e10466ce145d3336c4f
 }
 
 function statusClass(score) {
@@ -71,7 +45,7 @@ function statusLabel(score) {
         excellent: 'ดีเยี่ยม',
         good: 'ดี',
         average: 'ปานกลาง',
-        needs-help: 'ต้องดูแล'
+        'needs-help': 'ต้องดูแล'
     };
     return map[statusClass(score)] || 'เริ่มต้น';
 }
@@ -350,25 +324,15 @@ function saveProfile() {
     btn.textContent = 'กำลังบันทึก...';
 
     const body = new FormData();
-<<<<<<< HEAD
-    body.append('name', name);
-=======
     body.append('name',        name);
     body.append('email',       document.getElementById('profileEmail')?.value.trim() ?? '');
     body.append('phone',       document.getElementById('profilePhone')?.value.trim() ?? '');
->>>>>>> 52849ed3e843d8c643645e10466ce145d3336c4f
     body.append('pwd_current', current);
     body.append('pwd_new', newPwd);
 
-<<<<<<< HEAD
-    fetch('update_profile.php', { method: 'POST', body })
-        .then((r) => r.json())
-        .then((data) => {
-=======
     fetch('update_student_profile.php', { method: 'POST', body })
         .then(r => r.json())
         .then(data => {
->>>>>>> 52849ed3e843d8c643645e10466ce145d3336c4f
             if (data.success) {
                 showFeedback('success', data.message);
                 if (dashboardState.student) {
