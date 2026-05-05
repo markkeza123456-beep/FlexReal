@@ -100,6 +100,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
     gap: 1.5rem;
     max-width: 620px;
     width: 100%;
+    margin: 0 auto;
 }
 
 .settings-card { margin: 0; }
@@ -257,4 +258,16 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
     cursor: pointer;
     font-size: 0.875rem;
     color: var(--text-muted);
+}
+
+/* Settings page centering */
+#settings-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#settings-page .header {
+    width: 100%;
+    max-width: 620px;
 }
