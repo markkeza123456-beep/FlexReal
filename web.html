@@ -117,39 +117,7 @@
     <div id="curriculum" class="tab-content">
     <div class="info-card">
         <p id="curriculum-locked-msg" style="color:var(--text-gray);">กรุณาลงทะเบียนรายวิชาก่อน เพื่อปลดล็อกสื่อการสอนและแบบทดสอบ</p>
-        <div id="course-curriculum-lesson-list" class="lesson-text-list" style="display:none;"></div>
-        <div id="course-curriculum-actions" class="curriculum-list" style="display:none;">
-            <div class="curriculum-item">
-                <div class="curr-left">
-                    <span class="curr-icon">📄</span>
-                    <div class="curr-text">
-                        <b>เอกสารประกอบการเรียน</b>
-                        <p>ดาวน์โหลดสรุปเนื้อหาประจำวิชา</p>
-                    </div>
-                </div>
-                <button class="btn-orange" onclick="downloadCourseLesson()">ดาวน์โหลดเอกสาร</button>
-            </div>
-            <div class="curriculum-item">
-                <div class="curr-left">
-                    <span class="curr-icon">🎬</span>
-                    <div class="curr-text">
-                        <b>วิดีโอสรุปบทเรียน</b>
-                        <p>รับชมวิดีโอประกอบการเรียน</p>
-                    </div>
-                </div>
-                <button class="btn-orange" onclick="openCourseVideo()">ชมวิดีโอ</button>
-            </div>
-            <div class="curriculum-item">
-                <div class="curr-left">
-                    <span class="curr-icon">📝</span>
-                    <div class="curr-text">
-                        <b>แบบทดสอบวัดความรู้</b>
-                        <p>ทำแบบทดสอบเพื่อรับใบประกาศ</p>
-                    </div>
-                </div>
-                <button class="btn-outline-orange" onclick="startQuiz()">เริ่มทำ Quiz</button>
-            </div>
-        </div>
+        <div id="course-curriculum-lesson-list" class="lesson-accordion-list" style="display:none;"></div>
     </div>
 </div>
 
@@ -216,41 +184,7 @@
 
                 <div id="learning-curriculum" class="learning-tab-content active">
                     <div class="info-card">
-                        <div id="learning-lesson-text-list" class="lesson-text-list"></div>
-                        <div class="curriculum-list">
-                            <div class="curriculum-item">
-                                <div class="curr-left">
-                                    <span class="curr-icon">📖</span>
-                                    <div class="curr-text">
-                                        <b>บทที่ 1: บทเรียน</b>
-                                        <p>อ่านสรุปเนื้อหาบทเรียนที่ 1 และ 2</p>
-                                    </div>
-                                </div>
-                                <button class="btn-orange" onclick="downloadCourseLesson()">ดาวน์โหลดเอกสาร</button>
-                            </div>
-
-                            <div class="curriculum-item">
-                                <div class="curr-left">
-                                    <span class="curr-icon">🎬</span>
-                                    <div class="curr-text">
-                                        <b>บทที่ 2: วิดีโอสรุปบทเรียน</b>
-                                        <p>คลิกเพื่อรับชมวิดีโอประกอบการสอน</p>
-                                    </div>
-                                </div>
-                                <button class="btn-orange" onclick="openCourseVideo()">ชมวิดีโอ</button>
-                            </div>
-
-                            <div class="curriculum-item">
-                                <div class="curr-left">
-                                    <span class="curr-icon">📝</span>
-                                    <div class="curr-text">
-                                        <b>แบบทดสอบวัดความรู้</b>
-                                        <p>ทำแบบทดสอบเพื่อรับใบประกาศ</p>
-                                    </div>
-                                </div>
-                                <button class="btn-outline-orange" onclick="startQuiz()">เริ่มทำ Quiz</button>
-                            </div>
-                        </div>
+                        <div id="learning-lesson-text-list" class="lesson-accordion-list"></div>
                     </div>
                 </div>
 

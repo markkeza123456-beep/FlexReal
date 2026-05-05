@@ -250,6 +250,57 @@ body { background: #f9ba87; color: var(--deep-blue); }
     margin: 0;
 }
 
+.lesson-accordion-list {
+    display: grid;
+    gap: 12px;
+}
+
+.lesson-accordion {
+    border: 1px solid #eee;
+    border-radius: 12px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.lesson-header {
+    width: 100%;
+    border: none;
+    background: #fffaf7;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--deep-blue);
+    cursor: pointer;
+    text-align: left;
+}
+
+.lesson-header:hover {
+    background: #fff4ed;
+}
+
+.lesson-chevron {
+    color: var(--primary-orange);
+    font-size: 16px;
+    line-height: 1;
+}
+
+.lesson-body {
+    display: grid;
+    padding: 12px;
+}
+
+.lesson-accordion.is-collapsed .lesson-body {
+    display: none;
+}
+
+.lesson-accordion.is-expanded .lesson-body {
+    display: grid;
+    animation: fadeIn 0.2s ease;
+}
+
 /* Sidebar & Buttons */
 .sidebar-card {
     background: white;
@@ -309,6 +360,15 @@ body { background: #f9ba87; color: var(--deep-blue); }
 @media (max-width: 992px) {
     .course-layout-grid { grid-template-columns: 1fr; }
     .course-sidebar { order: -1; }
+    .curriculum-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .curriculum-item .btn-orange,
+    .curriculum-item .btn-outline-orange {
+        width: 100%;
+    }
 }
 
 /* ตั้งค่าเริ่มต้นให้เนื้อหา Tab อื่นๆ ถูกซ่อน */
