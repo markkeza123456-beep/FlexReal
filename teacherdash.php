@@ -8,11 +8,22 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
 }
 
 // ดึงชื่ออาจารย์จาก session แทน mock data
+// ดึง avatar_url จากฐานข้อมูล
+$avatar_url = '';
+try {
+    require_once 'db_connect.php';
+    $stmtAv = $conn->prepare("SELECT avatar_url FROM public.teachers WHERE teachers_id = :uid");
+    $stmtAv->execute(['uid' => $_SESSION['user_id']]);
+    $rowAv = $stmtAv->fetch(PDO::FETCH_ASSOC);
+    $avatar_url = $rowAv['avatar_url'] ?? '';
+} catch (Exception $e) { $avatar_url = ''; }
+
 $teacher = [
-    'name'    => $_SESSION['name'],
-    'subject' => 'คณิตศาสตร์',
-    'avatar'  => mb_substr($_SESSION['name'], 0, 1),
-    'id'      => $_SESSION['user_id'],
+    'name'       => $_SESSION['name'],
+    'subject'    => 'คณิตศาสตร์',
+    'avatar'     => mb_substr($_SESSION['name'], 0, 1),
+    'avatar_url' => $avatar_url,
+    'id'         => $_SESSION['user_id'],
 ];
 
 
@@ -118,7 +129,13 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
     </a>
 
     <a href="#" class="sidebar-profile nav-item" data-view="settings" style="text-decoration:none">
-        <div class="profile-avatar"><?= $teacher['avatar'] ?></div>
+        <div class="profile-avatar" id="sidebarAvatarWrap" style="overflow:hidden;padding:0">
+            <?php if (!empty($teacher['avatar_url'])): ?>
+            <img src="<?= htmlspecialchars($teacher['avatar_url']) ?>" style="width:100%;height:100%;object-fit:cover;border-radius:50%" id="sidebarAvatarImg">
+            <?php else: ?>
+            <span id="sidebarAvatarInitial"><?= $teacher['avatar'] ?></span>
+            <?php endif; ?>
+        </div>
         <div class="profile-info">
             <div class="profile-name"><?= htmlspecialchars($teacher['name']) ?></div>
             <div class="profile-role">อาจารย์ · <?= htmlspecialchars($teacher['subject']) ?></div>
@@ -582,13 +599,8 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
 </div>
 <?php
  
-// ดึงชื่ออาจารย์จาก session แทน mock data
-$teacher = [
-    'name'    => $_SESSION['name'],
-    'subject' => 'คณิตศาสตร์',
-    'avatar'  => mb_substr($_SESSION['name'], 0, 1),
-    'id'      => $_SESSION['user_id'],
-];
+// $teacher already defined above
+
 
 
 $stats = [
@@ -693,7 +705,13 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
     </a>
 
     <a href="#" class="sidebar-profile nav-item" data-view="settings" style="text-decoration:none">
-        <div class="profile-avatar"><?= $teacher['avatar'] ?></div>
+        <div class="profile-avatar" id="sidebarAvatarWrap" style="overflow:hidden;padding:0">
+            <?php if (!empty($teacher['avatar_url'])): ?>
+            <img src="<?= htmlspecialchars($teacher['avatar_url']) ?>" style="width:100%;height:100%;object-fit:cover;border-radius:50%" id="sidebarAvatarImg">
+            <?php else: ?>
+            <span id="sidebarAvatarInitial"><?= $teacher['avatar'] ?></span>
+            <?php endif; ?>
+        </div>
         <div class="profile-info">
             <div class="profile-name"><?= htmlspecialchars($teacher['name']) ?></div>
             <div class="profile-role">อาจารย์ · <?= htmlspecialchars($teacher['subject']) ?></div>
@@ -1137,8 +1155,8 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
             <!-- Avatar picker -->
             <div style="position:relative;flex-shrink:0;cursor:pointer" onclick="document.getElementById('avatarInput').click()" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
                 <div id="avatarDisplay" class="profile-avatar" style="width:72px;height:72px;font-size:28px;overflow:hidden;padding:0">
-                    <img id="avatarImg" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%">
-                    <span id="avatarInitial"><?= $teacher['avatar'] ?></span>
+                    <img id="avatarImg" src="<?= htmlspecialchars($teacher['avatar_url']) ?>" alt="" style="<?= !empty($teacher['avatar_url']) ? 'display:block' : 'display:none' ?>;width:100%;height:100%;object-fit:cover;border-radius:50%">
+                    <span id="avatarInitial" style="<?= !empty($teacher['avatar_url']) ? 'display:none' : '' ?>"><?= $teacher['avatar'] ?></span>
                 </div>
                 <div style="position:absolute;bottom:0;right:0;width:22px;height:22px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid var(--bg2)">✏️</div>
                 <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="previewAvatar(this)">
@@ -1270,28 +1288,16 @@ $score_labels = ['excellent'=>'ดีเยี่ยม','good'=>'ดี','avera
 
 <script src="teacherdash.js"></script>
 <script>
-// ── Avatar preview ─────────────────────────────────
+// ── Avatar preview → open crop modal ───────────────
 function previewAvatar(input) {
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];
     if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
-    reader.onload = e => {
-        const img     = document.getElementById('avatarImg');
-        const initial = document.getElementById('avatarInitial');
-        img.src          = e.target.result;
-        img.style.display    = 'block';
-        initial.style.display = 'none';
-        // Update sidebar avatar too
-        const sideAvatar = document.querySelector('.sidebar-profile .profile-avatar');
-        if (sideAvatar) {
-            sideAvatar.style.background    = 'none';
-            sideAvatar.style.padding       = '0';
-            sideAvatar.style.overflow      = 'hidden';
-            sideAvatar.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-        }
-    };
+    reader.onload = e => openCropModal(e.target.result);
     reader.readAsDataURL(file);
+    // reset input so same file can be re-selected
+    input.value = '';
 }
 
 // ── Toggle password visibility ─────────────────────
@@ -1347,6 +1353,260 @@ function checkPwdMatch() {
         msg.textContent   = '✗ รหัสผ่านไม่ตรงกัน';
     }
 }
+
+// ═══════════════════════════════════════════════════
+// CROP MODAL
+// ═══════════════════════════════════════════════════
+(function () {
+    // ---------- state ----------
+    let srcDataUrl = '';
+    let imgNatW = 0, imgNatH = 0;
+    // rendered image position & scale inside the crop-area
+    let posX = 0, posY = 0, scale = 1;
+    let dragging = false, startX = 0, startY = 0, startPX = 0, startPY = 0;
+
+    const CROP_SIZE = 240; // px – the visible circular window
+
+    // ---------- inject modal HTML once ----------
+    const modalHTML = `
+<div id="cropOverlay" style="display:none;position:fixed;inset:0;z-index:9999;
+     background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center">
+  <div style="background:var(--bg2,#1e2130);border-radius:16px;padding:28px 24px 22px;
+       width:min(92vw,360px);box-shadow:0 24px 60px rgba(0,0,0,.5);text-align:center">
+    <div style="font-size:15px;font-weight:700;color:var(--text,#f1f5f9);margin-bottom:18px">
+      ✂️ ครอปรูปโปรไฟล์
+    </div>
+
+    <!-- crop viewport -->
+    <div id="cropViewport" style="
+         position:relative;width:${CROP_SIZE}px;height:${CROP_SIZE}px;margin:0 auto 14px;
+         border-radius:50%;overflow:hidden;cursor:grab;
+         box-shadow:0 0 0 4px var(--orange,#f97316),0 0 0 7px rgba(249,115,22,.2);
+         background:#000;touch-action:none">
+      <img id="cropImg" draggable="false" style="
+           position:absolute;transform-origin:top left;user-select:none;
+           -webkit-user-select:none;pointer-events:none">
+    </div>
+
+    <!-- zoom slider -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <span style="font-size:13px;color:var(--text-muted,#94a3b8)">🔍</span>
+      <input type="range" id="cropZoom" min="1" max="3" step="0.01" value="1"
+             style="flex:1;accent-color:var(--orange,#f97316)">
+      <span style="font-size:13px;color:var(--text-muted,#94a3b8)">🔎</span>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button id="cropCancelBtn" style="
+              flex:1;padding:10px;border-radius:8px;border:1px solid var(--border,#334155);
+              background:transparent;color:var(--text,#f1f5f9);cursor:pointer;font-size:13px">
+        ยกเลิก
+      </button>
+      <button id="cropConfirmBtn" style="
+              flex:1;padding:10px;border-radius:8px;border:none;
+              background:var(--orange,#f97316);color:#fff;cursor:pointer;
+              font-size:13px;font-weight:600">
+        ✓ ใช้รูปนี้
+      </button>
+    </div>
+    <div id="cropUploadMsg" style="font-size:12px;margin-top:10px;color:var(--text-muted,#94a3b8);
+         min-height:18px"></div>
+  </div>
+</div>`;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // ---------- elements ----------
+    const overlay     = document.getElementById('cropOverlay');
+    const viewport    = document.getElementById('cropViewport');
+    const cropImg     = document.getElementById('cropImg');
+    const zoomSlider  = document.getElementById('cropZoom');
+    const cancelBtn   = document.getElementById('cropCancelBtn');
+    const confirmBtn  = document.getElementById('cropConfirmBtn');
+    const uploadMsg   = document.getElementById('cropUploadMsg');
+
+    // ---------- open ----------
+    window.openCropModal = function (dataUrl) {
+        srcDataUrl = dataUrl;
+        scale = 1;
+        zoomSlider.value = 1;
+        uploadMsg.textContent = '';
+
+        const tmp = new Image();
+        tmp.onload = () => {
+            imgNatW = tmp.naturalWidth;
+            imgNatH = tmp.naturalHeight;
+
+            // initial scale: fill the circle
+            const minFit = CROP_SIZE / Math.min(imgNatW, imgNatH);
+            scale = minFit;
+            zoomSlider.min = minFit.toFixed(3);
+            zoomSlider.value = minFit;
+
+            cropImg.src = dataUrl;
+            applyTransform();
+            centerImage();
+            overlay.style.display = 'flex';
+        };
+        tmp.src = dataUrl;
+    };
+
+    // ---------- transform helpers ----------
+    function applyTransform() {
+        cropImg.style.width  = (imgNatW * scale) + 'px';
+        cropImg.style.height = (imgNatH * scale) + 'px';
+        cropImg.style.transform = `translate(${posX}px, ${posY}px)`;
+    }
+
+    function centerImage() {
+        posX = (CROP_SIZE - imgNatW * scale) / 2;
+        posY = (CROP_SIZE - imgNatH * scale) / 2;
+        applyTransform();
+    }
+
+    function clamp() {
+        const w = imgNatW * scale;
+        const h = imgNatH * scale;
+        // image must fully cover the crop circle
+        if (posX > 0) posX = 0;
+        if (posY > 0) posY = 0;
+        if (posX + w < CROP_SIZE) posX = CROP_SIZE - w;
+        if (posY + h < CROP_SIZE) posY = CROP_SIZE - h;
+    }
+
+    // ---------- zoom slider ----------
+    zoomSlider.addEventListener('input', () => {
+        const newScale = parseFloat(zoomSlider.value);
+        // zoom toward center of crop area
+        const cx = CROP_SIZE / 2;
+        const cy = CROP_SIZE / 2;
+        const ratio = newScale / scale;
+        posX = cx - ratio * (cx - posX);
+        posY = cy - ratio * (cy - posY);
+        scale = newScale;
+        clamp();
+        applyTransform();
+    });
+
+    // ---------- drag (mouse) ----------
+    viewport.addEventListener('mousedown', e => {
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        startPX = posX;     startPY = posY;
+        viewport.style.cursor = 'grabbing';
+        e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        posX = startPX + (e.clientX - startX);
+        posY = startPY + (e.clientY - startY);
+        clamp();
+        applyTransform();
+    });
+    document.addEventListener('mouseup', () => {
+        dragging = false;
+        viewport.style.cursor = 'grab';
+    });
+
+    // ---------- drag (touch) ----------
+    viewport.addEventListener('touchstart', e => {
+        if (e.touches.length !== 1) return;
+        dragging = true;
+        startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+        startPX = posX; startPY = posY;
+        e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchmove', e => {
+        if (!dragging || e.touches.length !== 1) return;
+        posX = startPX + (e.touches[0].clientX - startX);
+        posY = startPY + (e.touches[0].clientY - startY);
+        clamp();
+        applyTransform();
+        e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchend', () => { dragging = false; });
+
+    // ---------- cancel ----------
+    cancelBtn.addEventListener('click', () => {
+        overlay.style.display = 'none';
+    });
+
+    // ---------- confirm → canvas crop → upload ----------
+    confirmBtn.addEventListener('click', () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = CROP_SIZE;
+        const ctx = canvas.getContext('2d');
+
+        // draw only the visible region
+        ctx.beginPath();
+        ctx.arc(CROP_SIZE/2, CROP_SIZE/2, CROP_SIZE/2, 0, Math.PI*2);
+        ctx.clip();
+
+        const tmp = new Image();
+        tmp.onload = () => {
+            ctx.drawImage(tmp, posX, posY, imgNatW * scale, imgNatH * scale);
+            const croppedDataUrl = canvas.toDataURL('image/png');
+
+            // update profile page avatar immediately
+            const avatarImg     = document.getElementById('avatarImg');
+            const avatarInitial = document.getElementById('avatarInitial');
+            if (avatarImg) {
+                avatarImg.src = croppedDataUrl;
+                avatarImg.style.display = 'block';
+            }
+            if (avatarInitial) avatarInitial.style.display = 'none';
+
+            // update sidebar avatars
+            document.querySelectorAll('.sidebar-profile .profile-avatar').forEach(el => {
+                el.style.background = 'none';
+                el.style.padding    = '0';
+                el.style.overflow   = 'hidden';
+                el.innerHTML = `<img src="${croppedDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+            });
+
+            overlay.style.display = 'none';
+
+            // upload to server
+            uploadMsg.textContent = '⏳ กำลังอัปโหลด...';
+            overlay.style.display = 'flex';
+            confirmBtn.disabled = true;
+            cancelBtn.disabled  = true;
+
+            fetch('uploadavatar.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: croppedDataUrl })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    uploadMsg.style.color = '#10b981';
+                    uploadMsg.textContent = '✓ อัปโหลดสำเร็จ!';
+                    // update with real CDN URL
+                    if (data.url) {
+                        if (avatarImg) avatarImg.src = data.url;
+                        document.querySelectorAll('.sidebar-profile .profile-avatar img').forEach(img => img.src = data.url);
+                    }
+                    setTimeout(() => { overlay.style.display = 'none'; }, 1000);
+                } else {
+                    uploadMsg.style.color = '#ef4444';
+                    uploadMsg.textContent = '✗ ' + (data.message || 'อัปโหลดล้มเหลว');
+                }
+            })
+            .catch(() => {
+                uploadMsg.style.color = '#ef4444';
+                uploadMsg.textContent = '✗ เกิดข้อผิดพลาด กรุณาลองใหม่';
+            })
+            .finally(() => {
+                confirmBtn.disabled = false;
+                cancelBtn.disabled  = false;
+            });
+        };
+        tmp.src = srcDataUrl;
+    });
+})();
 </script>
+
+<!-- ── Crop Modal ── inserted by JS above ── -->
 </body>
 </html>
