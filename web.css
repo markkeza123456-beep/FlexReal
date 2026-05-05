@@ -292,6 +292,39 @@ body { background: #f9ba87; color: var(--deep-blue); }
     padding: 12px;
 }
 
+.lesson-progress-text {
+    margin: 2px 4px 10px;
+    color: var(--text-gray);
+    font-size: 13px;
+}
+
+.lesson-status-badge {
+    display: inline-block;
+    margin: 2px 4px 8px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.lesson-status-badge.is-pass {
+    background: #e8f8ee;
+    color: #15803d;
+    border: 1px solid #86efac;
+}
+
+.lesson-status-badge.is-pending {
+    background: #fff4ed;
+    color: #c2410c;
+    border: 1px solid #fdba74;
+}
+
+.lesson-status-badge.is-locked {
+    background: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+}
+
 .lesson-accordion.is-collapsed .lesson-body {
     display: none;
 }

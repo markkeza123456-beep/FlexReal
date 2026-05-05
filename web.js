@@ -6,6 +6,7 @@ let courseIdByName = {};
 let currentLessonsData = [];
 let currentProgressSummary = null;
 const LESSON_COUNT = 5;
+let lessonProgress = [];
 const LESSON_VIDEO_FILES = [
     'videos/lesson1.mp4.mp4',
     'videos/lesson-thai.mp4',
@@ -45,6 +46,116 @@ function buildFixedLessons(lessons) {
     return fixedLessons;
 }
 
+function getLessonProgressStorageKey() {
+    if (!currentSubjectId) return '';
+    return `lesson_progress_${String(currentSubjectId).trim().toUpperCase()}`;
+}
+
+function defaultLessonProgress() {
+    return Array.from({ length: LESSON_COUNT }, () => ({
+        read: false,
+        video: false,
+        quizPassed: false
+    }));
+}
+
+function loadLessonProgress() {
+    lessonProgress = defaultLessonProgress();
+    const key = getLessonProgressStorageKey();
+    if (!key) return;
+
+    try {
+        const keyRaw = `lesson_progress_${String(currentSubjectId).trim()}`;
+        const keyLower = `lesson_progress_${String(currentSubjectId).trim().toLowerCase()}`;
+        const keyUpper = `lesson_progress_${String(currentSubjectId).trim().toUpperCase()}`;
+        const raw = localStorage.getItem(key) || localStorage.getItem(keyRaw) || localStorage.getItem(keyLower) || localStorage.getItem(keyUpper);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return;
+        lessonProgress = lessonProgress.map((item, index) => {
+            const src = parsed[index] || {};
+            return {
+                read: Boolean(src.read),
+                video: Boolean(src.video),
+                quizPassed: Boolean(src.quizPassed)
+            };
+        });
+        // ย้ายข้อมูลมาเก็บด้วยคีย์มาตรฐานใหม่
+        localStorage.setItem(key, JSON.stringify(lessonProgress));
+    } catch (error) {
+        lessonProgress = defaultLessonProgress();
+    }
+}
+
+function saveLessonProgress() {
+    const key = getLessonProgressStorageKey();
+    if (!key) return;
+    localStorage.setItem(key, JSON.stringify(lessonProgress));
+}
+
+function mergeQuizPassFromStorage() {
+    loadLessonProgress();
+}
+
+async function mergeQuizPassFromDb() {
+    if (!currentSubjectId) return;
+    try {
+        const response = await fetch(`api_quiz_progress.php?subject_id=${encodeURIComponent(currentSubjectId)}`, {
+            credentials: 'same-origin'
+        });
+        const result = await response.json();
+        if (result.status !== 'success' || !Array.isArray(result.passed_lessons)) return;
+
+        result.passed_lessons.forEach((lessonNo) => {
+            const idx = Number(lessonNo) - 1;
+            if (idx >= 0 && idx < LESSON_COUNT) {
+                lessonProgress[idx].quizPassed = true;
+            }
+        });
+        saveLessonProgress();
+    } catch (error) {
+        // ignore network error and continue with local progress
+    }
+}
+
+function isLessonUnlocked(lessonIndex) {
+    if (lessonIndex <= 1) return true;
+    for (let i = 0; i < lessonIndex - 1; i++) {
+        if (!lessonProgress[i]?.quizPassed) return false;
+    }
+    return true;
+}
+
+function canStartQuiz(lessonIndex) {
+    const idx = lessonIndex - 1;
+    if (!isLessonUnlocked(lessonIndex)) return false;
+    return Boolean(lessonProgress[idx]?.read && lessonProgress[idx]?.video);
+}
+
+function applyPassedLessonFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const rawPassed = (params.get('passed_lesson') || '').trim();
+    const passedLesson = Number(rawPassed);
+    if (passedLesson <= 0 || passedLesson > LESSON_COUNT) return;
+
+    const idx = passedLesson - 1;
+    lessonProgress[idx].quizPassed = true;
+    saveLessonProgress();
+}
+
+function applyPassedLessonFromSession() {
+    const passedSubject = String(sessionStorage.getItem('last_passed_subject') || '').trim().toUpperCase();
+    const currentSubject = String(currentSubjectId || '').trim().toUpperCase();
+    if (!passedSubject || !currentSubject || passedSubject !== currentSubject) return;
+
+    const passedLesson = Number(sessionStorage.getItem('last_passed_lesson') || 0);
+    if (passedLesson <= 0 || passedLesson > LESSON_COUNT) return;
+
+    const idx = passedLesson - 1;
+    lessonProgress[idx].quizPassed = true;
+    saveLessonProgress();
+}
+
 function renderLessonAccordion(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -54,13 +165,24 @@ function renderLessonAccordion(containerId) {
         return;
     }
 
-    const html = currentLessonsData.map((lesson) => `
+    const html = currentLessonsData.map((lesson) => {
+        const unlocked = isLessonUnlocked(lesson.index);
+        const progress = lessonProgress[lesson.index - 1] || { read: false, video: false, quizPassed: false };
+        const quizEnabled = canStartQuiz(lesson.index);
+        const statusLabel = progress.quizPassed
+            ? 'ผ่านบทนี้แล้ว พร้อมไปบทถัดไป'
+            : (unlocked ? 'ยังไม่ผ่านบทนี้' : 'ต้องผ่าน Quiz บทก่อนหน้าเพื่อปลดล็อก');
+        return `
         <div class="lesson-accordion ${lesson.expanded ? 'is-expanded' : 'is-collapsed'}">
             <button type="button" class="lesson-header" onclick="toggleLesson(${lesson.index})" aria-expanded="${lesson.expanded ? 'true' : 'false'}">
                 <span>บทที่ ${lesson.index}: ${escapeHtml(lesson.title)}</span>
                 <span class="lesson-chevron">${lesson.expanded ? '▴' : '▾'}</span>
             </button>
             <div class="lesson-body">
+                <p class="lesson-status-badge ${progress.quizPassed ? 'is-pass' : (unlocked ? 'is-pending' : 'is-locked')}">${statusLabel}</p>
+                <p class="lesson-progress-text">
+                    สถานะ: อ่านเอกสาร ${progress.read ? '✓' : '✗'} | ดูวิดีโอ ${progress.video ? '✓' : '✗'} | Quiz ${progress.quizPassed ? 'ผ่านแล้ว' : 'ยังไม่ผ่าน'}
+                </p>
                 <div class="curriculum-list">
                     <div class="curriculum-item">
                         <div class="curr-left">
@@ -70,7 +192,7 @@ function renderLessonAccordion(containerId) {
                                 <p>ดาวน์โหลดเอกสารประกอบบทเรียนนี้</p>
                             </div>
                         </div>
-                        <button class="btn-orange" onclick="downloadCourseLesson()">ดาวน์โหลดเอกสาร</button>
+                        <button class="btn-orange" onclick="completeLessonReading(${lesson.index})" ${unlocked ? '' : 'disabled'}>อ่าน/ดาวน์โหลดเอกสาร</button>
                     </div>
                     <div class="curriculum-item">
                         <div class="curr-left">
@@ -80,24 +202,37 @@ function renderLessonAccordion(containerId) {
                                 <p>รับชมวิดีโอประกอบบทเรียนนี้</p>
                             </div>
                         </div>
-                        <button class="btn-orange" onclick="openCourseVideo(${lesson.index})">ชมวิดีโอ</button>
+                        <button class="btn-orange" onclick="openCourseVideo(${lesson.index})" ${unlocked ? '' : 'disabled'}>ชมวิดีโอ</button>
                     </div>
                     <div class="curriculum-item">
                         <div class="curr-left">
                             <span class="curr-icon">📝</span>
                             <div class="curr-text">
                                 <b>แบบทดสอบบทที่ ${lesson.index}</b>
-                                <p>ทำแบบทดสอบเพื่อทบทวนความเข้าใจของบทนี้</p>
+                                <p>ปลดล็อกเมื่ออ่านและดูวิดีโอจบบทนี้</p>
                             </div>
                         </div>
-                        <button class="btn-outline-orange" onclick="startQuiz(${lesson.index})">เริ่มทำ Quiz</button>
+                        <button class="btn-outline-orange" onclick="startQuiz(${lesson.index})" ${quizEnabled ? '' : 'disabled'}>เริ่มทำ Quiz</button>
                     </div>
                 </div>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 
     container.innerHTML = html;
+}
+
+function completeLessonReading(lessonIndex) {
+    if (!isLessonUnlocked(lessonIndex)) {
+        alert('กรุณาผ่านแบบทดสอบบทก่อนหน้าให้ผ่านก่อน');
+        return;
+    }
+    const idx = lessonIndex - 1;
+    lessonProgress[idx].read = true;
+    saveLessonProgress();
+    downloadCourseLesson();
+    renderAllLessonAccordions();
 }
 
 function renderAllLessonAccordions() {
@@ -295,7 +430,14 @@ async function showCourse(subjectId) {
             updateInstructorInfo(course);
             
             currentLessonsData = buildFixedLessons(Array.isArray(lessons) ? lessons : []);
+<<<<<<< Updated upstream
             updateCourseMeta(course, lessons);
+=======
+            mergeQuizPassFromStorage();
+            applyPassedLessonFromUrl();
+            applyPassedLessonFromSession();
+            await mergeQuizPassFromDb();
+>>>>>>> Stashed changes
             renderAllLessonAccordions();
             applyCourseProgressSummary(null);
 
@@ -475,7 +617,7 @@ function renderVideoModalBody(lessonIndex) {
     const selectedTitle = selectedLesson ? selectedLesson.title : `Lesson ${safeIndex}`;
     const videoPath = getLessonVideoPath(safeIndex);
     const selectorOptions = currentLessonsData.map((lesson) => `
-        <option value="${lesson.index}" ${lesson.index === safeIndex ? 'selected' : ''}>
+        <option value="${lesson.index}" ${lesson.index === safeIndex ? 'selected' : ''} ${isLessonUnlocked(lesson.index) ? '' : 'disabled'}>
             บทที่ ${lesson.index}: ${escapeHtml(lesson.title)}
         </option>
     `).join('');
@@ -487,7 +629,7 @@ function renderVideoModalBody(lessonIndex) {
         <select id="video-lesson-select" onchange="changeModalLessonVideo(this.value)" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; margin-bottom:14px;">
             ${selectorOptions}
         </select>
-        <video width="100%" controls autoplay style="border-radius:10px; background:#000;">
+        <video id="lesson-video-player" width="100%" controls autoplay style="border-radius:10px; background:#000;" onended="completeLessonVideo(${safeIndex})">
             <source src="${videoPath}" type="video/mp4">
             เบราว์เซอร์ไม่รองรับวิดีโอ
         </video>
@@ -495,6 +637,10 @@ function renderVideoModalBody(lessonIndex) {
 }
 
 function changeModalLessonVideo(lessonIndex) {
+    if (!isLessonUnlocked(Number(lessonIndex))) {
+        alert('กรุณาผ่านแบบทดสอบบทก่อนหน้าให้ผ่านก่อน');
+        return;
+    }
     renderVideoModalBody(lessonIndex);
 }
 
@@ -503,15 +649,36 @@ function openCourseVideo(lessonIndex) {
         alert('กรุณาลงรายวิชาก่อนชมวิดีโอ');
         return;
     }
+    if (!isLessonUnlocked(Number(lessonIndex) || 1)) {
+        alert('กรุณาผ่านแบบทดสอบบทก่อนหน้าให้ผ่านก่อน');
+        return;
+    }
     const modal = document.getElementById('modal-overlay');
     renderVideoModalBody(lessonIndex || 1);
     modal.style.display = 'flex';
     recordLearningEvent('video_open', lessonIndex || 1);
 }
 
+function completeLessonVideo(lessonIndex) {
+    const idx = Number(lessonIndex) - 1;
+    if (idx < 0 || idx >= LESSON_COUNT) return;
+    lessonProgress[idx].video = true;
+    saveLessonProgress();
+    renderAllLessonAccordions();
+    alert(`บันทึกแล้ว: ดูวิดีโอบทที่ ${lessonIndex} จบแล้ว`);
+}
+
 function startQuiz(lessonIndex) {
     if (!enrolledCourses[currentSubjectId]) {
         alert('กรุณาลงรายวิชาก่อนทำแบบทดสอบ');
+        return;
+    }
+    if (!isLessonUnlocked(Number(lessonIndex) || 1)) {
+        alert('กรุณาผ่านแบบทดสอบบทก่อนหน้าให้ผ่านก่อน');
+        return;
+    }
+    if (!canStartQuiz(Number(lessonIndex) || 1)) {
+        alert('กรุณาอ่านเอกสารและชมวิดีโอบทนี้ให้จบก่อนเริ่ม Quiz');
         return;
     }
     const url = new URL('test.html', window.location.href);
