@@ -154,15 +154,9 @@ const quizBank = {
 const params = new URLSearchParams(window.location.search);
 const courseName = params.get('course') || 'ภาษาไทย';
 const subjectId = params.get('subject_id') || '';
-<<<<<<< Updated upstream
 const lessonIndex = Number(params.get('lesson') || 1);
 const quiz = quizBank[courseName] || quizBank['ภาษาไทย'];
 const answers = new Array(quiz.questions.length).fill(null);
-=======
-const lessonNo = Number(params.get('lesson') || 0);
-let quiz = quizBank[courseName] || quizBank['ภาษาไทย'];
-let answers = new Array(quiz.questions.length).fill(null);
->>>>>>> Stashed changes
 
 let currentQuestion = 0;
 
@@ -220,11 +214,7 @@ async function saveTestResult(score) {
         body: JSON.stringify({
             course_name: courseName,
             subject_id: subjectId,
-<<<<<<< Updated upstream
             lesson_index: lessonIndex,
-=======
-            lesson_no: lessonNo > 0 ? lessonNo : null,
->>>>>>> Stashed changes
             score,
             total_score: quiz.questions.length,
             answers
@@ -232,46 +222,6 @@ async function saveTestResult(score) {
     });
 
     return response.json();
-}
-
-function markLessonQuizPassedLocal() {
-    if (!subjectId || lessonNo <= 0) return;
-    const normalizedSubjectId = String(subjectId).trim().toUpperCase();
-    const progressKey = `lesson_progress_${normalizedSubjectId}`;
-    const lessonCount = 5;
-    const base = Array.from({ length: lessonCount }, () => ({
-        read: false,
-        video: false,
-        quizPassed: false
-    }));
-    try {
-        const existing = localStorage.getItem(progressKey);
-        if (existing) {
-            const parsed = JSON.parse(existing);
-            if (Array.isArray(parsed)) {
-                for (let i = 0; i < lessonCount; i++) {
-                    const src = parsed[i] || {};
-                    base[i] = {
-                        read: Boolean(src.read),
-                        video: Boolean(src.video),
-                        quizPassed: Boolean(src.quizPassed)
-                    };
-                }
-            }
-        }
-    } catch (error) {}
-
-    const idx = lessonNo - 1;
-    if (idx >= 0 && idx < lessonCount) {
-        base[idx].quizPassed = true;
-        localStorage.setItem(progressKey, JSON.stringify(base));
-        // เผื่อรองรับข้อมูลคีย์เก่า
-        localStorage.setItem(`lesson_progress_${String(subjectId).trim()}`, JSON.stringify(base));
-        localStorage.setItem(`lesson_progress_${String(subjectId).trim().toLowerCase()}`, JSON.stringify(base));
-        sessionStorage.setItem('last_passed_subject', normalizedSubjectId);
-        sessionStorage.setItem('last_passed_lesson', String(lessonNo));
-        redirectBackToCourseAfterFinish(isPassed);
-    }
 }
 
 function renderAnswerKey() {
@@ -295,35 +245,12 @@ function renderAnswerKey() {
     `;
 }
 
-function getBackToLessonUrl() {
-    const passedLessonQuery = lessonNo > 0 ? `&passed_lesson=${encodeURIComponent(String(lessonNo))}` : '';
-    if (subjectId) {
-        return `web.html?subject_id=${encodeURIComponent(subjectId)}&course=${encodeURIComponent(courseName)}${passedLessonQuery}`;
-    }
-    return `web.html?course=${encodeURIComponent(courseName)}${passedLessonQuery}`;
-}
-
-function getCourseUrlWithoutPassFlag() {
-    if (subjectId) {
-        return `web.html?subject_id=${encodeURIComponent(subjectId)}&course=${encodeURIComponent(courseName)}`;
-    }
-    return `web.html?course=${encodeURIComponent(courseName)}`;
-}
-
-function redirectBackToCourseAfterFinish(isPassed) {
-    const targetUrl = isPassed ? getBackToLessonUrl() : getCourseUrlWithoutPassFlag();
-    setTimeout(() => {
-        window.location.href = targetUrl;
-    }, 1200);
-}
-
 async function showResult() {
     saveCurrentAnswer();
     const score = answers.reduce((total, answer, index) => {
         return total + (answer === quiz.questions[index].answer ? 1 : 0);
     }, 0);
-    const passingScore = Math.max(1, Math.ceil(quiz.questions.length * 0.6));
-    const isPassed = score >= passingScore;
+    const isPassed = score >= 3;
 
     resultBox.hidden = false;
     resultBox.innerHTML = `
@@ -331,7 +258,6 @@ async function showResult() {
         <p>คุณได้ <span class="score">${score}/${quiz.questions.length}</span> คะแนน</p>
         <p>${isPassed ? 'ผ่านเกณฑ์แบบทดสอบแล้ว' : 'ยังไม่ผ่านเกณฑ์ ลองทบทวนบทเรียนแล้วทำใหม่อีกครั้ง'}</p>
         ${isPassed ? renderAnswerKey() : ''}
-        ${isPassed ? `<a href="${getBackToLessonUrl()}" class="continue-btn">กลับไปหน้าบทเรียนเพื่อทำบทต่อไป</a>` : ''}
         <p id="saveStatus">กำลังบันทึกผลแบบทดสอบ...</p>
     `;
     quizForm.hidden = true;
@@ -339,18 +265,10 @@ async function showResult() {
     nextBtn.hidden = true;
     submitBtn.innerText = 'ทำแบบทดสอบใหม่';
     submitBtn.hidden = false;
-    if (isPassed) {
-        markLessonQuizPassedLocal();
-        backToCourse.href = getBackToLessonUrl();
-    }
 
     const saveStatus = document.getElementById('saveStatus');
     try {
         const result = await saveTestResult(score);
-        if (isPassed || result.quiz_status === 'pass') {
-            markLessonQuizPassedLocal();
-            backToCourse.href = getBackToLessonUrl();
-        }
         if (result.status === 'unauthorized') {
             saveStatus.innerText = result.message || 'กรุณาเข้าสู่ระบบก่อนบันทึกผล';
             return;
@@ -358,16 +276,7 @@ async function showResult() {
         saveStatus.innerText = result.status === 'success'
             ? 'บันทึกผลลงตาราง test เรียบร้อย'
             : 'บันทึกผลไม่สำเร็จ';
-        saveStatus.innerText += ' กำลังกลับไปหน้าคอร์ส...';
-        redirectBackToCourseAfterFinish(isPassed);
     } catch (error) {
-        if (isPassed) {
-            markLessonQuizPassedLocal();
-            backToCourse.href = getBackToLessonUrl();
-        } else {
-            backToCourse.href = getCourseUrlWithoutPassFlag();
-        }
-        redirectBackToCourseAfterFinish(isPassed);
         saveStatus.innerText = 'เชื่อมต่อระบบบันทึกผลไม่ได้';
     }
 }
@@ -407,41 +316,4 @@ submitBtn.addEventListener('click', () => {
     renderQuestion();
 });
 
-async function loadQuizFromDb() {
-    if (!subjectId) return false;
-    try {
-        const quizUrl = new URL('api_quiz.php', window.location.href);
-        quizUrl.searchParams.set('action', 'get_questions');
-        quizUrl.searchParams.set('subject_id', subjectId);
-        if (lessonNo > 0) {
-            quizUrl.searchParams.set('lesson', String(lessonNo));
-        }
-
-        const response = await fetch(quizUrl.pathname.split('/').pop() + quizUrl.search, {
-            credentials: 'same-origin'
-        });
-        const result = await response.json();
-        if (result.status !== 'success' || !Array.isArray(result.questions) || result.questions.length === 0) {
-            return false;
-        }
-
-        quiz = {
-            subtitle: lessonNo > 0 ? `แบบทดสอบบทที่ ${lessonNo}` : 'แบบทดสอบจากฐานข้อมูล',
-            questions: result.questions
-        };
-        answers = new Array(quiz.questions.length).fill(null);
-        return true;
-    } catch (error) {
-        return false;
-    }
-}
-
-async function initQuiz() {
-    const loadedFromDb = await loadQuizFromDb();
-    if (loadedFromDb) {
-        quizSubtitle.innerText = quiz.subtitle;
-    }
-    renderQuestion();
-}
-
-initQuiz();
+renderQuestion();
