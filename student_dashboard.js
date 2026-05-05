@@ -28,10 +28,26 @@ const pages = {
 
 // Function: Switch Page
 function showPage(pageKey) {
+    // Hide all pages
     Object.keys(pages).forEach(key => {
-        pages[key].style.display = (key === pageKey) ? 'block' : 'none';
-        if (navBtns[key]) navBtns[key].classList.toggle('active', key === pageKey);
+        pages[key].style.display = 'none';
     });
+
+    // Show target page
+    if (pages[pageKey]) pages[pageKey].style.display = 'block';
+
+    // Update active state on menu items (menu-item class)
+    document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+
+    // Update active state for settings button (user-profile)
+    const settingsBtn = document.getElementById('btn-settings');
+    settingsBtn.classList.remove('active');
+
+    if (pageKey === 'settings') {
+        settingsBtn.classList.add('active');
+    } else if (navBtns[pageKey]) {
+        navBtns[pageKey].classList.add('active');
+    }
 
     if (pageKey === 'lessons') renderLessons();
     if (pageKey === 'assignments') renderAssignments();
@@ -221,10 +237,12 @@ function saveProfile() {
 
     const body = new FormData();
     body.append('name',        name);
+    body.append('email',       document.getElementById('profileEmail')?.value.trim() ?? '');
+    body.append('phone',       document.getElementById('profilePhone')?.value.trim() ?? '');
     body.append('pwd_current', current);
     body.append('pwd_new',     newPwd);
 
-    fetch('update_profile.php', { method: 'POST', body })
+    fetch('update_student_profile.php', { method: 'POST', body })
         .then(r => r.json())
         .then(data => {
             if (data.success) {

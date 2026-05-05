@@ -29,13 +29,16 @@
                     <span class="icon">📊</span> รายงานผล
                 </div>
             </nav>
-            <div class="user-profile" id="btn-settings" style="cursor:pointer" title="แก้ไขโปรไฟล์">
+            <a href="logout.php" class="btn-logout" onclick="return confirm('ต้องการออกจากระบบหรือไม่?')">
+                <span>🚪</span> ออกจากระบบ
+            </a>
+            <div class="user-profile" id="btn-settings" title="แก้ไขโปรไฟล์">
                 <div class="avatar" id="sidebarAvatar">S</div>
                 <div class="user-info">
                     <p class="name" id="sidebarName">สมชาย ตั้งใจเรียน</p>
                     <p class="role">นักเรียน - ม.5/1</p>
                 </div>
-                <span style="margin-left:auto;font-size:0.75rem;color:#888;">⚙️</span>
+                <span style="margin-left:auto;font-size:0.8rem;color:var(--accent-orange);">⚙️</span>
             </div>
         </aside>
 
