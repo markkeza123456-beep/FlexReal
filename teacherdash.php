@@ -113,14 +113,14 @@ if (!empty($subjectIds)) {
     }
 }
 
-// 4. ดึงข้อมูลนักเรียนและคะแนน "จริง" (จากตาราง Test)
-$studentStmt = $conn->prepare('
+// 4. ดึงข้อมูลนักเรียน คะแนน และ "ความคืบหน้า"
+$studentStmt = $conn->prepare("
     SELECT 
         st.Student_ID,
         st.Student_Name,
         st.Student_Level AS class_name,
         (
-            SELECT STRING_AGG(DISTINCT s3.Subjects_ID, \',\')
+            SELECT STRING_AGG(DISTINCT s3.Subjects_ID, ',')
             FROM public.student_subject ss3
             INNER JOIN public.subjects s3 ON s3.Subjects_ID = ss3.Subjects_ID
             WHERE ss3.Student_ID = st.Student_ID
@@ -130,7 +130,31 @@ $studentStmt = $conn->prepare('
             SELECT COALESCE(AVG(t.Score), 0)
             FROM public.test t
             WHERE t.Student_ID = st.Student_ID
-        ) AS real_score
+        ) AS real_score,
+        (
+            SELECT COUNT(DISTINCT l.Lessons_ID)
+            FROM public.lessons l
+            INNER JOIN public.subjects s ON s.Subjects_ID = l.Subjects_ID
+            INNER JOIN public.student_subject ss ON ss.Subjects_ID = s.Subjects_ID
+            WHERE s.Teachers_ID = :teacher_id
+              AND ss.Student_ID = st.Student_ID
+        ) AS total_lessons,
+        (
+            SELECT COUNT(DISTINCT lr.Lessons_ID)
+            FROM public.learning_records lr
+            INNER JOIN public.lessons l ON lr.Lessons_ID = l.Lessons_ID
+            INNER JOIN public.subjects s ON l.Subjects_ID = s.Subjects_ID
+            WHERE lr.Student_ID = st.Student_ID
+              AND s.Teachers_ID = :teacher_id
+        ) AS completed_lessons,
+        (
+            SELECT STRING_AGG(DISTINCT l.Lessons_Name, '||')
+            FROM public.learning_records lr
+            INNER JOIN public.lessons l ON lr.Lessons_ID = l.Lessons_ID
+            INNER JOIN public.subjects s ON l.Subjects_ID = s.Subjects_ID
+            WHERE lr.Student_ID = st.Student_ID
+              AND s.Teachers_ID = :teacher_id
+        ) AS completed_lesson_names
     FROM public.student st
     WHERE EXISTS (
         SELECT 1
@@ -140,7 +164,7 @@ $studentStmt = $conn->prepare('
           AND s.Teachers_ID = :teacher_id
     )
     ORDER BY st.Student_Name ASC
-');
+");
 $studentStmt->execute([':teacher_id' => $teacherId]);
 
 $students = [];
@@ -149,6 +173,13 @@ foreach ($studentStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     $realScore = round((float) $row['real_score'], 1); 
     $sumScore += $realScore;
     
+    $totalLessons = (int) $row['total_lessons'];
+    $completedLessons = (int) $row['completed_lessons'];
+    $progressPct = $totalLessons > 0 ? round(($completedLessons / $totalLessons) * 100) : 0;
+    
+    // เตรียมข้อมูลชื่อบทเรียนที่เรียนไปแล้วเพื่อส่งให้ JavaScript แสดงผล
+    $completedNames = $row['completed_lesson_names'] ? explode('||', $row['completed_lesson_names']) : [];
+
     $students[] = [
         'id' => $row['student_id'],
         'name' => $row['student_name'] ?: 'ไม่ระบุชื่อ',
@@ -156,6 +187,10 @@ foreach ($studentStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         'score' => $realScore,
         'status' => scoreStatus($realScore),
         'subject_ids' => $row['subject_ids'],
+        'progress_pct' => $progressPct,
+        'completed_lessons' => $completedLessons,
+        'total_lessons' => $totalLessons,
+        'completed_names_json' => htmlspecialchars(json_encode($completedNames), ENT_QUOTES, 'UTF-8')
     ];
 }
 
@@ -189,7 +224,6 @@ foreach ($activityStmt->fetchAll(PDO::FETCH_ASSOC) as $act) {
     ];
 }
 
-// เตรียมข้อมูลแสดงผลบน UI
 $teacherSubjectText = !empty($subjectNames) 
     ? implode(', ', array_slice($subjectNames, 0, 3)) . (count($subjectNames) > 3 ? ' +' . (count($subjectNames) - 3) : '')
     : 'ยังไม่มีบทเรียนที่ดูแล';
@@ -301,37 +335,6 @@ $stats = [
             </div>
         </section>
 
-        <section class="card">
-            <div class="card-header">
-                <h2 class="card-title">การเข้าเรียนล่าสุด</h2>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:12px;">
-                <?php if ($recentActivities === []): ?>
-                <div style="color:var(--text-muted);padding:8px 0;">ยังไม่มีการเข้าเรียนจากนักเรียนในบทเรียนที่คุณดูแล</div>
-                <?php else: ?>
-                <?php foreach ($recentActivities as $activity): ?>
-                <?php
-                    $activityType = (string) ($activity['activity_type'] ?? '');
-                    $activityText = match ($activityType) {
-                        'course_enter' => 'เข้าเรียน',
-                        'lesson_open' => 'เปิดบทเรียน',
-                        'video_open' => 'ดูวิดีโอ',
-                        'quiz_submit' => 'ส่งแบบทดสอบ',
-                        default => 'มีกิจกรรม'
-                    };
-                ?>
-                <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:1px solid var(--border);padding-bottom:10px;">
-                    <div>
-                        <div style="color:var(--text);font-weight:600;"><?= h((string) ($activity['student_name'] ?? 'นักเรียน')) ?> • <?= h((string) ($activity['subjects_name'] ?? '-')) ?></div>
-                        <div style="color:var(--text-dim);font-size:13px;"><?= h($activityText) ?><?= !empty($activity['activity_detail']) ? ' - ' . h((string) $activity['activity_detail']) : '' ?></div>
-                    </div>
-                    <div style="color:var(--text-muted);font-size:12px;white-space:nowrap;"><?= h((string) ($activity['created_at'] ?? '')) ?></div>
-                </div>
-                <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </section>
-
         <section class="card students-card">
             <div class="card-header">
                 <h2 class="card-title">นักเรียนในความดูแล</h2>
@@ -344,6 +347,7 @@ $stats = [
                             <th> </th>
                             <th>ชื่อ-นามสกุล</th>
                             <th>ระดับชั้น</th>
+                            <th style="width: 25%">ความคืบหน้า</th>
                             <th>คะแนนเฉลี่ย</th>
                             <th>ระดับ</th>
                         </tr>
@@ -351,14 +355,37 @@ $stats = [
                     <tbody>
                         <?php if ($students === []): ?>
                         <tr class="lesson-row">
-                            <td colspan="5" style="text-align:center;color:var(--text-muted)">ยังไม่มีนักเรียนในความดูแล</td>
+                            <td colspan="6" style="text-align:center;color:var(--text-muted)">ยังไม่มีนักเรียนในความดูแล</td>
                         </tr>
                         <?php else: ?>
                         <?php foreach ($students as $index => $student): ?>
                         <tr class="lesson-row">
                             <td class="mono"><?= str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) ?></td>
-                            <td><?= h($student['name']) ?></td>
+                            <td>
+                                <!-- ทำให้ชื่อนักเรียนคลิกได้เพื่อเปิด Modal ดูรายละเอียด -->
+                                <a href="#" class="student-progress-link" 
+                                   data-name="<?= h($student['name']) ?>"
+                                   data-completed="<?= h($student['completed_lessons']) ?>"
+                                   data-total="<?= h($student['total_lessons']) ?>"
+                                   data-json="<?= $student['completed_names_json'] ?>"
+                                   onclick="showStudentProgress(this); return false;"
+                                   style="color:#60a5fa; font-weight:500; text-decoration:none; display:flex; align-items:center; gap:6px;" title="คลิกเพื่อดูบทเรียนที่ผ่านแล้ว">
+                                    <?= h($student['name']) ?> <span style="font-size:12px; color:var(--text-dim);">ℹ️</span>
+                                </a>
+                            </td>
                             <td><?= h($student['class']) ?></td>
+                            <td>
+                                <!-- หลอด Progress Bar -->
+                                <div class="progress-wrap">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="--pct:<?= $student['progress_pct'] ?>%"></div>
+                                    </div>
+                                    <span class="progress-num"><?= $student['progress_pct'] ?>%</span>
+                                </div>
+                                <div style="font-size:10.5px; color:var(--text-muted); margin-top:4px;">
+                                    สำเร็จ <?= $student['completed_lessons'] ?> / <?= $student['total_lessons'] ?> บทเรียน
+                                </div>
+                            </td>
                             <td class="mono score-cell"><?= number_format((float) $student['score'], 1) ?></td>
                             <td><span class="badge badge-<?= h($student['status']) ?>"><?= h(scoreLabel($student['status'])) ?></span></td>
                         </tr>
@@ -540,6 +567,7 @@ $stats = [
                                 <th>#</th>
                                 <th>ชื่อ-นามสกุล</th>
                                 <th>ระดับชั้น</th>
+                                <th style="width: 25%">ความคืบหน้า</th>
                                 <th>คะแนนเฉลี่ย</th>
                                 <th>ระดับ</th>
                             </tr>
@@ -548,8 +576,31 @@ $stats = [
                             <?php foreach ($students as $index => $student): ?>
                             <tr class="lesson-row detail-student-row" data-subject-ids="<?= h($student['subject_ids']) ?>">
                                 <td class="mono"><?= str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) ?></td>
-                                <td><?= h($student['name']) ?></td>
+                                <td>
+                                    <!-- ทำให้ชื่อนักเรียนคลิกได้เพื่อเปิด Modal -->
+                                    <a href="#" class="student-progress-link" 
+                                       data-name="<?= h($student['name']) ?>"
+                                       data-completed="<?= h($student['completed_lessons']) ?>"
+                                       data-total="<?= h($student['total_lessons']) ?>"
+                                       data-json="<?= $student['completed_names_json'] ?>"
+                                       onclick="showStudentProgress(this); return false;"
+                                       style="color:#60a5fa; font-weight:500; text-decoration:none; display:flex; align-items:center; gap:6px;" title="คลิกเพื่อดูบทเรียนที่ผ่านแล้ว">
+                                        <?= h($student['name']) ?> <span style="font-size:12px; color:var(--text-dim);">ℹ️</span>
+                                    </a>
+                                </td>
                                 <td><?= h($student['class']) ?></td>
+                                <td>
+                                    <!-- หลอด Progress Bar -->
+                                    <div class="progress-wrap">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="--pct:<?= $student['progress_pct'] ?>%"></div>
+                                        </div>
+                                        <span class="progress-num"><?= $student['progress_pct'] ?>%</span>
+                                    </div>
+                                    <div style="font-size:10.5px; color:var(--text-muted); margin-top:4px;">
+                                        สำเร็จ <?= $student['completed_lessons'] ?> / <?= $student['total_lessons'] ?> บทเรียน
+                                    </div>
+                                </td>
                                 <td class="mono score-cell"><?= number_format((float) $student['score'], 1) ?></td>
                                 <td><span class="badge badge-<?= h($student['status']) ?>"><?= h(scoreLabel($student['status'])) ?></span></td>
                             </tr>
@@ -568,7 +619,7 @@ $stats = [
                 </div>
                 <div id="quizList" style="display:flex;flex-direction:column;gap:10px">
                     <div id="quizEmpty" style="text-align:center;padding:36px;color:var(--text-muted);font-size:13px">
-                        ยังไม่มีแบบทดสอบ — กด "เพิ่มคำถาม" เพื่อเริ่มต้น
+                        ยังไม่มีแบบทดสอบในมุมมองนี้
                     </div>
                 </div>
             </div>
@@ -577,8 +628,8 @@ $stats = [
         <div class="modal-overlay" id="quizModalOverlay">
             <div class="modal">
                 <div class="modal-header">
-                    <h3 class="modal-title">🧪 เพิ่มคำถามแบบทดสอบ</h3>
-                    <button class="modal-close" id="closeQuizModalBtn">✕</button>
+                    <h3 class="modal-title">เพิ่มคำถามแบบทดสอบ</h3>
+                    <button class="modal-close" id="closeQuizModalBtn">×</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
@@ -601,7 +652,7 @@ $stats = [
                         </div>
                     </div>
                     <div class="form-group" id="quizChoicesGroup">
-                        <label>ตัวเลือก (คั่นด้วย Enter)</label>
+                        <label>ตัวเลือก</label>
                         <textarea class="form-input" id="quizChoices" rows="4"></textarea>
                     </div>
                     <div class="form-group">
@@ -611,7 +662,7 @@ $stats = [
                 </div>
                 <div class="modal-footer">
                     <button class="btn-cancel" id="closeQuizModalBtn2">ยกเลิก</button>
-                    <button class="btn-save" id="saveQuizBtn">➕ เพิ่มคำถาม</button>
+                    <button class="btn-save" id="saveQuizBtn">เพิ่มคำถาม</button>
                 </div>
             </div>
         </div>
@@ -699,8 +750,67 @@ $stats = [
     </div>
 </main>
 
+<!-- Modal สำหรับโชว์ว่านักเรียนคนนี้เรียนอะไรไปแล้วบ้าง -->
+<div class="modal-overlay" id="studentProgressModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">📊 ความคืบหน้า: <span id="spm-student-name" style="color:var(--orange);"></span></h3>
+            <button class="modal-close" onclick="closeStudentProgressModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size:13px; color:var(--text-dim); margin-bottom:12px;">
+                เรียนผ่านไปแล้ว <b id="spm-completed-count" style="color:var(--text); font-size:16px;">0</b> จาก <b id="spm-total-count">0</b> บทเรียน
+            </p>
+            <div id="spm-lesson-list" style="max-height: 280px; overflow-y: auto; background: var(--bg3); border-radius: 8px; border: 1px solid var(--border);">
+                <!-- รายการบทเรียนจะถูกสร้างตรงนี้ด้วย JS -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeStudentProgressModal()">ปิดหน้าต่าง</button>
+        </div>
+    </div>
+</div>
+
 <script src="teacherdash.js"></script>
 <script>
+// ฟังก์ชันสำหรับ Modal ดูความคืบหน้านักเรียน
+function showStudentProgress(element) {
+    const name = element.getAttribute('data-name');
+    const completed = element.getAttribute('data-completed');
+    const total = element.getAttribute('data-total');
+    const jsonStr = element.getAttribute('data-json');
+    
+    document.getElementById('spm-student-name').innerText = name;
+    document.getElementById('spm-completed-count').innerText = completed;
+    document.getElementById('spm-total-count').innerText = total;
+    
+    let lessons = [];
+    try {
+        lessons = JSON.parse(jsonStr);
+    } catch(e) {
+        console.error("Parse JSON error", e);
+    }
+    
+    const listContainer = document.getElementById('spm-lesson-list');
+    if (lessons && lessons.length > 0) {
+        listContainer.innerHTML = lessons.map(l => `
+            <div style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: #10b981; font-size: 13.5px; display:flex; align-items:center; gap:10px;">
+                <span style="background:rgba(16,185,129,0.15); padding:4px 6px; border-radius:4px; font-size:11px;">✅</span> 
+                <span>${l}</span>
+            </div>
+        `).join('');
+    } else {
+        listContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">ยังไม่ได้เริ่มเรียนบทเรียนใดเลย</div>`;
+    }
+    
+    document.getElementById('studentProgressModal').classList.add('open');
+}
+
+function closeStudentProgressModal() {
+    document.getElementById('studentProgressModal').classList.remove('open');
+}
+
+// ฟังก์ชันอัปเดตรูปโปรไฟล์
 function previewAvatar(input) {
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];
@@ -723,6 +833,7 @@ function previewAvatar(input) {
     reader.readAsDataURL(file);
 }
 
+// ระบบรหัสผ่าน
 function togglePwd(id, btn) {
     const inp = document.getElementById(id);
     if (!inp) return;
