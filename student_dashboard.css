@@ -19,11 +19,10 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .menu { margin-top: 2.5rem; flex: 1; }
 .menu-item { padding: 0.8rem 1rem; color: var(--text-muted); cursor: pointer; border-radius: 10px; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 12px; transition: 0.3s; }
 .menu-item.active { color: white; background: rgba(255, 122, 0, 0.15); font-weight: 500; }
-.user-profile { display: flex; align-items: center; gap: 12px; padding-top: 1.5rem; border-top: 1px solid var(--border-color); }
-.avatar { width: 42px; height: 42px; background: var(--accent-orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+.avatar { width: 42px; height: 42px; background: var(--accent-orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
 
 /* Main Content */
-.main-content { flex: 1; padding: 2.5rem; overflow-y: auto; }
+.main-content { flex: 1; padding: 2.5rem; overflow-y: auto; min-height: 0; }
 .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
 
 /* Cards & Grid */
@@ -65,15 +64,35 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .status-label { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; }
 .excellent { background: rgba(255, 122, 0, 0.1); color: var(--accent-orange); }
 .good { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+/* Logout button */
+.btn-logout {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: 0.2s;
+    margin-bottom: 0.5rem;
+}
+.btn-logout:hover { background: rgba(239,68,68,0.12); color: #ef4444; }
+
 /* ── Settings / Profile Page ── */
 .user-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-top: 1px solid var(--border-color);
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s, border-radius 0.2s;
     border-radius: 10px;
-    padding: 0.8rem;
-    margin: -0.8rem;
+    padding: 1rem;
+    margin: 0 -0.5rem;
 }
 .user-profile:hover { background: rgba(255,122,0,0.1); }
+.user-profile.active { background: rgba(255,122,0,0.15); }
 
 .settings-wrapper {
     display: flex;
