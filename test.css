@@ -187,36 +187,6 @@ body {
     font-weight: 800;
 }
 
-.answer-key {
-    display: grid;
-    gap: 12px;
-    margin: 18px 0;
-}
-
-.answer-key h3 {
-    font-size: 20px;
-}
-
-.answer-item {
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 14px 16px;
-    background: white;
-}
-
-.answer-item p {
-    margin-top: 6px;
-    color: var(--muted);
-}
-
-.answer-item.is-correct {
-    border-color: #8bd19c;
-}
-
-.answer-item.is-wrong {
-    border-color: #ffb39b;
-}
-
 @media (max-width: 640px) {
     .quiz-nav {
         align-items: flex-start;
