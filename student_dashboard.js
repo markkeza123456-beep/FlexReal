@@ -20,9 +20,14 @@ const pages = {
 
 function showPage(pageKey) {
     Object.keys(pages).forEach((key) => {
-        pages[key].style.display = key === pageKey ? 'block' : 'none';
+        const isActive = key === pageKey;
+        if (isActive) {
+            pages[key].style.display = key === 'settings' ? 'flex' : 'block';
+        } else {
+            pages[key].style.display = 'none';
+        }
         if (navBtns[key]) {
-            navBtns[key].classList.toggle('active', key === pageKey);
+            navBtns[key].classList.toggle('active', isActive);
         }
     });
 
