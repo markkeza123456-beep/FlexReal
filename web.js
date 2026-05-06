@@ -5,6 +5,7 @@ let enrolledCourses = {};
 let courseIdByName = {};
 let currentLessonsData = [];
 let currentProgressSummary = null;
+let currentPassedLessons = new Set();
 const LESSON_COUNT = 5;
 const LESSON_VIDEO_FILES = [
     'videos/lesson1.mp4.mp4',
@@ -32,9 +33,9 @@ function escapeHtml(text) {
 
 function buildFixedLessons(lessons) {
     const fixedLessons = [];
-    const totalLessons = Array.isArray(lessons) && lessons.length > 0 ? lessons.length : LESSON_COUNT;
-    for (let index = 0; index < totalLessons; index++) {
-        const rawName = lessons[index] ? pick(lessons[index], 'Lessons_Name', 'lessons_name') : '';
+    const sourceLessons = Array.isArray(lessons) ? lessons : [];
+    for (let index = 0; index < LESSON_COUNT; index++) {
+        const rawName = sourceLessons[index] ? pick(sourceLessons[index], 'Lessons_Name', 'lessons_name') : '';
         const lessonName = String(rawName || '').trim() || `Lesson ${index + 1}`;
         fixedLessons.push({
             index: index + 1,
@@ -43,6 +44,58 @@ function buildFixedLessons(lessons) {
         });
     }
     return fixedLessons;
+}
+
+function isLessonPassed(lessonIndex) {
+    return currentPassedLessons.has(Number(lessonIndex));
+}
+
+function getLessonProgressMap() {
+    const map = new Map();
+    const lessons = Array.isArray(currentProgressSummary?.lessons) ? currentProgressSummary.lessons : [];
+    lessons.forEach((row) => {
+        const idx = Number(row.lesson_index || 0);
+        if (idx > 0) {
+            map.set(idx, row);
+        }
+    });
+    return map;
+}
+
+function canAccessLesson(lessonIndex) {
+    if (Number(lessonIndex) <= 1) return true;
+    return isLessonPassed(Number(lessonIndex) - 1);
+}
+
+function isQuizUnlocked(lessonIndex) {
+    if (!canAccessLesson(lessonIndex)) return false;
+    const progressMap = getLessonProgressMap();
+    const row = progressMap.get(Number(lessonIndex)) || {};
+    const openedCount = Number(row.opened_count || 0);
+    const videoOpenCount = Number(row.video_open_count || 0);
+    return openedCount > 0 && videoOpenCount > 0;
+}
+
+function getLessonLockMessage(lessonIndex) {
+    if (!canAccessLesson(lessonIndex)) {
+        return `ปลดล็อกเมื่อผ่านแบบทดสอบบทที่ ${Number(lessonIndex) - 1}`;
+    }
+    if (!isQuizUnlocked(lessonIndex)) {
+        const progressMap = getLessonProgressMap();
+        const row = progressMap.get(Number(lessonIndex)) || {};
+        const openedCount = Number(row.opened_count || 0);
+        const videoOpenCount = Number(row.video_open_count || 0);
+        if (openedCount <= 0 && videoOpenCount <= 0) {
+            return 'ต้องอ่านเอกสารและชมวิดีโอก่อนเริ่ม Quiz';
+        }
+        if (openedCount <= 0) {
+            return 'ต้องอ่านเอกสารก่อนเริ่ม Quiz';
+        }
+        if (videoOpenCount <= 0) {
+            return 'ต้องชมวิดีโอก่อนเริ่ม Quiz';
+        }
+    }
+    return '';
 }
 
 function renderLessonAccordion(containerId) {
@@ -62,6 +115,7 @@ function renderLessonAccordion(containerId) {
             </button>
             <div class="lesson-body">
                 <div class="curriculum-list">
+                    ${!canAccessLesson(lesson.index) ? `<p style="margin:0 0 8px;color:#d35400;font-size:13px;">${getLessonLockMessage(lesson.index)}</p>` : ''}
                     <div class="curriculum-item">
                         <div class="curr-left">
                             <span class="curr-icon">📄</span>
@@ -70,7 +124,7 @@ function renderLessonAccordion(containerId) {
                                 <p>ดาวน์โหลดเอกสารประกอบบทเรียนนี้</p>
                             </div>
                         </div>
-                        <button class="btn-orange" onclick="downloadCourseLesson()">ดาวน์โหลดเอกสาร</button>
+                        <button class="btn-orange" onclick="downloadCourseLesson(${lesson.index})" ${canAccessLesson(lesson.index) ? '' : 'disabled'}>ดาวน์โหลดเอกสาร</button>
                     </div>
                     <div class="curriculum-item">
                         <div class="curr-left">
@@ -80,7 +134,7 @@ function renderLessonAccordion(containerId) {
                                 <p>รับชมวิดีโอประกอบบทเรียนนี้</p>
                             </div>
                         </div>
-                        <button class="btn-orange" onclick="openCourseVideo(${lesson.index})">ชมวิดีโอ</button>
+                        <button class="btn-orange" onclick="openCourseVideo(${lesson.index})" ${canAccessLesson(lesson.index) ? '' : 'disabled'}>ชมวิดีโอ</button>
                     </div>
                     <div class="curriculum-item">
                         <div class="curr-left">
@@ -90,8 +144,9 @@ function renderLessonAccordion(containerId) {
                                 <p>ทำแบบทดสอบเพื่อทบทวนความเข้าใจของบทนี้</p>
                             </div>
                         </div>
-                        <button class="btn-outline-orange" onclick="startQuiz(${lesson.index})">เริ่มทำ Quiz</button>
+                        <button class="btn-outline-orange" onclick="startQuiz(${lesson.index})" ${isQuizUnlocked(lesson.index) ? '' : 'disabled'}>เริ่มทำ Quiz</button>
                     </div>
+                    ${isQuizUnlocked(lesson.index) ? '' : `<p style="margin:8px 0 0;color:#7f8c8d;font-size:12px;">${getLessonLockMessage(lesson.index)}</p>`}
                 </div>
             </div>
         </div>
@@ -125,8 +180,8 @@ function updateInstructorInfo(course) {
 }
 
 function updateCourseMeta(course, lessons) {
-    const lessonCount = Number(pick(course, 'lesson_count')) || (Array.isArray(lessons) ? lessons.length : 0);
-    const quizCount = lessonCount > 0 ? lessonCount : currentLessonsData.length;
+    const lessonCount = LESSON_COUNT;
+    const quizCount = LESSON_COUNT;
     setText('detail-lesson-count', `${lessonCount} บทเรียน`);
     setText('detail-quiz-count', `${quizCount} ชุด`);
     setText('learning-lesson-count', `${lessonCount} บทเรียน`);
@@ -141,6 +196,30 @@ function applyCourseProgressSummary(summary) {
     setText('detail-score', scoreText);
     setText('learning-progress', progressText);
     setText('learning-score', scoreText);
+    renderAllLessonAccordions();
+}
+
+async function fetchQuizProgress(subjectId) {
+    if (!subjectId || !enrolledCourses[subjectId]) {
+        currentPassedLessons = new Set();
+        renderAllLessonAccordions();
+        return;
+    }
+
+    try {
+        const response = await fetch(`api_quiz_progress.php?subject_id=${encodeURIComponent(subjectId)}`, {
+            credentials: 'same-origin'
+        });
+        const result = await response.json();
+        if (result.status === 'success' && Array.isArray(result.passed_lessons)) {
+            currentPassedLessons = new Set(result.passed_lessons.map((v) => Number(v)));
+        } else {
+            currentPassedLessons = new Set();
+        }
+    } catch (error) {
+        currentPassedLessons = new Set();
+    }
+    renderAllLessonAccordions();
 }
 
 async function fetchCourseProgress(subjectId) {
@@ -298,6 +377,7 @@ async function showCourse(subjectId) {
             updateCourseMeta(course, lessons);
             renderAllLessonAccordions();
             applyCourseProgressSummary(null);
+            currentPassedLessons = new Set();
 
             // จัดการสถานะปุ่มลงทะเบียน
             updateEnrollButton(false);
@@ -354,18 +434,23 @@ async function checkCourseEnrollment(subjectId) {
             setCurriculumAccess(Boolean(result.enrolled));
             if (result.enrolled) {
                 fetchCourseProgress(subjectId);
+                fetchQuizProgress(subjectId);
             }
         } else if (result.status === 'unauthorized') {
             enrolledCourses[subjectId] = false;
             updateEnrollButton(false);
             setCurriculumAccess(false);
             applyCourseProgressSummary(null);
+            currentPassedLessons = new Set();
+            renderAllLessonAccordions();
         }
     } catch (error) {
         enrolledCourses[subjectId] = false;
         updateEnrollButton(false);
         setCurriculumAccess(false);
         applyCourseProgressSummary(null);
+        currentPassedLessons = new Set();
+        renderAllLessonAccordions();
     }
 }
 
@@ -418,6 +503,7 @@ async function enrollCourseAndOpenLearning() {
         updateEnrollButton(true);
         setCurriculumAccess(true);
         fetchCourseProgress(currentSubjectId);
+        fetchQuizProgress(currentSubjectId);
         goToCourseLearning();
     } catch (error) {
         alert('เชื่อมต่อระบบลงรายวิชาไม่ได้ กรุณาลองใหม่อีกครั้ง');
@@ -451,11 +537,16 @@ function openLearningTab(evt, tabName) {
 }
 
 // --- 6. ไฟล์และ Modal ---
-function downloadCourseLesson() {
+function downloadCourseLesson(lessonIndex) {
     if (!enrolledCourses[currentSubjectId]) {
         alert('กรุณาลงรายวิชาก่อนดาวน์โหลดเอกสาร');
         return;
     }
+    if (!canAccessLesson(lessonIndex || 1)) {
+        alert(`กรุณาผ่านแบบทดสอบบทที่ ${Number(lessonIndex || 1) - 1} ก่อน`);
+        return;
+    }
+    recordLearningEvent('lesson_open', lessonIndex || 1);
     // ส่ง Subject ID ไปดึงไฟล์แทน
     window.open(`download_course_lesson.php?subject_id=${encodeURIComponent(currentSubjectId)}`, '_blank');
 }
@@ -503,6 +594,10 @@ function openCourseVideo(lessonIndex) {
         alert('กรุณาลงรายวิชาก่อนชมวิดีโอ');
         return;
     }
+    if (!canAccessLesson(lessonIndex || 1)) {
+        alert(`กรุณาผ่านแบบทดสอบบทที่ ${Number(lessonIndex || 1) - 1} ก่อน`);
+        return;
+    }
     const modal = document.getElementById('modal-overlay');
     renderVideoModalBody(lessonIndex || 1);
     modal.style.display = 'flex';
@@ -512,6 +607,10 @@ function openCourseVideo(lessonIndex) {
 function startQuiz(lessonIndex) {
     if (!enrolledCourses[currentSubjectId]) {
         alert('กรุณาลงรายวิชาก่อนทำแบบทดสอบ');
+        return;
+    }
+    if (!isQuizUnlocked(lessonIndex || 1)) {
+        alert(getLessonLockMessage(lessonIndex || 1) || 'บทเรียนยังไม่ปลดล็อก');
         return;
     }
     const url = new URL('test.html', window.location.href);

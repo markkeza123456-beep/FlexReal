@@ -66,7 +66,7 @@ function fetchCourseSummary(PDO $conn, string $studentId, string $subjectId): ar
     $summary = $summaryStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
     $lessonProgressStmt = $conn->prepare(
-        'SELECT lesson_index, lesson_title, progress_percent, best_quiz_score, quiz_total_score, last_activity_at
+        'SELECT lesson_index, lesson_title, opened_count, video_open_count, progress_percent, best_quiz_score, quiz_total_score, last_activity_at
          FROM public.student_learning_progress
          WHERE student_id = :student_id
            AND subjects_id = :subject_id
