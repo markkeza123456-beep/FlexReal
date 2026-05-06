@@ -22,24 +22,18 @@ function ensureTestTable(PDO $conn): void
             status VARCHAR(50),
             student_id VARCHAR(50),
             course_name TEXT,
-<<<<<<< Updated upstream
             total_score INTEGER,
             answers JSONB,
+            subjects_id VARCHAR(50),
+            lesson_no INTEGER,
             submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )'
     );
-
     $conn->exec('ALTER TABLE public.test ADD COLUMN IF NOT EXISTS total_score INTEGER');
     $conn->exec('ALTER TABLE public.test ADD COLUMN IF NOT EXISTS answers JSONB');
-    $conn->exec('ALTER TABLE public.test ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()');
-=======
-            subjects_id VARCHAR(50),
-            lesson_no INTEGER
-        )'
-    );
     $conn->exec('ALTER TABLE public.test ADD COLUMN IF NOT EXISTS subjects_id VARCHAR(50)');
     $conn->exec('ALTER TABLE public.test ADD COLUMN IF NOT EXISTS lesson_no INTEGER');
->>>>>>> Stashed changes
+    $conn->exec('ALTER TABLE public.test ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()');
 }
 
 function nextTestId(PDO $conn): int
@@ -102,8 +96,7 @@ $subjectId = trim((string) ($input['subject_id'] ?? ''));
 $lessonIndex = (int) ($input['lesson_index'] ?? 1);
 $score = (int) ($input['score'] ?? -1);
 $totalScore = (int) ($input['total_score'] ?? 0);
-$subjectId = trim((string) ($input['subject_id'] ?? ''));
-$lessonNo = (int) ($input['lesson_no'] ?? 0);
+$lessonNo = (int) ($input['lesson_no'] ?? ($lessonIndex > 0 ? $lessonIndex : 1));
 
 if ($courseName === '' || $subjectId === '' || $score < 0 || $totalScore <= 0) {
     jsonResponse(['status' => 'error', 'message' => 'ข้อมูลแบบทดสอบไม่ครบถ้วน'], 400);
@@ -119,13 +112,12 @@ try {
     $status = $score >= $requiredScore ? 'pass' : 'fail';
 
     $stmt = $conn->prepare(
-<<<<<<< Updated upstream
-        'INSERT INTO public.test (test_id, score, test_attempt, status, student_id, course_name, total_score, answers, submitted_at)
-         VALUES (:test_id, :score, :test_attempt, :status, :student_id, :course_name, :total_score, :answers, NOW())
-=======
-        'INSERT INTO public.test (test_id, score, test_attempt, status, student_id, course_name, subjects_id, lesson_no)
-         VALUES (:test_id, :score, :test_attempt, :status, :student_id, :course_name, :subjects_id, :lesson_no)
->>>>>>> Stashed changes
+        'INSERT INTO public.test (
+            test_id, score, test_attempt, status, student_id, course_name, total_score, answers, subjects_id, lesson_no, submitted_at
+         )
+         VALUES (
+            :test_id, :score, :test_attempt, :status, :student_id, :course_name, :total_score, :answers, :subjects_id, :lesson_no, NOW()
+         )
          RETURNING test_id'
     );
     $stmt->execute([
@@ -135,13 +127,10 @@ try {
         ':status' => $status,
         ':student_id' => $studentId,
         ':course_name' => $courseName,
-<<<<<<< Updated upstream
         ':total_score' => $totalScore,
         ':answers' => json_encode($input['answers'] ?? [], JSON_UNESCAPED_UNICODE),
-=======
         ':subjects_id' => ($subjectId === '' ? null : $subjectId),
         ':lesson_no' => ($lessonNo > 0 ? $lessonNo : null),
->>>>>>> Stashed changes
     ]);
 
     recordLearningActivity(

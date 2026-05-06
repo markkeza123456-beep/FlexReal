@@ -98,6 +98,38 @@ function getLessonLockMessage(lessonIndex) {
     return '';
 }
 
+function getLessonStatusInfo(lessonIndex) {
+    const progressMap = getLessonProgressMap();
+    const row = progressMap.get(Number(lessonIndex)) || {};
+    const score = Number(row.best_quiz_score || 0);
+    const total = Number(row.quiz_total_score || 0);
+    const hasAttempt = total > 0;
+    const passed = isLessonPassed(lessonIndex);
+
+    if (passed) {
+        return {
+            label: 'ผ่าน',
+            color: '#1e8449',
+            bg: '#eafaf1',
+            scoreText: hasAttempt ? `${score}/${total}` : '-'
+        };
+    }
+    if (hasAttempt) {
+        return {
+            label: 'ไม่ผ่าน',
+            color: '#c0392b',
+            bg: '#fdecea',
+            scoreText: `${score}/${total}`
+        };
+    }
+    return {
+        label: 'ยังไม่ทำ',
+        color: '#7f8c8d',
+        bg: '#f4f6f7',
+        scoreText: '-'
+    };
+}
+
 function renderLessonAccordion(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -107,7 +139,9 @@ function renderLessonAccordion(containerId) {
         return;
     }
 
-    const html = currentLessonsData.map((lesson) => `
+    const html = currentLessonsData.map((lesson) => {
+        const status = getLessonStatusInfo(lesson.index);
+        return `
         <div class="lesson-accordion ${lesson.expanded ? 'is-expanded' : 'is-collapsed'}">
             <button type="button" class="lesson-header" onclick="toggleLesson(${lesson.index})" aria-expanded="${lesson.expanded ? 'true' : 'false'}">
                 <span>บทที่ ${lesson.index}: ${escapeHtml(lesson.title)}</span>
@@ -115,6 +149,10 @@ function renderLessonAccordion(containerId) {
             </button>
             <div class="lesson-body">
                 <div class="curriculum-list">
+                    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 10px;">
+                        <span style="padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;color:${status.color};background:${status.bg};">สถานะ: ${status.label}</span>
+                        <span style="font-size:12px;color:#2c3e50;">คะแนน: ${status.scoreText}</span>
+                    </div>
                     ${!canAccessLesson(lesson.index) ? `<p style="margin:0 0 8px;color:#d35400;font-size:13px;">${getLessonLockMessage(lesson.index)}</p>` : ''}
                     <div class="curriculum-item">
                         <div class="curr-left">
@@ -150,7 +188,8 @@ function renderLessonAccordion(containerId) {
                 </div>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 
     container.innerHTML = html;
 }
