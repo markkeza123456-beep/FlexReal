@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_start();
 
 require_once __DIR__ . '/db_connect.php';
@@ -27,24 +27,53 @@ function findSubjectIdByCourseName(PDO $conn, string $courseName): ?string
     return $id === false ? null : (string) $id;
 }
 
+function subjectLegacySlug(string $courseName): string
+{
+    $map = [
+        'คณิตศาสตร์' => 'math',
+        'ภาษาไทย' => 'thai',
+        'วิทยาศาสตร์' => 'science',
+        'สังคมศึกษา' => 'social',
+        'ภาษาอังกฤษ' => 'english',
+    ];
+    return $map[$courseName] ?? 'lesson1';
+}
+
+function resolveLessonPdfPath(string $subjectId, string $courseName, int $lessonNo): ?string
+{
+    $lessonNo = max(1, $lessonNo);
+    $root = __DIR__ . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR;
+    $legacySlug = subjectLegacySlug($courseName);
+
+    $candidates = [
+        $root . $subjectId . '-lesson-' . $lessonNo . '.pdf',
+        $root . $subjectId . '_lesson_' . $lessonNo . '.pdf',
+        $root . $legacySlug . '-lesson-' . $lessonNo . '.pdf',
+        $root . 'lesson-' . $legacySlug . '-' . $lessonNo . '.pdf',
+        $root . 'lesson-' . $legacySlug . '.pdf',
+        $root . 'lesson1.pdf.pdf',
+    ];
+
+    foreach ($candidates as $filePath) {
+        if (is_file($filePath)) {
+            return $filePath;
+        }
+    }
+
+    return null;
+}
+
 $role = strtolower((string) ($_SESSION['role'] ?? ''));
 if (!isset($_SESSION['user_id']) || $role !== 'student') {
-    deny('กรุณาเข้าสู่ระบบนักเรียนก่อนดาวน์โหลดเอกสาร', 401);
+    deny('กรุณาเข้าสู่ระบบนักเรียนก่อนอ่านเอกสาร', 401);
 }
 
 $subjectId = trim((string) ($_GET['subject_id'] ?? ''));
 $courseName = trim((string) ($_GET['course_name'] ?? ''));
+$lessonNo = (int) ($_GET['lesson'] ?? 1);
 if ($subjectId === '' && $courseName === '') {
     deny('ไม่พบรายวิชา', 400);
 }
-
-$lessonByCourse = [
-    'คณิตศาสตร์' => 'lesson-math.pdf',
-    'ภาษาไทย' => 'lesson-thai.pdf',
-    'วิทยาศาสตร์' => 'lesson-science.pdf',
-    'สังคมศึกษา' => 'lesson-social.pdf',
-    'ภาษาอังกฤษ' => 'lesson-english.pdf',
-];
 
 try {
     if ($subjectId === '') {
@@ -65,7 +94,7 @@ try {
     ]);
 
     if (!$stmt->fetchColumn()) {
-        deny('กรุณาลงรายวิชาก่อนดาวน์โหลดเอกสาร', 403);
+        deny('กรุณาลงรายวิชาก่อนอ่านเอกสาร', 403);
     }
 } catch (Throwable $e) {
     deny('ระบบตรวจสอบสิทธิ์ขัดข้อง: ' . $e->getMessage(), 500);
@@ -74,16 +103,12 @@ try {
 if ($courseName === '') {
     $stmtCourse = $conn->prepare('SELECT subjects_name FROM public.subjects WHERE subjects_id = :id LIMIT 1');
     $stmtCourse->execute([':id' => $subjectId]);
-    $courseName = (string)($stmtCourse->fetchColumn() ?: '');
+    $courseName = (string) ($stmtCourse->fetchColumn() ?: '');
 }
 
-if (!isset($lessonByCourse[$courseName])) {
-    deny('ไม่พบเอกสารของรายวิชานี้', 404);
-}
-
-$filePath = __DIR__ . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . $lessonByCourse[$courseName];
-if (!is_file($filePath)) {
-    deny('ไม่พบไฟล์เอกสาร', 404);
+$filePath = resolveLessonPdfPath($subjectId, $courseName, $lessonNo);
+if ($filePath === null) {
+    deny('ไม่พบไฟล์เอกสารของบทนี้', 404);
 }
 
 header('Content-Type: application/pdf');

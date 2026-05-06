@@ -15,6 +15,14 @@ const LESSON_VIDEO_FILES = [
     'videos/lesson-science.mp4'
 ];
 
+const SUBJECT_LEGACY_SLUG = {
+    'คณิตศาสตร์': 'math',
+    'ภาษาไทย': 'thai',
+    'วิทยาศาสตร์': 'science',
+    'สังคมศึกษา': 'social',
+    'ภาษาอังกฤษ': 'english'
+};
+
 function pick(obj, ...keys) {
     for (const key of keys) {
         if (obj && obj[key] !== undefined && obj[key] !== null) return obj[key];
@@ -130,6 +138,10 @@ function getLessonStatusInfo(lessonIndex) {
     };
 }
 
+function getSubjectLegacySlug() {
+    return SUBJECT_LEGACY_SLUG[currentCourseName] || 'lesson1';
+}
+
 function renderLessonAccordion(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -159,10 +171,10 @@ function renderLessonAccordion(containerId) {
                             <span class="curr-icon">📄</span>
                             <div class="curr-text">
                                 <b>เอกสารประกอบบทที่ ${lesson.index}</b>
-                                <p>ดาวน์โหลดเอกสารประกอบบทเรียนนี้</p>
+                                <p>เปิดอ่านเอกสารประกอบบทเรียนนี้</p>
                             </div>
                         </div>
-                        <button class="btn-orange" onclick="downloadCourseLesson(${lesson.index})" ${canAccessLesson(lesson.index) ? '' : 'disabled'}>ดาวน์โหลดเอกสาร</button>
+                        <button class="btn-orange" onclick="downloadCourseLesson(${lesson.index})" ${canAccessLesson(lesson.index) ? '' : 'disabled'}>เปิดอ่านเอกสาร</button>
                     </div>
                     <div class="curriculum-item">
                         <div class="curr-left">
@@ -578,7 +590,7 @@ function openLearningTab(evt, tabName) {
 // --- 6. ไฟล์และ Modal ---
 function downloadCourseLesson(lessonIndex) {
     if (!enrolledCourses[currentSubjectId]) {
-        alert('กรุณาลงรายวิชาก่อนดาวน์โหลดเอกสาร');
+        alert('กรุณาลงรายวิชาก่อนอ่านเอกสาร');
         return;
     }
     if (!canAccessLesson(lessonIndex || 1)) {
@@ -586,14 +598,28 @@ function downloadCourseLesson(lessonIndex) {
         return;
     }
     recordLearningEvent('lesson_open', lessonIndex || 1);
-    // ส่ง Subject ID ไปดึงไฟล์แทน
-    window.open(`download_course_lesson.php?subject_id=${encodeURIComponent(currentSubjectId)}`, '_blank');
+    const params = new URLSearchParams();
+    params.set('subject_id', currentSubjectId);
+    params.set('lesson', String(lessonIndex || 1));
+    if (currentCourseName) {
+        params.set('course_name', currentCourseName);
+    }
+    window.open(`download_course_lesson.php?${params.toString()}`, '_blank');
 }
 
 function getLessonVideoPath(lessonIndex) {
     const safeIndex = Math.max(1, Math.min(LESSON_COUNT, Number(lessonIndex) || 1));
-    const fallbackPath = LESSON_VIDEO_FILES[0];
-    return LESSON_VIDEO_FILES[safeIndex - 1] || fallbackPath;
+    const legacySlug = getSubjectLegacySlug();
+    const candidates = [
+        `videos/${encodeURIComponent(currentSubjectId)}-lesson-${safeIndex}.mp4`,
+        `videos/${encodeURIComponent(currentSubjectId)}_lesson_${safeIndex}.mp4`,
+        `videos/${legacySlug}-lesson-${safeIndex}.mp4`,
+        `videos/lesson-${legacySlug}-${safeIndex}.mp4`,
+        `videos/lesson-${legacySlug}.mp4`,
+        LESSON_VIDEO_FILES[safeIndex - 1],
+        LESSON_VIDEO_FILES[0]
+    ];
+    return candidates.find(Boolean);
 }
 
 function renderVideoModalBody(lessonIndex) {
