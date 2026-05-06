@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แดชบอร์ดเจ้าหน้าที่</title>
+    <link rel="stylesheet" href="officer-dashboard.css">
+    <style>
+        /* CSS เพิ่มเติมสำหรับสีส้มตามภาพ */
+        .metric-card.active {
+            border: 2px solid #ff8c00;
+            background-color: rgba(255, 140, 0, 0.05);
+        }
+        .metric-card { border: 2px solid transparent; cursor: pointer; transition: 0.2s; }
+    </style>
+</head>
+<body>
+    <div class="page-shell">
+        <aside class="sidebar">
+            <!-- Sidebar Content ตามเดิม -->
+            <nav class="nav-list">
+                <a class="nav-item active" href="#summary"><span>⋯</span>สรุปภาพรวม</a>
+                <a class="nav-item" href="#queues"><span>☰</span>คำขอเทียบโอน</a>
+                <a class="nav-item" href="#certs"><span>◫</span>ใบรับรองล่าสุด</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <h1>ภาพรวมการทำงานของเจ้าหน้าที่</h1>
+                <div class="updated-box"><span>อัปเดตล่าสุด</span><strong><?= h(date('H:i:s')) ?></strong></div>
+            </header>
+
+            <!-- 1. ส่วนภาพรวม (แสดงตลอดเวลา) -->
+            <section class="content-grid" id="summary">
+                <div class="panel panel-full">
+                    <div class="panel-header"><h2>สรุปภาพรวมจากฐานข้อมูล</h2></div>
+                    <div class="cards-grid">
+                        <?php foreach ($summaryCards as $card): ?>
+                            <article class="metric-card detail-card" data-key="<?= h($card['key']) ?>">
+                                <div class="metric-label"><?= h($card['label']) ?></div>
+                                <div class="metric-value"><?= h($card['value']) ?></div>
+                                <div class="metric-subtext"><?= h($card['sub']) ?></div>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. ส่วนรายละเอียด (แสดงเฉพาะอันที่เลือก) -->
+            <section class="content-grid" id="detail-view">
+                <div class="panel panel-full">
+                    <div class="panel-header"><h2 id="detailTitle">รายละเอียดข้อมูล</h2></div>
+                    
+                    <div class="detail-block" data-block="students" style="display:none">
+                        <!-- วนลูป $students -->
+                        <?php foreach ($students as $s): ?>
+                            <div class="list-item"><?= h($s['student_name']) ?> (รหัส: <?= h($s['student_id']) ?>)</div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="detail-block" data-block="registrations" style="display:none">
+                        <!-- วนลูป $regs -->
+                        <?php foreach ($regs as $r): ?>
+                            <article class="list-item">
+                                <div class="list-title"><?= h($r['student_name']) ?></div>
+                                <div class="list-meta">วิชา <?= h($r['subject_name']) ?></div>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="detail-block" data-block="transfers" style="display:none">
+                        <?php foreach ($transfers as $t): ?>
+                            <div class="list-item">คำขอ #<?= h($t['transfer_id']) ?> - <?= h($t['student_name']) ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                    
+                    <!-- เพิ่ม Block อื่นๆ (certificates, learning, tests) ในลักษณะเดียวกัน -->
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="dashboard-logic.js"></script>
+</body>
+</html>
