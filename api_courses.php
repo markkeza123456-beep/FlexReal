@@ -1,61 +1,53 @@
 <?php
+session_start();
+require_once 'db_connect.php';
 header('Content-Type: application/json; charset=utf-8');
-require_once 'db_connect.php'; // ต้องแน่ใจว่าชื่อไฟล์เชื่อมต่อฐานข้อมูลตรงกับของคุณนะครับ
 
-$action = $_GET['action'] ?? 'get_all';
+$action = $_GET['action'] ?? '';
 
 try {
+    // 1. ดึงรายวิชาทั้งหมด (หน้าแรก)
     if ($action === 'get_all') {
-        // ดึงวิชาทั้งหมด
-        $stmt = $conn->query("
-            SELECT
-                s.subjects_id,
-                s.subjects_name,
-                s.subjects_description,
-                s.teachers_id,
-                t.teachers_name,
-                COALESCE(COUNT(l.lessons_id), 0) AS lesson_count
-            FROM subjects s
-            LEFT JOIN teachers t ON t.teachers_id = s.teachers_id
-            LEFT JOIN lessons l ON l.subjects_id = s.subjects_id
-            GROUP BY s.subjects_id, s.subjects_name, s.subjects_description, s.teachers_id, t.teachers_name
-            ORDER BY s.subjects_name
-        ");
+        $stmt = $conn->query("SELECT subjects_id, subjects_name, subjects_description FROM public.subjects ORDER BY subjects_name ASC");
         $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['status' => 'success', 'data' => $courses]);
-        
-    } elseif ($action === 'get_detail') {
-        // ดึงรายละเอียด 1 วิชา
+    }
+    // 2. ดึงรายละเอียดวิชา และ บทเรียนย่อย
+    elseif ($action === 'get_detail') {
         $id = $_GET['id'] ?? '';
         
-        $stmt = $conn->prepare("
-            SELECT
-                s.Subjects_ID,
-                s.Subjects_Name,
-                s.Subjects_Description,
-                s.teachers_id,
-                t.teachers_name,
-                COALESCE(COUNT(l2.lessons_id), 0) AS lesson_count
-            FROM Subjects s
-            LEFT JOIN teachers t ON t.teachers_id = s.teachers_id
-            LEFT JOIN lessons l2 ON l2.subjects_id = s.subjects_id
-            WHERE s.Subjects_ID = ?
-            GROUP BY s.Subjects_ID, s.Subjects_Name, s.Subjects_Description, s.teachers_id, t.teachers_name
-        ");
+        $stmt = $conn->prepare("SELECT * FROM public.subjects WHERE subjects_id = ?");
         $stmt->execute([$id]);
         $course = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $stmt_lessons = $conn->prepare("SELECT Lessons_ID, Lessons_Name FROM Lessons WHERE Subjects_ID = ? ORDER BY Lessons_ID ASC");
-        $stmt_lessons->execute([$id]);
-        $lessons = $stmt_lessons->fetchAll(PDO::FETCH_ASSOC);
-
-        if ($course) {
-            echo json_encode(['status' => 'success', 'course' => $course, 'lessons' => $lessons]);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'ไม่พบวิชานี้']);
+        if (!$course) {
+            echo json_encode(['status' => 'error', 'message' => 'ไม่พบรายวิชานี้']);
+            exit;
         }
+
+        // ดึงบทเรียนของวิชานี้
+        $stmtL = $conn->prepare("SELECT * FROM public.lessons WHERE subjects_id = ? ORDER BY lessons_id ASC");
+        $stmtL->execute([$id]);
+        $lessons = $stmtL->fetchAll(PDO::FETCH_ASSOC);
+
+        // ดึงชื่ออาจารย์ (เขียนดัก Error ป้องกันเว็บพัง)
+        $course['teachers_name'] = 'ไม่ระบุอาจารย์ผู้สอน';
+        if (!empty($course['teachers_id'])) {
+            try {
+                $stmtT = $conn->prepare("SELECT teachers_name FROM public.teachers WHERE teachers_id = ?");
+                $stmtT->execute([$course['teachers_id']]);
+                $teacher = $stmtT->fetch(PDO::FETCH_ASSOC);
+                if ($teacher && !empty($teacher['teachers_name'])) {
+                    $course['teachers_name'] = $teacher['teachers_name'];
+                }
+            } catch (Exception $ex) {
+                // ข้ามไปถ้าไม่มีตาราง
+            }
+        }
+
+        echo json_encode(['status' => 'success', 'course' => $course, 'lessons' => $lessons]);
     }
-} catch (Exception $e) {
+} catch(Exception $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
 ?>

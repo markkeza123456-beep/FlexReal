@@ -1,159 +1,92 @@
 <?php
 session_start();
+require_once 'db_connect.php';
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/db_connect.php';
-require_once __DIR__ . '/learning_progress_lib.php';
+// รับข้อมูล JSON ที่ส่งมาจากหน้าข้อสอบ (test.js)
+$data = json_decode(file_get_contents('php://input'), true);
 
-function jsonResponse(array $payload, int $statusCode = 200): void
-{
-    http_response_code($statusCode);
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+// ตรวจสอบว่าใช่นักเรียนไหม
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'student') {
+    echo json_encode(['status' => 'unauthorized', 'message' => 'กรุณาเข้าสู่ระบบก่อนทำแบบทดสอบ']);
     exit;
 }
 
-function ensureTestTable(PDO $conn): void
-{
-    $conn->exec(
-        'CREATE TABLE IF NOT EXISTS public.test (
-            test_id INTEGER PRIMARY KEY,
-            score INTEGER,
-            test_attempt INTEGER,
-            status VARCHAR(50),
-            student_id VARCHAR(50),
-            course_name TEXT,
-            total_score INTEGER,
-            answers JSONB,
-            subjects_id VARCHAR(50),
-            lesson_no INTEGER,
-            submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )'
-    );
-    $conn->exec('ALTER TABLE public.test ADD COLUMN IF NOT EXISTS total_score INTEGER');
-    $conn->exec('ALTER TABLE public.test ADD COLUMN IF NOT EXISTS answers JSONB');
-    $conn->exec('ALTER TABLE public.test ADD COLUMN IF NOT EXISTS subjects_id VARCHAR(50)');
-    $conn->exec('ALTER TABLE public.test ADD COLUMN IF NOT EXISTS lesson_no INTEGER');
-    $conn->exec('ALTER TABLE public.test ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()');
-}
-
-function nextTestId(PDO $conn): int
-{
-    $stmt = $conn->query('SELECT COALESCE(MAX(test_id), 0) + 1 FROM public.test');
-    return (int) $stmt->fetchColumn();
-}
-
-function nextTestAttempt(PDO $conn, string $studentId, string $courseName): int
-{
-    $stmt = $conn->prepare(
-        'SELECT COALESCE(MAX(test_attempt), 0) + 1
-         FROM public.test
-         WHERE student_id = :student_id AND course_name = :course_name'
-    );
-    $stmt->execute([
-        ':student_id' => $studentId,
-        ':course_name' => $courseName,
-    ]);
-
-    return (int) $stmt->fetchColumn();
-}
-
-function ensureStudentExists(PDO $conn, string $studentId): void
-{
-    $stmt = $conn->prepare('SELECT 1 FROM public.student WHERE student_id = :student_id LIMIT 1');
-    $stmt->execute([':student_id' => $studentId]);
-
-    if ($stmt->fetchColumn()) {
-        return;
-    }
-
-    $stmt = $conn->prepare(
-        'INSERT INTO public.student (student_id, student_name)
-         VALUES (:student_id, :student_name)'
-    );
-    $stmt->execute([
-        ':student_id' => $studentId,
-        ':student_name' => $_SESSION['name'] ?? 'นักเรียน',
-    ]);
-}
-
-$role = strtolower((string) ($_SESSION['role'] ?? ''));
-if (!isset($_SESSION['user_id']) || $role !== 'student') {
-    jsonResponse([
-        'status' => 'unauthorized',
-        'message' => 'กรุณาเข้าสู่ระบบนักเรียนก่อนส่งแบบทดสอบ',
-        'login_url' => 'login.php',
-    ], 401);
-}
-
-$rawInput = file_get_contents('php://input');
-$input = json_decode($rawInput, true);
-if (!is_array($input)) {
-    jsonResponse(['status' => 'error', 'message' => 'ข้อมูลแบบทดสอบไม่ถูกต้อง'], 400);
-}
-
-$courseName = trim((string) ($input['course_name'] ?? ''));
-$subjectId = trim((string) ($input['subject_id'] ?? ''));
-$lessonIndex = (int) ($input['lesson_index'] ?? 1);
-$score = (int) ($input['score'] ?? -1);
-$totalScore = (int) ($input['total_score'] ?? 0);
-$lessonNo = (int) ($input['lesson_no'] ?? ($lessonIndex > 0 ? $lessonIndex : 1));
-
-if ($courseName === '' || $subjectId === '' || $score < 0 || $totalScore <= 0) {
-    jsonResponse(['status' => 'error', 'message' => 'ข้อมูลแบบทดสอบไม่ครบถ้วน'], 400);
-}
+$student_id = $_SESSION['user_id'];
+$subject_id = $data['subject_id'] ?? '';
+$lesson_index = intval($data['lesson_index'] ?? 1);
+$score = floatval($data['score'] ?? 0);
+$total_score = intval($data['total_score'] ?? 0);
+$answers = $data['answers'] ?? []; // ตัวอย่างข้อมูล: [0, 1, 2, null] (0=ก, 1=ข, 2=ค, 3=ง)
 
 try {
-    ensureTestTable($conn);
-    $studentId = (string) $_SESSION['user_id'];
-    ensureStudentExists($conn, $studentId);
-    $testId = nextTestId($conn);
-    $testAttempt = nextTestAttempt($conn, $studentId, $courseName);
-    $requiredScore = max(1, (int) ceil($totalScore * 0.6));
-    $status = $score >= $requiredScore ? 'pass' : 'fail';
+    // เริ่มระบบ Transaction (ถ้าพังกลางทาง จะไม่บันทึกเลย ป้องกันข้อมูลแหว่ง)
+    $conn->beginTransaction();
 
-    $stmt = $conn->prepare(
-        'INSERT INTO public.test (
-            test_id, score, test_attempt, status, student_id, course_name, total_score, answers, subjects_id, lesson_no, submitted_at
-         )
-         VALUES (
-            :test_id, :score, :test_attempt, :status, :student_id, :course_name, :total_score, :answers, :subjects_id, :lesson_no, NOW()
-         )
-         RETURNING test_id'
-    );
-    $stmt->execute([
-        ':test_id' => $testId,
-        ':score' => $score,
-        ':test_attempt' => $testAttempt,
-        ':status' => $status,
-        ':student_id' => $studentId,
-        ':course_name' => $courseName,
-        ':total_score' => $totalScore,
-        ':answers' => json_encode($input['answers'] ?? [], JSON_UNESCAPED_UNICODE),
-        ':subjects_id' => ($subjectId === '' ? null : $subjectId),
-        ':lesson_no' => ($lessonNo > 0 ? $lessonNo : null),
-    ]);
+    // 1. หาว่าบทเรียนที่นักเรียนกำลังสอบคือ Lessons_ID อะไร (ดึงตามลำดับของบทเรียน)
+    $offset = $lesson_index - 1;
+    $stmtL = $conn->prepare("SELECT lessons_id FROM public.lessons WHERE subjects_id = ? ORDER BY lessons_id ASC LIMIT 1 OFFSET ?");
+    $stmtL->execute([$subject_id, $offset]);
+    $lesson_id = $stmtL->fetchColumn();
 
-    recordLearningActivity(
-        $conn,
-        $studentId,
-        $subjectId,
-        $lessonIndex > 0 ? $lessonIndex : 1,
-        'quiz_submit',
-        $courseName . ' บทที่ ' . ($lessonIndex > 0 ? $lessonIndex : 1),
-        $score,
-        $totalScore
-    );
+    if (!$lesson_id) {
+        throw new Exception("ไม่พบบทเรียน");
+    }
 
-    jsonResponse([
-        'status' => 'success',
-        'message' => 'บันทึกผลแบบทดสอบเรียบร้อย',
-        'test_id' => $stmt->fetchColumn(),
-        'quiz_status' => $status,
-        'required_score' => $requiredScore,
-    ]);
-} catch (Throwable $e) {
-    jsonResponse([
-        'status' => 'error',
-        'message' => 'บันทึกผลแบบทดสอบไม่สำเร็จ',
-    ], 500);
+    // 2. บันทึก "คะแนนรวม" ลงตาราง test 
+    // (ใช้ RETURNING test_id เพื่อให้ฐานข้อมูลรัน ID ให้ และส่งกลับมาให้เราใช้ต่อ)
+    $stmtTest = $conn->prepare("INSERT INTO public.test (student_id, lessons_id, score) VALUES (?, ?, ?) RETURNING test_id");
+    $stmtTest->execute([$student_id, $lesson_id, $score]);
+    $new_test_id = $stmtTest->fetchColumn();
+
+    // 3. ดึง "รหัสคำถาม" ทั้งหมดของบทเรียนนี้มาเรียงให้ตรงกับที่แสดงให้นักเรียนสอบ
+    $stmtQ = $conn->prepare("SELECT questions_id, correct_answer FROM public.test_questions WHERE lessons_id = ? ORDER BY questions_id ASC");
+    $stmtQ->execute([$lesson_id]);
+    $questions = $stmtQ->fetchAll(PDO::FETCH_ASSOC);
+
+    // 4. วนลูปบันทึก "คำตอบรายข้อ" ลงตาราง test_answers
+    $stmtAns = $conn->prepare("INSERT INTO public.test_answers (questions_id, test_id, selected_choice) VALUES (?, ?, ?)");
+    
+    // ตัวแปลง index จาก Javascript (0, 1, 2, 3) กลับเป็น A, B, C, D
+    $choice_map = [0 => 'A', 1 => 'B', 2 => 'C', 3 => 'D'];
+    
+    foreach ($questions as $index => $q) {
+        $q_id = $q['questions_id'];
+        $selected_val = '-'; // ค่าเริ่มต้นถ้าไม่ได้ตอบ
+        
+        // เช็คว่านักเรียนตอบข้อนี้ไหม (และต้องไม่เป็น null)
+        if (isset($answers[$index]) && $answers[$index] !== null) {
+            $ans_idx = $answers[$index];
+            
+            if ($q['correct_answer'] === '-') {
+                // สำหรับคำถามอัตนัย (ข้อเขียน) ปัจจุบันในระบบยังเป็น index อยู่ ให้ใส่ - ไว้ก่อน
+                $selected_val = '-'; 
+            } else {
+                // สำหรับคำถามปรนัย (4 ตัวเลือก) และ ถูก/ผิด
+                $selected_val = $choice_map[$ans_idx] ?? '-';
+            }
+        }
+        
+        // ยัดข้อมูลลงตาราง test_answers
+        $stmtAns->execute([$q_id, $new_test_id, $selected_val]);
+    }
+
+    // 5. บันทึกลงตาราง Learning Records เพื่อปลดล็อกบทถัดไป (สมมติระบบของคุณมี)
+    $stmtRecord = $conn->prepare("INSERT INTO public.learning_records (student_id, lessons_id, activity_type) VALUES (?, ?, 'quiz_passed') ON CONFLICT DO NOTHING");
+    $stmtRecord->execute([$student_id, $lesson_id]);
+
+    // ยืนยันการบันทึกข้อมูลทั้งหมด
+    $conn->commit();
+
+    // คำนวณว่าผ่านเกณฑ์ไหม (สมมติผ่านที่ 60%)
+    $required_score = ceil($total_score * 0.6);
+    $status = ($score >= $required_score) ? 'pass' : 'fail';
+
+    echo json_encode(['status' => 'success', 'quiz_status' => $status, 'message' => 'บันทึกคำตอบสำเร็จ!']);
+
+} catch(Exception $e) {
+    // ถ้าพังให้ย้อนกลับการบันทึกทั้งหมด
+    $conn->rollBack();
+    echo json_encode(['status' => 'error', 'message' => 'DB Error: ' . $e->getMessage()]);
 }
+?>

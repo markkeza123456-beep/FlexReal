@@ -35,9 +35,23 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.lesson-tab-btn').forEach(btn => btn.addEventListener('click', () => switchLessonTab(btn.dataset.tab)));
 
 
+    // ── Student search inside detail ───────────────────
+    const detailStudentSearch = document.getElementById('detailStudentSearch');
+    if (detailStudentSearch) {
+        detailStudentSearch.addEventListener('input', () => {
+            const q = detailStudentSearch.value.toLowerCase();
+            document.querySelectorAll('.detail-student-row').forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(q) ? '' : 'none';
+            });
+        });
+    }
+
     // ════════════ 1. ระบบจัดการ "บทเรียนย่อย" ════════════ //
     const modalOverlay = document.getElementById('modalOverlay');
     document.getElementById('openModalBtn')?.addEventListener('click', () => modalOverlay.classList.add('open'));
+    document.getElementById('closeModalBtn')?.addEventListener('click', () => modalOverlay.classList.remove('open'));
+    document.getElementById('closeModalBtn2')?.addEventListener('click', () => modalOverlay.classList.remove('open'));
     
     document.getElementById('saveLessonBtn')?.addEventListener('click', (e) => {
         const btn = e.target;
@@ -49,8 +63,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const fd = new FormData(); fd.append('action', 'add_lesson'); fd.append('lesson_name', lessonName); fd.append('subject_id', subjectId);
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
-            if(d.success) location.reload(); else { alert(d.message); btn.disabled=false; }
-        });
+            if(d.success) {
+                location.reload(); 
+            } else { 
+                alert(d.message); 
+                if(d.message.includes('ล็อกอิน')) {
+                    window.location.href = 'login.php';
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = '💾 บันทึกบทเรียน';
+                }
+            }
+        }).catch(() => { alert('เชื่อมต่อฐานข้อมูลล้มเหลว'); btn.disabled = false; btn.textContent = '💾 บันทึกบทเรียน'; });
     });
 
     const editLessonModal = document.getElementById('editLessonModal');
@@ -67,7 +91,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.textContent = '⏳...'; btn.disabled = true;
         const fd = new FormData(); fd.append('action', 'edit_lesson'); fd.append('lesson_id', id); fd.append('lesson_name', name);
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
-            if(d.success) location.reload(); else { alert(d.message); btn.disabled=false; }
+            if(d.success) {
+                location.reload(); 
+            } else { 
+                alert(d.message); 
+                if(d.message.includes('ล็อกอิน')) window.location.href = 'login.php';
+                else { btn.disabled = false; btn.textContent = '💾 บันทึกการแก้ไข'; }
+            }
         });
     });
 
@@ -75,7 +105,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => {
             if(confirm('ต้องการลบบทเรียนนี้ใช่หรือไม่? (ข้อสอบในบทนี้จะถูกลบไปด้วย)')) {
                 const fd = new FormData(); fd.append('action', 'delete_lesson'); fd.append('lesson_id', btn.dataset.id);
-                fetch('teacher_api.php', { method: 'POST', body: fd }).then(() => location.reload());
+                fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
+                    if(d.message && d.message.includes('ล็อกอิน')) { alert(d.message); window.location.href = 'login.php'; }
+                    else location.reload();
+                });
             }
         });
     });
@@ -83,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ════════════ 2. ระบบจัดการ "แบบทดสอบ (Quiz) ใหม่" ════════════ //
 
-    // ควบคุม UI การเลือกประเภทข้อสอบใน Modal เพิ่ม
     const quizTypeAdd = document.getElementById('quizTypeAdd');
     const grpChoiceAdd = document.getElementById('quizChoiceGroupAdd');
     const grpTFAdd = document.getElementById('quizTFGroupAdd');
@@ -96,7 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
         else if(quizTypeAdd.value === 'essay') grpEssayAdd.style.display = 'block';
     });
 
-    // เปิด Modal เพิ่มข้อสอบ
     const quizModalOverlay = document.getElementById('quizModalOverlay');
     document.querySelectorAll('.btn-open-add-quiz').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -106,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // บันทึก เพิ่มข้อสอบ
     document.getElementById('saveQuizBtn')?.addEventListener('click', (e) => {
         const btn = e.target;
         const lessonId = document.getElementById('quizTargetLessonId').value;
@@ -133,11 +163,16 @@ document.addEventListener('DOMContentLoaded', () => {
         fd.append('choice_c', chC); fd.append('choice_d', chD); fd.append('answer', ans);
 
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
-            if(d.success) location.reload(); else { alert(d.message); btn.disabled=false; }
+            if(d.success) {
+                location.reload(); 
+            } else { 
+                alert(d.message); 
+                if(d.message.includes('ล็อกอิน')) window.location.href = 'login.php';
+                else { btn.disabled = false; btn.textContent = '➕ เพิ่มคำถาม'; }
+            }
         });
     });
 
-    // เปิด Modal แก้ไขข้อสอบ
     const editQuizModal = document.getElementById('editQuizModal');
     const grpChoiceEdit = document.getElementById('quizChoiceGroupEdit');
     const grpTFEdit = document.getElementById('quizTFGroupEdit');
@@ -165,13 +200,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const r = document.querySelector(`input[name="tfEdit"][value="${ans}"]`);
                 if(r) r.checked = true;
             } else if (type === 'essay') {
-                // ข้อเขียน ไม่ต้องกรอกตัวเลือก ปล่อยว่าง
+                // ข้อเขียน
             }
             editQuizModal.classList.add('open');
         });
     });
 
-    // บันทึก แก้ไขข้อสอบ
     document.getElementById('saveEditQuizBtn')?.addEventListener('click', (e) => {
         const btn = e.target;
         const type = document.getElementById('editQuizTypeHidden').value;
@@ -194,17 +228,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
         btn.textContent = '⏳...'; btn.disabled = true;
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
-            if(d.success) location.reload(); else { alert(d.message); btn.disabled=false; }
+            if(d.success) {
+                location.reload(); 
+            } else { 
+                alert(d.message); 
+                if(d.message.includes('ล็อกอิน')) window.location.href = 'login.php';
+                else { btn.disabled = false; btn.textContent = '💾 บันทึกการแก้ไข'; }
+            }
         });
     });
 
-    // ลบข้อสอบ
     document.querySelectorAll('.btn-del-quiz').forEach(btn => {
         btn.addEventListener('click', () => {
             if(confirm('แน่ใจหรือไม่ว่าต้องการลบคำถามนี้ทิ้ง?')) {
                 const fd = new FormData(); fd.append('action', 'delete_quiz'); fd.append('quiz_id', btn.dataset.id);
-                fetch('teacher_api.php', { method: 'POST', body: fd }).then(() => location.reload());
+                fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
+                    if(d.message && d.message.includes('ล็อกอิน')) { alert(d.message); window.location.href = 'login.php'; }
+                    else location.reload();
+                });
             }
         });
     });
 });
+
+// ฟังก์ชันโชว์ข้อมูลความคืบหน้านักเรียนเวลาคลิกที่ชื่อ
+window.showStudentProgress = function(element) {
+    const name = element.getAttribute('data-name');
+    const completed = element.getAttribute('data-completed');
+    const total = element.getAttribute('data-total');
+    const jsonStr = element.getAttribute('data-json');
+    
+    document.getElementById('spm-student-name').innerText = name;
+    document.getElementById('spm-completed-count').innerText = completed;
+    document.getElementById('spm-total-count').innerText = total;
+    
+    let lessons = [];
+    try { lessons = JSON.parse(jsonStr); } catch(e) {}
+    
+    const listContainer = document.getElementById('spm-lesson-list');
+    if (lessons && lessons.length > 0) {
+        listContainer.innerHTML = lessons.map(l => `
+            <div style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: #10b981; font-size: 13.5px; display:flex; align-items:center; gap:10px;">
+                <span style="background:rgba(16,185,129,0.15); padding:4px 6px; border-radius:4px; font-size:11px;">✅</span> 
+                <span>${l}</span>
+            </div>
+        `).join('');
+    } else {
+        listContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">ยังไม่ได้เริ่มเรียนบทเรียนใดเลย</div>`;
+    }
+    
+    document.getElementById('studentProgressModal').classList.add('open');
+}

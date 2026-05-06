@@ -17,11 +17,22 @@ try {
         $subject_id = $_POST['subject_id'] ?? ''; 
         if(empty($lesson_name) || empty($subject_id)) throw new Exception("ข้อมูลไม่ครบถ้วน");
 
-        $lesson_id = 'LSN' . time() . rand(10,99);
+        // หา ID ล่าสุดที่ขึ้นต้นด้วย L เพื่อรันเลขต่อ (เช่น L001, L002 -> L003)
+        $stmtId = $conn->query("SELECT lessons_id FROM public.lessons WHERE lessons_id LIKE 'L%' ORDER BY LENGTH(lessons_id) DESC, lessons_id DESC LIMIT 1");
+        $lastId = $stmtId->fetchColumn();
+        
+        if ($lastId) {
+            $nextNum = intval(substr($lastId, 1)) + 1;
+        } else {
+            $nextNum = 1;
+        }
+        $lesson_id = 'L' . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
+
         $stmt = $conn->prepare("INSERT INTO public.lessons (lessons_id, lessons_name, study_hours, subjects_id) VALUES (:id, :name, :hrs, :sub)");
         $stmt->execute(['id' => $lesson_id, 'name' => $lesson_name, 'hrs' => 1, 'sub' => $subject_id]);
         echo json_encode(['success' => true, 'message' => 'เพิ่มบทเรียนสำเร็จ!']);
     }
+
     // ---- 2. แก้ไขบทเรียน ----
     elseif ($action === 'edit_lesson') {
         $lesson_id = $_POST['lesson_id'] ?? '';
@@ -32,7 +43,8 @@ try {
         $stmt->execute(['name' => $lesson_name, 'id' => $lesson_id]);
         echo json_encode(['success' => true, 'message' => 'แก้ไขบทเรียนสำเร็จ!']);
     }
-    // ---- 3. ลบบทเรียน ----
+
+    // ---- 3. ลบบบทเรียน ----
     elseif ($action === 'delete_lesson') {
         $lesson_id = $_POST['lesson_id'] ?? '';
         if(empty($lesson_id)) throw new Exception("ไม่พบรหัสบทเรียน");
@@ -56,14 +68,14 @@ try {
 
         if(empty($lesson_id) || empty($question)) throw new Exception("ข้อมูลคำถามไม่ครบ");
 
-        // จัดการข้อมูลตามประเภทข้อสอบ
         if ($type === 'truefalse') {
             $cA = 'ถูก'; $cB = 'ผิด'; $cC = '-'; $cD = '-';
         } elseif ($type === 'essay') {
             $cA = '-'; $cB = '-'; $cC = '-'; $cD = '-';
-            $answer = '-'; // ใช้เครื่องหมาย - เป็นสัญลักษณ์ของข้อเขียน
+            $answer = '-'; 
         }
 
+        // 💥 แก้ไขแล้ว: ให้ PHP คำนวณหาเลขข้อสอบล่าสุด แล้วบวก 1 เข้าไปเอง
         $stmtId = $conn->query("SELECT COALESCE(MAX(questions_id), 0) + 1 FROM public.test_questions");
         $nextId = $stmtId->fetchColumn();
 
@@ -108,6 +120,6 @@ try {
     }
 
 } catch(Exception $e) {
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'DB Error: ' . $e->getMessage()]);
 }
 ?>

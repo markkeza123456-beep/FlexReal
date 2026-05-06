@@ -1,104 +1,60 @@
 <?php
+session_start();
+require_once 'db_connect.php';
 header('Content-Type: application/json; charset=utf-8');
-require_once __DIR__ . '/db_connect.php';
 
-function jsonResponse(array $payload, int $statusCode = 200): void
-{
-    http_response_code($statusCode);
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-function ensureQuizTable(PDO $conn): void
-{
-    $conn->exec(
-        'CREATE TABLE IF NOT EXISTS public.quiz_questions (
-            quiz_id BIGSERIAL PRIMARY KEY,
-            subjects_id VARCHAR(50) NOT NULL,
-            lesson_no INTEGER NOT NULL DEFAULT 1,
-            question_text TEXT NOT NULL,
-            option_a TEXT NOT NULL,
-            option_b TEXT NOT NULL,
-            option_c TEXT NOT NULL,
-            option_d TEXT NOT NULL,
-            correct_option INTEGER NOT NULL,
-            is_active BOOLEAN NOT NULL DEFAULT TRUE,
-            created_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )'
-    );
-}
-
-$action = $_GET['action'] ?? 'get_questions';
-if ($action !== 'get_questions') {
-    jsonResponse(['status' => 'error', 'message' => 'Unknown action'], 400);
-}
-
-$subjectId = trim((string) ($_GET['subject_id'] ?? ''));
-$lessonNoRaw = (int) ($_GET['lesson'] ?? 0);
-
-if ($subjectId === '') {
-    jsonResponse(['status' => 'error', 'message' => 'subject_id is required'], 400);
-}
+$action = $_GET['action'] ?? '';
 
 try {
-    ensureQuizTable($conn);
+    if ($action === 'get_questions') {
+        $subject_id = $_GET['subject_id'] ?? '';
+        $lesson_index = max(1, intval($_GET['lesson'] ?? 1));
+        $offset = $lesson_index - 1;
 
-    if ($lessonNoRaw > 0) {
-        $stmt = $conn->prepare(
-            'SELECT quiz_id, lesson_no, question_text, option_a, option_b, option_c, option_d, correct_option
-             FROM public.quiz_questions
-             WHERE subjects_id = :subject_id
-               AND lesson_no = :lesson_no
-               AND is_active = TRUE
-             ORDER BY quiz_id ASC'
-        );
-        $stmt->execute([
-            ':subject_id' => $subjectId,
-            ':lesson_no' => $lessonNoRaw,
-        ]);
-    } else {
-        $stmt = $conn->prepare(
-            'SELECT quiz_id, lesson_no, question_text, option_a, option_b, option_c, option_d, correct_option
-             FROM public.quiz_questions
-             WHERE subjects_id = :subject_id
-               AND is_active = TRUE
-             ORDER BY lesson_no ASC, quiz_id ASC'
-        );
-        $stmt->execute([':subject_id' => $subjectId]);
+        // 1. หา Lessons_ID จากลำดับบทเรียน
+        $stmtL = $conn->prepare("SELECT lessons_id FROM public.lessons WHERE subjects_id = ? ORDER BY lessons_id ASC LIMIT 1 OFFSET ?");
+        $stmtL->execute([$subject_id, $offset]);
+        $lesson_id = $stmtL->fetchColumn();
+
+        if (!$lesson_id) {
+            echo json_encode(['status' => 'error', 'message' => 'ไม่พบบทเรียน']);
+            exit;
+        }
+
+        // 2. ดึงคำถามข้อสอบของบทเรียนนี้
+        $stmtQ = $conn->prepare("SELECT * FROM public.test_questions WHERE lessons_id = ? ORDER BY questions_id ASC");
+        $stmtQ->execute([$lesson_id]);
+        $questions_raw = $stmtQ->fetchAll(PDO::FETCH_ASSOC);
+
+        $formatted_questions = [];
+        foreach ($questions_raw as $q) {
+            $options = [];
+            $answer_index = 0;
+            $ans = $q['correct_answer'];
+            
+            // แปลงข้อมูลจากที่อาจารย์เลือก ให้เป็นรูปแบบที่ระบบข้อสอบนักเรียนเข้าใจ
+            if ($q['choice_a'] === 'ถูก' && $q['choice_b'] === 'ผิด') {
+                $options = ['ถูก (True)', 'ผิด (False)'];
+                $answer_index = ($ans === 'A') ? 0 : 1;
+            } else if ($ans !== '-') {
+                $options = [$q['choice_a'], $q['choice_b'], $q['choice_c'], $q['choice_d']];
+                $map = ['A' => 0, 'B' => 1, 'C' => 2, 'D' => 3];
+                $answer_index = $map[$ans] ?? 0;
+            } else {
+                $options = ['(คำถามข้อเขียน: อาจารย์จะตรวจให้คะแนนภายหลัง)'];
+                $answer_index = 0;
+            }
+
+            $formatted_questions[] = [
+                'question' => $q['questions_text'],
+                'options' => $options,
+                'answer' => $answer_index
+            ];
+        }
+
+        echo json_encode(['status' => 'success', 'questions' => $formatted_questions]);
     }
-
-    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $questions = array_map(static function ($row): array {
-        $correctOption = (int) $row['correct_option'];
-        if ($correctOption >= 1 && $correctOption <= 4) {
-            $correctOption -= 1;
-        }
-        if ($correctOption < 0 || $correctOption > 3) {
-            $correctOption = 0;
-        }
-
-        return [
-            'id' => (int) $row['quiz_id'],
-            'lesson' => (int) $row['lesson_no'],
-            'question' => (string) $row['question_text'],
-            'options' => [
-                (string) $row['option_a'],
-                (string) $row['option_b'],
-                (string) $row['option_c'],
-                (string) $row['option_d'],
-            ],
-            'answer' => $correctOption,
-        ];
-    }, $rows);
-
-    jsonResponse([
-        'status' => 'success',
-        'count' => count($questions),
-        'questions' => $questions,
-    ]);
-} catch (Throwable $e) {
-    jsonResponse([
-        'status' => 'error',
-        'message' => 'ไม่สามารถโหลดข้อสอบจากฐานข้อมูลได้',
-    ], 500);
+} catch(Exception $e) {
+    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
+?>

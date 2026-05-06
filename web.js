@@ -6,7 +6,6 @@ let courseIdByName = {};
 let currentLessonsData = [];
 let currentProgressSummary = null;
 let currentPassedLessons = new Set();
-const LESSON_COUNT = 5;
 const LESSON_VIDEO_FILES = [
     'videos/lesson1.mp4.mp4',
     'videos/lesson-thai.mp4',
@@ -14,14 +13,6 @@ const LESSON_VIDEO_FILES = [
     'videos/lesson-math.mp4',
     'videos/lesson-science.mp4'
 ];
-
-const SUBJECT_LEGACY_SLUG = {
-    'คณิตศาสตร์': 'math',
-    'ภาษาไทย': 'thai',
-    'วิทยาศาสตร์': 'science',
-    'สังคมศึกษา': 'social',
-    'ภาษาอังกฤษ': 'english'
-};
 
 function pick(obj, ...keys) {
     for (const key of keys) {
@@ -39,33 +30,29 @@ function escapeHtml(text) {
         .replace(/'/g, '&#039;');
 }
 
-function buildFixedLessons(lessons) {
-    const fixedLessons = [];
-    const sourceLessons = Array.isArray(lessons) ? lessons : [];
-    for (let index = 0; index < LESSON_COUNT; index++) {
-        const rawName = sourceLessons[index] ? pick(sourceLessons[index], 'Lessons_Name', 'lessons_name') : '';
-        const lessonName = String(rawName || '').trim() || `Lesson ${index + 1}`;
-        fixedLessons.push({
+// 💥 แปลงข้อมูลบทเรียนจากฐานข้อมูล
+function buildLessonsFromDB(lessons) {
+    if (!Array.isArray(lessons) || lessons.length === 0) return [];
+    return lessons.map((lsn, index) => {
+        const lsnId = pick(lsn, 'lessons_id', 'Lessons_ID') || `tmp_${index}`;
+        const lsnName = pick(lsn, 'lessons_name', 'Lessons_Name') || `บทเรียนที่ ${index + 1}`;
+        return {
             index: index + 1,
-            title: lessonName,
+            id: lsnId,
+            title: lsnName,
             expanded: false
-        });
-    }
-    return fixedLessons;
+        };
+    });
 }
 
-function isLessonPassed(lessonIndex) {
-    return currentPassedLessons.has(Number(lessonIndex));
-}
+function isLessonPassed(lessonIndex) { return currentPassedLessons.has(Number(lessonIndex)); }
 
 function getLessonProgressMap() {
     const map = new Map();
     const lessons = Array.isArray(currentProgressSummary?.lessons) ? currentProgressSummary.lessons : [];
     lessons.forEach((row) => {
         const idx = Number(row.lesson_index || 0);
-        if (idx > 0) {
-            map.set(idx, row);
-        }
+        if (idx > 0) map.set(idx, row);
     });
     return map;
 }
@@ -85,23 +72,15 @@ function isQuizUnlocked(lessonIndex) {
 }
 
 function getLessonLockMessage(lessonIndex) {
-    if (!canAccessLesson(lessonIndex)) {
-        return `ปลดล็อกเมื่อผ่านแบบทดสอบบทที่ ${Number(lessonIndex) - 1}`;
-    }
+    if (!canAccessLesson(lessonIndex)) return `ปลดล็อกเมื่อผ่านแบบทดสอบบทที่ ${Number(lessonIndex) - 1}`;
     if (!isQuizUnlocked(lessonIndex)) {
         const progressMap = getLessonProgressMap();
         const row = progressMap.get(Number(lessonIndex)) || {};
         const openedCount = Number(row.opened_count || 0);
         const videoOpenCount = Number(row.video_open_count || 0);
-        if (openedCount <= 0 && videoOpenCount <= 0) {
-            return 'ต้องอ่านเอกสารและชมวิดีโอก่อนเริ่ม Quiz';
-        }
-        if (openedCount <= 0) {
-            return 'ต้องอ่านเอกสารก่อนเริ่ม Quiz';
-        }
-        if (videoOpenCount <= 0) {
-            return 'ต้องชมวิดีโอก่อนเริ่ม Quiz';
-        }
+        if (openedCount <= 0 && videoOpenCount <= 0) return 'ต้องอ่านเอกสารและชมวิดีโอก่อนเริ่ม Quiz';
+        if (openedCount <= 0) return 'ต้องอ่านเอกสารก่อนเริ่ม Quiz';
+        if (videoOpenCount <= 0) return 'ต้องชมวิดีโอก่อนเริ่ม Quiz';
     }
     return '';
 }
@@ -114,40 +93,26 @@ function getLessonStatusInfo(lessonIndex) {
     const hasAttempt = total > 0;
     const passed = isLessonPassed(lessonIndex);
 
-    if (passed) {
-        return {
-            label: 'ผ่าน',
-            color: '#1e8449',
-            bg: '#eafaf1',
-            scoreText: hasAttempt ? `${score}/${total}` : '-'
-        };
-    }
-    if (hasAttempt) {
-        return {
-            label: 'ไม่ผ่าน',
-            color: '#c0392b',
-            bg: '#fdecea',
-            scoreText: `${score}/${total}`
-        };
-    }
-    return {
-        label: 'ยังไม่ทำ',
-        color: '#7f8c8d',
-        bg: '#f4f6f7',
-        scoreText: '-'
-    };
+    if (passed) return { label: 'ผ่าน', color: '#1e8449', bg: '#eafaf1', scoreText: hasAttempt ? `${score}/${total}` : '-' };
+    if (hasAttempt) return { label: 'ไม่ผ่าน', color: '#c0392b', bg: '#fdecea', scoreText: `${score}/${total}` };
+    return { label: 'ยังไม่ทำ', color: '#7f8c8d', bg: '#f4f6f7', scoreText: '-' };
 }
 
-function getSubjectLegacySlug() {
-    return SUBJECT_LEGACY_SLUG[currentCourseName] || 'lesson1';
-}
-
+// 💥 สร้างกล่องบทเรียนบนหน้าเว็บ
 function renderLessonAccordion(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    if (!currentLessonsData.length) {
-        container.innerHTML = '';
+    // ถ้าอาจารย์ยังไม่เพิ่มบทเรียน ให้โชว์หน้าต่างชัดๆ แทนกล่องขาวโล่งๆ
+    if (!currentLessonsData || currentLessonsData.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:40px 20px; color:#888; background:#fafafa; border:2px dashed #ddd; border-radius:12px; margin-top: 15px;">
+                <div style="font-size:32px; margin-bottom:10px;">📁</div>
+                <h3 style="color:#555; margin-bottom:5px;">วิชานี้ยังไม่มีบทเรียน</h3>
+                <p style="font-size:14px;">โปรดรออาจารย์ผู้สอนเพิ่มเนื้อหาเข้าสู่ระบบ</p>
+            </div>
+        `;
+        container.style.display = 'block'; // บังคับโชว์
         return;
     }
 
@@ -169,30 +134,21 @@ function renderLessonAccordion(containerId) {
                     <div class="curriculum-item">
                         <div class="curr-left">
                             <span class="curr-icon">📄</span>
-                            <div class="curr-text">
-                                <b>เอกสารประกอบบทที่ ${lesson.index}</b>
-                                <p>เปิดอ่านเอกสารประกอบบทเรียนนี้</p>
-                            </div>
+                            <div class="curr-text"><b>เอกสารประกอบบทเรียน</b><p>เปิดอ่านเอกสาร</p></div>
                         </div>
-                        <button class="btn-orange" onclick="downloadCourseLesson(${lesson.index})" ${canAccessLesson(lesson.index) ? '' : 'disabled'}>เปิดอ่านเอกสาร</button>
+                        <button class="btn-orange" onclick="downloadCourseLesson(${lesson.index})" ${canAccessLesson(lesson.index) ? '' : 'disabled'}>เปิดอ่าน</button>
                     </div>
                     <div class="curriculum-item">
                         <div class="curr-left">
                             <span class="curr-icon">🎬</span>
-                            <div class="curr-text">
-                                <b>วิดีโอสรุปบทที่ ${lesson.index}</b>
-                                <p>รับชมวิดีโอประกอบบทเรียนนี้</p>
-                            </div>
+                            <div class="curr-text"><b>วิดีโอสรุปบทเรียน</b><p>รับชมวิดีโอ</p></div>
                         </div>
                         <button class="btn-orange" onclick="openCourseVideo(${lesson.index})" ${canAccessLesson(lesson.index) ? '' : 'disabled'}>ชมวิดีโอ</button>
                     </div>
                     <div class="curriculum-item">
                         <div class="curr-left">
                             <span class="curr-icon">📝</span>
-                            <div class="curr-text">
-                                <b>แบบทดสอบบทที่ ${lesson.index}</b>
-                                <p>ทำแบบทดสอบเพื่อทบทวนความเข้าใจของบทนี้</p>
-                            </div>
+                            <div class="curr-text"><b>แบบทดสอบประจำบท</b><p>ทดสอบความเข้าใจ</p></div>
                         </div>
                         <button class="btn-outline-orange" onclick="startQuiz(${lesson.index})" ${isQuizUnlocked(lesson.index) ? '' : 'disabled'}>เริ่มทำ Quiz</button>
                     </div>
@@ -204,6 +160,7 @@ function renderLessonAccordion(containerId) {
     }).join('');
 
     container.innerHTML = html;
+    container.style.display = 'grid'; // บังคับโชว์
 }
 
 function renderAllLessonAccordions() {
@@ -213,17 +170,12 @@ function renderAllLessonAccordions() {
 
 function setText(id, value) {
     const element = document.getElementById(id);
-    if (element) {
-        element.textContent = value;
-    }
+    if (element) element.textContent = value;
 }
 
 function updateInstructorInfo(course) {
     const teacherName = String(pick(course, 'teachers_name', 'Teachers_Name')).trim() || 'ยังไม่กำหนดอาจารย์ผู้สอน';
-    const teacherRole = teacherName === 'ยังไม่กำหนดอาจารย์ผู้สอน'
-        ? 'รอการกำหนดบทบาทอาจารย์ประจำวิชา'
-        : 'อาจารย์ประจำวิชา';
-
+    const teacherRole = teacherName === 'ยังไม่ระบุอาจารย์ผู้สอน' ? 'รอการกำหนดบทบาท' : 'อาจารย์ประจำวิชา';
     setText('detail-instructor-name', teacherName);
     setText('detail-instructor-role', teacherRole);
     setText('learning-instructor-name', teacherName);
@@ -231,12 +183,11 @@ function updateInstructorInfo(course) {
 }
 
 function updateCourseMeta(course, lessons) {
-    const lessonCount = LESSON_COUNT;
-    const quizCount = LESSON_COUNT;
+    const lessonCount = currentLessonsData.length || 0;
     setText('detail-lesson-count', `${lessonCount} บทเรียน`);
-    setText('detail-quiz-count', `${quizCount} ชุด`);
+    setText('detail-quiz-count', `${lessonCount} ชุด`);
     setText('learning-lesson-count', `${lessonCount} บทเรียน`);
-    setText('learning-quiz-count', `${quizCount} ชุด`);
+    setText('learning-quiz-count', `${lessonCount} ชุด`);
 }
 
 function applyCourseProgressSummary(summary) {
@@ -253,84 +204,51 @@ function applyCourseProgressSummary(summary) {
 async function fetchQuizProgress(subjectId) {
     if (!subjectId || !enrolledCourses[subjectId]) {
         currentPassedLessons = new Set();
-        renderAllLessonAccordions();
-        return;
+        renderAllLessonAccordions(); return;
     }
-
     try {
-        const response = await fetch(`api_quiz_progress.php?subject_id=${encodeURIComponent(subjectId)}`, {
-            credentials: 'same-origin'
-        });
+        const response = await fetch(`api_quiz_progress.php?subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin' });
         const result = await response.json();
         if (result.status === 'success' && Array.isArray(result.passed_lessons)) {
             currentPassedLessons = new Set(result.passed_lessons.map((v) => Number(v)));
-        } else {
-            currentPassedLessons = new Set();
-        }
-    } catch (error) {
-        currentPassedLessons = new Set();
-    }
+        } else { currentPassedLessons = new Set(); }
+    } catch (error) { currentPassedLessons = new Set(); }
     renderAllLessonAccordions();
 }
 
 async function fetchCourseProgress(subjectId) {
-    if (!subjectId || !enrolledCourses[subjectId]) {
-        applyCourseProgressSummary(null);
-        return;
-    }
-
+    if (!subjectId || !enrolledCourses[subjectId]) { applyCourseProgressSummary(null); return; }
     try {
-        const response = await fetch(`student_learning_api.php?action=summary&subject_id=${encodeURIComponent(subjectId)}`, {
-            credentials: 'same-origin'
-        });
+        const response = await fetch(`student_learning_api.php?action=summary&subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin' });
         const result = await response.json();
-        if (result.status === 'success') {
-            applyCourseProgressSummary(result.summary || null);
-        }
-    } catch (error) {
-        applyCourseProgressSummary(null);
-    }
+        if (result.status === 'success') applyCourseProgressSummary(result.summary || null); 
+    } catch (error) { applyCourseProgressSummary(null); }
 }
 
 async function recordLearningEvent(activityType, lessonIndex = 1) {
-    if (!currentSubjectId || !enrolledCourses[currentSubjectId]) {
-        return;
-    }
-
+    if (!currentSubjectId || !enrolledCourses[currentSubjectId]) return;
     try {
         const lesson = currentLessonsData.find((item) => item.index === Number(lessonIndex));
         const formData = new FormData();
-        formData.append('action', 'record');
-        formData.append('subject_id', currentSubjectId);
+        formData.append('action', 'record'); formData.append('subject_id', currentSubjectId);
         formData.append('lesson_index', String(lessonIndex || 1));
         formData.append('lesson_title', lesson ? lesson.title : `${currentCourseName} บทที่ ${lessonIndex || 1}`);
         formData.append('activity_type', activityType);
 
-        const response = await fetch('student_learning_api.php', {
-            method: 'POST',
-            body: formData,
-            credentials: 'same-origin'
-        });
+        const response = await fetch('student_learning_api.php', { method: 'POST', body: formData, credentials: 'same-origin' });
         const result = await response.json();
-        if (result.status === 'success') {
-            applyCourseProgressSummary(result.summary || null);
-        }
-    } catch (error) {
-        // keep UI usable even if tracking fails
-    }
+        if (result.status === 'success') applyCourseProgressSummary(result.summary || null);
+    } catch (error) {}
 }
 
 function toggleLesson(lessonIndex) {
     currentLessonsData = currentLessonsData.map((lesson) => {
-        if (lesson.index === lessonIndex) {
-            return { ...lesson, expanded: !lesson.expanded };
-        }
+        if (lesson.index === lessonIndex) return { ...lesson, expanded: !lesson.expanded };
         return lesson;
     });
     renderAllLessonAccordions();
 }
 
-// --- 1. ระบบจัดการหน้าและ URL ---
 function showPage(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     const targetPage = document.getElementById(pageId);
@@ -344,30 +262,27 @@ function getCourseReturnUrl(courseName) {
     return url.pathname.split('/').pop() + url.search;
 }
 
-// --- 2. ดึงข้อมูลจาก Database (API) ---
+// 💥 โหลดวิชาทั้งหมด
 async function loadAllCourses() {
     try {
         const response = await fetch('api_courses.php?action=get_all');
         const result = await response.json();
+        const grid = document.getElementById('course-grid');
+        const dropdown = document.getElementById('course-dropdown');
+        if(!grid) return; 
         
         if (result.status === 'success') {
-            const grid = document.getElementById('course-grid');
-            const dropdown = document.getElementById('course-dropdown');
-            if(!grid) return; // ป้องกัน error ถ้าไม่มี element นี้
-            
             grid.innerHTML = ''; 
             if (dropdown) dropdown.innerHTML = '';
             
             result.data.forEach(course => {
-                const subjectId = String(pick(course, 'Subjects_ID', 'subjects_id'));
-                const subjectName = String(pick(course, 'Subjects_Name', 'subjects_name'));
-                const subjectDesc = String(pick(course, 'Subjects_Description', 'subjects_description'));
+                const subjectId = pick(course, 'subjects_id', 'Subjects_ID');
+                const subjectName = pick(course, 'subjects_name', 'Subjects_Name');
+                const subjectDesc = pick(course, 'subjects_description', 'Subjects_Description');
                 if (subjectName) courseIdByName[subjectName] = subjectId;
-
-                // ถ้ามีรูปใน DB ค่อยดึงมาใช้ ถ้าไม่มีใช้รูป default
-                const imgUrl = course.image_url || 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&auto=format&fit=crop&q=60';
+                const imgUrl = 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&auto=format&fit=crop&q=60';
                 
-                const cardHtml = `
+                grid.innerHTML += `
                     <div class="card" onclick="showCourse('${subjectId}')">
                         <img src="${imgUrl}" alt="Course Image">
                         <div class="card-content">
@@ -377,35 +292,27 @@ async function loadAllCourses() {
                         </div>
                     </div>
                 `;
-                grid.innerHTML += cardHtml;
-
                 if (dropdown && subjectId) {
                     const a = document.createElement('a');
-                    a.href = '#';
-                    a.textContent = subjectName || subjectId;
-                    a.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        showCourse(subjectId);
-                    });
+                    a.href = '#'; a.textContent = subjectName || subjectId;
+                    a.addEventListener('click', (e) => { e.preventDefault(); showCourse(subjectId); });
                     dropdown.appendChild(a);
                 }
             });
-
-            if (dropdown && dropdown.children.length === 0) {
-                dropdown.innerHTML = '<a href="#" onclick="return false;">ยังไม่มีรายวิชา</a>';
-            }
+            if (dropdown && dropdown.children.length === 0) dropdown.innerHTML = '<a href="#" onclick="return false;">ยังไม่มีรายวิชา</a>';
+        } else {
+            grid.innerHTML = `<p style="text-align:center; color:red;">เกิดข้อผิดพลาด: ${result.message}</p>`;
         }
     } catch (error) {
         console.error("Error loading courses:", error);
         const grid = document.getElementById('course-grid');
-        if(grid) grid.innerHTML = '<p style="text-align:center;">ไม่สามารถโหลดข้อมูลวิชาได้ กรุณาลองใหม่อีกครั้ง</p>';
+        if(grid) grid.innerHTML = '<p style="text-align:center;">ไม่สามารถเชื่อมต่อฐานข้อมูลได้</p>';
     }
 }
 
+// 💥 โหลดข้อมูลตอนกดเข้าวิชา
 async function showCourse(subjectId) {
-    if (courseIdByName[subjectId]) {
-        subjectId = courseIdByName[subjectId];
-    }
+    if (courseIdByName[subjectId]) subjectId = courseIdByName[subjectId];
     currentSubjectId = subjectId;
     
     try {
@@ -415,36 +322,34 @@ async function showCourse(subjectId) {
         if (result.status === 'success') {
             const course = result.course;
             const lessons = result.lessons;
-            currentCourseName = String(pick(course, 'Subjects_Name', 'subjects_name')); // เก็บชื่อไว้ใช้ต่อ
+            currentCourseName = pick(course, 'subjects_name', 'Subjects_Name'); 
             
-            // อัปเดตข้อมูลหน้า Detail
             document.getElementById('detail-title').innerText = currentCourseName;
-            document.getElementById('detail-desc-top').innerText = String(pick(course, 'Subjects_Description', 'subjects_description')) || 'รายละเอียดเบื้องต้น';
-            document.getElementById('detail-desc').innerText = String(pick(course, 'Subjects_Description', 'subjects_description')) || 'คำอธิบายรายวิชา...';
+            document.getElementById('detail-desc-top').innerText = pick(course, 'subjects_description', 'Subjects_Description') || 'รายละเอียดเบื้องต้น';
+            document.getElementById('detail-desc').innerText = pick(course, 'subjects_description', 'Subjects_Description') || 'คำอธิบายรายวิชา...';
             document.getElementById('detail-duration').innerText = course.duration || 'ไม่ระบุเวลา';
             updateInstructorInfo(course);
             
-            currentLessonsData = buildFixedLessons(Array.isArray(lessons) ? lessons : []);
+            // ดึงบทเรียนมาจาก DB ทันที
+            currentLessonsData = buildLessonsFromDB(Array.isArray(lessons) ? lessons : []);
             updateCourseMeta(course, lessons);
-            renderAllLessonAccordions();
+            
             applyCourseProgressSummary(null);
             currentPassedLessons = new Set();
+            renderAllLessonAccordions();
 
-            // จัดการสถานะปุ่มลงทะเบียน
             updateEnrollButton(false);
             setCurriculumAccess(false);
             checkCourseEnrollment(subjectId); 
 
-            // สลับไปหน้า Detail และเปิดแท็บ Overview
             openTab({ currentTarget: document.querySelector('.tab-btn') }, 'overview');
             showPage('course-detail');
             
-            // เปลี่ยน URL ให้สวยงามและแชร์ได้
             const url = new URL(window.location.href);
             url.searchParams.set('subject_id', subjectId);
             window.history.replaceState({}, '', url);
         } else {
-            console.warn('ไม่พบข้อมูลรายวิชา:', result.message);
+            alert('ไม่พบข้อมูลรายวิชา: ' + result.message);
         }
     } catch (error) {
         console.error("Error fetching course detail:", error);
@@ -452,89 +357,50 @@ async function showCourse(subjectId) {
     }
 }
 
-// --- 3. ระบบการเรียน (Learning Page) ---
 function goToCourseLearning() {
-    if (!enrolledCourses[currentSubjectId]) {
-        alert('กรุณาลงรายวิชาก่อนเข้าเนื้อหาบทเรียน');
-        return;
-    }
-
-    // ก็อปปี้เนื้อหาจากหน้า Detail มาใส่หน้า Learning
+    if (!enrolledCourses[currentSubjectId]) { alert('กรุณาลงรายวิชาก่อนเข้าเนื้อหาบทเรียน'); return; }
     document.getElementById('learning-title').innerText = document.getElementById('detail-title').innerText;
     document.getElementById('learning-desc-top').innerText = document.getElementById('detail-desc-top').innerText;
     document.getElementById('learning-desc').innerText = document.getElementById('detail-desc').innerText;
     document.getElementById('learning-duration').innerText = document.getElementById('detail-duration').innerText;
     renderAllLessonAccordions();
-
     showPage('course-learning');
     openLearningTab({ currentTarget: document.querySelector("#course-learning .tab-btn[onclick*='learning-curriculum']") }, 'learning-curriculum');
     recordLearningEvent('course_enter', 1);
 }
 
-// --- 4. ระบบเช็คและลงทะเบียนเรียน ---
 async function checkCourseEnrollment(subjectId) {
     try {
-        const response = await fetch(`course_enrollment_api.php?subject_id=${encodeURIComponent(subjectId)}`, {
-            credentials: 'same-origin'
-        });
+        const response = await fetch(`course_enrollment_api.php?subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin' });
         const result = await response.json();
-
         if (result.status === 'success') {
             enrolledCourses[subjectId] = Boolean(result.enrolled);
             updateEnrollButton(Boolean(result.enrolled));
             setCurriculumAccess(Boolean(result.enrolled));
-            if (result.enrolled) {
-                fetchCourseProgress(subjectId);
-                fetchQuizProgress(subjectId);
-            }
+            if (result.enrolled) { fetchCourseProgress(subjectId); fetchQuizProgress(subjectId); }
         } else if (result.status === 'unauthorized') {
-            enrolledCourses[subjectId] = false;
-            updateEnrollButton(false);
-            setCurriculumAccess(false);
-            applyCourseProgressSummary(null);
-            currentPassedLessons = new Set();
-            renderAllLessonAccordions();
+            enrolledCourses[subjectId] = false; updateEnrollButton(false); setCurriculumAccess(false);
+            applyCourseProgressSummary(null); currentPassedLessons = new Set(); renderAllLessonAccordions();
         }
     } catch (error) {
-        enrolledCourses[subjectId] = false;
-        updateEnrollButton(false);
-        setCurriculumAccess(false);
-        applyCourseProgressSummary(null);
-        currentPassedLessons = new Set();
-        renderAllLessonAccordions();
+        enrolledCourses[subjectId] = false; updateEnrollButton(false); setCurriculumAccess(false);
+        applyCourseProgressSummary(null); currentPassedLessons = new Set(); renderAllLessonAccordions();
     }
 }
 
 function updateEnrollButton(isEnrolled) {
     const button = document.getElementById('enroll-course-btn');
     if (!button) return;
-    
-    if(isEnrolled) {
-        button.innerText = 'เข้าเรียน';
-        button.classList.add('is-enrolled');
-    } else {
-        button.innerText = 'ลงทะเบียน';
-        button.classList.remove('is-enrolled');
-    }
+    if(isEnrolled) { button.innerText = 'เข้าเรียน'; button.classList.add('is-enrolled'); } 
+    else { button.innerText = 'ลงทะเบียน'; button.classList.remove('is-enrolled'); }
 }
 
 async function enrollCourseAndOpenLearning() {
     if (!currentSubjectId) return;
-
-    if (enrolledCourses[currentSubjectId]) {
-        goToCourseLearning();
-        return;
-    }
-
+    if (enrolledCourses[currentSubjectId]) { goToCourseLearning(); return; }
     try {
-        const formData = new FormData();
-        formData.append('subject_id', currentSubjectId);
-
-        const response = await fetch('course_enrollment_api.php', {
-            method: 'POST',
-            body: formData,
-            credentials: 'same-origin'
-        });
+        const formData = new FormData(); formData.append('subject_id', currentSubjectId);
+        const response = await fetch('course_enrollment_api.php', { method: 'POST', body: formData, credentials: 'same-origin' });
         const result = await response.json();
 
         if (result.status === 'unauthorized') {
@@ -544,24 +410,13 @@ async function enrollCourseAndOpenLearning() {
             window.location.href = loginUrl.href;
             return;
         }
+        if (result.status !== 'success') { alert(result.message || 'ไม่สามารถลงรายวิชาได้'); return; }
 
-        if (result.status !== 'success') {
-            alert(result.message || 'ไม่สามารถลงรายวิชาได้');
-            return;
-        }
-
-        enrolledCourses[currentSubjectId] = true;
-        updateEnrollButton(true);
-        setCurriculumAccess(true);
-        fetchCourseProgress(currentSubjectId);
-        fetchQuizProgress(currentSubjectId);
-        goToCourseLearning();
-    } catch (error) {
-        alert('เชื่อมต่อระบบลงรายวิชาไม่ได้ กรุณาลองใหม่อีกครั้ง');
-    }
+        enrolledCourses[currentSubjectId] = true; updateEnrollButton(true); setCurriculumAccess(true);
+        fetchCourseProgress(currentSubjectId); fetchQuizProgress(currentSubjectId); goToCourseLearning();
+    } catch (error) { alert('เชื่อมต่อระบบลงรายวิชาไม่ได้ กรุณาลองใหม่อีกครั้ง'); }
 }
 
-// --- 5. ระบบ UI ทั่วไป (Tabs, Search) ---
 function filterCourses() {
     let input = document.getElementById('searchInput').value.toLowerCase();
     let cards = document.getElementsByClassName('card');
@@ -574,7 +429,6 @@ function filterCourses() {
 function openTab(evt, tabName) {
     document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    
     document.getElementById(tabName).style.display = "block";
     if (evt && evt.currentTarget) evt.currentTarget.classList.add("active");
 }
@@ -582,40 +436,39 @@ function openTab(evt, tabName) {
 function openLearningTab(evt, tabName) {
     document.querySelectorAll("#course-learning .learning-tab-content").forEach(t => t.style.display = "none");
     document.querySelectorAll("#course-learning .tab-btn").forEach(b => b.classList.remove("active"));
-
     document.getElementById(tabName).style.display = "block";
     if (evt && evt.currentTarget) evt.currentTarget.classList.add("active");
 }
 
-// --- 6. ไฟล์และ Modal ---
+// 💥 ควบคุมการโชว์/ซ่อน รายชื่อบทเรียน
+function setCurriculumAccess(isEnrolled) {
+    const lockedMsg = document.getElementById('curriculum-locked-msg');
+    const lessonList = document.getElementById('course-curriculum-lesson-list');
+    if (!lockedMsg || !lessonList) return;
+    
+    if (isEnrolled) {
+        lockedMsg.style.display = 'none';
+        lessonList.style.display = 'block'; // บังคับให้บล็อกเปิดเสมอถ้า Enroll แล้ว
+    } else {
+        lockedMsg.style.display = 'block';
+        lessonList.style.display = 'none';
+    }
+}
+
 function downloadCourseLesson(lessonIndex) {
-    if (!enrolledCourses[currentSubjectId]) {
-        alert('กรุณาลงรายวิชาก่อนอ่านเอกสาร');
-        return;
-    }
-    if (!canAccessLesson(lessonIndex || 1)) {
-        alert(`กรุณาผ่านแบบทดสอบบทที่ ${Number(lessonIndex || 1) - 1} ก่อน`);
-        return;
-    }
+    if (!enrolledCourses[currentSubjectId]) { alert('กรุณาลงรายวิชาก่อนอ่านเอกสาร'); return; }
+    if (!canAccessLesson(lessonIndex || 1)) { alert(`กรุณาผ่านแบบทดสอบบทที่ ${Number(lessonIndex || 1) - 1} ก่อน`); return; }
     recordLearningEvent('lesson_open', lessonIndex || 1);
     const params = new URLSearchParams();
-    params.set('subject_id', currentSubjectId);
-    params.set('lesson', String(lessonIndex || 1));
-    if (currentCourseName) {
-        params.set('course_name', currentCourseName);
-    }
+    params.set('subject_id', currentSubjectId); params.set('lesson', String(lessonIndex || 1));
+    if (currentCourseName) params.set('course_name', currentCourseName);
     window.open(`download_course_lesson.php?${params.toString()}`, '_blank');
 }
 
 function getLessonVideoPath(lessonIndex) {
-    const safeIndex = Math.max(1, Math.min(LESSON_COUNT, Number(lessonIndex) || 1));
-    const legacySlug = getSubjectLegacySlug();
+    const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 5, Number(lessonIndex) || 1));
     const candidates = [
         `videos/${encodeURIComponent(currentSubjectId)}-lesson-${safeIndex}.mp4`,
-        `videos/${encodeURIComponent(currentSubjectId)}_lesson_${safeIndex}.mp4`,
-        `videos/${legacySlug}-lesson-${safeIndex}.mp4`,
-        `videos/lesson-${legacySlug}-${safeIndex}.mp4`,
-        `videos/lesson-${legacySlug}.mp4`,
         LESSON_VIDEO_FILES[safeIndex - 1],
         LESSON_VIDEO_FILES[0]
     ];
@@ -625,8 +478,7 @@ function getLessonVideoPath(lessonIndex) {
 function renderVideoModalBody(lessonIndex) {
     const body = document.getElementById('modal-body');
     if (!body) return;
-
-    const safeIndex = Math.max(1, Math.min(LESSON_COUNT, Number(lessonIndex) || 1));
+    const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 5, Number(lessonIndex) || 1));
     const selectedLesson = currentLessonsData.find((lesson) => lesson.index === safeIndex);
     const selectedTitle = selectedLesson ? selectedLesson.title : `Lesson ${safeIndex}`;
     const videoPath = getLessonVideoPath(safeIndex);
@@ -650,19 +502,11 @@ function renderVideoModalBody(lessonIndex) {
     `;
 }
 
-function changeModalLessonVideo(lessonIndex) {
-    renderVideoModalBody(lessonIndex);
-}
+window.changeModalLessonVideo = function(lessonIndex) { renderVideoModalBody(lessonIndex); }
 
 function openCourseVideo(lessonIndex) {
-    if (!enrolledCourses[currentSubjectId]) {
-        alert('กรุณาลงรายวิชาก่อนชมวิดีโอ');
-        return;
-    }
-    if (!canAccessLesson(lessonIndex || 1)) {
-        alert(`กรุณาผ่านแบบทดสอบบทที่ ${Number(lessonIndex || 1) - 1} ก่อน`);
-        return;
-    }
+    if (!enrolledCourses[currentSubjectId]) { alert('กรุณาลงรายวิชาก่อนชมวิดีโอ'); return; }
+    if (!canAccessLesson(lessonIndex || 1)) { alert(`กรุณาผ่านแบบทดสอบบทที่ ${Number(lessonIndex || 1) - 1} ก่อน`); return; }
     const modal = document.getElementById('modal-overlay');
     renderVideoModalBody(lessonIndex || 1);
     modal.style.display = 'flex';
@@ -670,40 +514,16 @@ function openCourseVideo(lessonIndex) {
 }
 
 function startQuiz(lessonIndex) {
-    if (!enrolledCourses[currentSubjectId]) {
-        alert('กรุณาลงรายวิชาก่อนทำแบบทดสอบ');
-        return;
-    }
-    if (!isQuizUnlocked(lessonIndex || 1)) {
-        alert(getLessonLockMessage(lessonIndex || 1) || 'บทเรียนยังไม่ปลดล็อก');
-        return;
-    }
+    if (!enrolledCourses[currentSubjectId]) { alert('กรุณาลงรายวิชาก่อนทำแบบทดสอบ'); return; }
+    if (!isQuizUnlocked(lessonIndex || 1)) { alert(getLessonLockMessage(lessonIndex || 1) || 'บทเรียนยังไม่ปลดล็อก'); return; }
+    
     const url = new URL('test.html', window.location.href);
-    if (currentCourseName) {
-        url.searchParams.set('course', currentCourseName);
-    }
-    if (currentSubjectId) {
-        url.searchParams.set('subject_id', currentSubjectId);
-    }
-    if (lessonIndex) {
-        url.searchParams.set('lesson', String(lessonIndex));
-    }
+    if (currentCourseName) url.searchParams.set('course', currentCourseName);
+    if (currentSubjectId) url.searchParams.set('subject_id', currentSubjectId);
+    if (lessonIndex) url.searchParams.set('lesson', String(lessonIndex));
+    
     recordLearningEvent('lesson_open', lessonIndex || 1);
     window.location.href = url.pathname.split('/').pop() + url.search;
-}
-
-function setCurriculumAccess(isEnrolled) {
-    const lockedMsg = document.getElementById('curriculum-locked-msg');
-    const lessonList = document.getElementById('course-curriculum-lesson-list');
-    if (!lockedMsg || !lessonList) return;
-
-    if (isEnrolled) {
-        lockedMsg.style.display = 'none';
-        lessonList.style.display = currentLessonsData.length ? 'grid' : 'none';
-    } else {
-        lockedMsg.style.display = 'block';
-        lessonList.style.display = 'none';
-    }
 }
 
 function closeModal() {
@@ -712,7 +532,6 @@ function closeModal() {
     document.getElementById('modal-overlay').style.display = 'none';
 }
 
-// --- 7. ข้อมูล Static (คู่มือ / ติดต่อ) ---
 function showGuide(type) {
     const title = document.getElementById('guide-title');
     const content = document.getElementById('guide-content');
@@ -731,7 +550,7 @@ function showContact(type) {
     const content = document.getElementById('contact-content');
     if(type === 'channel') {
         title.innerText = 'ช่องทางการติดต่อ';
-        content.innerHTML = `<div class="info-card">Email: Flexible@hub.com <br> Line: @FlexibleHub/div>`;
+        content.innerHTML = `<div class="info-card">Email: Flexible@hub.com <br> Line: @FlexibleHub</div>`;
     } else {
         title.innerText = 'สถานที่ตั้ง';
         content.innerHTML = `<div class="info-card">อาคาร Flexible Hub ชั้น 10 กรุงเทพฯ</div>`;
@@ -739,9 +558,7 @@ function showContact(type) {
     showPage('page-contact');
 }
 
-// --- Initializer ---
 document.addEventListener('DOMContentLoaded', () => {
-    // โหลดรายวิชาทั้งหมดจาก DB
     loadAllCourses();
 
     fetch('student_session.php', { credentials: 'same-origin' })
@@ -770,17 +587,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (loginBtn) loginBtn.style.display = 'inline-block';
                 if (userProfile) userProfile.style.display = 'none';
             }
-        })
-        .catch(() => {});
+        }).catch(() => {});
 
-    // เช็คว่ามี Parameter การเข้าถึงวิชาตรงๆ ไหม (เช่น ตอนแชร์ลิงก์ให้เพื่อน)
     const params = new URLSearchParams(window.location.search);
     const subjectId = params.get('subject_id');
     const courseName = params.get('course');
-    if (subjectId) {
-        setTimeout(() => { showCourse(subjectId); }, 300);
-    } else if (courseName) {
-        // รองรับลิงก์ย้อนกลับจาก test.html ที่ส่งชื่อวิชามา
-        setTimeout(() => { showCourse(courseName); }, 400);
-    }
+    if (subjectId) { setTimeout(() => { showCourse(subjectId); }, 300); } 
+    else if (courseName) { setTimeout(() => { showCourse(courseName); }, 400); }
 });
