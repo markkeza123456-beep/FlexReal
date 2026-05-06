@@ -39,7 +39,7 @@ try {
     $avatar_url = $rowAv['avatar_url'] ?? '';
 } catch (Exception $e) { $avatar_url = ''; }
 
-// 1. ดึงข้อมูลอาจารย์ (จากตาราง Teachers)
+// 1. ดึงข้อมูลอาจารย์
 $teacherStmt = $conn->prepare('
     SELECT Teachers_ID, Teachers_Name 
     FROM public.teachers 
@@ -92,7 +92,7 @@ foreach ($subjectRows as $row) {
     $totalLessonCount += $lessonCount;
 }
 
-// 3. ดึงข้อมูลบทย่อย (จากตาราง Lessons)
+// 3. ดึงข้อมูลบทย่อย (Lessons)
 $subLessonsBySubject = [];
 if (!empty($subjectIds)) {
     $lessonStmt = $conn->prepare('
@@ -100,7 +100,7 @@ if (!empty($subjectIds)) {
         FROM public.lessons l
         INNER JOIN public.subjects s ON s.Subjects_ID = l.Subjects_ID
         WHERE s.Teachers_ID = :teacher_id
-        ORDER BY l.Subjects_ID ASC, l.Lessons_Name ASC
+        ORDER BY l.Lessons_ID ASC
     ');
     $lessonStmt->execute([':teacher_id' => $teacherId]);
     foreach ($lessonStmt->fetchAll(PDO::FETCH_ASSOC) as $lessonRow) {
@@ -113,7 +113,7 @@ if (!empty($subjectIds)) {
     }
 }
 
-// 4. ดึงข้อมูลนักเรียน คะแนน และ "ความคืบหน้า"
+// 4. ดึงข้อมูลนักเรียนและคะแนน
 $studentStmt = $conn->prepare("
     SELECT 
         st.Student_ID,
@@ -195,31 +195,19 @@ foreach ($studentStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
 
 $overallAvgScore = count($students) > 0 ? round($sumScore / count($students), 1) : 0;
 
-// 5. ดึงประวัติการเข้าเรียนของนักเรียน (จากตาราง Learning_Records)
-$recentActivities = [];
-$activityStmt = $conn->prepare('
-    SELECT 
-        lr.Study_Time AS created_at,
-        st.Student_Name AS student_name,
-        s.Subjects_Name AS subjects_name,
-        l.Lessons_Name AS activity_detail
-    FROM public.learning_records lr
-    INNER JOIN public.student st ON st.Student_ID = lr.Student_ID
-    INNER JOIN public.lessons l ON l.Lessons_ID = lr.Lessons_ID
-    INNER JOIN public.subjects s ON s.Subjects_ID = l.Subjects_ID
-    WHERE s.Teachers_ID = :teacher_id
-    ORDER BY lr.Study_Time DESC
-    LIMIT 8
-');
-$activityStmt->execute([':teacher_id' => $teacherId]);
-foreach ($activityStmt->fetchAll(PDO::FETCH_ASSOC) as $act) {
-    $recentActivities[] = [
-        'activity_type' => 'lesson_open',
-        'student_name' => $act['student_name'],
-        'subjects_name' => $act['subjects_name'],
-        'activity_detail' => $act['activity_detail'],
-        'created_at' => date('d/m/Y H:i', strtotime($act['created_at']))
-    ];
+// 5. ดึงคำถามข้อสอบของวิชานี้
+$quizzes = [];
+$defaultSubjectId = !empty($subjects) ? $subjects[0]['id'] : '';
+if ($defaultSubjectId) {
+    $quizStmt = $conn->prepare("
+        SELECT tq.questions_id, tq.questions_text, tq.choice_a, tq.choice_b, tq.choice_c, tq.choice_d, tq.correct_answer, l.lessons_name 
+        FROM public.test_questions tq
+        INNER JOIN public.lessons l ON tq.lessons_id = l.lessons_id
+        WHERE l.subjects_id = :subject_id
+        ORDER BY tq.questions_id ASC
+    ");
+    $quizStmt->execute([':subject_id' => $defaultSubjectId]);
+    $quizzes = $quizStmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 $teacherSubjectText = !empty($subjectNames) 
@@ -254,6 +242,29 @@ $stats = [
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="teacherdash.css">
+    <style>
+        .action-icon-btn {
+            background: none; border: none; cursor: pointer; padding: 6px; 
+            border-radius: 6px; font-size: 14px; transition: background 0.2s;
+        }
+        .action-icon-btn:hover { background: rgba(255,255,255,0.1); }
+        .btn-open-add-quiz {
+            background: rgba(249, 115, 22, 0.1); color: var(--orange); border: 1px solid rgba(249, 115, 22, 0.3);
+            padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.2s; font-family: 'Kanit', sans-serif;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .btn-open-add-quiz:hover { background: rgba(249, 115, 22, 0.2); transform: translateY(-1px); }
+        
+        /* สไตล์สำหรับ Radio เลือกเฉลย */
+        .choice-row {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+        }
+        input[type="radio"] {
+            accent-color: var(--orange);
+            width: 18px; height: 18px; cursor: pointer;
+        }
+        .choice-label { font-weight: 600; color: var(--text-dim); font-size: 14px; width: 16px; text-align: center; }
+    </style>
 </head>
 <body>
 <aside class="sidebar">
@@ -296,33 +307,31 @@ $stats = [
 </aside>
 
 <main class="main">
+    <!-- ══ VIEW: DASHBOARD ══ -->
     <div id="view-dashboard" class="page-view">
         <header class="topbar">
             <div class="topbar-left">
                 <h1 class="page-title">แดชบอร์ด</h1>
                 <span class="page-sub">ยินดีต้อนรับกลับมา, <?= h($teacherFirstName) ?> 👋</span>
             </div>
-            <div class="topbar-right">
-                <div class="notif-btn" id="notifBtn">🔔</div>
-            </div>
         </header>
 
         <section class="stats-grid">
             <div class="stat-card" style="--accent:#f97316">
                 <div class="stat-icon">👥</div>
-                <div class="stat-value counter" data-target="<?= $stats['students'] ?>">0</div>
+                <div class="stat-value"><?= $stats['students'] ?></div>
                 <div class="stat-label">นักเรียนที่ดูแล</div>
                 <div class="stat-trend">เฉพาะที่ผูกกับวิชาของอาจารย์</div>
             </div>
             <div class="stat-card" style="--accent:#3b82f6">
                 <div class="stat-icon">📘</div>
-                <div class="stat-value counter" data-target="<?= $stats['lessons'] ?>">0</div>
+                <div class="stat-value"><?= $stats['lessons'] ?></div>
                 <div class="stat-label">บทเรียนทั้งหมด</div>
                 <div class="stat-trend">รวมบทเรียนในรายวิชาที่สอน</div>
             </div>
             <div class="stat-card" style="--accent:#10b981">
                 <div class="stat-icon">🗂</div>
-                <div class="stat-value counter" data-target="<?= $stats['subjects'] ?>">0</div>
+                <div class="stat-value"><?= $stats['subjects'] ?></div>
                 <div class="stat-label">รายวิชาที่ดูแล</div>
                 <div class="stat-trend">แสดงเฉพาะของอาจารย์ท่านนี้</div>
             </div>
@@ -392,175 +401,130 @@ $stats = [
                 </table>
             </div>
         </section>
-
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">บทเรียนของฉัน</h2>
-                <input class="search-input" type="text" id="dashLessonSearch" placeholder="🔍 ค้นหาบทเรียน...">
-            </div>
-            <div class="table-wrap">
-                <table class="lessons-table" id="dashLessonsTable">
-                    <thead>
-                        <tr>
-                            <th>บทเรียน</th>
-                            <th>รายละเอียด</th>
-                            <th>นักเรียน</th>
-                            <th>ความคืบหน้า</th>
-                            <th>สถานะ</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($subjects as $subject): ?>
-                        <tr class="lesson-row dash-lesson-row" data-id="<?= h($subject['id']) ?>" data-subject-id="<?= h($subject['id']) ?>" data-student-count="<?= (int) $subject['students'] ?>">
-                            <td class="lesson-title-cell"><?= h($subject['title']) ?></td>
-                            <td class="lesson-subject"><?= h($subject['subject']) ?></td>
-                            <td><?= (int) $subject['students'] ?> คน</td>
-                            <td>
-                                <div class="progress-wrap">
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" style="--pct:<?= (int) $subject['progress'] ?>%"></div>
-                                    </div>
-                                    <span class="progress-num"><?= (int) $subject['progress'] ?>%</span>
-                                </div>
-                            </td>
-                            <td><span class="badge badge-<?= h($subject['status']) ?>"><?= $subject['status'] === 'active' ? 'เผยแพร่' : 'ฉบับร่าง' ?></span></td>
-                            <td>
-                                <div class="action-btns">
-                                    <button class="btn-icon btn-dash-view-lesson" title="ดูรายละเอียด" data-id="<?= h($subject['id']) ?>">👁</button>
-                                </div>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-                <div id="dashLessonNoResult" style="display:none;text-align:center;padding:28px;color:var(--text-muted);font-size:13px">
-                    ไม่พบบทเรียนที่ตรงกับการค้นหา
-                </div>
-            </div>
-        </div>
     </div>
 
+    <!-- ══ VIEW: LESSONS (หน้ารายละเอียดหลัก) ══ -->
     <div id="view-lessons" class="page-view" style="display:none">
         <header class="topbar">
             <div class="topbar-left">
-                <h1 class="page-title" id="lessonsPageTitle">บทเรียน</h1>
-                <span class="page-sub" id="lessonsPageSub">จัดการบทเรียนที่อยู่ในความดูแลของคุณ</span>
-            </div>
-            <div class="topbar-right">
-                <div class="notif-btn">🔔</div>
+                <h1 class="page-title">บทเรียน</h1>
+                <span class="page-sub">จัดการเนื้อหาและแบบทดสอบในวิชาของคุณ</span>
             </div>
         </header>
 
-        <div id="lessonsSection">
-            <div class="card lessons-card">
-                <div class="card-header" style="flex-wrap:wrap;gap:10px">
-                    <h2 class="card-title">บทเรียนของฉัน</h2>
-                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                        <input class="search-input" type="text" id="lessonSearch" placeholder="🔍 ค้นหาบทเรียน...">
-                        <select class="search-input" id="lessonFilterStatus" style="width:140px">
-                            <option value="">สถานะทั้งหมด</option>
-                            <option value="active">เผยแพร่แล้ว</option>
-                            <option value="draft">ฉบับร่าง</option>
-                        </select>
-                    </div>
-                </div>
+        <?php $defaultSubject = reset($subjects); ?>
 
-                <div class="table-wrap">
-                    <table class="lessons-table" id="lessonsTable">
-                        <thead>
-                            <tr>
-                                <th>บทเรียน</th>
-                                <th>รายละเอียด</th>
-                                <th>นักเรียน</th>
-                                <th>ความคืบหน้า</th>
-                                <th>สถานะ</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="lessonsTableBody">
-                            <?php foreach ($subjects as $subject): ?>
-                            <?php $subLessons = $subLessonsBySubject[$subject['id']] ?? []; ?>
-                            <tr class="lesson-row lesson-main-row" data-id="<?= h($subject['id']) ?>" data-subject-id="<?= h($subject['id']) ?>" data-student-count="<?= (int) $subject['students'] ?>" data-status="<?= h($subject['status']) ?>" data-expanded="false">
-                                <td class="lesson-title-cell">
-                                    <div style="display:flex;align-items:center;gap:8px">
-                                        <?php if ($subLessons !== []): ?>
-                                        <button class="btn-expand-sub" data-id="<?= h($subject['id']) ?>" title="ดูบทย่อย" style="background:none;border:none;color:var(--text-muted);font-size:11px;cursor:pointer;padding:2px 4px;transition:transform .2s;line-height:1">▸</button>
-                                        <?php else: ?>
-                                        <span style="display:inline-block;width:20px"></span>
-                                        <?php endif; ?>
-                                        <span><?= h($subject['title']) ?></span>
-                                    </div>
-                                </td>
-                                <td class="lesson-subject"><?= h($subject['subject']) ?></td>
-                                <td><?= (int) $subject['students'] ?> คน</td>
-                                <td>
-                                    <div class="progress-wrap">
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" style="--pct:<?= (int) $subject['progress'] ?>%"></div>
-                                        </div>
-                                        <span class="progress-num"><?= (int) $subject['progress'] ?>%</span>
-                                    </div>
-                                </td>
-                                <td><span class="badge badge-<?= h($subject['status']) ?>"><?= $subject['status'] === 'active' ? 'เผยแพร่' : 'ฉบับร่าง' ?></span></td>
-                                <td>
-                                    <div class="action-btns">
-                                        <button class="btn-icon btn-view-lesson" title="ดูรายละเอียด" data-id="<?= h($subject['id']) ?>">👁</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php foreach ($subLessons as $subLesson): ?>
-                            <tr class="sub-lesson-row" data-parent="<?= h($subject['id']) ?>" style="display:none">
-                                <td style="padding-left:48px">
-                                    <div style="display:flex;align-items:center;gap:6px">
-                                        <span style="color:var(--text-muted);font-size:11px">└</span>
-                                        <span style="font-size:13px;color:var(--text-dim)"><?= h($subLesson['title']) ?></span>
-                                    </div>
-                                </td>
-                                <td style="font-size:12px;color:var(--text-muted)">⏱ <?= h($subLesson['duration']) ?></td>
-                                <td>-</td>
-                                <td>-</td>
-                                <td><span class="badge badge-<?= h($subLesson['status']) ?>"><?= $subLesson['status'] === 'active' ? 'เผยแพร่' : 'ฉบับร่าง' ?></span></td>
-                                <td></td>
-                            </tr>
-                            <?php endforeach; ?>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                    <div id="lessonNoResult" style="display:none;text-align:center;padding:32px;color:var(--text-muted);font-size:13px">
-                        ไม่พบบทเรียนที่ตรงกับการค้นหา
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="lessonDetailSection" style="display:none;flex-direction:column;gap:20px">
+        <div id="lessonDetailSection" style="display:flex;flex-direction:column;gap:20px">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
                 <div style="display:flex;align-items:center;gap:12px">
-                    <button class="btn-add-lesson" id="backToLessonsBtn" style="background:var(--bg2);border:1px solid var(--border);color:var(--text-dim)">← กลับ</button>
                     <span style="font-size:13px;color:var(--text-muted)">รายละเอียดวิชา</span>
                 </div>
                 <!-- ปุ่มเพิ่มบทเรียนย่อย -->
-                <button class="btn-add-lesson" id="openModalBtn" style="font-size:13px;padding:8px 14px">
+                <button class="btn-add-lesson" id="openModalBtn" style="font-size:13px;padding:8px 14px" data-subject-id="<?= h($defaultSubjectId) ?>">
                     <span class="plus">+</span> เพิ่มบทเรียนย่อย
                 </button>
             </div>
 
-            <div class="card" id="lessonDetailHeader"></div>
+            <!-- ส่วนหัวของวิชา (Header) -->
+            <div class="card" id="lessonDetailHeader" style="padding: 24px;">
+                <?php if ($defaultSubject): ?>
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+                        <div>
+                            <div style="font-size:24px;font-weight:700;color:#fff;margin-bottom:6px">▶ <?= h($defaultSubject['title']) ?></div>
+                            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--text-dim)">
+                                <span>📚 <?= h($defaultSubject['subject']) ?></span>
+                                <span>👥 <?= (int)$defaultSubject['students'] ?> คน</span>
+                                <span class="badge badge-<?= h($defaultSubject['status']) ?>"><?= $defaultSubject['status'] === 'active' ? 'เผยแพร่' : 'ฉบับร่าง' ?></span>
+                            </div>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div style="color:var(--text-muted);">ยังไม่มีรายวิชาที่คุณดูแล</div>
+                <?php endif; ?>
+            </div>
 
+            <!-- Tabs -->
             <div class="lesson-tabs" style="display:flex;gap:0;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--bg2)">
-                <button class="lesson-tab-btn active" data-tab="overview" style="flex:1;padding:11px;background:none;border:none;border-right:1px solid var(--border);color:var(--text-dim);font-family:'Kanit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s">📋 ภาพรวม</button>
-                <button class="lesson-tab-btn" data-tab="students" style="flex:1;padding:11px;background:none;border:none;border-right:1px solid var(--border);color:var(--text-dim);font-family:'Kanit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s">👥 นักเรียน</button>
-                <button class="lesson-tab-btn" data-tab="quiz" style="flex:1;padding:11px;background:none;border:none;color:var(--text-dim);font-family:'Kanit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s">🧪 แบบทดสอบ</button>
+                <button class="lesson-tab-btn active" data-tab="overview" style="flex:1;padding:14px;background:var(--orange-dim);border:none;border-right:1px solid var(--border);color:var(--orange);font-family:'Kanit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;">📋 ภาพรวมบทเรียน</button>
+                <button class="lesson-tab-btn" data-tab="students" style="flex:1;padding:14px;background:none;border:none;border-right:1px solid var(--border);color:var(--text-dim);font-family:'Kanit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s">👥 รายชื่อนักเรียน</button>
+                <button class="lesson-tab-btn" data-tab="quiz" style="flex:1;padding:14px;background:none;border:none;color:var(--text-dim);font-family:'Kanit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s">🧪 คลังแบบทดสอบ</button>
             </div>
 
+            <!-- Tab Content: Overview -->
             <div class="lesson-tab-content card" id="lessonTab-overview">
-                <div id="lessonOverviewBody"></div>
+                <div id="lessonOverviewBody">
+                    <?php if ($defaultSubject): ?>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px; margin-bottom: 30px;">
+                            <div>
+                                <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:6px;font-weight:500">ข้อมูลรายวิชา</div>
+                                <div style="font-size:13.5px;color:var(--text);line-height:1.7">
+                                    <div><span style="color:var(--text-dim)">ชื่อ:</span> <?= h($defaultSubject['title']) ?></div>
+                                    <div><span style="color:var(--text-dim)">คำอธิบาย:</span> <?= h($defaultSubject['subject']) ?></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:6px;font-weight:500">สถิติเบื้องต้น</div>
+                                <div style="display:flex;flex-direction:column;gap:8px;font-size:13.5px">
+                                    <div style="display:flex;justify-content:space-between">
+                                        <span style="color:var(--text-dim)">นักเรียนลงทะเบียน</span>
+                                        <span class="mono" style="color:#fff"><?= (int)$defaultSubject['students'] ?> คน</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ส่วนแสดงรายการบทเรียนย่อย -->
+                        <div style="border-top:1px solid var(--border);padding-top:24px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                                <h3 style="font-size:16px;color:#fff;font-weight:600;">รายการบทเรียนย่อย</h3>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:12px;">
+                                <?php 
+                                if ($defaultSubjectId && !empty($subLessonsBySubject[$defaultSubjectId])): 
+                                    foreach ($subLessonsBySubject[$defaultSubjectId] as $i => $subLesson):
+                                ?>
+                                <div style="background:var(--bg3);padding:16px 20px;border-radius:var(--radius-sm);border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                                    <div style="display:flex;align-items:center;gap:16px;">
+                                        <div style="width:36px;height:36px;background:var(--bg2);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--orange);font-weight:600;font-size:14px;border:1px solid rgba(249,115,22,0.2);">
+                                            <?= $i+1 ?>
+                                        </div>
+                                        <div>
+                                            <div style="color:#fff;font-size:15px;font-weight:500;"><?= h($subLesson['title']) ?></div>
+                                            <div style="color:var(--text-dim);font-size:12px;margin-top:2px;">⏱ <?= h($subLesson['duration']) ?></div>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex;align-items:center;gap:10px;">
+                                        <span class="badge badge-<?= h($subLesson['status']) ?>" style="margin-right:8px;"><?= $subLesson['status'] === 'active' ? 'เผยแพร่' : 'ฉบับร่าง' ?></span>
+                                        
+                                        <!-- ปุ่มเพิ่มข้อสอบให้บทนี้โดยเฉพาะ -->
+                                        <button class="btn-open-add-quiz" data-id="<?= h($subLesson['id']) ?>" data-name="<?= h($subLesson['title']) ?>">
+                                            <span style="font-size:16px;line-height:1;">+</span> เพิ่มแบบทดสอบ
+                                        </button>
+                                        
+                                        <!-- ปุ่มแก้ไข และ ลบ บทเรียน -->
+                                        <button class="action-icon-btn btn-edit-lsn" data-id="<?= h($subLesson['id']) ?>" data-name="<?= h($subLesson['title']) ?>" title="แก้ไขบทเรียน">✏️</button>
+                                        <button class="action-icon-btn btn-del-lsn" data-id="<?= h($subLesson['id']) ?>" title="ลบบทเรียน" style="color:#ef4444;">🗑</button>
+                                    </div>
+                                </div>
+                                <?php 
+                                    endforeach;
+                                else: 
+                                ?>
+                                <div style="text-align:center;padding:40px;color:var(--text-muted);font-size:14px;background:var(--bg3);border-radius:var(--radius-sm);border:1px dashed var(--border);">
+                                    <div style="font-size:32px;margin-bottom:10px;">📁</div>
+                                    ยังไม่มีบทเรียนย่อย คลิกปุ่ม "+ เพิ่มบทเรียนย่อย" ด้านขวาบนเพื่อเริ่มต้น
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
 
+            <!-- Tab Content: Students -->
             <div class="lesson-tab-content card" id="lessonTab-students" style="display:none">
                 <div class="card-header">
-                    <h3 class="card-title" style="font-size:14px">นักเรียนในบทเรียนนี้</h3>
+                    <h3 class="card-title" style="font-size:14px">นักเรียนในวิชานี้</h3>
                     <input class="search-input" type="text" id="detailStudentSearch" placeholder="🔍 ค้นหานักเรียน...">
                 </div>
                 <div class="table-wrap">
@@ -611,339 +575,244 @@ $stats = [
                 </div>
             </div>
 
+            <!-- Tab Content: Quiz -->
             <div class="lesson-tab-content card" id="lessonTab-quiz" style="display:none">
                 <div class="card-header">
-                    <h3 class="card-title" style="font-size:14px">แบบทดสอบ</h3>
-                    <button class="btn-add-lesson" id="openQuizModalBtn" style="font-size:12px;padding:8px 14px">
-                        <span class="plus">+</span> เพิ่มคำถาม
-                    </button>
+                    <h3 class="card-title" style="font-size:14px">คลังแบบทดสอบทั้งหมดในวิชานี้</h3>
                 </div>
-                <div id="quizList" style="display:flex;flex-direction:column;gap:10px">
-                    <div id="quizEmpty" style="text-align:center;padding:36px;color:var(--text-muted);font-size:13px">
-                        ยังไม่มีแบบทดสอบในมุมมองนี้
-                    </div>
+                <div id="quizList" style="display:flex;flex-direction:column;gap:12px;">
+                    <?php if (empty($quizzes)): ?>
+                        <div id="quizEmpty" style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px; border: 1px dashed var(--border); border-radius: var(--radius-sm);">
+                            <div style="font-size:32px;margin-bottom:10px;">🧪</div>
+                            ยังไม่มีคำถามในระบบ — กรุณาไปที่แท็บ "ภาพรวม" แล้วกด "+ เพิ่มแบบทดสอบ" ในบทเรียนย่อยที่ต้องการ
+                        </div>
+                    <?php else: ?>
+                        <?php foreach($quizzes as $i => $q): 
+                            // จำแนกประเภทคำถามเพื่อแสดงผลให้ถูกต้อง
+                            $qType = 'choice';
+                            $qLabel = 'ปรนัย (4 ตัวเลือก)';
+                            if ($q['correct_answer'] === '-') {
+                                $qType = 'essay';
+                                $qLabel = 'อัตนัย (ข้อเขียน)';
+                            } elseif ($q['choice_a'] === 'ถูก' || $q['choice_a'] === 'ถูก (True)') {
+                                $qType = 'truefalse';
+                                $qLabel = 'ถูก/ผิด';
+                            }
+                        ?>
+                        <div class="quiz-item" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+                            <div style="display:flex; gap:12px; flex:1; min-width:0;">
+                                <div class="mono" style="font-size:12px;color:var(--orange);width:24px;flex-shrink:0;padding-top:2px;font-weight:600;">Q<?= $i+1 ?></div>
+                                <div>
+                                    <div style="font-size:14px;color:var(--text);line-height:1.5;margin-bottom:6px;"><?= h($q['questions_text']) ?></div>
+                                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                                        <span class="badge badge-draft" style="font-size:10.5px;"><?= $qLabel ?></span>
+                                        <span style="font-size:11.5px;color:var(--text-muted)">จาก: <?= h($q['lessons_name']) ?></span>
+                                        
+                                        <?php if($qType === 'choice' || $qType === 'truefalse'): ?>
+                                            <span style="font-size:11.5px;color:var(--text-dim); background:rgba(255,255,255,0.05); padding: 2px 8px; border-radius:4px;">
+                                                เฉลย: <span style="color:#10b981;font-weight:600;">
+                                                    <?php 
+                                                        $ans = $q['correct_answer'];
+                                                        if($ans === 'A') echo 'A. ' . h($q['choice_a']);
+                                                        elseif($ans === 'B') echo 'B. ' . h($q['choice_b']);
+                                                        elseif($ans === 'C') echo 'C. ' . h($q['choice_c']);
+                                                        elseif($ans === 'D') echo 'D. ' . h($q['choice_d']);
+                                                        else echo $ans;
+                                                    ?>
+                                                </span>
+                                            </span>
+                                        <?php elseif($qType === 'essay'): ?>
+                                            <span style="font-size:11.5px;color:#facc15; background:rgba(234,179,8,0.1); padding: 2px 8px; border-radius:4px;">รออาจารย์ตรวจ</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:4px;flex-shrink:0;">
+                                <!-- ปุ่มแก้ไขและลบแบบทดสอบ -->
+                                <button class="action-icon-btn btn-edit-quiz" 
+                                    data-id="<?= h($q['questions_id']) ?>" 
+                                    data-type="<?= $qType ?>"
+                                    data-question="<?= h($q['questions_text']) ?>"
+                                    data-ca="<?= h($q['choice_a']) ?>"
+                                    data-cb="<?= h($q['choice_b']) ?>"
+                                    data-cc="<?= h($q['choice_c']) ?>"
+                                    data-cd="<?= h($q['choice_d']) ?>"
+                                    data-answer="<?= h($q['correct_answer']) ?>"
+                                    title="แก้ไขคำถาม">✏️</button>
+                                <button class="action-icon-btn btn-del-quiz" data-id="<?= h($q['questions_id']) ?>" title="ลบคำถาม" style="color:#ef4444;">🗑</button>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
 
-        <!-- Modal เพิ่มบทเรียนย่อย -->
+        <!-- ═ Modal 1: เพิ่มบทเรียนย่อย ═ -->
         <div class="modal-overlay" id="modalOverlay">
             <div class="modal">
                 <div class="modal-header">
-                    <h3 class="modal-title">➕ เพิ่มบทเรียนย่อย (Lesson)</h3>
-                    <button class="modal-close" id="closeModalBtn">✕</button>
+                    <h3 class="modal-title">➕ เพิ่มบทเรียนย่อย</h3>
+                    <button class="modal-close" onclick="document.getElementById('modalOverlay').classList.remove('open')">✕</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
                         <label>ชื่อบทเรียนย่อย</label>
-                        <input type="text" class="form-input" placeholder="เช่น 1.1 ตรรกศาสตร์เบื้องต้น">
+                        <input type="text" class="form-input" id="lessonNameInput" placeholder="เช่น 1.1 ตรรกศาสตร์เบื้องต้น">
                     </div>
-                    <input type="hidden" class="form-input" value="">
-                    
-                    <div class="form-group">
-                        <label>คำอธิบาย (ทางเลือก)</label>
-                        <textarea class="form-input" rows="3" placeholder="รายละเอียด..."></textarea>
-                    </div>
+                    <input type="hidden" id="lessonSubjectId" value="<?= h($defaultSubjectId) ?>">
                 </div>
                 <div class="modal-footer">
-                    <button class="btn-cancel" id="closeModalBtn2">ยกเลิก</button>
-                    <button class="btn-save">💾 บันทึกบทเรียน</button>
+                    <button class="btn-cancel" onclick="document.getElementById('modalOverlay').classList.remove('open')">ยกเลิก</button>
+                    <button class="btn-save" id="saveLessonBtn">💾 บันทึกบทเรียน</button>
                 </div>
             </div>
         </div>
 
-        <!-- Modal เพิ่มแบบทดสอบ -->
-        <div class="modal-overlay" id="quizModalOverlay">
+        <!-- ═ Modal 2: แก้ไขบทเรียนย่อย ═ -->
+        <div class="modal-overlay" id="editLessonModal">
             <div class="modal">
                 <div class="modal-header">
-                    <h3 class="modal-title">เพิ่มคำถามแบบทดสอบ</h3>
-                    <button class="modal-close" id="closeQuizModalBtn">×</button>
+                    <h3 class="modal-title">✏️ แก้ไขชื่อบทเรียน</h3>
+                    <button class="modal-close" onclick="document.getElementById('editLessonModal').classList.remove('open')">✕</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>คำถาม</label>
-                        <textarea class="form-input" id="quizQuestion" rows="3" placeholder="พิมพ์คำถาม..."></textarea>
+                        <label>ชื่อบทเรียนใหม่</label>
+                        <input type="text" class="form-input" id="editLsnNameInput">
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>ประเภทคำถาม</label>
-                            <select class="form-input" id="quizType">
-                                <option value="choice">ตัวเลือก (MCQ)</option>
-                                <option value="truefalse">ถูก / ผิด</option>
-                                <option value="short">เติมคำสั้น</option>
-                                <option value="essay">อัตนัย</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>คะแนน</label>
-                            <input type="number" class="form-input" id="quizScore" value="1" min="1" max="100">
-                        </div>
-                    </div>
-                    <div class="form-group" id="quizChoicesGroup">
-                        <label>ตัวเลือก</label>
-                        <textarea class="form-input" id="quizChoices" rows="4"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>เฉลย</label>
-                        <input type="text" class="form-input" id="quizAnswer" placeholder="คำตอบที่ถูกต้อง">
-                    </div>
+                    <input type="hidden" id="editLsnIdInput">
                 </div>
                 <div class="modal-footer">
-                    <button class="btn-cancel" id="closeQuizModalBtn2">ยกเลิก</button>
-                    <button class="btn-save" id="saveQuizBtn">เพิ่มคำถาม</button>
+                    <button class="btn-cancel" onclick="document.getElementById('editLessonModal').classList.remove('open')">ยกเลิก</button>
+                    <button class="btn-save" id="saveEditLsnBtn">💾 บันทึกการแก้ไข</button>
                 </div>
             </div>
         </div>
+
+        <!-- ═ Modal 3: เพิ่มแบบทดสอบ ═ -->
+        <div class="modal-overlay" id="quizModalOverlay">
+            <div class="modal" style="max-width: 520px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">🧪 เพิ่มคำถามลงในบทเรียน</h3>
+                    <button class="modal-close" onclick="document.getElementById('quizModalOverlay').classList.remove('open')">×</button>
+                </div>
+                <div class="modal-body">
+                    <div style="background:var(--orange-dim); color:var(--orange); padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:10px; border:1px solid rgba(249,115,22,0.3);">
+                        <b>เพิ่มลงใน:</b> <span id="quizTargetLessonName"></span>
+                    </div>
+                    <input type="hidden" id="quizTargetLessonId" value="">
+
+                    <div class="form-group">
+                        <label>รูปแบบข้อสอบ</label>
+                        <select class="form-input" id="quizTypeAdd">
+                            <option value="choice">ปรนัย (4 ตัวเลือก)</option>
+                            <option value="truefalse">ถูก/ผิด</option>
+                            <option value="essay">อัตนัย (ข้อเขียน รออาจารย์ตรวจ)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>คำถาม</label>
+                        <textarea class="form-input" id="quizQuestionAdd" rows="3" placeholder="พิมพ์คำถาม..."></textarea>
+                    </div>
+
+                    <!-- ส่วนกรอกตัวเลือก ปรนัย -->
+                    <div class="form-group" id="quizChoiceGroupAdd">
+                        <label>ตัวเลือก (เลือกวงกลมหน้าข้อที่เป็นเฉลย)</label>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <div class="choice-row"><input type="radio" name="correctAdd" value="A" checked><span class="choice-label">A.</span><input type="text" class="form-input" id="chA_Add" placeholder="ตัวเลือก ก"></div>
+                            <div class="choice-row"><input type="radio" name="correctAdd" value="B"><span class="choice-label">B.</span><input type="text" class="form-input" id="chB_Add" placeholder="ตัวเลือก ข"></div>
+                            <div class="choice-row"><input type="radio" name="correctAdd" value="C"><span class="choice-label">C.</span><input type="text" class="form-input" id="chC_Add" placeholder="ตัวเลือก ค"></div>
+                            <div class="choice-row"><input type="radio" name="correctAdd" value="D"><span class="choice-label">D.</span><input type="text" class="form-input" id="chD_Add" placeholder="ตัวเลือก ง"></div>
+                        </div>
+                    </div>
+
+                    <!-- ส่วนกรอกตัวเลือก ถูก/ผิด -->
+                    <div class="form-group" id="quizTFGroupAdd" style="display:none;">
+                        <label>เฉลย (เลือกข้อที่ถูกต้อง)</label>
+                        <div style="display:flex; gap:20px; margin-top:8px;">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--text);"><input type="radio" name="tfAdd" value="A" checked> ถูก (True)</label>
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--text);"><input type="radio" name="tfAdd" value="B"> ผิด (False)</label>
+                        </div>
+                    </div>
+
+                    <!-- ส่วนแสดงสำหรับอัตนัย -->
+                    <div class="form-group" id="quizEssayGroupAdd" style="display:none;">
+                        <div style="padding:12px; background:rgba(234,179,8,0.1); color:#facc15; border-radius:6px; font-size:12px; border:1px dashed rgba(234,179,8,0.3);">
+                            ✏️ <b>โหมดข้อเขียน:</b> นักเรียนจะต้องพิมพ์คำตอบส่งมา และคุณจะต้องเป็นผู้ตรวจให้คะแนนเองในภายหลัง
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" onclick="document.getElementById('quizModalOverlay').classList.remove('open')">ยกเลิก</button>
+                    <button class="btn-save" id="saveQuizBtn">➕ เพิ่มคำถาม</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═ Modal 4: แก้ไขแบบทดสอบ ═ -->
+        <div class="modal-overlay" id="editQuizModal">
+            <div class="modal" style="max-width: 520px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">✏️ แก้ไขคำถาม</h3>
+                    <button class="modal-close" onclick="document.getElementById('editQuizModal').classList.remove('open')">×</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editQuizIdInput" value="">
+                    <input type="hidden" id="editQuizTypeHidden" value="choice">
+
+                    <div class="form-group">
+                        <label>คำถาม</label>
+                        <textarea class="form-input" id="editQuizQuestion" rows="3"></textarea>
+                    </div>
+
+                    <!-- ส่วนแก้ไข ปรนัย -->
+                    <div class="form-group" id="quizChoiceGroupEdit">
+                        <label>ตัวเลือก (เลือกวงกลมหน้าข้อที่เป็นเฉลย)</label>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <div class="choice-row"><input type="radio" name="correctEdit" value="A"><span class="choice-label">A.</span><input type="text" class="form-input" id="chA_Edit"></div>
+                            <div class="choice-row"><input type="radio" name="correctEdit" value="B"><span class="choice-label">B.</span><input type="text" class="form-input" id="chB_Edit"></div>
+                            <div class="choice-row"><input type="radio" name="correctEdit" value="C"><span class="choice-label">C.</span><input type="text" class="form-input" id="chC_Edit"></div>
+                            <div class="choice-row"><input type="radio" name="correctEdit" value="D"><span class="choice-label">D.</span><input type="text" class="form-input" id="chD_Edit"></div>
+                        </div>
+                    </div>
+
+                    <!-- ส่วนแก้ไข ถูก/ผิด -->
+                    <div class="form-group" id="quizTFGroupEdit" style="display:none;">
+                        <label>เฉลย (เลือกข้อที่ถูกต้อง)</label>
+                        <div style="display:flex; gap:20px; margin-top:8px;">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--text);"><input type="radio" name="tfEdit" value="A"> ถูก (True)</label>
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--text);"><input type="radio" name="tfEdit" value="B"> ผิด (False)</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" onclick="document.getElementById('editQuizModal').classList.remove('open')">ยกเลิก</button>
+                    <button class="btn-save" id="saveEditQuizBtn">💾 บันทึกการแก้ไข</button>
+                </div>
+            </div>
+        </div>
+
     </div>
     
-    <!-- ══ VIEW: REPORTS (หน้าออกรายงาน) ══ -->
+    <!-- ══ VIEW: REPORTS ══ -->
     <div id="view-reports" class="page-view" style="display:none">
         <header class="topbar">
             <div class="topbar-left">
                 <h1 class="page-title">ออกรายงาน</h1>
-                <span class="page-sub">ดาวน์โหลดและส่งออกรายงานผลการเรียน</span>
-            </div>
-            <div class="topbar-right">
-                <div class="notif-btn">🔔</div>
             </div>
         </header>
-
         <div class="content-grid" style="grid-template-columns: 1fr;">
             <div class="card" style="text-align: center; padding: 60px 20px;">
                 <div style="font-size: 48px; margin-bottom: 20px;">📊</div>
                 <h2 style="color: #fff; margin-bottom: 10px;">ระบบออกรายงานกำลังอยู่ระหว่างการพัฒนา</h2>
-                <p style="color: var(--text-dim); max-width: 500px; margin: 0 auto 30px;">
-                    ในอนาคตคุณจะสามารถกดปุ่มเพื่อส่งออกข้อมูลคะแนนนักเรียน ความคืบหน้า และสถิติย้อนหลัง ออกมาเป็นไฟล์ PDF หรือ Excel ได้จากหน้านี้
-                </p>
-                <button class="btn-add-lesson" style="margin: 0 auto; background: var(--bg3); color: var(--text-muted); cursor: not-allowed;">
-                    📥 ส่งออกรายงาน (เร็วๆ นี้)
-                </button>
+                <button class="btn-add-lesson" style="margin: 0 auto; background: var(--bg3); color: var(--text-muted); cursor: not-allowed;">📥 ส่งออกรายงาน (เร็วๆ นี้)</button>
             </div>
-        </div>
-    </div>
-
-    <!-- ══ VIEW: SETTINGS ══ -->
-    <div id="view-settings" class="page-view" style="display:none">
-        <header class="topbar">
-            <div class="topbar-left">
-                <h1 class="page-title">ตั้งค่า</h1>
-                <span class="page-sub">จัดการโปรไฟล์และรหัสผ่านของคุณ</span>
-            </div>
-            <div class="topbar-right">
-                <div class="notif-btn">🔔</div>
-            </div>
-        </header>
-
-        <div style="display:flex;justify-content:center;align-items:flex-start;padding:8px 0 40px">
-        <div style="display:flex;flex-direction:column;gap:20px;max-width:600px;width:100%">
-            <div class="card" style="margin:0;box-shadow:0 4px 24px rgba(0,0,0,.35);border-color:#2a2a2a">
-                <div class="card-header">
-                    <h2 class="card-title">👤 โปรไฟล์</h2>
-                </div>
-                <div style="display:flex;align-items:center;gap:20px;padding:8px 0 24px">
-                    <div style="position:relative;flex-shrink:0;cursor:pointer" onclick="document.getElementById('avatarInput').click()" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
-                        <div id="avatarDisplay" class="profile-avatar" style="width:72px;height:72px;font-size:28px;overflow:hidden;padding:0">
-                            <img id="avatarImg" src="<?= h($teacher['avatar_url']) ?>" alt="" style="<?= !empty($teacher['avatar_url']) ? 'display:block' : 'display:none' ?>;width:100%;height:100%;object-fit:cover;border-radius:50%">
-                            <span id="avatarInitial" style="<?= !empty($teacher['avatar_url']) ? 'display:none' : '' ?>"><?= h($teacherAvatar) ?></span>
-                        </div>
-                        <div style="position:absolute;bottom:0;right:0;width:22px;height:22px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid var(--bg2)">✏</div>
-                        <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="previewAvatar(this)">
-                    </div>
-                    <div>
-                        <div style="font-size:18px;font-weight:600;color:var(--text)"><?= h($teacherName) ?></div>
-                        <div style="font-size:13px;color:var(--text-dim);margin-top:2px">อาจารย์ • <?= h($teacherSubjectText) ?></div>
-                    </div>
-                </div>
-                <div style="display:flex;flex-direction:column;gap:14px">
-                    <div class="form-group" style="margin:0">
-                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">ชื่อ-นามสกุล</label>
-                        <input type="text" class="form-input" id="profileName" value="<?= h($teacherName) ?>">
-                    </div>
-                    <div class="form-group" style="margin:0">
-                        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">บทเรียนที่ดูแล</label>
-                        <input type="text" class="form-input" value="<?= h($teacherSubjectText) ?>" readonly style="opacity:.5;cursor:not-allowed">
-                    </div>
-                    <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
-                        <div style="font-size:12px;color:var(--text-muted);font-weight:600;margin-bottom:14px;letter-spacing:.04em">เปลี่ยนรหัสผ่าน</div>
-                        <div style="display:flex;flex-direction:column;gap:12px">
-                            <div class="form-group" style="margin:0">
-                                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">รหัสผ่านปัจจุบัน</label>
-                                <div style="position:relative">
-                                    <input type="password" class="form-input" id="pwdCurrent" style="padding-right:42px">
-                                    <button type="button" onclick="togglePwd('pwdCurrent',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-muted);line-height:1">👁</button>
-                                </div>
-                            </div>
-                            <div class="form-group" style="margin:0">
-                                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">รหัสผ่านใหม่</label>
-                                <div style="position:relative">
-                                    <input type="password" class="form-input" id="pwdNew" style="padding-right:42px" oninput="checkPwdStrength(this.value)">
-                                    <button type="button" onclick="togglePwd('pwdNew',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-muted);line-height:1">👁</button>
-                                </div>
-                                <div id="pwdStrengthWrap" style="display:none;margin-top:8px">
-                                    <div style="height:4px;border-radius:2px;background:var(--bg3);overflow:hidden">
-                                        <div id="pwdStrengthBar" style="height:100%;width:0%;transition:width .3s,background .3s;border-radius:2px"></div>
-                                    </div>
-                                    <div id="pwdStrengthLabel" style="font-size:11px;color:var(--text-muted);margin-top:4px"></div>
-                                </div>
-                            </div>
-                            <div class="form-group" style="margin:0">
-                                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">ยืนยันรหัสผ่านใหม่</label>
-                                <div style="position:relative">
-                                    <input type="password" class="form-input" id="pwdConfirm" style="padding-right:42px" oninput="checkPwdMatch()">
-                                    <button type="button" onclick="togglePwd('pwdConfirm',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-muted);line-height:1">👁</button>
-                                </div>
-                                <div id="pwdMatchMsg" style="font-size:11px;margin-top:4px"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="profileFeedback" style="font-size:13px;display:none;padding:10px 14px;border-radius:var(--radius-sm)"></div>
-                    <div style="padding-top:4px">
-                        <button class="btn-add-lesson" id="saveProfileBtn" onclick="saveProfile()">💾 บันทึกข้อมูล</button>
-                    </div>
-                </div>
-            </div>
-        </div>
         </div>
     </div>
 </main>
 
-<!-- Modal สำหรับโชว์ว่านักเรียนคนนี้เรียนอะไรไปแล้วบ้าง -->
-<div class="modal-overlay" id="studentProgressModal">
-    <div class="modal">
-        <div class="modal-header">
-            <h3 class="modal-title">📊 ความคืบหน้า: <span id="spm-student-name" style="color:var(--orange);"></span></h3>
-            <button class="modal-close" onclick="closeStudentProgressModal()">✕</button>
-        </div>
-        <div class="modal-body">
-            <p style="font-size:13px; color:var(--text-dim); margin-bottom:12px;">
-                เรียนผ่านไปแล้ว <b id="spm-completed-count" style="color:var(--text); font-size:16px;">0</b> จาก <b id="spm-total-count">0</b> บทเรียน
-            </p>
-            <div id="spm-lesson-list" style="max-height: 280px; overflow-y: auto; background: var(--bg3); border-radius: 8px; border: 1px solid var(--border);">
-                <!-- รายการบทเรียนจะถูกสร้างตรงนี้ด้วย JS -->
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-cancel" onclick="closeStudentProgressModal()">ปิดหน้าต่าง</button>
-        </div>
-    </div>
-</div>
-
 <script src="teacherdash.js"></script>
-<script>
-// ฟังก์ชันสำหรับ Modal ดูความคืบหน้านักเรียน
-function showStudentProgress(element) {
-    const name = element.getAttribute('data-name');
-    const completed = element.getAttribute('data-completed');
-    const total = element.getAttribute('data-total');
-    const jsonStr = element.getAttribute('data-json');
-    
-    document.getElementById('spm-student-name').innerText = name;
-    document.getElementById('spm-completed-count').innerText = completed;
-    document.getElementById('spm-total-count').innerText = total;
-    
-    let lessons = [];
-    try {
-        lessons = JSON.parse(jsonStr);
-    } catch(e) {
-        console.error("Parse JSON error", e);
-    }
-    
-    const listContainer = document.getElementById('spm-lesson-list');
-    if (lessons && lessons.length > 0) {
-        listContainer.innerHTML = lessons.map(l => `
-            <div style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: #10b981; font-size: 13.5px; display:flex; align-items:center; gap:10px;">
-                <span style="background:rgba(16,185,129,0.15); padding:4px 6px; border-radius:4px; font-size:11px;">✅</span> 
-                <span>${l}</span>
-            </div>
-        `).join('');
-    } else {
-        listContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">ยังไม่ได้เริ่มเรียนบทเรียนใดเลย</div>`;
-    }
-    
-    document.getElementById('studentProgressModal').classList.add('open');
-}
-
-function closeStudentProgressModal() {
-    document.getElementById('studentProgressModal').classList.remove('open');
-}
-
-// ฟังก์ชันอัปเดตรูปโปรไฟล์
-function previewAvatar(input) {
-    if (!input.files || !input.files[0]) return;
-    const file = input.files[0];
-    if (!file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-        const img = document.getElementById('avatarImg');
-        const initial = document.getElementById('avatarInitial');
-        img.src = e.target.result;
-        img.style.display = 'block';
-        initial.style.display = 'none';
-        const sideAvatar = document.querySelector('.sidebar-profile .profile-avatar');
-        if (sideAvatar) {
-            sideAvatar.style.background = 'none';
-            sideAvatar.style.padding = '0';
-            sideAvatar.style.overflow = 'hidden';
-            sideAvatar.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-        }
-    };
-    reader.readAsDataURL(file);
-}
-
-// ระบบรหัสผ่าน
-function togglePwd(id, btn) {
-    const inp = document.getElementById(id);
-    if (!inp) return;
-    const show = inp.type === 'password';
-    inp.type = show ? 'text' : 'password';
-    btn.textContent = show ? '🙈' : '👁';
-}
-
-function checkPwdStrength(val) {
-    const wrap = document.getElementById('pwdStrengthWrap');
-    const bar = document.getElementById('pwdStrengthBar');
-    const label = document.getElementById('pwdStrengthLabel');
-    if (!val) {
-        wrap.style.display = 'none';
-        return;
-    }
-    wrap.style.display = 'block';
-
-    let score = 0;
-    if (val.length >= 8) score++;
-    if (val.length >= 12) score++;
-    if (/[A-Z]/.test(val)) score++;
-    if (/[0-9]/.test(val)) score++;
-    if (/[^A-Za-z0-9]/.test(val)) score++;
-
-    const levels = [
-        { pct:'20%', color:'#ef4444', text:'อ่อนมาก' },
-        { pct:'40%', color:'#f97316', text:'อ่อน' },
-        { pct:'60%', color:'#eab308', text:'ปานกลาง' },
-        { pct:'80%', color:'#3b82f6', text:'ดี' },
-        { pct:'100%', color:'#10b981', text:'แข็งแรงมาก' },
-    ];
-    const lv = levels[Math.min(score - 1, 4)] || levels[0];
-    bar.style.width = lv.pct;
-    bar.style.background = lv.color;
-    label.style.color = lv.color;
-    label.textContent = `ความแข็งแกร่ง: ${lv.text}`;
-    checkPwdMatch();
-}
-
-function checkPwdMatch() {
-    const newPwd = document.getElementById('pwdNew')?.value;
-    const confirm = document.getElementById('pwdConfirm')?.value;
-    const msg = document.getElementById('pwdMatchMsg');
-    if (!msg || !confirm) return;
-    if (newPwd === confirm) {
-        msg.style.color = '#10b981';
-        msg.textContent = 'รหัสผ่านตรงกัน';
-    } else {
-        msg.style.color = '#ef4444';
-        msg.textContent = 'รหัสผ่านไม่ตรงกัน';
-    }
-}
-</script>
 </body>
 </html>
