@@ -132,7 +132,7 @@ try {
           <span class="user-role"><?= htmlspecialchars($staffRole, ENT_QUOTES, 'UTF-8'); ?></span>
         </div>
       </div>
-      <a href="login.php" class="btn-logout">
+      <a href="logout.php" class="btn-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </a>
     </div>
@@ -148,6 +148,7 @@ try {
 
     <main class="content">
 
+      <!-- แดชบอร์ด -->
       <div class="page active" id="page-dashboard">
         <div class="page-header">
           <h1 class="page-title">ภาพรวมระบบ</h1>
@@ -183,6 +184,7 @@ try {
         </div>
       </div>
 
+      <!-- รายการหลักสูตร -->
       <div class="page" id="page-curriculum-list">
         <div class="page-header">
           <div><h1 class="page-title">รายการหลักสูตร</h1></div>
@@ -196,6 +198,7 @@ try {
         </div>
       </div>
 
+      <!-- หน้าเพิ่ม/แก้ไขหลักสูตร (อัปเดตใหม่) -->
       <div class="page" id="page-curriculum-add">
         <div class="page-header">
           <div><h1 class="page-title" id="curriculumFormTitle">เพิ่มหลักสูตรใหม่</h1></div>
@@ -206,44 +209,73 @@ try {
           <div class="form-grid-2">
             <div class="form-field" id="field-cf-code">
               <label class="form-label">รหัสหลักสูตร <span class="req">*</span></label>
-              <div class="input-wrap"><input type="text" id="cf-code" required /></div>
+              <div class="input-wrap"><input type="text" id="cf-code" placeholder="เช่น C-M6-2569" required /></div>
             </div>
             <div class="form-field" id="field-cf-level">
               <label class="form-label">ระดับชั้น <span class="req">*</span></label>
               <div class="input-wrap select-wrap">
-                <select id="cf-level" required><option value="m4">ม.4</option><option value="m5">ม.5</option><option value="m6">ม.6</option></select>
+                <select id="cf-level" required>
+                  <option value="ม.ปลาย">ระดับมัธยมศึกษาตอนปลาย (ม.ปลาย)</option>
+                </select>
                 <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
             </div>
           </div>
           <div class="form-field" id="field-cf-name">
             <label class="form-label">ชื่อหลักสูตร <span class="req">*</span></label>
-            <div class="input-wrap"><input type="text" id="cf-name" required /></div>
+            <div class="input-wrap"><input type="text" id="cf-name" placeholder="เช่น หลักสูตรการศึกษานอกระบบระดับ ม.ปลาย" required /></div>
           </div>
           <div class="form-field">
             <label class="form-label">คำอธิบาย</label>
-            <div class="input-wrap"><textarea id="cf-desc" rows="3"></textarea></div>
+            <div class="input-wrap"><textarea id="cf-desc" rows="3" placeholder="รายละเอียดเพิ่มเติมของหลักสูตร..."></textarea></div>
           </div>
           <div class="form-grid-2">
             <div class="form-field" id="field-cf-year">
               <label class="form-label">ปีการศึกษา <span class="req">*</span></label>
-              <div class="input-wrap"><input type="text" id="cf-year" maxlength="4" required /></div>
+              <div class="input-wrap"><input type="text" id="cf-year" maxlength="4" placeholder="เช่น 2569" required /></div>
             </div>
             <div class="form-field">
               <label class="form-label">สถานะ</label>
               <div class="input-wrap select-wrap">
-                <select id="cf-status"><option value="active">เปิดใช้งาน</option><option value="draft">ร่าง</option><option value="inactive">ปิดใช้งาน</option></select>
+                <select id="cf-status">
+                  <option value="active">เปิดใช้งาน (ให้นักเรียนลงทะเบียนได้)</option>
+                  <option value="draft">แบบร่าง (กำลังเตรียมข้อมูล)</option>
+                  <option value="inactive">ปิดใช้งาน (หลักสูตรเก่า)</option>
+                </select>
                 <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
             </div>
           </div>
           <div class="form-actions">
             <button type="button" class="btn-ghost" data-goto="curriculum-list">ยกเลิก</button>
-            <button type="submit" class="btn-primary"><span class="btn-text">บันทึกข้อมูล</span></button>
+            <button type="submit" class="btn-primary"><span class="btn-text">บันทึกข้อมูลหลักสูตร</span></button>
           </div>
         </form>
       </div>
-
+<!-- จัดการวิชาในหลักสูตร -->
+      <div class="page" id="page-curriculum-subjects">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title" id="csTitle">จัดการวิชาในหลักสูตร</h1>
+            <p class="page-sub">ติ๊กเลือกรายวิชาที่ต้องการให้มีในหลักสูตรนี้</p>
+          </div>
+          <button class="btn-ghost" data-goto="curriculum-list">← ย้อนกลับ</button>
+        </div>
+        <form class="form-card" id="csForm" style="max-width: 800px;">
+          <input type="hidden" id="cs-curriculum-id" value="" />
+          <div class="form-field">
+            <label class="form-label">เลือกรายวิชา <span class="req">*</span></label>
+            <div id="cs-subject-list" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px; padding: 15px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 400px; overflow-y: auto;">
+              <!-- Checkbox ของรายวิชาจะถูกดึงมาใส่ตรงนี้อัตโนมัติ -->
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-ghost" data-goto="curriculum-list">ยกเลิก</button>
+            <button type="submit" class="btn-primary"><span class="btn-text">บันทึกรายวิชาเข้าหลักสูตร</span></button>
+          </div>
+        </form>
+      </div>
+      <!-- รายการรายวิชา -->
       <div class="page" id="page-subject-list">
         <div class="page-header">
           <div><h1 class="page-title">รายการรายวิชา</h1></div>
@@ -257,6 +289,7 @@ try {
         </div>
       </div>
 
+      <!-- เพิ่ม/แก้ไขรายวิชา -->
       <div class="page" id="page-subject-add">
         <div class="page-header">
           <div><h1 class="page-title" id="subjectFormTitle">เพิ่มรายวิชาใหม่</h1></div>
@@ -267,17 +300,17 @@ try {
           <div class="form-grid-2">
             <div class="form-field">
               <label class="form-label">รหัสวิชา <span class="req">*</span></label>
-              <div class="input-wrap"><input type="text" id="sf-code" required /></div>
+              <div class="input-wrap"><input type="text" id="sf-code" placeholder="เช่น พท31001" required /></div>
             </div>
             <div class="form-field">
               <label class="form-label">ชื่อวิชา <span class="req">*</span></label>
-              <div class="input-wrap"><input type="text" id="sf-name" required /></div>
+              <div class="input-wrap"><input type="text" id="sf-name" placeholder="เช่น ภาษาไทย" required /></div>
             </div>
           </div>
           <div class="form-grid-2">
             <div class="form-field">
               <label class="form-label">หน่วยกิต <span class="req">*</span></label>
-              <div class="input-wrap"><input type="number" id="sf-credit" required /></div>
+              <div class="input-wrap"><input type="number" id="sf-credit" placeholder="เช่น 3" required /></div>
             </div>
             <div class="form-field">
               <label class="form-label">ประเภทวิชา</label>
@@ -294,6 +327,7 @@ try {
         </form>
       </div>
 
+      <!-- จัดการบทเรียน -->
       <div class="page" id="page-subject-detail">
         <div class="page-header">
           <div>
@@ -313,6 +347,7 @@ try {
         </div>
       </div>
 
+      <!-- เพิ่มบทเรียนใหม่ -->
       <div class="page" id="page-lesson-add">
         <div class="page-header">
           <div><h1 class="page-title" id="lessonFormTitle">เพิ่มบทเรียนใหม่</h1></div>
@@ -345,6 +380,7 @@ try {
         </form>
       </div>
 
+      <!-- รายชื่อสมาชิก -->
       <div class="page" id="page-member-list">
         <div class="page-header">
           <div><h1 class="page-title">จัดการผู้ใช้งาน</h1></div>
@@ -357,6 +393,7 @@ try {
         </div>
       </div>
 
+      <!-- แก้ไขข้อมูลสมาชิก -->
       <div class="page" id="page-member-edit">
         <div class="page-header">
           <div><h1 class="page-title">แก้ไขข้อมูลสมาชิก</h1></div>
@@ -384,6 +421,7 @@ try {
         </form>
       </div>
 
+      <!-- เพิ่มเจ้าหน้าที่ -->
       <div class="page" id="page-staff-add">
         <div class="page-header">
           <div>

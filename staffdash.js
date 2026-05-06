@@ -153,35 +153,32 @@
 
   function renderMembers() {
     const memberBody = document.getElementById('memberBody');
-    if (!memberBody) {
-      return;
-    }
+    if (!memberBody) return;
 
     const roleName = {
-      student: 'นักเรียน',
-      teacher: 'อาจารย์',
-      parent: 'ผู้ปกครอง',
-      staff: 'เจ้าหน้าที่',
+      'Student': 'นักเรียน',
+      'Teacher': 'อาจารย์',
+      'Parent': 'ผู้ปกครอง',
+      'Staff': 'เจ้าหน้าที่',
     };
 
     memberBody.innerHTML = members.length
       ? members.map(member => `
         <tr>
-          <td>${member.firstname} ${member.lastname}</td>
+          <td>${member.name}</td>
           <td style="color:var(--text-secondary)">${member.email}</td>
-          <td><span class="badge ${member.role === 'staff' ? 'required' : 'draft'}">${roleName[member.role] || member.role}</span></td>
-          <td>${member.status === 'active' ? '<span class="badge active">ปกติ</span>' : '<span class="badge inactive">ระงับบัญชี</span>'}</td>
+          <td><span class="badge ${member.role === 'Staff' ? 'required' : 'draft'}">${roleName[member.role] || member.role}</span></td>
+          <td><span class="badge active">ปกติ</span></td>
           <td>
             <div class="action-btns">
-              <button type="button" class="btn-icon edit" onclick="editMember(${member.id})">✎</button>
-              <button type="button" class="btn-icon del" onclick="deleteMember(${member.id})">✕</button>
+              <button type="button" class="btn-icon edit" onclick="editMember('${member.id}')">✎</button>
+              <button type="button" class="btn-icon del" onclick="deleteMember('${member.id}')">✕</button>
             </div>
           </td>
         </tr>
       `).join('')
       : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่พบข้อมูล</td></tr>';
   }
-
   window.editMember = id => {
     const member = members.find(item => Number(item.id) === Number(id));
     if (!member) {
@@ -246,14 +243,16 @@
     curriculumBody.innerHTML = curricula.length
       ? curricula.map(curriculum => `
         <tr>
-          <td class="mono">${curriculum.code}</td>
+          <td class="mono">${curriculum.code || curriculum.id}</td>
           <td>${curriculum.name}</td>
-          <td>${String(curriculum.level || '').toUpperCase()}</td>
-          <td><span class="badge ${curriculum.status === 'active' ? 'active' : 'draft'}">${curriculum.status}</span></td>
+          <td>${curriculum.level || 'ม.ปลาย'}</td>
+          <td><span class="badge ${curriculum.status === 'active' ? 'active' : 'draft'}">${curriculum.status || 'active'}</span></td>
           <td>
             <div class="action-btns">
-              <button type="button" class="btn-icon edit" onclick="editCurriculum(${curriculum.id})">✎</button>
-              <button type="button" class="btn-icon del" onclick="deleteCurriculum(${curriculum.id})">✕</button>
+              <!-- เพิ่มปุ่มจัดการวิชาตรงนี้ -->
+              <button type="button" class="btn-icon" style="color:var(--blue); border-color:var(--border);" onclick="manageCurriculumSubjects('${curriculum.id}', '${curriculum.name}')" title="จัดการวิชาเข้าหลักสูตร">📚</button>
+              <button type="button" class="btn-icon edit" onclick="editCurriculum('${curriculum.id}')">✎</button>
+              <button type="button" class="btn-icon del" onclick="deleteCurriculum('${curriculum.id}')">✕</button>
             </div>
           </td>
         </tr>
@@ -565,7 +564,54 @@
       showToast(error.message || 'ไม่สามารถเพิ่มเจ้าหน้าที่ได้', 'error');
     }
   });
+// --- ระบบจัดการวิชาเข้าหลักสูตร ---
+  window.manageCurriculumSubjects = async (id, name) => {
+    document.getElementById('csTitle').textContent = `จัดการวิชา: ${name}`;
+    document.getElementById('cs-curriculum-id').value = id;
+    
+    try {
+      const data = await fetchJson(`api_staff.php?action=getCurriculumSubjects&curriculum_id=${encodeURIComponent(id)}`);
+      const listContainer = document.getElementById('cs-subject-list');
+      
+      if (!data.subjects || data.subjects.length === 0) {
+         listContainer.innerHTML = '<p style="color:var(--text-secondary); text-align:center; padding: 20px;">ยังไม่มีรายวิชาในระบบ กรุณาไปเพิ่มรายวิชาก่อนครับ</p>';
+      } else {
+         listContainer.innerHTML = data.subjects.map(sub => {
+            const isChecked = data.selected.includes(sub.id) ? 'checked' : '';
+            return `
+              <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px; border-radius:6px; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,107,26,0.05)'" onmouseout="this.style.background='transparent'">
+                <input type="checkbox" name="curriculum_subjects[]" value="${sub.id}" ${isChecked} style="width:18px; height:18px; accent-color:var(--orange); cursor:pointer;">
+                <span><strong style="color:var(--orange);">${sub.code || sub.id}</strong> - ${sub.name}</span>
+              </label>
+            `;
+         }).join('');
+      }
+      goTo('curriculum-subjects');
+    } catch (error) {
+      showToast(error.message || 'ไม่สามารถโหลดข้อมูลรายวิชาได้', 'error');
+    }
+  };
 
+  document.getElementById('csForm')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    
+    const curriculumId = document.getElementById('cs-curriculum-id').value;
+    const checkboxes = document.querySelectorAll('input[name="curriculum_subjects[]"]:checked');
+    const selectedIds = Array.from(checkboxes).map(cb => cb.value); // ดึงค่า id ของวิชาที่ถูกติ๊ก
+    
+    const formData = new FormData();
+    formData.append('action', 'saveCurriculumSubjects');
+    formData.append('curriculum_id', curriculumId);
+    formData.append('subjects', JSON.stringify(selectedIds)); // ส่งเป็น JSON array
+    
+    try {
+      await fetchJson('api_staff.php', { method: 'POST', body: formData });
+      showToast('บันทึกรายวิชาเข้าหลักสูตรเรียบร้อย!', 'success');
+      goTo('curriculum-list');
+    } catch (error) {
+      showToast(error.message || 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+    }
+  });
   goTo(initialPage);
   loadData();
 })();

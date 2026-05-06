@@ -14,16 +14,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     $password = $_POST['password']; 
     $fullname = $_POST['fullname'] . ' ' . $_POST['lastname'];
-    $email = $_POST['email'];
+    $email = $_POST['email'] ?? '-';
+
+    // รับค่าที่อยู่แยกส่วนเพื่อบันทึกลงตาราง addresses
+    $house    = $_POST['house'];
+    $tambon   = $_POST['tambon'];
+    $amphoe   = $_POST['amphoe'];
+    $province = $_POST['province'];
+    $zipcode  = $_POST['zipcode'];
     
-    // รวมที่อยู่ให้เป็นข้อความยาวๆ
-    $address = $_POST['house'] . ' ต.' . $_POST['tambon'] . ' อ.' . $_POST['amphoe'] . ' จ.' . $_POST['province'] . ' ' . $_POST['zipcode'];
+    // รวมที่อยู่เป็นข้อความยาวสำหรับตาราง Role เดิม (ถ้ายังจำเป็นต้องใช้)[cite: 12]
+    $address_full = $house . ' ต.' . $tambon . ' อ.' . $amphoe . ' จ.' . $province . ' ' . $zipcode;
 
     try {
-        // เริ่ม Transaction (ถ้ามีอันไหน Error จะได้ยกเลิกการบันทึกทั้งหมด ป้องกันข้อมูลขยะ)
+        // เริ่ม Transaction เพื่อความปลอดภัยของข้อมูล[cite: 12]
         $conn->beginTransaction();
 
-        // 2. เช็คก่อนว่ามีรหัสบัตรประชาชนนี้ในระบบ (ตาราง User) หรือยัง?
+        // 2. เช็คก่อนว่ามีรหัสบัตรประชาชนนี้ในระบบ (ตาราง User) หรือยัง?[cite: 12]
         $check_user = $conn->prepare('SELECT User_ID FROM "User" WHERE User_ID = ?');
         $check_user->execute([$userid]);
         if ($check_user->rowCount() > 0) {
@@ -31,68 +38,65 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         // ---------------------------------------------------------
-        // กรณี: สมัครเป็น "นักเรียน"
+        // บันทึกข้อมูลที่อยู่ลงตาราง public.addresses (ตามภาพ image_a0bf3a.png)
+        // ---------------------------------------------------------
+        $stmt_addr = $conn->prepare("
+            INSERT INTO public.addresses (user_id, house_number, tambon, amphoe, province, zipcode) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        ");
+        $stmt_addr->execute([$userid, $house, $tambon, $amphoe, $province, $zipcode]);
+
+        // ---------------------------------------------------------
+        // กรณี: สมัครเป็น "นักเรียน"[cite: 12]
         // ---------------------------------------------------------
         if ($role === 'student') {
             $level = $_POST['level'];
-            $pin = $_POST['student_pin']; // PIN 6 หลักที่นักเรียนตั้งเอง
+            $pin = $_POST['student_pin']; 
 
-            // บันทึกลงตาราง User (ใช้ "User" เพราะเป็นคำสงวนใน Postgres)
             $stmt_user = $conn->prepare('INSERT INTO "User" (User_ID, Password, Status) VALUES (?, ?, ?)');
             $stmt_user->execute([$userid, $password, 'Student']);
 
-            // บันทึกลงตาราง Student
             $stmt_stu = $conn->prepare("INSERT INTO Student (Student_ID, Student_Name, Email, Tel, Status_Address, Student_Level, PIN) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt_stu->execute([$userid, $fullname, $email, $phone, $address, $level, $pin]);
+            $stmt_stu->execute([$userid, $fullname, $email, $phone, $address_full, $level, $pin]);
 
         } 
         // ---------------------------------------------------------
-        // กรณี: สมัครเป็น "อาจารย์"
+        // กรณี: สมัครเป็น "อาจารย์"[cite: 12]
         // ---------------------------------------------------------
         elseif ($role === 'teacher') {
-            // บันทึกลงตาราง User
             $stmt_user = $conn->prepare('INSERT INTO "User" (User_ID, Password, Status) VALUES (?, ?, ?)');
             $stmt_user->execute([$userid, $password, 'Teacher']);
 
-            // บันทึกลงตาราง Teachers
             $stmt_teacher = $conn->prepare("INSERT INTO Teachers (Teachers_ID, Password, Teachers_Name, Email, Tel, Teachers_Address) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt_teacher->execute([$userid, $password, $fullname, $email, $phone, $address]);
-
-            // (วิชาที่สอน $_POST['subject'] จะต้องนำไปจัดสรรในตาราง Subjects ในภายหลัง)
+            $stmt_teacher->execute([$userid, $password, $fullname, $email, $phone, $address_full]);
         } 
         // ---------------------------------------------------------
-        // กรณี: สมัครเป็น "ผู้ปกครอง" (ต้องเช็ค PIN นักเรียน!)
+        // กรณี: สมัครเป็น "ผู้ปกครอง"[cite: 12]
         // ---------------------------------------------------------
         elseif ($role === 'parent') {
             $link_student_id = str_replace('-', '', $_POST['link_student_id']);
             $link_student_pin = $_POST['link_student_pin'];
 
-            // Step 1: ค้นหานักเรียนด้วยรหัสบัตรและ PIN
             $check_stu = $conn->prepare("SELECT Student_ID FROM Student WHERE Student_ID = ? AND PIN = ?");
             $check_stu->execute([$link_student_id, $link_student_pin]);
             
             if ($check_stu->rowCount() == 0) {
-                // ถ้าไม่เจอ หรือ PIN ผิด ให้เด้ง Error ทันที
                 throw new Exception("ข้อมูลไม่ถูกต้อง! ไม่พบรหัสนักเรียน หรือ PIN ของบุตรไม่ตรงกัน");
             }
 
-            // Step 2: ถ้า PIN ถูกต้อง ให้บันทึกผู้ปกครองลงตาราง User
             $stmt_user = $conn->prepare('INSERT INTO "User" (User_ID, Password, Status) VALUES (?, ?, ?)');
             $stmt_user->execute([$userid, $password, 'Parent']);
 
-            // Step 3: บันทึกลงตาราง Parents
             $stmt_parent = $conn->prepare("INSERT INTO Parents (Parents_ID, Password, Parents_Name, Email, Tel, Parents_Address, PIN) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt_parent->execute([$userid, $password, $fullname, $email, $phone, $address, $link_student_pin]);
+            $stmt_parent->execute([$userid, $password, $fullname, $email, $phone, $address_full, $link_student_pin]);
 
-            // Step 4: **ไฮไลท์สำคัญ** อัปเดตตาราง Student เพื่อโยงรหัส Parent_ID เข้ากับตัวนักเรียน
             $link_update = $conn->prepare("UPDATE Student SET Parent_ID = ? WHERE Student_ID = ?");
             $link_update->execute([$userid, $link_student_id]);
         }
 
-        // กดยืนยันการบันทึกข้อมูลทั้งหมดลงฐานข้อมูล
+        // กดยืนยันการบันทึกข้อมูลทั้งหมดลงฐานข้อมูล[cite: 12]
         $conn->commit();
 
-        // แจ้งเตือนสำเร็จและเด้งไปหน้า Login
         echo "<script>
                 alert('ลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ');
                 window.location.href = 'login.php';
@@ -100,11 +104,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
 
     } catch (Exception $e) {
-        // หากเกิด Error ตรงไหนก็ตาม ให้ยกเลิกการบันทึก (Rollback)
-        $conn->rollBack();
+        // หากเกิด Error ให้ยกเลิกการบันทึกทั้งหมด[cite: 12]
+        if ($conn->inTransaction()) {
+            $conn->rollBack();
+        }
         $error_msg = $e->getMessage();
         
-        // แจ้งเตือน Error และเด้งกลับไปหน้าฟอร์ม
         echo "<script>
                 alert('เกิดข้อผิดพลาด: {$error_msg}');
                 window.history.back();
@@ -112,7 +117,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 } else {
-    // ถ้ามีคนแอบพิมพ์เข้า URL นี้ตรงๆ โดยไม่ผ่านฟอร์ม ให้เตะกลับไปหน้าสมัคร
     header("Location: regisstu.php");
     exit();
 }
