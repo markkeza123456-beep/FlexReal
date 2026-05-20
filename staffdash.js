@@ -365,12 +365,12 @@
           <td class="mono">${subject.code}</td>
           <td>${subject.name}</td>
           <td>${subject.credit}</td>
-          <td><span class="badge ${subject.type === 'required' ? 'required' : 'elective'}">${subject.type === 'required' ? 'บังคับ' : 'เลือก'}</span></td>
+          <td><span class="badge elective">ทั่วไป</span></td>
           <td>
             <div class="action-btns">
-              <button type="button" class="btn-icon" style="color:var(--blue);" onclick="openSubjectEditor(${subject.id}, 'lessons')" title="จัดการบทเรียน">📚</button>
-              <button type="button" class="btn-icon edit" onclick="openSubjectEditor(${subject.id}, 'subject')" title="แก้ไขรายวิชา">✎</button>
-              <button type="button" class="btn-icon del" onclick="deleteSubject(${subject.id})">✕</button>
+              <button type="button" class="btn-icon" style="color:var(--blue);" onclick="openSubjectEditor('${subject.id}', 'lessons')" title="จัดการบทเรียน">📚</button>
+              <button type="button" class="btn-icon edit" onclick="editSubject('${subject.id}')" title="แก้ไขรายวิชา">✎</button>
+              <button type="button" class="btn-icon del" onclick="deleteSubject('${subject.id}')">✕</button>
             </div>
           </td>
         </tr>
@@ -388,7 +388,21 @@
     window.location.href = `staff_subject_editor.php?subject_id=${encodeURIComponent(id)}&section=${encodeURIComponent(section)}`;
   };
 
-  window.editSubject = id => window.openSubjectEditor(id, 'subject');
+  window.editSubject = id => {
+    const subject = subjects.find(item => String(item.id) === String(id));
+    if (!subject) {
+      showToast('ไม่พบข้อมูลรายวิชา', 'error');
+      return;
+    }
+
+    document.getElementById('subjectFormTitle').textContent = 'แก้ไขรายวิชา';
+    document.getElementById('sf-id').value = subject.id || '';
+    document.getElementById('sf-code').value = subject.code || '';
+    document.getElementById('sf-name').value = subject.name || '';
+    document.getElementById('sf-credit').value = subject.credit || 0;
+    document.getElementById('sf-type').value = 'elective';
+    goTo('subject-add');
+  };
 
   document.getElementById('subjectForm')?.addEventListener('submit', async e => {
     e.preventDefault();

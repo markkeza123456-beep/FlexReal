@@ -111,13 +111,9 @@ try {
             <select id="level" name="level" required>
               <option value="" disabled selected>เลือกระดับชั้น</option>
               <?php foreach ($groupedLevels as $levelGroup => $items): ?>
-                <optgroup label="<?= htmlspecialchars($levelGroup) ?>">
-                  <?php foreach ($items as $item): ?>
-                    <option value="<?= htmlspecialchars($item['curriculums_id']) ?>">
-                      <?= htmlspecialchars($item['curriculums_name']) ?>
-                    </option>
-                  <?php endforeach; ?>
-                </optgroup>
+                <option value="<?= htmlspecialchars($levelGroup) ?>">
+                  <?= htmlspecialchars($levelGroup) ?>
+                </option>
               <?php endforeach; ?>
             </select>
             <span class="select-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>

@@ -79,8 +79,14 @@ try {
             
             // ดึงรายวิชา
             $subjectsStmt = $conn->query("
-                SELECT *, subjects_id AS id, COALESCE(code, subjects_id) AS code, subjects_name AS name, COALESCE(credit, 0) AS credit 
-                FROM public.subjects ORDER BY subjects_id DESC
+                SELECT *,
+                       subjects_id AS id,
+                       COALESCE(code, subjects_id) AS code,
+                       subjects_name AS name,
+                       COALESCE(credit, 0) AS credit
+                FROM public.subjects
+                WHERE deleted_at IS NULL
+                ORDER BY subjects_id DESC
             ");
 
             jsonResponse([
@@ -121,7 +127,7 @@ try {
             $params = [':code' => postValue('code'), ':name' => postValue('name'), ':credit' => (int) postValue('credit', '0')];
             if (!empty($subjectId)) {
                 $params[':id'] = $subjectId;
-                $conn->prepare("UPDATE public.subjects SET code = :code, subjects_name = :name, credit = :credit WHERE subjects_id = :id")->execute($params);
+                $conn->prepare("UPDATE public.subjects SET code = :code, subjects_name = :name, credit = :credit, updated_at = NOW() WHERE subjects_id = :id")->execute($params);
             } else {
                 $stmtId = $conn->query("SELECT subjects_id FROM public.subjects WHERE subjects_id LIKE 'SUB%' ORDER BY LENGTH(subjects_id) DESC, subjects_id DESC LIMIT 1");
                 $lastId = $stmtId->fetchColumn();
@@ -129,6 +135,18 @@ try {
                 $params[':id'] = $newId;
                 $conn->prepare("INSERT INTO public.subjects (subjects_id, code, subjects_name, credit) VALUES (:id, :code, :name, :credit)")->execute($params);
             }
+            jsonResponse(['status' => 'success']);
+            break;
+
+        case 'deleteSubject':
+            $subjectId = $_POST['id'] ?? '';
+            if ($subjectId === '') {
+                jsonResponse(['status' => 'error', 'message' => 'ไม่พบรหัสรายวิชา'], 400);
+            }
+
+            $conn->prepare("UPDATE public.subjects SET deleted_at = NOW() WHERE subjects_id = :id")->execute([
+                ':id' => $subjectId,
+            ]);
             jsonResponse(['status' => 'success']);
             break;
 
