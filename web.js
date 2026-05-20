@@ -11,7 +11,7 @@ const LESSON_VIDEO_FILES = [
     'videos/lesson-thai.mp4',
     'videos/lesson-english.mp4',
     'videos/lesson-math.mp4',
-    'videos/lesson-science.mp4'
+    'videos/lesson-social.mp4'
 ];
 
 function pick(obj, ...keys) {
@@ -32,8 +32,11 @@ function escapeHtml(text) {
 
 // 💥 แปลงข้อมูลบทเรียนจากฐานข้อมูล
 function buildLessonsFromDB(lessons) {
-    if (!Array.isArray(lessons) || lessons.length === 0) return [];
-    return lessons.map((lsn, index) => {
+    const normalized = Array.isArray(lessons) ? lessons : [];
+    const firstLessonTitle = normalized.length > 0
+        ? (pick(normalized[0], 'lessons_name', 'Lessons_Name') || 'บทเรียนที่ 1')
+        : 'บทเรียนที่ 1';
+    const output = normalized.map((lsn, index) => {
         const lsnId = pick(lsn, 'lessons_id', 'Lessons_ID') || `tmp_${index}`;
         const lsnName = pick(lsn, 'lessons_name', 'Lessons_Name') || `บทเรียนที่ ${index + 1}`;
         return {
@@ -43,6 +46,17 @@ function buildLessonsFromDB(lessons) {
             expanded: false
         };
     });
+
+    for (let i = output.length + 1; i <= 5; i += 1) {
+        output.push({
+            index: i,
+            id: `auto_${i}`,
+            title: firstLessonTitle,
+            expanded: false
+        });
+    }
+
+    return output;
 }
 
 function isLessonPassed(lessonIndex) { return currentPassedLessons.has(Number(lessonIndex)); }
@@ -62,26 +76,31 @@ function canAccessLesson(lessonIndex) {
     return isLessonPassed(Number(lessonIndex) - 1);
 }
 
-function isQuizUnlocked(lessonIndex) {
-    if (!canAccessLesson(lessonIndex)) return false;
+function hasReadLessonDocument(lessonIndex) {
     const progressMap = getLessonProgressMap();
     const row = progressMap.get(Number(lessonIndex)) || {};
-    const openedCount = Number(row.opened_count || 0);
-    const videoOpenCount = Number(row.video_open_count || 0);
-    return openedCount > 0 && videoOpenCount > 0;
+    return Number(row.opened_count || 0) > 0;
+}
+
+function hasCompletedLessonVideo(lessonIndex) {
+    const progressMap = getLessonProgressMap();
+    const row = progressMap.get(Number(lessonIndex)) || {};
+    return Number(row.video_open_count || 0) > 0;
+}
+
+function isVideoUnlocked(lessonIndex) {
+    return canAccessLesson(lessonIndex) && hasReadLessonDocument(lessonIndex);
+}
+
+function isQuizUnlocked(lessonIndex) {
+    if (!canAccessLesson(lessonIndex)) return false;
+    return hasReadLessonDocument(lessonIndex) && hasCompletedLessonVideo(lessonIndex);
 }
 
 function getLessonLockMessage(lessonIndex) {
     if (!canAccessLesson(lessonIndex)) return `ปลดล็อกเมื่อผ่านแบบทดสอบบทที่ ${Number(lessonIndex) - 1}`;
-    if (!isQuizUnlocked(lessonIndex)) {
-        const progressMap = getLessonProgressMap();
-        const row = progressMap.get(Number(lessonIndex)) || {};
-        const openedCount = Number(row.opened_count || 0);
-        const videoOpenCount = Number(row.video_open_count || 0);
-        if (openedCount <= 0 && videoOpenCount <= 0) return 'ต้องอ่านเอกสารและชมวิดีโอก่อนเริ่ม Quiz';
-        if (openedCount <= 0) return 'ต้องอ่านเอกสารก่อนเริ่ม Quiz';
-        if (videoOpenCount <= 0) return 'ต้องชมวิดีโอก่อนเริ่ม Quiz';
-    }
+    if (!hasReadLessonDocument(lessonIndex)) return 'ต้องอ่านบทเรียนให้จบก่อน';
+    if (!hasCompletedLessonVideo(lessonIndex)) return 'ต้องชมวิดีโอให้จบก่อนเริ่ม Quiz';
     return '';
 }
 
@@ -143,7 +162,7 @@ function renderLessonAccordion(containerId) {
                             <span class="curr-icon">🎬</span>
                             <div class="curr-text"><b>วิดีโอสรุปบทเรียน</b><p>รับชมวิดีโอ</p></div>
                         </div>
-                        <button class="btn-orange" onclick="openCourseVideo(${lesson.index})" ${canAccessLesson(lesson.index) ? '' : 'disabled'}>ชมวิดีโอ</button>
+                        <button class="btn-orange" onclick="openCourseVideo(${lesson.index})" ${isVideoUnlocked(lesson.index) ? '' : 'disabled'}>ชมวิดีโอ</button>
                     </div>
                     <div class="curriculum-item">
                         <div class="curr-left">
@@ -500,17 +519,32 @@ function renderVideoModalBody(lessonIndex) {
             เบราว์เซอร์ไม่รองรับวิดีโอ
         </video>
     `;
+
+    const videoElement = body.querySelector('video');
+    if (videoElement) {
+        videoElement.addEventListener('ended', () => {
+            recordLearningEvent('video_open', safeIndex);
+            fetchCourseProgress(currentSubjectId);
+        }, { once: true });
+    }
 }
 
-window.changeModalLessonVideo = function(lessonIndex) { renderVideoModalBody(lessonIndex); }
+window.changeModalLessonVideo = function(lessonIndex) {
+    const targetIndex = Number(lessonIndex) || 1;
+    if (!isVideoUnlocked(targetIndex)) {
+        alert(getLessonLockMessage(targetIndex) || 'ต้องอ่านบทเรียนก่อนดูวิดีโอ');
+        return;
+    }
+    renderVideoModalBody(targetIndex);
+}
 
 function openCourseVideo(lessonIndex) {
     if (!enrolledCourses[currentSubjectId]) { alert('กรุณาลงรายวิชาก่อนชมวิดีโอ'); return; }
     if (!canAccessLesson(lessonIndex || 1)) { alert(`กรุณาผ่านแบบทดสอบบทที่ ${Number(lessonIndex || 1) - 1} ก่อน`); return; }
+    if (!hasReadLessonDocument(lessonIndex || 1)) { alert('กรุณาอ่านบทเรียนให้จบก่อนดูวิดีโอ'); return; }
     const modal = document.getElementById('modal-overlay');
     renderVideoModalBody(lessonIndex || 1);
     modal.style.display = 'flex';
-    recordLearningEvent('video_open', lessonIndex || 1);
 }
 
 function startQuiz(lessonIndex) {
