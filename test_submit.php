@@ -3,90 +3,137 @@ session_start();
 require_once 'db_connect.php';
 header('Content-Type: application/json; charset=utf-8');
 
-// รับข้อมูล JSON ที่ส่งมาจากหน้าข้อสอบ (test.js)
-$data = json_decode(file_get_contents('php://input'), true);
-
-// ตรวจสอบว่าใช่นักเรียนไหม
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'student') {
-    echo json_encode(['status' => 'unauthorized', 'message' => 'กรุณาเข้าสู่ระบบก่อนทำแบบทดสอบ']);
+function out(array $payload, int $status = 200): void
+{
+    http_response_code($status);
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-$student_id = $_SESSION['user_id'];
-$subject_id = $data['subject_id'] ?? '';
-$lesson_index = intval($data['lesson_index'] ?? 1);
-$score = floatval($data['score'] ?? 0);
-$total_score = intval($data['total_score'] ?? 0);
-$answers = $data['answers'] ?? []; // ตัวอย่างข้อมูล: [0, 1, 2, null] (0=ก, 1=ข, 2=ค, 3=ง)
+function tableColumns(PDO $conn, string $schema, string $table): array
+{
+    $stmt = $conn->prepare(
+        "SELECT column_name
+         FROM information_schema.columns
+         WHERE table_schema = :schema AND table_name = :table"
+    );
+    $stmt->execute([':schema' => $schema, ':table' => $table]);
+    return array_map('strval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+}
+
+function dynamicInsert(PDO $conn, string $table, array $columns, array $data): int
+{
+    $usable = [];
+    $params = [];
+    foreach ($data as $column => $value) {
+        if (in_array($column, $columns, true)) {
+            $usable[] = $column;
+            $params[':' . $column] = $value;
+        }
+    }
+
+    if (empty($usable)) {
+        throw new Exception("ไม่มีคอลัมน์รองรับการบันทึกในตาราง {$table}");
+    }
+
+    $cols = implode(', ', $usable);
+    $vals = implode(', ', array_map(fn($c) => ':' . $c, $usable));
+    $returning = in_array('test_id', $columns, true) ? ' RETURNING test_id' : '';
+    $sql = "INSERT INTO public.{$table} ({$cols}) VALUES ({$vals}){$returning}";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
+
+    if ($returning !== '') {
+        $id = $stmt->fetchColumn();
+        return $id !== false ? (int) $id : 0;
+    }
+    return 0;
+}
+
+$data = json_decode(file_get_contents('php://input'), true);
+if (!is_array($data)) {
+    out(['status' => 'error', 'message' => 'รูปแบบข้อมูลไม่ถูกต้อง'], 400);
+}
+
+$role = strtolower((string) ($_SESSION['role'] ?? ''));
+if (!isset($_SESSION['user_id']) || $role !== 'student') {
+    out(['status' => 'unauthorized', 'message' => 'กรุณาเข้าสู่ระบบก่อนทำแบบทดสอบ'], 401);
+}
+
+$studentId = (string) $_SESSION['user_id'];
+$subjectId = trim((string) ($data['subject_id'] ?? ''));
+$lessonIndex = max(1, (int) ($data['lesson_index'] ?? 1));
+$score = (int) ($data['score'] ?? 0);
+$totalScore = max(0, (int) ($data['total_score'] ?? 0));
+$answers = is_array($data['answers'] ?? null) ? $data['answers'] : [];
+$requiredScore = max(1, (int) ceil(max(1, $totalScore) * 0.6));
+$quizStatus = $score >= $requiredScore ? 'pass' : 'fail';
+
+if ($subjectId === '') {
+    out(['status' => 'error', 'message' => 'ไม่พบรหัสรายวิชา'], 400);
+}
 
 try {
-    // เริ่มระบบ Transaction (ถ้าพังกลางทาง จะไม่บันทึกเลย ป้องกันข้อมูลแหว่ง)
     $conn->beginTransaction();
 
-    // 1. หาว่าบทเรียนที่นักเรียนกำลังสอบคือ Lessons_ID อะไร (ดึงตามลำดับของบทเรียน)
-    $offset = $lesson_index - 1;
-    $stmtL = $conn->prepare("SELECT lessons_id FROM public.lessons WHERE subjects_id = ? ORDER BY lessons_id ASC LIMIT 1 OFFSET ?");
-    $stmtL->execute([$subject_id, $offset]);
-    $lesson_id = $stmtL->fetchColumn();
-
-    if (!$lesson_id) {
-        throw new Exception("ไม่พบบทเรียน");
+    $offset = $lessonIndex - 1;
+    $stmtLesson = $conn->prepare("SELECT lessons_id FROM public.lessons WHERE subjects_id = ? ORDER BY lessons_id ASC LIMIT 1 OFFSET ?");
+    $stmtLesson->execute([$subjectId, $offset]);
+    $lessonId = (string) ($stmtLesson->fetchColumn() ?: '');
+    if ($lessonId === '') {
+        throw new Exception('ไม่พบบทเรียน');
     }
 
-    // 2. บันทึก "คะแนนรวม" ลงตาราง test 
-    // (ใช้ RETURNING test_id เพื่อให้ฐานข้อมูลรัน ID ให้ และส่งกลับมาให้เราใช้ต่อ)
-    $stmtTest = $conn->prepare("INSERT INTO public.test (student_id, lessons_id, score) VALUES (?, ?, ?) RETURNING test_id");
-    $stmtTest->execute([$student_id, $lesson_id, $score]);
-    $new_test_id = $stmtTest->fetchColumn();
+    $testColumns = tableColumns($conn, 'public', 'test');
+    $testData = [
+        'student_id' => $studentId,
+        'lessons_id' => $lessonId,
+        'subjects_id' => $subjectId,
+        'lesson_no' => $lessonIndex,
+        'score' => $score,
+        'total_score' => $totalScore,
+        'status' => $quizStatus,
+    ];
+    $testId = dynamicInsert($conn, 'test', $testColumns, $testData);
 
-    // 3. ดึง "รหัสคำถาม" ทั้งหมดของบทเรียนนี้มาเรียงให้ตรงกับที่แสดงให้นักเรียนสอบ
-    $stmtQ = $conn->prepare("SELECT questions_id, correct_answer FROM public.test_questions WHERE lessons_id = ? ORDER BY questions_id ASC");
-    $stmtQ->execute([$lesson_id]);
+    $stmtQ = $conn->prepare("SELECT questions_id FROM public.test_questions WHERE lessons_id = ? ORDER BY questions_id ASC");
+    $stmtQ->execute([$lessonId]);
     $questions = $stmtQ->fetchAll(PDO::FETCH_ASSOC);
 
-    // 4. วนลูปบันทึก "คำตอบรายข้อ" ลงตาราง test_answers
-    $stmtAns = $conn->prepare("INSERT INTO public.test_answers (questions_id, test_id, selected_choice) VALUES (?, ?, ?)");
-    
-    // ตัวแปลง index จาก Javascript (0, 1, 2, 3) กลับเป็น A, B, C, D
-    $choice_map = [0 => 'A', 1 => 'B', 2 => 'C', 3 => 'D'];
-    
-    foreach ($questions as $index => $q) {
-        $q_id = $q['questions_id'];
-        $selected_val = '-'; // ค่าเริ่มต้นถ้าไม่ได้ตอบ
-        
-        // เช็คว่านักเรียนตอบข้อนี้ไหม (และต้องไม่เป็น null)
-        if (isset($answers[$index]) && $answers[$index] !== null) {
-            $ans_idx = $answers[$index];
-            
-            if ($q['correct_answer'] === '-') {
-                // สำหรับคำถามอัตนัย (ข้อเขียน) ปัจจุบันในระบบยังเป็น index อยู่ ให้ใส่ - ไว้ก่อน
-                $selected_val = '-'; 
-            } else {
-                // สำหรับคำถามปรนัย (4 ตัวเลือก) และ ถูก/ผิด
-                $selected_val = $choice_map[$ans_idx] ?? '-';
+    $answerColumns = tableColumns($conn, 'public', 'test_answers');
+    $canSaveAnswers = in_array('questions_id', $answerColumns, true) && in_array('selected_choice', $answerColumns, true);
+    $hasTestId = in_array('test_id', $answerColumns, true);
+    $choiceMap = [0 => 'A', 1 => 'B', 2 => 'C', 3 => 'D'];
+
+    if ($canSaveAnswers && $hasTestId && $testId > 0) {
+        $stmtAns = $conn->prepare("INSERT INTO public.test_answers (questions_id, test_id, selected_choice) VALUES (?, ?, ?)");
+        foreach ($questions as $index => $q) {
+            $selected = '-';
+            if (array_key_exists($index, $answers) && $answers[$index] !== null) {
+                $selected = $choiceMap[(int) $answers[$index]] ?? '-';
             }
+            $stmtAns->execute([(int) $q['questions_id'], $testId, $selected]);
         }
-        
-        // ยัดข้อมูลลงตาราง test_answers
-        $stmtAns->execute([$q_id, $new_test_id, $selected_val]);
     }
 
-    // 5. บันทึกลงตาราง Learning Records เพื่อปลดล็อกบทถัดไป (สมมติระบบของคุณมี)
-    $stmtRecord = $conn->prepare("INSERT INTO public.learning_records (student_id, lessons_id, activity_type) VALUES (?, ?, 'quiz_passed') ON CONFLICT DO NOTHING");
-    $stmtRecord->execute([$student_id, $lesson_id]);
+    if ($quizStatus === 'pass') {
+        $stmtRecord = $conn->prepare("INSERT INTO public.learning_records (student_id, lessons_id, activity_type) VALUES (?, ?, 'quiz_passed') ON CONFLICT DO NOTHING");
+        $stmtRecord->execute([$studentId, $lessonId]);
+    }
 
-    // ยืนยันการบันทึกข้อมูลทั้งหมด
     $conn->commit();
-
-    // คำนวณว่าผ่านเกณฑ์ไหม (สมมติผ่านที่ 60%)
-    $required_score = ceil($total_score * 0.6);
-    $status = ($score >= $required_score) ? 'pass' : 'fail';
-
-    echo json_encode(['status' => 'success', 'quiz_status' => $status, 'message' => 'บันทึกคำตอบสำเร็จ!']);
-
-} catch(Exception $e) {
-    // ถ้าพังให้ย้อนกลับการบันทึกทั้งหมด
-    $conn->rollBack();
-    echo json_encode(['status' => 'error', 'message' => 'DB Error: ' . $e->getMessage()]);
+    out([
+        'status' => 'success',
+        'quiz_status' => $quizStatus,
+        'score' => $score,
+        'total_score' => $totalScore,
+        'required_score' => $requiredScore,
+        'message' => 'บันทึกคำตอบสำเร็จ!'
+    ]);
+} catch (Throwable $e) {
+    if ($conn->inTransaction()) {
+        $conn->rollBack();
+    }
+    out(['status' => 'error', 'message' => 'DB Error: ' . $e->getMessage()], 500);
 }
 ?>

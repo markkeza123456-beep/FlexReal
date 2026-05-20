@@ -1,4 +1,4 @@
-const params = new URLSearchParams(window.location.search);
+﻿const params = new URLSearchParams(window.location.search);
 const courseName = params.get('course') || 'รายวิชา';
 const subjectId = params.get('subject_id') || '';
 const lessonIndex = Math.max(1, Number(params.get('lesson') || 1));
