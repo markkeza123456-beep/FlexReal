@@ -41,7 +41,7 @@ try {
 
 // 1. ดึงข้อมูลอาจารย์
 $teacherStmt = $conn->prepare('
-    SELECT Teachers_ID, Teachers_Name 
+    SELECT Teachers_ID, Teachers_Name, tel
     FROM public.teachers 
     WHERE Teachers_ID = :teacher_id LIMIT 1
 ');
@@ -811,7 +811,376 @@ $stats = [
             </div>
         </div>
     </div>
+
+    <!-- ══ VIEW: SETTINGS (ข้อมูลส่วนตัวอาจารย์) ══ -->
+    <div id="view-settings" class="page-view" style="display:none">
+        <header class="topbar">
+            <div class="topbar-left">
+                <h1 class="page-title">ข้อมูลส่วนตัว</h1>
+                <span class="page-sub">จัดการโปรไฟล์และการตั้งค่าของคุณ</span>
+            </div>
+        </header>
+
+        <div style="display:flex;flex-direction:column;gap:20px;max-width:620px;">
+
+            <!-- ═ ส่วนโปรไฟล์ ═ -->
+            <div class="card" style="padding:28px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:22px;">
+                    <span style="font-size:16px;">👤</span>
+                    <h3 style="color:#fff;font-size:15px;font-weight:600;">โปรไฟล์</h3>
+                </div>
+
+                <!-- รูปโปรไฟล์ -->
+                <div style="display:flex;align-items:center;gap:20px;margin-bottom:24px;">
+                    <div style="position:relative;width:80px;height:80px;flex-shrink:0;">
+                        <div id="settingsAvatarWrap" style="width:80px;height:80px;border-radius:50%;background:var(--bg3);border:2px solid var(--orange);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--orange);">
+                            <?php if (!empty($teacher['avatar_url'])): ?>
+                                <img src="<?= h($teacher['avatar_url']) ?>" style="width:100%;height:100%;object-fit:cover;" id="settingsAvatarImg">
+                            <?php else: ?>
+                                <span id="settingsAvatarInitial"><?= h($teacher['avatar']) ?></span>
+                            <?php endif; ?>
+                        </div>
+                        <button onclick="document.getElementById('avatarFileInput').click()" style="position:absolute;bottom:0;right:0;width:26px;height:26px;border-radius:50%;background:var(--orange);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;" title="เปลี่ยนรูป">✏️</button>
+                        <input type="file" id="avatarFileInput" accept="image/*" style="display:none">
+                    </div>
+                    <div>
+                        <div style="font-size:17px;font-weight:700;color:#fff;"><?= h($teacher['name']) ?></div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">อาจารย์ผู้สอน</div>
+                        <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">คลิกที่รูปเพื่อเปลี่ยน</div>
+                    </div>
+                </div>
+
+                <!-- ฟอร์มข้อมูลส่วนตัว -->
+                <div style="display:flex;flex-direction:column;gap:14px;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            <label style="font-size:12px;color:var(--text-muted);font-weight:500;">รหัสอาจารย์</label>
+                            <div style="background:var(--bg3);padding:11px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;color:var(--orange);font-size:13px;">
+                                <?= h($teacher['id']) ?>
+                            </div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            <label style="font-size:12px;color:var(--text-muted);font-weight:500;">เบอร์โทรศัพท์</label>
+                            <div style="background:var(--bg3);padding:11px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);color:var(--text-dim);font-size:13px;">
+                                <?= h($teacherRow['tel'] ?? '-') ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <label style="font-size:12px;color:var(--text-muted);font-weight:500;">ชื่อ-นามสกุล</label>
+                        <input type="text" id="settingsName" class="form-input" value="<?= h($teacher['name']) ?>" placeholder="ชื่อ-นามสกุล" style="font-size:13px;">
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <label style="font-size:12px;color:var(--text-muted);font-weight:500;">วิชาที่สอน</label>
+                        <div style="background:var(--bg3);padding:11px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);color:var(--text-dim);font-size:13px;">
+                            <?= h($teacher['subject']) ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="profileMsg" style="display:none;margin-top:14px;padding:10px 14px;border-radius:6px;font-size:13px;"></div>
+
+                <button onclick="saveTeacherProfile()" style="margin-top:18px;width:100%;padding:12px;background:var(--orange);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Kanit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+                    💾 บันทึกข้อมูล
+                </button>
+            </div>
+
+            <!-- ═ ส่วนเปลี่ยนรหัสผ่าน ═ -->
+            <div class="card" style="padding:28px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:22px;">
+                    <span style="font-size:16px;">🔒</span>
+                    <h3 style="color:#fff;font-size:15px;font-weight:600;">เปลี่ยนรหัสผ่าน</h3>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:14px;">
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <label style="font-size:12px;color:var(--text-muted);font-weight:500;">รหัสผ่านปัจจุบัน</label>
+                        <input type="password" id="currentPassword" class="form-input" placeholder="ใส่รหัสผ่านปัจจุบัน" style="font-size:13px;">
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <label style="font-size:12px;color:var(--text-muted);font-weight:500;">รหัสผ่านใหม่</label>
+                        <input type="password" id="newPassword" class="form-input" placeholder="อย่างน้อย 6 ตัวอักษร" style="font-size:13px;">
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <label style="font-size:12px;color:var(--text-muted);font-weight:500;">ยืนยันรหัสผ่านใหม่</label>
+                        <input type="password" id="confirmPassword" class="form-input" placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง" style="font-size:13px;">
+                    </div>
+                </div>
+
+                <div id="passwordMsg" style="display:none;margin-top:14px;padding:10px 14px;border-radius:6px;font-size:13px;"></div>
+
+                <button onclick="saveTeacherPassword()" style="margin-top:18px;width:100%;padding:12px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Kanit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--orange)';this.style.color='var(--orange)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+                    🔑 เปลี่ยนรหัสผ่าน
+                </button>
+            </div>
+
+        </div>
+    </div>
+
 </main>
+
+<!-- ══ Crop Modal ══ -->
+<div id="cropModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:var(--surface,#1e1e2e);border-radius:16px;padding:24px;width:min(420px,92vw);display:flex;flex-direction:column;gap:16px;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:700;font-size:16px;">✂️ ครอบรูปโปรไฟล์</span>
+            <button id="cropCancelBtn" style="background:none;border:none;color:var(--text-dim,#aaa);font-size:20px;cursor:pointer;line-height:1;">✕</button>
+        </div>
+
+        <!-- Canvas area -->
+        <div style="position:relative;width:100%;aspect-ratio:1;background:#111;border-radius:12px;overflow:hidden;touch-action:none;" id="cropArea">
+            <img id="cropImg" style="position:absolute;transform-origin:0 0;user-select:none;-webkit-user-select:none;max-width:none;">
+            <!-- วงกลม mask -->
+            <div id="cropCircle" style="position:absolute;border:2px dashed rgba(255,165,0,0.9);border-radius:50%;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.5);"></div>
+        </div>
+
+        <!-- Zoom slider -->
+        <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:13px;color:var(--text-dim,#aaa);">🔍</span>
+            <input type="range" id="cropZoom" min="100" max="400" value="100" style="flex:1;accent-color:var(--orange,#f97316);">
+            <span style="font-size:13px;color:var(--text-dim,#aaa);">ซูม</span>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+            <button id="cropCancelBtn2" style="flex:1;padding:10px;border-radius:8px;border:1px solid #444;background:none;color:#ccc;cursor:pointer;font-size:14px;">ยกเลิก</button>
+            <button id="cropConfirmBtn" style="flex:2;padding:10px;border-radius:8px;border:none;background:var(--orange,#f97316);color:#fff;font-weight:700;cursor:pointer;font-size:14px;">✅ ใช้รูปนี้</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ══ Crop System ══
+(function() {
+    const overlay   = document.getElementById('cropModalOverlay');
+    const cropImg   = document.getElementById('cropImg');
+    const cropArea  = document.getElementById('cropArea');
+    const cropCircle= document.getElementById('cropCircle');
+    const zoomSlider= document.getElementById('cropZoom');
+
+    let imgNaturalW = 0, imgNaturalH = 0;
+    let scale = 1, minScale = 1;
+    let posX = 0, posY = 0;
+    let areaSize = 0, circleSize = 0, circleOffset = 0;
+
+    function openCrop(src) {
+        overlay.style.display = 'flex';
+        cropImg.src = src;
+        zoomSlider.value = 100;
+        cropImg.onload = function() {
+            imgNaturalW = cropImg.naturalWidth;
+            imgNaturalH = cropImg.naturalHeight;
+            areaSize    = cropArea.offsetWidth;
+            circleSize  = Math.round(areaSize * 0.82);
+            circleOffset= Math.round((areaSize - circleSize) / 2);
+
+            cropCircle.style.width  = circleSize + 'px';
+            cropCircle.style.height = circleSize + 'px';
+            cropCircle.style.left   = circleOffset + 'px';
+            cropCircle.style.top    = circleOffset + 'px';
+
+            // scale ให้รูปพอดีกับวงกลมอย่างน้อย
+            minScale = circleSize / Math.min(imgNaturalW, imgNaturalH);
+            scale    = minScale;
+            centerImage();
+        };
+    }
+
+    function centerImage() {
+        const w = imgNaturalW * scale;
+        const h = imgNaturalH * scale;
+        posX = circleOffset + (circleSize - w) / 2;
+        posY = circleOffset + (circleSize - h) / 2;
+        applyTransform();
+    }
+
+    function applyTransform() {
+        cropImg.style.transform = `translate(${posX}px,${posY}px) scale(${scale})`;
+    }
+
+    // Zoom slider
+    zoomSlider.addEventListener('input', function() {
+        const newScale = minScale * (this.value / 100);
+        const cx = circleOffset + circleSize / 2;
+        const cy = circleOffset + circleSize / 2;
+        posX = cx - (cx - posX) * (newScale / scale);
+        posY = cy - (cy - posY) * (newScale / scale);
+        scale = newScale;
+        clamp();
+        applyTransform();
+    });
+
+    // Drag (mouse + touch)
+    let dragging = false, startX = 0, startY = 0, startPosX = 0, startPosY = 0;
+
+    function onDragStart(ex, ey) { dragging=true; startX=ex; startY=ey; startPosX=posX; startPosY=posY; }
+    function onDragMove(ex, ey) {
+        if (!dragging) return;
+        posX = startPosX + (ex - startX);
+        posY = startPosY + (ey - startY);
+        clamp();
+        applyTransform();
+    }
+    function onDragEnd() { dragging = false; }
+
+    cropArea.addEventListener('mousedown',  e => { e.preventDefault(); onDragStart(e.clientX, e.clientY); });
+    window .addEventListener('mousemove',   e => onDragMove(e.clientX, e.clientY));
+    window .addEventListener('mouseup',     onDragEnd);
+    cropArea.addEventListener('touchstart', e => { e.preventDefault(); onDragStart(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+    window .addEventListener('touchmove',   e => onDragMove(e.touches[0].clientX, e.touches[0].clientY), {passive:false});
+    window .addEventListener('touchend',    onDragEnd);
+
+    // Pinch-to-zoom (mobile)
+    let lastDist = 0;
+    cropArea.addEventListener('touchstart', e => { if (e.touches.length === 2) lastDist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); }, {passive:true});
+    cropArea.addEventListener('touchmove', e => {
+        if (e.touches.length !== 2) return;
+        const dist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+        const ratio = dist / lastDist;
+        lastDist = dist;
+        const newScale = Math.max(minScale, Math.min(minScale*4, scale * ratio));
+        const cx = circleOffset + circleSize/2, cy = circleOffset + circleSize/2;
+        posX = cx - (cx-posX)*(newScale/scale);
+        posY = cy - (cy-posY)*(newScale/scale);
+        scale = newScale;
+        zoomSlider.value = Math.round((scale/minScale)*100);
+        clamp(); applyTransform();
+    }, {passive:true});
+
+    function clamp() {
+        const w = imgNaturalW * scale, h = imgNaturalH * scale;
+        const maxX = circleOffset, minX = circleOffset + circleSize - w;
+        const maxY = circleOffset, minY = circleOffset + circleSize - h;
+        posX = Math.min(maxX, Math.max(minX, posX));
+        posY = Math.min(maxY, Math.max(minY, posY));
+    }
+
+    // ── Export วงกลม ──
+    function exportCircle() {
+        const outputSize = 400;
+        const canvas = document.createElement('canvas');
+        canvas.width = outputSize; canvas.height = outputSize;
+        const ctx = canvas.getContext('2d');
+
+        // clip วงกลม
+        ctx.beginPath();
+        ctx.arc(outputSize/2, outputSize/2, outputSize/2, 0, Math.PI*2);
+        ctx.clip();
+
+        // วาดรูปในตำแหน่งที่ crop
+        const ratio = outputSize / circleSize;
+        const drawX = (posX - circleOffset) * ratio;
+        const drawY = (posY - circleOffset) * ratio;
+        const drawW = imgNaturalW * scale * ratio;
+        const drawH = imgNaturalH * scale * ratio;
+        ctx.drawImage(cropImg, drawX, drawY, drawW, drawH);
+
+        return canvas.toDataURL('image/png');
+    }
+
+    // ── Confirm ──
+    document.getElementById('cropConfirmBtn').addEventListener('click', async function() {
+        const btn = this;
+        btn.textContent = '⏳ กำลังอัปโหลด...'; btn.disabled = true;
+        const base64 = exportCircle();
+        overlay.style.display = 'none';
+        showMsg('profileMsg', '⏳ กำลังอัปโหลดรูป...', true);
+        try {
+            const res = await fetch('uploadavatar.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64 })
+            });
+            const data = await res.json();
+            if (data.success) {
+                const newUrl = data.url;
+                ['sidebarAvatarWrap', 'settingsAvatarWrap'].forEach(id => {
+                    const wrap = document.getElementById(id);
+                    if (wrap) wrap.innerHTML = `<img src="${newUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+                });
+                showMsg('profileMsg', '✅ เปลี่ยนรูปโปรไฟล์สำเร็จ!', true);
+            } else {
+                showMsg('profileMsg', '❌ ' + data.message, false);
+            }
+        } catch(err) {
+            showMsg('profileMsg', '❌ เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', false);
+        }
+        btn.textContent = '✅ ใช้รูปนี้'; btn.disabled = false;
+    });
+
+    // ── Cancel ──
+    ['cropCancelBtn','cropCancelBtn2'].forEach(id => {
+        document.getElementById(id).addEventListener('click', () => { overlay.style.display='none'; });
+    });
+
+    // ── เปิด modal เมื่อเลือกไฟล์ ──
+    window._openCrop = openCrop;
+})();
+
+// ══ Settings: อัปโหลดรูปโปรไฟล์ ══
+document.getElementById('avatarFileInput').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert('ไฟล์รูปต้องมีขนาดไม่เกิน 5MB'); return; }
+    const reader = new FileReader();
+    reader.onload = e => window._openCrop(e.target.result);
+    reader.readAsDataURL(file);
+    this.value = ''; // reset input ให้เลือกซ้ำได้
+});
+
+// ══ Settings: บันทึกข้อมูลส่วนตัว ══
+async function saveTeacherProfile() {
+    const formData = new FormData();
+    formData.append('name', document.getElementById('settingsName').value.trim());
+
+    const res = await fetch('update_profile.php', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (data.success) {
+        // อัปเดตชื่อใน sidebar
+        const nameEl = document.querySelector('.profile-name');
+        if (nameEl) nameEl.textContent = document.getElementById('settingsName').value.trim();
+        showMsg('profileMsg', '✅ บันทึกข้อมูลสำเร็จ!', true);
+    } else {
+        showMsg('profileMsg', '❌ ' + data.message, false);
+    }
+}
+
+// ══ Settings: เปลี่ยนรหัสผ่าน ══
+async function saveTeacherPassword() {
+    const current = document.getElementById('currentPassword').value;
+    const newPw   = document.getElementById('newPassword').value;
+    const confirm = document.getElementById('confirmPassword').value;
+
+    if (!current || !newPw || !confirm) { showMsg('passwordMsg', '❌ กรุณากรอกข้อมูลให้ครบ', false); return; }
+    if (newPw.length < 6) { showMsg('passwordMsg', '❌ รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร', false); return; }
+    if (newPw !== confirm) { showMsg('passwordMsg', '❌ รหัสผ่านใหม่ไม่ตรงกัน', false); return; }
+
+    const formData = new FormData();
+    formData.append('pwd_current', current);
+    formData.append('pwd_new', newPw);
+
+    const res = await fetch('update_profile.php', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (data.success) {
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+        showMsg('passwordMsg', '✅ เปลี่ยนรหัสผ่านสำเร็จ!', true);
+    } else {
+        showMsg('passwordMsg', '❌ ' + data.message, false);
+    }
+}
+
+function showMsg(id, msg, success) {
+    const el = document.getElementById(id);
+    el.style.display = 'block';
+    el.style.background = success ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)';
+    el.style.color = success ? '#10b981' : '#ef4444';
+    el.style.border = success ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(239,68,68,0.3)';
+    el.textContent = msg;
+    setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+</script>
 
 <script src="teacherdash.js"></script>
 </body>
