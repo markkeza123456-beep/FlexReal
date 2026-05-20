@@ -98,11 +98,7 @@
             </span>
             <select id="level" name="level">
               <option value="" disabled selected>เลือกระดับชั้น</option>
-              <optgroup label="มัธยมศึกษาตอนปลาย">
-                <option value="m4">มัธยมศึกษาปีที่ 4</option>
-                <option value="m5">มัธยมศึกษาปีที่ 5</option>
-                <option value="m6">มัธยมศึกษาปีที่ 6</option>
-              </optgroup>
+              <option value="ม.ปลาย">ม.ปลาย</option>
             </select>
             <span class="select-arrow">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>

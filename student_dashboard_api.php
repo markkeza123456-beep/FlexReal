@@ -4,6 +4,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/db_connect.php';
 require_once __DIR__ . '/learning_progress_lib.php';
+require_once __DIR__ . '/curriculum_subjects_lib.php';
 
 function dashboardJson(array $payload, int $statusCode = 200): void
 {
@@ -52,20 +53,24 @@ $studentId = (string) $_SESSION['user_id'];
 
 try {
     ensureLearningProgressTables($conn);
+    ensureCurriculumSubjectTypeColumn($conn);
 
     $studentStmt = $conn->prepare(
-        'SELECT student_id, student_name, email, tel,
+        'SELECT student_id, student_name, email, tel, studcurriculums_id,
                 COALESCE(NULLIF(TRIM(student_level), \'\'), NULLIF(TRIM(education_level), \'\'), \'-\') AS class_name
          FROM public.student
          WHERE student_id = :student_id
          LIMIT 1'
     );
+    $studentStmt->execute([':student_id' => $studentId]);
+    $student = $studentStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
     $courseStmt = $conn->prepare(
         'SELECT
             s.subjects_id,
             s.subjects_name,
             s.subjects_description,
+            COALESCE(NULLIF(TRIM(cs.subject_type), \'\'), COALESCE(NULLIF(TRIM(s.subject_type), \'\'), \'elective\')) AS subject_type,
             COUNT(DISTINCT l.lessons_id) AS lesson_count,
             COALESCE(AVG(lp.progress_percent), 0) AS progress_percent,
             COALESCE(MAX(
@@ -77,15 +82,21 @@ try {
             COALESCE(MAX(lp.last_activity_at), NULL) AS last_activity_at
          FROM public.student_subject ss
          INNER JOIN public.subjects s ON s.subjects_id = ss.subjects_id
+         LEFT JOIN public.curriculums_subject cs
+            ON cs.subject_id = s.subjects_id
+           AND cs.curriculums_id = :curriculum_id
          LEFT JOIN public.lessons l ON l.subjects_id = s.subjects_id
          LEFT JOIN public.student_learning_progress lp
             ON lp.student_id = ss.student_id
            AND lp.subjects_id = ss.subjects_id
          WHERE ss.student_id = :student_id
-         GROUP BY s.subjects_id, s.subjects_name, s.subjects_description
+         GROUP BY s.subjects_id, s.subjects_name, s.subjects_description, s.subject_type, cs.subject_type
          ORDER BY s.subjects_name ASC'
     );
-    $courseStmt->execute([':student_id' => $studentId]);
+    $courseStmt->execute([
+        ':student_id' => $studentId,
+        ':curriculum_id' => (string) ($student['studcurriculums_id'] ?? ''),
+    ]);
 
     $courses = [];
     $totalProgress = 0.0;
@@ -98,6 +109,7 @@ try {
             'subject_id' => (string) ($row['subjects_id'] ?? ''),
             'name' => (string) ($row['subjects_name'] ?? 'ไม่ระบุชื่อวิชา'),
             'description' => (string) ($row['subjects_description'] ?? ''),
+            'subject_type' => (string) ($row['subject_type'] ?? 'elective'),
             'lesson_count' => (int) ($row['lesson_count'] ?? 0),
             'progress' => $progress,
             'score' => $score,

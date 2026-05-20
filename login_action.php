@@ -6,6 +6,7 @@ error_reporting(0);
 try {
     require_once __DIR__ . '/db_connect.php';
     require_once __DIR__ . '/account_status_lib.php';
+    require_once __DIR__ . '/curriculum_subjects_lib.php';
 
     ensureUserAccountStatusColumn($conn);
 
@@ -31,6 +32,7 @@ try {
                 'SELECT u.user_id AS user_id,
                         u.password,
                         s.student_name AS name,
+                        s.student_level AS student_level,
                         COALESCE(NULLIF(TRIM(u.account_status), \'\'), \'active\') AS account_status
                  FROM public."User" u
                  LEFT JOIN public.student s ON s.student_id = u.user_id
@@ -125,6 +127,13 @@ try {
     $_SESSION['role'] = $role;
     $_SESSION['name'] = $userData['name'] ?? '';
 
+    if ($role === 'student') {
+        $studentLevel = trim((string) ($userData['student_level'] ?? ''));
+        if ($studentLevel !== '') {
+            assignCurriculumAndEnrollRequiredSubjects($conn, (string) $userData['user_id'], $studentLevel);
+        }
+    }
+
     if ($role === 'parent') {
         $_SESSION['current_student_id'] = $userData['student_id'] ?? null;
     }
@@ -133,7 +142,7 @@ try {
         $returnUrl = (string) $_SESSION['after_login_return'];
         unset($_SESSION['after_login_return']);
 
-        if (preg_match('/^web\.html\?course=/', $returnUrl)) {
+        if (preg_match('/^web\.html(?:\?.*)?$/', $returnUrl)) {
             $redirectUrl = $returnUrl;
         }
     }

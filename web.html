@@ -63,14 +63,30 @@
     </div>
 
     <div class="container">
-        <h2 class="section-title">รายวิชาแนะนำ</h2>
-        
-        <!-- เปลี่ยน id เป็น course-grid เพื่อให้ JS รู้ว่าจะเอาข้อมูลมาใส่ตรงไหน -->
-        <div class="grid" id="course-grid">
-            <!-- การ์ดวิชาจะถูกสร้างตรงนี้อัตโนมัติด้วย JavaScript -->
-            <p style="text-align: center; color: gray;">กำลังโหลดข้อมูลวิชา...</p>
+        <div id="public-course-section">
+            <h2 class="section-title">รายวิชาทั้งหมด</h2>
+            <div class="grid" id="course-grid">
+                <p style="text-align: center; color: gray;">กำลังโหลดข้อมูลวิชา...</p>
+            </div>
         </div>
-        
+
+        <div id="student-course-sections" style="display:none;">
+            <div class="course-section-block">
+                <div class="section-head-row">
+                    <h2 class="section-title">วิชาที่เรียน</h2>
+                    <p class="section-subtitle">วิชาที่หลักสูตรกำหนดให้เรียนและวิชาที่คุณลงทะเบียนแล้ว</p>
+                </div>
+                <div class="grid" id="required-course-grid"></div>
+            </div>
+
+            <div class="course-section-block">
+                <div class="section-head-row">
+                    <h2 class="section-title">วิชาเลือก</h2>
+                    <p class="section-subtitle">เลือกลงทะเบียนเพิ่มได้ด้วยตนเอง</p>
+                </div>
+                <div class="grid" id="elective-course-grid"></div>
+            </div>
+        </div>
     </div>
 
         

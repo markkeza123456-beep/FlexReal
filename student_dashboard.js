@@ -55,6 +55,12 @@ function statusLabel(score) {
     return map[statusClass(score)] || 'เริ่มต้น';
 }
 
+function subjectTypeBadge(subjectType) {
+    const type = String(subjectType || 'elective').toLowerCase();
+    const label = type === 'required' ? 'วิชาบังคับ' : 'วิชาเลือก';
+    return '<span class="subject-type-badge ' + type + '">' + label + '</span>';
+}
+
 function renderTable(courses) {
     const tbody = document.getElementById('courseTableBody');
     if (!courses.length) {
@@ -69,7 +75,7 @@ function renderTable(courses) {
     tbody.innerHTML = courses.map((item) => `
         <tr>
             <td style="color: #888;">${item.id}</td>
-            <td>${item.name}</td>
+            <td>${item.name} ${subjectTypeBadge(item.subject_type)}</td>
             <td>${Number(item.progress).toFixed(1)}%</td>
             <td>${Number(item.score).toFixed(1)}%</td>
             <td><span class="status-label ${item.class}">${item.status}</span></td>
@@ -86,7 +92,7 @@ function renderLessons(courses) {
 
     container.innerHTML = courses.map((course) => `
         <div class="lesson-card">
-            <h3>${course.name}</h3>
+            <div class="lesson-card-head"><h3>${course.name}</h3>${subjectTypeBadge(course.subject_type)}</div>
             <div class="progress-bar-bg">
                 <div class="progress-bar-fill" style="width: ${course.progress}%"></div>
             </div>

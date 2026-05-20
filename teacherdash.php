@@ -127,9 +127,16 @@ $studentStmt = $conn->prepare("
               AND s3.Teachers_ID = :teacher_id
         ) AS subject_ids,
         (
-            SELECT COALESCE(AVG(t.Score), 0)
-            FROM public.test t
-            WHERE t.Student_ID = st.Student_ID
+            SELECT COALESCE(AVG(
+                CASE
+                    WHEN lp.quiz_total_score > 0 THEN (lp.best_quiz_score::numeric / lp.quiz_total_score) * 100
+                    ELSE 0
+                END
+            ), 0)
+            FROM public.student_learning_progress lp
+            INNER JOIN public.subjects s ON s.subjects_id = lp.subjects_id
+            WHERE lp.student_id = st.Student_ID
+              AND s.teachers_id = :teacher_id
         ) AS real_score,
         (
             SELECT COUNT(DISTINCT l.Lessons_ID)
@@ -140,20 +147,22 @@ $studentStmt = $conn->prepare("
               AND ss.Student_ID = st.Student_ID
         ) AS total_lessons,
         (
-            SELECT COUNT(DISTINCT lr.Lessons_ID)
-            FROM public.learning_records lr
-            INNER JOIN public.lessons l ON lr.Lessons_ID = l.Lessons_ID
-            INNER JOIN public.subjects s ON l.Subjects_ID = s.Subjects_ID
-            WHERE lr.Student_ID = st.Student_ID
+            SELECT COUNT(*)
+            FROM public.student_learning_progress lp
+            INNER JOIN public.subjects s ON s.subjects_id = lp.subjects_id
+            WHERE lp.student_id = st.Student_ID
               AND s.Teachers_ID = :teacher_id
+              AND lp.quiz_total_score > 0
+              AND (lp.best_quiz_score::numeric / NULLIF(lp.quiz_total_score, 0)) >= 0.6
         ) AS completed_lessons,
         (
-            SELECT STRING_AGG(DISTINCT l.Lessons_Name, '||')
-            FROM public.learning_records lr
-            INNER JOIN public.lessons l ON lr.Lessons_ID = l.Lessons_ID
-            INNER JOIN public.subjects s ON l.Subjects_ID = s.Subjects_ID
-            WHERE lr.Student_ID = st.Student_ID
+            SELECT STRING_AGG(DISTINCT COALESCE(NULLIF(TRIM(lp.lesson_title), ''), ('บทที่ ' || lp.lesson_index::text)), '||')
+            FROM public.student_learning_progress lp
+            INNER JOIN public.subjects s ON s.subjects_id = lp.subjects_id
+            WHERE lp.student_id = st.Student_ID
               AND s.Teachers_ID = :teacher_id
+              AND lp.quiz_total_score > 0
+              AND (lp.best_quiz_score::numeric / NULLIF(lp.quiz_total_score, 0)) >= 0.6
         ) AS completed_lesson_names
     FROM public.student st
     WHERE EXISTS (
