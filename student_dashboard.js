@@ -55,12 +55,6 @@ function statusLabel(score) {
     return map[statusClass(score)] || 'เริ่มต้น';
 }
 
-function subjectTypeBadge(subjectType) {
-    const type = String(subjectType || 'elective').toLowerCase();
-    const label = type === 'required' ? 'วิชาบังคับ' : 'วิชาเลือก';
-    return '<span class="subject-type-badge ' + type + '">' + label + '</span>';
-}
-
 function renderTable(courses) {
     const tbody = document.getElementById('courseTableBody');
     if (!courses.length) {
@@ -75,7 +69,7 @@ function renderTable(courses) {
     tbody.innerHTML = courses.map((item) => `
         <tr>
             <td style="color: #888;">${item.id}</td>
-            <td>${item.name} ${subjectTypeBadge(item.subject_type)}</td>
+            <td>${item.name}</td>
             <td>${Number(item.progress).toFixed(1)}%</td>
             <td>${Number(item.score).toFixed(1)}%</td>
             <td><span class="status-label ${item.class}">${item.status}</span></td>
@@ -92,7 +86,7 @@ function renderLessons(courses) {
 
     container.innerHTML = courses.map((course) => `
         <div class="lesson-card">
-            <div class="lesson-card-head"><h3>${course.name}</h3>${subjectTypeBadge(course.subject_type)}</div>
+            <h3>${course.name}</h3>
             <div class="progress-bar-bg">
                 <div class="progress-bar-fill" style="width: ${course.progress}%"></div>
             </div>
@@ -149,8 +143,6 @@ function updateProfile(student) {
     setText('dashboardWelcome', `ยินดีต้อนรับกลับมา, ${name} 👋`);
     setText('sidebarName', name);
     setText('displayName', name);
-    setText('sidebarAvatar', firstChar);
-    setText('avatarInitial', firstChar);
     setValue('profileName', name);
     setValue('profileEmail', student.email || '');
     setValue('profilePhone', student.phone || '');
@@ -165,6 +157,37 @@ function updateProfile(student) {
             el.textContent = 'นักเรียน - ' + className;
         }
     });
+
+    // โหลดรูป avatar จาก Supabase (ถ้ายังไม่มีรูปจะ 404 → fallback ตัวอักษร)
+    const avatarUrl = student.avatar_url || null;
+    const avatarImg     = document.getElementById('avatarImg');
+    const avatarInitial = document.getElementById('avatarInitial');
+    const sidebarAvatar = document.getElementById('sidebarAvatar');
+
+    if (avatarUrl && !_cropAvatarDataURL) {
+        const src = avatarUrl + '&cb=' + Date.now();
+        const testImg = new Image();
+        testImg.onload = () => {
+            // รูปมีจริง → แสดง
+            if (avatarImg)     { avatarImg.src = src; avatarImg.style.display = 'block'; }
+            if (avatarInitial) { avatarInitial.style.display = 'none'; }
+            if (sidebarAvatar) {
+                sidebarAvatar.innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+            }
+        };
+        testImg.onerror = () => {
+            // รูปไม่มี (404) → แสดงตัวอักษรแรก
+            if (avatarImg)     { avatarImg.style.display = 'none'; }
+            if (avatarInitial) { avatarInitial.style.display = 'block'; avatarInitial.textContent = firstChar; }
+            if (sidebarAvatar) { sidebarAvatar.textContent = firstChar; }
+        };
+        testImg.src = src;
+    } else if (!_cropAvatarDataURL) {
+        // ไม่มี URL → แสดงตัวอักษรแรก
+        if (avatarImg)     { avatarImg.style.display = 'none'; }
+        if (avatarInitial) { avatarInitial.style.display = 'block'; avatarInitial.textContent = firstChar; }
+        if (sidebarAvatar) { sidebarAvatar.textContent = firstChar; }
+    }
 }
 
 function updateStats(stats, courses) {
@@ -436,7 +459,11 @@ function _cropConfirm() {
     _cropClose();
 }
 
+let _cropAvatarDataURL = null;   // เก็บ base64 รูปที่ crop ไว้รอบันทึก
+
 function _cropApplyAvatar(dataURL) {
+    _cropAvatarDataURL = dataURL;  // เก็บไว้ให้ saveProfile ส่งไป server
+
     const avatarImg     = document.getElementById('avatarImg');
     const avatarInitial = document.getElementById('avatarInitial');
     if (avatarImg)     { avatarImg.src = dataURL; avatarImg.style.display = 'block'; }
@@ -561,15 +588,22 @@ function saveProfile() {
     body.append('email',       document.getElementById('profileEmail')?.value.trim() ?? '');
     body.append('phone',       document.getElementById('profilePhone')?.value.trim() ?? '');
     body.append('pwd_current', current);
-    body.append('pwd_new', newPwd);
+    body.append('pwd_new',     newPwd);
+    if (_cropAvatarDataURL) {
+        body.append('avatar_base64', _cropAvatarDataURL);
+    }
 
     fetch('update_student_profile.php', { method: 'POST', body })
         .then(r => r.json())
         .then(data => {
             if (data.success) {
                 showFeedback('success', data.message);
+                _cropAvatarDataURL = null;  // ล้างหลังบันทึกสำเร็จ
                 if (dashboardState.student) {
                     dashboardState.student.name = name;
+                    if (data.avatar_url) {
+                        dashboardState.student.avatar_url = data.avatar_url;
+                    }
                     updateProfile(dashboardState.student);
                 }
             } else {

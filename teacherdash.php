@@ -139,6 +139,13 @@ $studentStmt = $conn->prepare("
               AND s.teachers_id = :teacher_id
         ) AS real_score,
         (
+            SELECT COALESCE(AVG(lp.progress_percent), 0)
+            FROM public.student_learning_progress lp
+            INNER JOIN public.subjects s ON s.subjects_id = lp.subjects_id
+            WHERE lp.student_id = st.Student_ID
+              AND s.teachers_id = :teacher_id
+        ) AS avg_progress_pct,
+        (
             SELECT COUNT(DISTINCT l.Lessons_ID)
             FROM public.lessons l
             INNER JOIN public.subjects s ON s.Subjects_ID = l.Subjects_ID
@@ -152,8 +159,7 @@ $studentStmt = $conn->prepare("
             INNER JOIN public.subjects s ON s.subjects_id = lp.subjects_id
             WHERE lp.student_id = st.Student_ID
               AND s.Teachers_ID = :teacher_id
-              AND lp.quiz_total_score > 0
-              AND (lp.best_quiz_score::numeric / NULLIF(lp.quiz_total_score, 0)) >= 0.6
+              AND lp.progress_percent > 0
         ) AS completed_lessons,
         (
             SELECT STRING_AGG(DISTINCT COALESCE(NULLIF(TRIM(lp.lesson_title), ''), ('บทที่ ' || lp.lesson_index::text)), '||')
@@ -161,8 +167,7 @@ $studentStmt = $conn->prepare("
             INNER JOIN public.subjects s ON s.subjects_id = lp.subjects_id
             WHERE lp.student_id = st.Student_ID
               AND s.Teachers_ID = :teacher_id
-              AND lp.quiz_total_score > 0
-              AND (lp.best_quiz_score::numeric / NULLIF(lp.quiz_total_score, 0)) >= 0.6
+              AND lp.progress_percent > 0
         ) AS completed_lesson_names
     FROM public.student st
     WHERE EXISTS (
@@ -184,7 +189,7 @@ foreach ($studentStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     
     $totalLessons = (int) $row['total_lessons'];
     $completedLessons = (int) $row['completed_lessons'];
-    $progressPct = $totalLessons > 0 ? round(($completedLessons / $totalLessons) * 100) : 0;
+    $progressPct = round((float) ($row['avg_progress_pct'] ?? 0), 1);
     
     $completedNames = $row['completed_lesson_names'] ? explode('||', $row['completed_lesson_names']) : [];
 
