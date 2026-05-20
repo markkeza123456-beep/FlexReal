@@ -5,6 +5,9 @@ error_reporting(0);
 
 try {
     require_once __DIR__ . '/db_connect.php';
+    require_once __DIR__ . '/account_status_lib.php';
+
+    ensureUserAccountStatusColumn($conn);
 
     $role = trim((string) ($_POST['role'] ?? ''));
     $rawLogin = trim((string) ($_POST['email'] ?? ''));
@@ -25,11 +28,14 @@ try {
     switch ($role) {
         case 'student':
             $stmt = $conn->prepare(
-                "SELECT u.user_id AS user_id, u.password, s.student_name AS name
-                 FROM public.\"User\" u
+                'SELECT u.user_id AS user_id,
+                        u.password,
+                        s.student_name AS name,
+                        COALESCE(NULLIF(TRIM(u.account_status), \'\'), \'active\') AS account_status
+                 FROM public."User" u
                  LEFT JOIN public.student s ON s.student_id = u.user_id
                  WHERE u.user_id = :id
-                   AND LOWER(u.status) = 'student'"
+                   AND LOWER(u.status) = \'student\''
             );
             $stmt->execute([':id' => $loginId]);
             $userData = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -38,23 +44,30 @@ try {
         case 'parent':
             $redirectUrl = 'parent_dashboard.php';
             $stmt = $conn->prepare(
-                "SELECT p.parents_id AS user_id, p.password, p.parents_name AS name, s.student_id
+                'SELECT p.parents_id AS user_id,
+                        p.password,
+                        p.parents_name AS name,
+                        s.student_id,
+                        COALESCE(NULLIF(TRIM(u.account_status), \'\'), \'active\') AS account_status
                  FROM public.parents p
+                 LEFT JOIN public."User" u ON u.user_id = p.parents_id
                  LEFT JOIN public.student s ON p.parents_id = s.parent_id
-                 WHERE p.parents_id = :id"
+                 WHERE p.parents_id = :id'
             );
             $stmt->execute([':id' => $loginId]);
             $userData = $stmt->fetch(PDO::FETCH_ASSOC);
             break;
 
-        
-            case 'teacher':
-            $redirectUrl = 'teacher_dashboard.php'; // ← เปลี่ยนเป็น
-            $redirectUrl = 'teacherdash.php';        // ← ชื่อไฟล์ที่ทำไว้
+        case 'teacher':
+            $redirectUrl = 'teacherdash.php';
             $stmt = $conn->prepare(
-                "SELECT teachers_id AS user_id, password, teachers_name AS name
-                 FROM public.teachers
-                 WHERE teachers_id = :id"
+                'SELECT t.teachers_id AS user_id,
+                        t.password,
+                        t.teachers_name AS name,
+                        COALESCE(NULLIF(TRIM(u.account_status), \'\'), \'active\') AS account_status
+                 FROM public.teachers t
+                 LEFT JOIN public."User" u ON u.user_id = t.teachers_id
+                 WHERE t.teachers_id = :id'
             );
             $stmt->execute([':id' => $loginId]);
             $userData = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -63,13 +76,14 @@ try {
         case 'staff':
             $redirectUrl = 'staffdash.php';
             $stmt = $conn->prepare(
-                "SELECT u.user_id AS user_id,
+                'SELECT u.user_id AS user_id,
                         u.password,
-                        COALESCE(NULLIF(TRIM(CONCAT(s.firstname, ' ', s.lastname)), ''), u.user_id) AS name
-                 FROM public.\"User\" u
+                        COALESCE(NULLIF(TRIM(CONCAT(s.firstname, \' \', s.lastname)), \'\'), u.user_id) AS name,
+                        COALESCE(NULLIF(TRIM(u.account_status), \'\'), \'active\') AS account_status
+                 FROM public."User" u
                  LEFT JOIN public.staff s ON s.user_id = u.user_id
                  WHERE u.user_id = :id
-                   AND LOWER(u.status) = 'staff'"
+                   AND LOWER(u.status) = \'staff\''
             );
             $stmt->execute([':id' => $loginId]);
             $userData = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -95,6 +109,14 @@ try {
         echo json_encode([
             'status' => 'error',
             'message' => 'ข้อมูลไม่ถูกต้อง',
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if (normalizeAccountStatus($userData['account_status'] ?? 'active') === 'inactive') {
+        echo json_encode([
+            'status' => 'error',
+            'message' => suspendedAccountMessage(),
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }

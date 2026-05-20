@@ -2,6 +2,7 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/account_status_lib.php';
 
 function fetchAllRows(PDOStatement $statement): array {
     return $statement->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -17,6 +18,18 @@ function postValue(string $key, $default = '') {
     return isset($_POST[$key]) ? trim((string) $_POST[$key]) : $default;
 }
 
+function normalizeRoleValue(string $role): string {
+    $map = [
+        'student' => 'Student',
+        'teacher' => 'Teacher',
+        'parent' => 'Parent',
+        'staff' => 'Staff',
+    ];
+
+    $key = strtolower(trim($role));
+    return $map[$key] ?? 'Student';
+}
+
 if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? '')) !== 'staff') {
     jsonResponse([
         'status' => 'error',
@@ -27,6 +40,8 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 try {
+    ensureUserAccountStatusColumn($conn);
+
     switch ($action) {
         case 'getAllData':
             // 💥 แก้ไขแล้ว: ดึงข้อมูลชื่อและอีเมลจากทุกกลุ่มผู้ใช้งาน (Student, Teacher, Parent, Staff)
@@ -34,7 +49,7 @@ try {
                 SELECT 
                     u.user_id as id,
                     u.status as role,
-                    \'active\' as status_account,
+                    COALESCE(NULLIF(TRIM(u.account_status), \'\'), \'active\') as status_account,
                     CASE 
                         WHEN u.status = \'Student\' THEN COALESCE(s.student_name, \'-\')
                         WHEN u.status = \'Teacher\' THEN COALESCE(t.teachers_name, \'-\')
@@ -119,8 +134,45 @@ try {
 
         case 'saveMember':
             $memberId = $_POST['id'] ?? '';
-            $role = postValue('role', 'Student');
-            $conn->prepare('UPDATE public."User" SET status = :role WHERE user_id = :id')->execute([':role' => $role, ':id' => $memberId]);
+            $role = normalizeRoleValue(postValue('role', 'student'));
+            $accountStatus = normalizeAccountStatus(postValue('status', 'active'));
+            $firstname = postValue('firstname');
+            $lastname = postValue('lastname');
+            $email = postValue('email');
+            $fullName = trim($firstname . ' ' . $lastname);
+
+            $conn->beginTransaction();
+
+            $conn->prepare('UPDATE public."User" SET status = :role, account_status = :account_status WHERE user_id = :id')->execute([
+                ':role' => $role,
+                ':account_status' => $accountStatus,
+                ':id' => $memberId,
+            ]);
+
+            if ($fullName !== '') {
+                $conn->prepare('UPDATE public.student SET student_name = :name WHERE student_id = :id')
+                    ->execute([':name' => $fullName, ':id' => $memberId]);
+                $conn->prepare('UPDATE public.teachers SET teachers_name = :name WHERE teachers_id = :id')
+                    ->execute([':name' => $fullName, ':id' => $memberId]);
+                $conn->prepare('UPDATE public.parents SET parents_name = :name WHERE parents_id = :id')
+                    ->execute([':name' => $fullName, ':id' => $memberId]);
+            }
+
+            $conn->prepare('UPDATE public.staff SET firstname = :firstname, lastname = :lastname WHERE user_id = :id')
+                ->execute([
+                    ':firstname' => $firstname,
+                    ':lastname' => $lastname,
+                    ':id' => $memberId,
+                ]);
+
+            $conn->prepare('UPDATE public.student SET email = :email WHERE student_id = :id')
+                ->execute([':email' => $email, ':id' => $memberId]);
+            $conn->prepare('UPDATE public.teachers SET email = :email WHERE teachers_id = :id')
+                ->execute([':email' => $email, ':id' => $memberId]);
+            $conn->prepare('UPDATE public.parents SET email = :email WHERE parents_id = :id')
+                ->execute([':email' => $email, ':id' => $memberId]);
+
+            $conn->commit();
             jsonResponse(['status' => 'success']);
             break;
 
@@ -134,5 +186,8 @@ try {
             jsonResponse(['status' => 'error', 'message' => 'Invalid action'], 400);
     }
 } catch (Throwable $exception) {
+    if ($conn instanceof PDO && $conn->inTransaction()) {
+        $conn->rollBack();
+    }
     jsonResponse(['status' => 'error', 'message' => 'DB Error: ' . $exception->getMessage()], 500);
 }

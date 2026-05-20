@@ -33,10 +33,10 @@
                 <span>🚪</span> ออกจากระบบ
             </a>
             <div class="user-profile" id="btn-settings" title="แก้ไขโปรไฟล์">
-                <div class="avatar" id="sidebarAvatar">S</div>
+                <div class="avatar" id="sidebarAvatar">-</div>
                 <div class="user-info">
-                    <p class="name" id="sidebarName">สมชาย ตั้งใจเรียน</p>
-                    <p class="role">นักเรียน - ม.5/1</p>
+                    <p class="name" id="sidebarName">กำลังโหลด...</p>
+                    <p class="role" id="sidebarRole">-</p>
                 </div>
                 <span style="margin-left:auto;font-size:0.8rem;color:var(--accent-orange);">⚙️</span>
             </div>
@@ -50,7 +50,7 @@
                 <header class="header">
                     <div class="welcome">
                         <h1>แดชบอร์ด</h1>
-                        <p id="dashboardWelcome">ยินดีต้อนรับกลับมา 👋</p>
+                        <p id="dashboardWelcome">กำลังโหลดข้อมูลผู้ใช้...</p>
                     </div>
                     <div class="notif-icon">🔔</div>
                 </header>
@@ -142,14 +142,14 @@
                             <div class="avatar-picker" onclick="document.getElementById('avatarInput').click()" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
                                 <div class="avatar-large" id="avatarDisplay">
                                     <img id="avatarImg" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%">
-                                    <span id="avatarInitial">S</span>
+                                    <span id="avatarInitial">-</span>
                                 </div>
                                 <div class="avatar-edit-badge">&#9999;&#65039;</div>
                                 <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="previewAvatar(this)">
                             </div>
                             <div class="avatar-info">
-                                <div class="avatar-name" id="displayName">สมชาย ตั้งใจเรียน</div>
-                                <div class="avatar-role">นักเรียน &#183; ม.5/1</div>
+                                <div class="avatar-name" id="displayName">กำลังโหลด...</div>
+                                <div class="avatar-role" id="profileRole">-</div>
                                 <div class="avatar-hint">คลิกที่รูปเพื่อเปลี่ยน</div>
                             </div>
                         </div>
@@ -157,15 +157,15 @@
                         <div class="settings-form">
                             <div class="settings-field">
                                 <label class="settings-label">ชื่อ-นามสกุล</label>
-                                <input type="text" class="settings-input" id="profileName" value="สมชาย ตั้งใจเรียน">
+                                <input type="text" class="settings-input" id="profileName" value="">
                             </div>
                             <div class="settings-field">
                                 <label class="settings-label">อีเมล</label>
-                                <input type="email" class="settings-input" id="profileEmail" value="somchai@student.school.ac.th">
+                                <input type="email" class="settings-input" id="profileEmail" value="">
                             </div>
                             <div class="settings-field">
                                 <label class="settings-label">ชั้นเรียน</label>
-                                <input type="text" class="settings-input" value="ม.5/1" readonly style="opacity:.5;cursor:not-allowed">
+                                <input type="text" class="settings-input" id="profileClass" value="-" readonly style="opacity:.5;cursor:not-allowed">
                             </div>
                             <div class="settings-field">
                                 <label class="settings-label">เบอร์โทรศัพท์</label>
