@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
@@ -60,8 +60,6 @@ try {
          WHERE student_id = :student_id
          LIMIT 1'
     );
-    $studentStmt->execute([':student_id' => $studentId]);
-    $student = $studentStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
     $courseStmt = $conn->prepare(
         'SELECT

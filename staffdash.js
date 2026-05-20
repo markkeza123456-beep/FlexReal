@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   let curricula = [];
   let subjects = [];
   let members = [];
@@ -71,6 +71,38 @@
     return result;
   }
 
+  function splitMemberName(fullName) {
+    const cleaned = String(fullName || '').trim();
+    if (!cleaned || cleaned === '-') {
+      return { firstname: '', lastname: '' };
+    }
+
+    const parts = cleaned.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) {
+      return { firstname: parts[0], lastname: '' };
+    }
+
+    return {
+      firstname: parts[0],
+      lastname: parts.slice(1).join(' '),
+    };
+  }
+
+  function normalizeMember(member) {
+    const nameParts = splitMemberName(member.name);
+
+    return {
+      ...member,
+      name: member.name || '-',
+      firstname: member.firstname ?? nameParts.firstname,
+      lastname: member.lastname ?? nameParts.lastname,
+      email: member.email && member.email !== '-' ? member.email : '',
+      role: String(member.role || ''),
+      roleValue: String(member.role || '').toLowerCase(),
+      status: String(member.status || member.status_account || 'active').toLowerCase(),
+    };
+  }
+
   window.goTo = function goTo(page) {
     if (!document.getElementById(`page-${page}`)) {
       page = 'dashboard';
@@ -124,7 +156,7 @@
       const data = await fetchJson('api_staff.php?action=getAllData');
       curricula = data.curricula || [];
       subjects = data.subjects || [];
-      members = data.members || [];
+      members = (data.members || []).map(normalizeMember);
       updateDashStats();
 
       if (currentPage === 'curriculum-list') {
@@ -166,9 +198,9 @@
       ? members.map(member => `
         <tr>
           <td>${member.name}</td>
-          <td style="color:var(--text-secondary)">${member.email}</td>
+          <td style="color:var(--text-secondary)">${member.email || '-'}</td>
           <td><span class="badge ${member.role === 'Staff' ? 'required' : 'draft'}">${roleName[member.role] || member.role}</span></td>
-          <td><span class="badge active">ปกติ</span></td>
+          <td><span class="badge ${member.status === 'active' ? 'active' : 'draft'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
           <td>
             <div class="action-btns">
               <button type="button" class="btn-icon edit" onclick="editMember('${member.id}')">✎</button>
@@ -180,16 +212,16 @@
       : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่พบข้อมูล</td></tr>';
   }
   window.editMember = id => {
-    const member = members.find(item => Number(item.id) === Number(id));
+    const member = members.find(item => String(item.id) === String(id));
     if (!member) {
       return;
     }
 
     document.getElementById('mf-id').value = member.id;
-    document.getElementById('mf-firstname').value = member.firstname;
-    document.getElementById('mf-lastname').value = member.lastname;
+    document.getElementById('mf-firstname').value = member.firstname || '';
+    document.getElementById('mf-lastname').value = member.lastname || '';
     document.getElementById('mf-email').value = member.email;
-    document.getElementById('mf-role').value = member.role;
+    document.getElementById('mf-role').value = member.roleValue || 'student';
     document.getElementById('mf-status').value = member.status;
     goTo('member-edit');
   };
@@ -249,7 +281,6 @@
           <td><span class="badge ${curriculum.status === 'active' ? 'active' : 'draft'}">${curriculum.status || 'active'}</span></td>
           <td>
             <div class="action-btns">
-              <!-- เพิ่มปุ่มจัดการวิชาตรงนี้ -->
               <button type="button" class="btn-icon" style="color:var(--blue); border-color:var(--border);" onclick="manageCurriculumSubjects('${curriculum.id}', '${curriculum.name}')" title="จัดการวิชาเข้าหลักสูตร">📚</button>
               <button type="button" class="btn-icon edit" onclick="editCurriculum('${curriculum.id}')">✎</button>
               <button type="button" class="btn-icon del" onclick="deleteCurriculum('${curriculum.id}')">✕</button>
@@ -490,7 +521,7 @@
   });
 
   window.deleteLesson = id => {
-    openModal('ลบบทเรียน', 'ยืนยันการลบบทเรียนนี้หรือไม่?', async () => {
+    openModal('ลบบบทเรียน', 'ยืนยันการลบบทเรียนนี้หรือไม่?', async () => {
       const formData = new FormData();
       formData.append('action', 'deleteLesson');
       formData.append('id', id);
@@ -564,7 +595,8 @@
       showToast(error.message || 'ไม่สามารถเพิ่มเจ้าหน้าที่ได้', 'error');
     }
   });
-// --- ระบบจัดการวิชาเข้าหลักสูตร ---
+
+  // --- ระบบจัดการวิชาเข้าหลักสูตร ---
   window.manageCurriculumSubjects = async (id, name) => {
     document.getElementById('csTitle').textContent = `จัดการวิชา: ${name}`;
     document.getElementById('cs-curriculum-id').value = id;
@@ -612,6 +644,7 @@
       showToast(error.message || 'ไม่สามารถบันทึกข้อมูลได้', 'error');
     }
   });
+
   goTo(initialPage);
   loadData();
 })();

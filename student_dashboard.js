@@ -1,4 +1,4 @@
-let dashboardState = {
+﻿let dashboardState = {
     student: null,
     courses: [],
     assignments: []
@@ -149,9 +149,15 @@ function updateProfile(student) {
     setValue('profileEmail', student.email || '');
     setValue('profilePhone', student.phone || '');
 
+    setValue('profileClass', className);
+    setText('sidebarRole', 'นักเรียน - ' + className);
+    setText('profileRole', 'นักเรียน · ' + className);
+
     const roleTexts = document.querySelectorAll('.role, .avatar-role');
     roleTexts.forEach((el) => {
-        el.textContent = `นักเรียน - ${className}`;
+        if (!el.id) {
+            el.textContent = 'นักเรียน - ' + className;
+        }
     });
 }
 
@@ -164,10 +170,9 @@ function updateStats(stats, courses) {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
     };
-
     setText('statCourseCount', String(courseCount));
-    setText('statAvgProgress', `${avgProgress}%`);
-    setText('statAvgScore', `${avgScore}%`);
+    setText('statAvgProgress', avgProgress + '%');
+    setText('statAvgScore', avgScore + '%');
 
     let stateText = 'เริ่มต้น';
     if (courseCount > 0 && Number(avgProgress) >= 80) {
@@ -246,7 +251,7 @@ function togglePwd(id, btn) {
     if (!inp) return;
     const show = inp.type === 'password';
     inp.type = show ? 'text' : 'password';
-    btn.textContent = show ? '🙈' : '👁';
+    btn.textContent = show ? '🙈' : '👁 ';
 }
 
 function checkPwdStrength(val) {
@@ -271,7 +276,7 @@ function checkPwdStrength(val) {
         { pct: '40%', color: '#f97316', text: 'อ่อน' },
         { pct: '60%', color: '#eab308', text: 'ปานกลาง' },
         { pct: '80%', color: '#3b82f6', text: 'ดี' },
-        { pct: '100%', color: '#10b981', text: 'แข็งแรงมาก' }
+        { pct: '100%', color: '#10b981', text: 'แข็งแกร่งมาก' }
     ];
     const lv = levels[Math.min(score - 1, 4)] || levels[0];
     bar.style.width = lv.pct;
