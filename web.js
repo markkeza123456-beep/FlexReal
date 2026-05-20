@@ -55,6 +55,13 @@ function getDashboardUrlForRole(role) {
     return map[String(role || '').toLowerCase()] || 'web.html';
 }
 
+function formatDisplayName(fullName, maxLength = 18) {
+    const name = String(fullName || '').trim();
+    if (!name) return 'ผู้ใช้งาน';
+    if (name.length <= maxLength) return name;
+    return `${name.slice(0, maxLength)}...`;
+}
+
 // 💥 แปลงข้อมูลบทเรียนจากฐานข้อมูล
 function buildLessonsFromDB(lessons) {
     const normalized = Array.isArray(lessons) ? lessons : [];
@@ -654,7 +661,6 @@ function showGuide(type) {
     const content = document.getElementById('guide-content');
     const guides = {
         'register': ['ขั้นตอนการสมัคร', '1. กด Login <br> 2. กรอก Email <br> 3. เริ่มเรียน'],
-        'search': ['วิธีค้นหาบทเรียน', 'ใช้ช่อง Search พิมพ์ชื่อวิชาที่สนใจ'],
         'certificate': ['การรับใบประกาศ', 'เรียนจบ 100% ดาวน์โหลดได้ทันที']
     };
     title.innerText = guides[type][0];
@@ -691,7 +697,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (currentUser.logged_in) {
             if (loginBtn) loginBtn.style.display = 'none';
             if (userProfile) userProfile.style.display = 'inline-flex';
-            if (userName) userName.textContent = currentUser.name || 'ผู้ใช้งาน';
+            if (userName) {
+                const fullName = currentUser.name || 'ผู้ใช้งาน';
+                userName.textContent = formatDisplayName(fullName);
+                userName.title = fullName;
+            }
             if (userAvatar) userAvatar.textContent = currentUser.avatar_text || 'U';
             if (userMenu) {
                 const profileLink = userMenu.querySelector('a');
