@@ -2,6 +2,7 @@
 session_start();
 // เรียกใช้ไฟล์เชื่อมต่อ Supabase PDO ของคุณ
 require_once 'db_connect.php'; 
+require_once 'curriculum_subjects_lib.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
@@ -58,6 +59,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             $stmt_stu = $conn->prepare("INSERT INTO Student (Student_ID, Student_Name, Email, Tel, Status_Address, Student_Level, PIN) VALUES (?, ?, ?, ?, ?, ?, ?)");
             $stmt_stu->execute([$userid, $fullname, $email, $phone, $address_full, $level, $pin]);
+            assignCurriculumAndEnrollRequiredSubjects($conn, $userid, $level);
 
         } 
         // ---------------------------------------------------------

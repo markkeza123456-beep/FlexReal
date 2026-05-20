@@ -1,4 +1,4 @@
-:root {
+﻿:root {
     --bg-dark: #121212;
     --card-bg: #1e1e1e;
     --sidebar-bg: #1a1a1a;
@@ -57,6 +57,11 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 /* Lesson Card */
 .lessons-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
 .lesson-card { background: var(--card-bg); padding: 1.5rem; border-radius: 15px; border: 1px solid var(--border-color); }
+.lesson-card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:8px; }
+.lesson-card-head h3 { margin:0; }
+.subject-type-badge { display:inline-flex; align-items:center; padding:4px 10px; border-radius:999px; font-size:.72rem; font-weight:600; white-space:nowrap; }
+.subject-type-badge.required { background: rgba(255, 122, 0, 0.14); color: var(--accent-orange); }
+.subject-type-badge.elective { background: rgba(59, 130, 246, 0.14); color: #60a5fa; }
 .progress-bar-bg { background: #333; height: 8px; border-radius: 10px; margin: 10px 0; overflow: hidden; }
 .progress-bar-fill { background: var(--accent-orange); height: 100%; }
 
@@ -79,7 +84,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 }
 .btn-logout:hover { background: rgba(239,68,68,0.12); color: #ef4444; }
 
-/* ── Settings / Profile Page ── */
+/* โ”€โ”€ Settings / Profile Page โ”€โ”€ */
 .user-profile {
     display: flex;
     align-items: center;

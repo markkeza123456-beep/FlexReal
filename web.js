@@ -6,6 +6,7 @@ let courseIdByName = {};
 let currentLessonsData = [];
 let currentProgressSummary = null;
 let currentPassedLessons = new Set();
+let currentUser = { logged_in: false, role: '' };
 const LESSON_VIDEO_FILES = [
     'videos/lesson1.mp4.mp4',
     'videos/lesson-thai.mp4',
@@ -28,6 +29,29 @@ function escapeHtml(text) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+}
+
+function normalizeSubjectType(value) {
+    return String(value || '').trim().toLowerCase() === 'required' ? 'required' : 'elective';
+}
+
+function isTruthy(value) {
+    const normalized = String(value ?? '').trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 't' || normalized === 'yes';
+}
+
+function isStudentLoggedIn() {
+    return Boolean(currentUser?.logged_in) && String(currentUser?.role || '').toLowerCase() === 'student';
+}
+
+function getDashboardUrlForRole(role) {
+    const map = {
+        student: 'student_dashboard.php',
+        teacher: 'teacherdash.php',
+        staff: 'staffdash.php',
+        parent: 'parent_dashboard.php'
+    };
+    return map[String(role || '').toLowerCase()] || 'web.html';
 }
 
 // 💥 แปลงข้อมูลบทเรียนจากฐานข้อมูล
@@ -262,51 +286,106 @@ function getCourseReturnUrl(courseName) {
     return url.pathname.split('/').pop() + url.search;
 }
 
+function createCourseCardMarkup(course) {
+    const subjectId = pick(course, 'subjects_id', 'Subjects_ID');
+    const subjectName = pick(course, 'subjects_name', 'Subjects_Name') || '-';
+    const subjectDesc = pick(course, 'subjects_description', 'Subjects_Description') || 'คลิกเพื่อดูรายละเอียด';
+    const subjectType = normalizeSubjectType(pick(course, 'subject_type', 'type'));
+    const isEnrolled = isTruthy(pick(course, 'is_enrolled', 'Is_Enrolled'));
+    const tagText = subjectType === 'required' ? 'บังคับ' : 'วิชาเลือก';
+    const icon = subjectType === 'required' ? '✓' : '＋';
+    const statusText = isEnrolled ? 'ลงทะเบียนแล้ว' : 'ยังไม่ลงทะเบียน';
+
+    return `
+        <div class="card card-no-image" onclick="showCourse('${escapeHtml(subjectId)}')">
+            <div class="card-content">
+                <div class="card-icon">${icon}</div>
+                <span class="card-tag ${subjectType}">${tagText}</span>
+                <h3>${escapeHtml(subjectName)}</h3>
+                <p>${escapeHtml(subjectDesc)}</p>
+                <div class="card-meta">รหัสวิชา: ${escapeHtml(subjectId || '-')} · ${statusText}</div>
+            </div>
+        </div>
+    `;
+}
+
+function renderCourseCollection(container, courses, emptyMessage) {
+    if (!container) return;
+    if (!Array.isArray(courses) || courses.length === 0) {
+        container.innerHTML = `<div class="empty-course-state">${escapeHtml(emptyMessage)}</div>`;
+        return;
+    }
+
+    container.innerHTML = courses.map((course) => createCourseCardMarkup(course)).join('');
+}
+
+function toggleCourseLayout(useStudentSections) {
+    const publicSection = document.getElementById('public-course-section');
+    const studentSections = document.getElementById('student-course-sections');
+    if (publicSection) publicSection.style.display = useStudentSections ? 'none' : 'block';
+    if (studentSections) studentSections.style.display = useStudentSections ? 'block' : 'none';
+}
+
+function renderCourseSections(courses) {
+    const publicGrid = document.getElementById('course-grid');
+    const requiredGrid = document.getElementById('required-course-grid');
+    const electiveGrid = document.getElementById('elective-course-grid');
+
+    if (isStudentLoggedIn()) {
+        toggleCourseLayout(true);
+        const studyCourses = courses.filter((course) => {
+            const isCurriculumRequired = pick(course, 'is_curriculum_required', 'Is_Curriculum_Required');
+            const isEnrolled = pick(course, 'is_enrolled', 'Is_Enrolled');
+            return isTruthy(isCurriculumRequired) || isTruthy(isEnrolled);
+        });
+        const electiveCourses = courses.filter((course) => !studyCourses.includes(course));
+
+        renderCourseCollection(requiredGrid, studyCourses, 'ยังไม่มีวิชาที่ต้องเรียนหรือวิชาที่ลงทะเบียน');
+        renderCourseCollection(electiveGrid, electiveCourses, 'ยังไม่มีวิชาเลือกให้ลงทะเบียน');
+        return;
+    }
+
+    toggleCourseLayout(false);
+    renderCourseCollection(publicGrid, courses, 'ยังไม่มีรายวิชาในระบบ');
+}
+
 // 💥 โหลดวิชาทั้งหมด
 async function loadAllCourses() {
     try {
         const response = await fetch('api_courses.php?action=get_all');
         const result = await response.json();
-        const grid = document.getElementById('course-grid');
         const dropdown = document.getElementById('course-dropdown');
-        if(!grid) return; 
+        if (!dropdown) return;
         
         if (result.status === 'success') {
-            grid.innerHTML = ''; 
-            if (dropdown) dropdown.innerHTML = '';
+            dropdown.innerHTML = '';
+            courseIdByName = {};
+            const courses = Array.isArray(result.data) ? result.data : [];
             
-            result.data.forEach(course => {
+            courses.forEach(course => {
                 const subjectId = pick(course, 'subjects_id', 'Subjects_ID');
                 const subjectName = pick(course, 'subjects_name', 'Subjects_Name');
-                const subjectDesc = pick(course, 'subjects_description', 'Subjects_Description');
                 if (subjectName) courseIdByName[subjectName] = subjectId;
-                const imgUrl = 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&auto=format&fit=crop&q=60';
-                
-                grid.innerHTML += `
-                    <div class="card" onclick="showCourse('${subjectId}')">
-                        <img src="${imgUrl}" alt="Course Image">
-                        <div class="card-content">
-                            <span class="card-tag">หลักสูตรแนะนำ</span>
-                            <h3>${subjectName || '-'}</h3>
-                            <p>${subjectDesc || 'คลิกเพื่อดูรายละเอียด'}</p>
-                        </div>
-                    </div>
-                `;
-                if (dropdown && subjectId) {
+                if (subjectId) {
                     const a = document.createElement('a');
                     a.href = '#'; a.textContent = subjectName || subjectId;
                     a.addEventListener('click', (e) => { e.preventDefault(); showCourse(subjectId); });
                     dropdown.appendChild(a);
                 }
             });
-            if (dropdown && dropdown.children.length === 0) dropdown.innerHTML = '<a href="#" onclick="return false;">ยังไม่มีรายวิชา</a>';
+
+            renderCourseSections(courses);
+            if (dropdown.children.length === 0) dropdown.innerHTML = '<a href="#" onclick="return false;">ยังไม่มีรายวิชา</a>';
         } else {
-            grid.innerHTML = `<p style="text-align:center; color:red;">เกิดข้อผิดพลาด: ${result.message}</p>`;
+            renderCourseSections([]);
+            const grid = document.getElementById('course-grid');
+            if (grid) grid.innerHTML = `<p style="text-align:center; color:red;">เกิดข้อผิดพลาด: ${result.message}</p>`;
         }
     } catch (error) {
         console.error("Error loading courses:", error);
+        renderCourseSections([]);
         const grid = document.getElementById('course-grid');
-        if(grid) grid.innerHTML = '<p style="text-align:center;">ไม่สามารถเชื่อมต่อฐานข้อมูลได้</p>';
+        if (grid) grid.innerHTML = '<p style="text-align:center;">ไม่สามารถเชื่อมต่อฐานข้อมูลได้</p>';
     }
 }
 
@@ -413,6 +492,7 @@ async function enrollCourseAndOpenLearning() {
         if (result.status !== 'success') { alert(result.message || 'ไม่สามารถลงรายวิชาได้'); return; }
 
         enrolledCourses[currentSubjectId] = true; updateEnrollButton(true); setCurriculumAccess(true);
+        await loadAllCourses();
         fetchCourseProgress(currentSubjectId); fetchQuizProgress(currentSubjectId); goToCourseLearning();
     } catch (error) { alert('เชื่อมต่อระบบลงรายวิชาไม่ได้ กรุณาลองใหม่อีกครั้ง'); }
 }
@@ -558,36 +638,44 @@ function showContact(type) {
     showPage('page-contact');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    loadAllCourses();
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const sessionResponse = await fetch('student_session.php', { credentials: 'same-origin' });
+        const user = await sessionResponse.json();
+        const loginBtn = document.getElementById('loginBtn');
+        const userProfile = document.getElementById('userProfile');
+        const userName = document.getElementById('userName');
+        const userAvatar = document.getElementById('userAvatar');
+        const userProfileBtn = document.getElementById('userProfileBtn');
+        const userMenu = document.getElementById('userMenu');
 
-    fetch('student_session.php', { credentials: 'same-origin' })
-        .then((res) => res.json())
-        .then((user) => {
-            const loginBtn = document.getElementById('loginBtn');
-            const userProfile = document.getElementById('userProfile');
-            const userName = document.getElementById('userName');
-            const userAvatar = document.getElementById('userAvatar');
-            const userProfileBtn = document.getElementById('userProfileBtn');
-            const userMenu = document.getElementById('userMenu');
+        currentUser = user && user.logged_in ? user : { logged_in: false, role: '' };
 
-            if (user && user.logged_in) {
-                if (loginBtn) loginBtn.style.display = 'none';
-                if (userProfile) userProfile.style.display = 'inline-flex';
-                if (userName) userName.textContent = user.name || 'ผู้ใช้งาน';
-                if (userAvatar) userAvatar.textContent = user.avatar_text || 'U';
-                if (userProfileBtn && userMenu) {
-                    userProfileBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        userMenu.classList.toggle('show');
-                    });
-                    document.addEventListener('click', () => userMenu.classList.remove('show'));
-                }
-            } else {
-                if (loginBtn) loginBtn.style.display = 'inline-block';
-                if (userProfile) userProfile.style.display = 'none';
+        if (currentUser.logged_in) {
+            if (loginBtn) loginBtn.style.display = 'none';
+            if (userProfile) userProfile.style.display = 'inline-flex';
+            if (userName) userName.textContent = currentUser.name || 'ผู้ใช้งาน';
+            if (userAvatar) userAvatar.textContent = currentUser.avatar_text || 'U';
+            if (userMenu) {
+                const profileLink = userMenu.querySelector('a');
+                if (profileLink) profileLink.href = currentUser.dashboard_url || getDashboardUrlForRole(currentUser.role);
             }
-        }).catch(() => {});
+            if (userProfileBtn && userMenu) {
+                userProfileBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    userMenu.classList.toggle('show');
+                });
+                document.addEventListener('click', () => userMenu.classList.remove('show'));
+            }
+        } else {
+            if (loginBtn) loginBtn.style.display = 'inline-block';
+            if (userProfile) userProfile.style.display = 'none';
+        }
+    } catch (error) {
+        currentUser = { logged_in: false, role: '' };
+    }
+
+    await loadAllCourses();
 
     const params = new URLSearchParams(window.location.search);
     const subjectId = params.get('subject_id');

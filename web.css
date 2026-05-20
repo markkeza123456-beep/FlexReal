@@ -109,6 +109,68 @@ body { background: #f9ba87; color: var(--deep-blue); }
 .card img { width: 100%; height: 180px; object-fit: cover; }
 .card-content { padding: 20px; }
 .card-tag { background: var(--soft-orange); color: var(--primary-orange); padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 600; display: inline-block; margin-bottom: 10px; }
+.card-no-image {
+    overflow: visible;
+}
+.card-no-image .card-content {
+    padding: 24px;
+}
+.card-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #fff4ed 0%, #ffe4d1 100%);
+    color: var(--primary-orange);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 16px;
+}
+.card h3 {
+    margin-bottom: 10px;
+}
+.card p {
+    color: var(--text-gray);
+    line-height: 1.6;
+}
+.card-meta {
+    margin-top: 14px;
+    font-size: 13px;
+    color: #8a8f98;
+}
+.card-tag.required {
+    background: #fff1ec;
+    color: #d35400;
+}
+.card-tag.elective {
+    background: #eef7ff;
+    color: #1d4ed8;
+}
+.course-section-block + .course-section-block {
+    margin-top: 40px;
+}
+.section-head-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+.section-head-row .section-title {
+    margin-bottom: 0;
+}
+.section-subtitle {
+    color: var(--text-gray);
+    font-size: 14px;
+}
+.empty-course-state {
+    padding: 24px;
+    border: 1px dashed #f4b183;
+    border-radius: 18px;
+    background: #fffaf7;
+    color: var(--text-gray);
+}
 
 /* Steps Section */
 .steps-bg { background: white; padding: 60px 8%; margin-top: 20px; border-top: 1px solid #ff6b00; }
@@ -393,6 +455,10 @@ body { background: #f9ba87; color: var(--deep-blue); }
 @media (max-width: 992px) {
     .course-layout-grid { grid-template-columns: 1fr; }
     .course-sidebar { order: -1; }
+    .section-head-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
     .curriculum-item {
         flex-direction: column;
         align-items: flex-start;
