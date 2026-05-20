@@ -195,6 +195,58 @@ foreach ($studentStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
 
 $overallAvgScore = count($students) > 0 ? round($sumScore / count($students), 1) : 0;
 
+// 4b. ดึงผลสอบรายบทเรียนของนักเรียนแต่ละคน
+$studentIds = array_column($students, 'id');
+$studentQuizData = [];
+if (!empty($studentIds)) {
+    try {
+        // ใช้ named placeholders แยกต่างหากเพื่อหลีกเลี่ยงปัญหา mixed placeholder
+        $placeholders = implode(',', array_map(fn($i) => ":sid$i", array_keys($studentIds)));
+        $quizScoreStmt = $conn->prepare("
+            SELECT 
+                t.Student_ID,
+                l.Lessons_Name,
+                l.Lessons_ID,
+                ROUND(CAST(AVG(t.Score) AS numeric), 1) AS avg_score,
+                COUNT(*) AS attempt_count
+            FROM public.test t
+            INNER JOIN public.lessons l ON t.Lessons_ID = l.Lessons_ID
+            INNER JOIN public.subjects s ON l.Subjects_ID = s.Subjects_ID
+            WHERE t.Student_ID IN ($placeholders)
+              AND s.Teachers_ID = :teacher_id2
+            GROUP BY t.Student_ID, l.Lessons_ID, l.Lessons_Name
+            ORDER BY l.Lessons_ID ASC
+        ");
+        $bindParams = [':teacher_id2' => $teacherId];
+        foreach ($studentIds as $i => $sid) {
+            $bindParams[":sid$i"] = $sid;
+        }
+        $quizScoreStmt->execute($bindParams);
+        foreach ($quizScoreStmt->fetchAll(PDO::FETCH_ASSOC) as $qrow) {
+            // PDO FETCH_ASSOC คืนชื่อ column ตรงตาม DB (case-sensitive บน PostgreSQL)
+            $sid = $qrow['student_id'] ?? $qrow['Student_ID'] ?? null;
+            if (!$sid) continue;
+            if (!isset($studentQuizData[$sid])) $studentQuizData[$sid] = [];
+            $studentQuizData[$sid][] = [
+                'lesson'   => $qrow['lessons_name'] ?? $qrow['Lessons_Name'] ?? '',
+                'score'    => (float) ($qrow['avg_score'] ?? 0),
+                'attempts' => (int)   ($qrow['attempt_count'] ?? 0),
+            ];
+        }
+    } catch (Exception $e) {
+        // ถ้า query ผิดพลาด ให้ข้ามส่วนนี้โดยไม่ crash ทั้งหน้า
+        $studentQuizData = [];
+    }
+}
+
+// แนบข้อมูลผลสอบเข้า $students
+foreach ($students as &$stu) {
+    $sid = $stu['id'];
+    $quizArr = $studentQuizData[$sid] ?? [];
+    $stu['quiz_json'] = htmlspecialchars(json_encode($quizArr, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
+}
+unset($stu);
+
 // 5. ดึงคำถามข้อสอบของวิชานี้
 $quizzes = [];
 $defaultSubjectId = !empty($subjects) ? $subjects[0]['id'] : '';
@@ -372,11 +424,16 @@ $stats = [
                             <td>
                                 <a href="#" class="student-progress-link" 
                                    data-name="<?= h($student['name']) ?>"
+                                   data-class="<?= h($student['class']) ?>"
+                                   data-score="<?= h($student['score']) ?>"
+                                   data-status="<?= h($student['status']) ?>"
+                                   data-pct="<?= h($student['progress_pct']) ?>"
                                    data-completed="<?= h($student['completed_lessons']) ?>"
                                    data-total="<?= h($student['total_lessons']) ?>"
                                    data-json="<?= $student['completed_names_json'] ?>"
+                                   data-quiz-json="<?= $student['quiz_json'] ?>"
                                    onclick="showStudentProgress(this); return false;"
-                                   style="color:#60a5fa; font-weight:500; text-decoration:none; display:flex; align-items:center; gap:6px;" title="คลิกเพื่อดูบทเรียนที่ผ่านแล้ว">
+                                   style="color:#60a5fa; font-weight:500; text-decoration:none; display:flex; align-items:center; gap:6px;" title="คลิกเพื่อดูข้อมูลนักเรียน">
                                     <?= h($student['name']) ?> <span style="font-size:12px; color:var(--text-dim);">ℹ️</span>
                                 </a>
                             </td>
@@ -546,11 +603,15 @@ $stats = [
                                 <td>
                                     <a href="#" class="student-progress-link" 
                                        data-name="<?= h($student['name']) ?>"
+                                       data-class="<?= h($student['class']) ?>"
+                                       data-score="<?= h($student['score']) ?>"
+                                       data-status="<?= h($student['status']) ?>"
+                                       data-pct="<?= h($student['progress_pct']) ?>"
                                        data-completed="<?= h($student['completed_lessons']) ?>"
                                        data-total="<?= h($student['total_lessons']) ?>"
                                        data-json="<?= $student['completed_names_json'] ?>"
                                        onclick="showStudentProgress(this); return false;"
-                                       style="color:#60a5fa; font-weight:500; text-decoration:none; display:flex; align-items:center; gap:6px;" title="คลิกเพื่อดูบทเรียนที่ผ่านแล้ว">
+                                       style="color:#60a5fa; font-weight:500; text-decoration:none; display:flex; align-items:center; gap:6px;" title="คลิกเพื่อดูข้อมูลนักเรียน">
                                         <?= h($student['name']) ?> <span style="font-size:12px; color:var(--text-dim);">ℹ️</span>
                                     </a>
                                 </td>
@@ -1179,6 +1240,86 @@ function showMsg(id, msg, success) {
     el.style.border = success ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(239,68,68,0.3)';
     el.textContent = msg;
     setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+</script>
+
+<!-- ══ Student Progress Modal ══ -->
+<div id="studentProgressModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9990;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--surface,#1e1e2e);border-radius:16px;width:min(520px,96vw);max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.6);display:flex;flex-direction:column;">
+
+        <!-- Header -->
+        <div style="padding:20px 24px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;position:sticky;top:0;background:var(--surface,#1e1e2e);z-index:2;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div id="spm-avatar" style="width:52px;height:52px;border-radius:50%;background:var(--orange,#f97316);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;flex-shrink:0;"></div>
+                <div>
+                    <div id="spm-student-name" style="font-size:17px;font-weight:700;line-height:1.2;color:#fff;"></div>
+                    <div id="spm-class-badge" style="margin-top:4px;font-size:12px;color:var(--text-dim,#aaa);"></div>
+                    <div id="spm-student-id" style="margin-top:2px;font-size:11px;color:var(--text-muted,#666);font-family:'IBM Plex Mono',monospace;"></div>
+                </div>
+            </div>
+            <button id="spmCloseBtn" style="background:none;border:none;color:var(--text-dim,#aaa);font-size:22px;cursor:pointer;line-height:1;flex-shrink:0;margin-top:2px;">✕</button>
+        </div>
+
+        <!-- Stats row -->
+        <div style="padding:16px 24px 0;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+            <div style="background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.15);border-radius:10px;padding:12px;text-align:center;">
+                <div id="spm-score" style="font-size:22px;font-weight:700;color:var(--orange,#f97316);"></div>
+                <div style="font-size:11px;color:var(--text-dim,#aaa);margin-top:2px;">คะแนนเฉลี่ย</div>
+            </div>
+            <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.15);border-radius:10px;padding:12px;text-align:center;">
+                <div id="spm-progress-pct" style="font-size:22px;font-weight:700;color:#10b981;"></div>
+                <div style="font-size:11px;color:var(--text-dim,#aaa);margin-top:2px;">ความคืบหน้า</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px;text-align:center;">
+                <div id="spm-status-badge" style="font-size:13px;font-weight:700;padding:4px 8px;border-radius:6px;display:inline-block;"></div>
+                <div style="font-size:11px;color:var(--text-dim,#aaa);margin-top:4px;">ระดับ</div>
+            </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div style="padding:14px 24px 0;">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim,#aaa);margin-bottom:6px;">
+                <span>📖 บทเรียนที่ผ่านแล้ว</span>
+                <span id="spm-lesson-count" style="font-weight:600;color:#fff;"></span>
+            </div>
+            <div style="height:8px;background:rgba(255,255,255,0.08);border-radius:99px;overflow:hidden;">
+                <div id="spm-progress-bar" style="height:100%;border-radius:99px;background:linear-gradient(90deg,#f97316,#fb923c);transition:width 0.6s ease;"></div>
+            </div>
+        </div>
+
+        <!-- Inner Tabs -->
+        <div style="padding:16px 24px 0;">
+            <div style="display:flex;gap:0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;background:rgba(255,255,255,0.03);">
+                <button id="spm-tab-lessons" onclick="spmSwitchTab('lessons')" style="flex:1;padding:10px;border:none;border-right:1px solid rgba(255,255,255,0.1);background:rgba(249,115,22,0.15);color:#f97316;font-family:'Kanit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">📚 บทเรียน</button>
+                <button id="spm-tab-quiz" onclick="spmSwitchTab('quiz')" style="flex:1;padding:10px;border:none;background:none;color:var(--text-dim,#aaa);font-family:'Kanit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;">🧪 ผลการสอบ</button>
+            </div>
+        </div>
+
+        <!-- Tab: Lessons -->
+        <div id="spm-panel-lessons" style="padding:14px 24px 24px;">
+            <div id="spm-lesson-list" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;"></div>
+        </div>
+
+        <!-- Tab: Quiz Results -->
+        <div id="spm-panel-quiz" style="padding:14px 24px 24px;display:none;">
+            <div id="spm-quiz-list" style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;"></div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+function spmSwitchTab(tab) {
+    const tabs = ['lessons','quiz'];
+    tabs.forEach(t => {
+        const btn = document.getElementById('spm-tab-' + t);
+        const panel = document.getElementById('spm-panel-' + t);
+        const isActive = t === tab;
+        btn.style.background = isActive ? 'rgba(249,115,22,0.15)' : 'none';
+        btn.style.color = isActive ? '#f97316' : 'var(--text-dim,#aaa)';
+        btn.style.fontWeight = isActive ? '600' : '500';
+        panel.style.display = isActive ? 'block' : 'none';
+    });
 }
 </script>
 

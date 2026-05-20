@@ -251,31 +251,88 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// ฟังก์ชันโชว์ข้อมูลความคืบหน้านักเรียนเวลาคลิกที่ชื่อ
+// ฟังก์ชันโชว์ข้อมูลนักเรียนเมื่อคลิกที่ชื่อ
 window.showStudentProgress = function(element) {
-    const name = element.getAttribute('data-name');
-    const completed = element.getAttribute('data-completed');
-    const total = element.getAttribute('data-total');
-    const jsonStr = element.getAttribute('data-json');
-    
-    document.getElementById('spm-student-name').innerText = name;
-    document.getElementById('spm-completed-count').innerText = completed;
-    document.getElementById('spm-total-count').innerText = total;
-    
+    const name      = element.getAttribute('data-name');
+    const cls       = element.getAttribute('data-class') || '-';
+    const score     = parseFloat(element.getAttribute('data-score') || 0);
+    const status    = element.getAttribute('data-status') || '';
+    const pct       = parseInt(element.getAttribute('data-pct') || 0);
+    const completed = parseInt(element.getAttribute('data-completed') || 0);
+    const total     = parseInt(element.getAttribute('data-total') || 0);
+    const jsonStr   = element.getAttribute('data-json');
+    const quizJsonStr = element.getAttribute('data-quiz-json');
+
+    document.getElementById('spm-avatar').textContent = name ? name.charAt(0).toUpperCase() : '?';
+    document.getElementById('spm-student-name').textContent = name;
+    document.getElementById('spm-class-badge').textContent = cls !== '-' ? 'ระดับชั้น ' + cls : 'ไม่ระบุระดับชั้น';
+    document.getElementById('spm-score').textContent = score.toFixed(1);
+    document.getElementById('spm-progress-pct').textContent = pct + '%';
+    document.getElementById('spm-progress-bar').style.width = pct + '%';
+    document.getElementById('spm-lesson-count').textContent = completed + ' / ' + total + ' บทเรียน';
+
+    const statusMap = {
+        'excellent':  { label: 'ดีเยี่ยม', bg: 'rgba(16,185,129,.2)',  color: '#10b981' },
+        'good':       { label: 'ดี',        bg: 'rgba(96,165,250,.2)',  color: '#60a5fa' },
+        'average':    { label: 'ปานกลาง',  bg: 'rgba(251,191,36,.2)',  color: '#fbbf24' },
+        'needs-help': { label: 'ต้องดูแล', bg: 'rgba(239,68,68,.2)',   color: '#ef4444' },
+    };
+    const s = statusMap[status] || { label: '-', bg: 'rgba(255,255,255,.08)', color: '#aaa' };
+    const badge = document.getElementById('spm-status-badge');
+    badge.textContent = s.label; badge.style.background = s.bg; badge.style.color = s.color;
+
+    // ── Tab: บทเรียนที่เรียนแล้ว ──
     let lessons = [];
     try { lessons = JSON.parse(jsonStr); } catch(e) {}
-    
     const listContainer = document.getElementById('spm-lesson-list');
     if (lessons && lessons.length > 0) {
-        listContainer.innerHTML = lessons.map(l => `
-            <div style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: #10b981; font-size: 13.5px; display:flex; align-items:center; gap:10px;">
-                <span style="background:rgba(16,185,129,0.15); padding:4px 6px; border-radius:4px; font-size:11px;">✅</span> 
-                <span>${l}</span>
-            </div>
-        `).join('');
+        listContainer.innerHTML = lessons.map(function(l) {
+            return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.15);border-radius:8px;font-size:13px;color:#d1fae5;"><span>✅</span><span>' + l + '</span></div>';
+        }).join('');
     } else {
-        listContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">ยังไม่ได้เริ่มเรียนบทเรียนใดเลย</div>`;
+        listContainer.innerHTML = '<div style="text-align:center;padding:32px 16px;color:var(--text-dim,#aaa);font-size:13px;">📚 ยังไม่ได้เริ่มเรียนบทเรียนใดเลย</div>';
     }
-    
-    document.getElementById('studentProgressModal').classList.add('open');
-}
+
+    // ── Tab: ผลการสอบ ──
+    let quizData = [];
+    try { quizData = JSON.parse(quizJsonStr); } catch(e) {}
+    const quizContainer = document.getElementById('spm-quiz-list');
+
+    function getScoreColor(sc) {
+        if (sc >= 85) return { color: '#10b981', bg: 'rgba(16,185,129,.12)', label: 'ดีเยี่ยม' };
+        if (sc >= 70) return { color: '#60a5fa', bg: 'rgba(96,165,250,.12)', label: 'ดี' };
+        if (sc >= 50) return { color: '#fbbf24', bg: 'rgba(251,191,36,.12)', label: 'ปานกลาง' };
+        return { color: '#ef4444', bg: 'rgba(239,68,68,.12)', label: 'ต้องปรับปรุง' };
+    }
+
+    if (quizData && quizData.length > 0) {
+        quizContainer.innerHTML = quizData.map(function(q) {
+            const sc = q.score;
+            const c = getScoreColor(sc);
+            const barW = Math.min(100, Math.max(0, sc)) + '%';
+            return `<div style="background:${c.bg};border:1px solid ${c.color}33;border-radius:10px;padding:12px 14px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <span style="font-size:13px;color:#fff;font-weight:500;">${q.lesson}</span>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:11px;color:var(--text-dim,#aaa);">ทำ ${q.attempts} ครั้ง</span>
+                        <span style="font-size:15px;font-weight:700;color:${c.color};">${sc.toFixed(1)}</span>
+                    </div>
+                </div>
+                <div style="height:5px;background:rgba(255,255,255,0.08);border-radius:99px;overflow:hidden;">
+                    <div style="height:100%;width:${barW};background:${c.color};border-radius:99px;transition:width 0.5s ease;"></div>
+                </div>
+                <div style="margin-top:4px;font-size:10.5px;color:${c.color};">${c.label}</div>
+            </div>`;
+        }).join('');
+    } else {
+        quizContainer.innerHTML = '<div style="text-align:center;padding:32px 16px;color:var(--text-dim,#aaa);font-size:13px;">🧪 ยังไม่มีผลการสอบ</div>';
+    }
+
+    // Reset to lessons tab
+    if (typeof spmSwitchTab === 'function') spmSwitchTab('lessons');
+
+    const modal = document.getElementById('studentProgressModal');
+    modal.style.display = 'flex';
+    document.getElementById('spmCloseBtn').onclick = function() { modal.style.display = 'none'; };
+    modal.addEventListener('click', function(e) { if (e.target === modal) modal.style.display = 'none'; }, { once: true });
+};
