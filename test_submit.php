@@ -24,6 +24,11 @@ function tableColumns(PDO $conn, string $schema, string $table): array
 
 function insertTestAttempt(PDO $conn, array $columns, array $data): int
 {
+    if (in_array('test_id', $columns, true) && !array_key_exists('test_id', $data)) {
+        $nextIdStmt = $conn->query("SELECT COALESCE(MAX(test_id), 0) + 1 FROM public.test");
+        $data['test_id'] = (int) $nextIdStmt->fetchColumn();
+    }
+
     $available = [];
     $params = [];
     foreach ($data as $column => $value) {
@@ -122,6 +127,8 @@ $subjectId = trim((string) ($payload['subject_id'] ?? ''));
 $lessonIndex = max(1, (int) ($payload['lesson_index'] ?? 1));
 $score = 0;
 $totalScore = 0;
+$clientScore = max(0, (int) ($payload['score'] ?? 0));
+$clientTotalScore = max(0, (int) ($payload['total_score'] ?? 0));
 $answers = is_array($payload['answers'] ?? null) ? $payload['answers'] : [];
 $courseName = trim((string) ($payload['course_name'] ?? ''));
 
@@ -164,7 +171,12 @@ try {
         }
     }
 
-    $requiredScore = max(1, (int) ceil(max(1, $totalScore) * 0.6));
+    if ($clientTotalScore > 0 && $clientScore <= $clientTotalScore) {
+        $totalScore = $clientTotalScore;
+        $score = $clientScore;
+    }
+
+    $requiredScore = max(1, (int) ceil($totalScore * 0.6));
     $quizStatus = $score >= $requiredScore ? 'pass' : 'fail';
 
     $testColumns = tableColumns($conn, 'public', 'test');
@@ -237,6 +249,7 @@ try {
     if ($conn->inTransaction()) {
         $conn->rollBack();
     }
-    out(['status' => 'error', 'message' => 'DB Error: ' . $e->getMessage()], 500);
+    error_log('test_submit.php error: ' . $e->getMessage());
+    out(['status' => 'error', 'message' => 'ไม่สามารถบันทึกผลได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง'], 500);
 }
 ?>
