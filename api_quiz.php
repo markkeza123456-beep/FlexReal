@@ -24,6 +24,31 @@ function normalizeAnswerLetter(string $raw): string
     return '';
 }
 
+function resolveAnswerIndex(string $rawCorrect, array $options): int
+{
+    $raw = trim($rawCorrect);
+    $letter = normalizeAnswerLetter($raw);
+    $map = ['A' => 0, 'B' => 1, 'C' => 2, 'D' => 3];
+    if ($letter !== '' && isset($map[$letter])) {
+        return $map[$letter];
+    }
+
+    if (is_numeric($raw)) {
+        $n = (int) $raw;
+        if ($n >= 1 && $n <= 4) return $n - 1;
+        if ($n >= 0 && $n <= 3) return $n;
+    }
+
+    $rawNorm = mb_strtolower($raw);
+    foreach ($options as $idx => $opt) {
+        if (mb_strtolower(trim((string) $opt)) === $rawNorm) {
+            return (int) $idx;
+        }
+    }
+
+    return 0;
+}
+
 function ensureFiveLessons(PDO $conn, string $subjectId): array
 {
     $stmt = $conn->prepare("SELECT lessons_id, lessons_name, study_hours, subjects_id FROM public.lessons WHERE subjects_id = ? ORDER BY lessons_id ASC");
@@ -163,7 +188,6 @@ try {
 
     $formatted = [];
     foreach ($rows as $q) {
-        $ans = normalizeAnswerLetter((string) ($q['correct_answer'] ?? ''));
         $questionText = $fromQuizQuestions ? (string) ($q['question_text'] ?? '') : (string) ($q['questions_text'] ?? '');
         $a = $fromQuizQuestions ? (string) ($q['option_a'] ?? '') : (string) ($q['choice_a'] ?? '');
         $b = $fromQuizQuestions ? (string) ($q['option_b'] ?? '') : (string) ($q['choice_b'] ?? '');
@@ -171,8 +195,7 @@ try {
         $d = $fromQuizQuestions ? (string) ($q['option_d'] ?? '') : (string) ($q['choice_d'] ?? '');
 
         $options = [$a, $b, $c, $d];
-        $map = ['A' => 0, 'B' => 1, 'C' => 2, 'D' => 3];
-        $answerIndex = $map[$ans] ?? 0;
+        $answerIndex = resolveAnswerIndex((string) ($q['correct_answer'] ?? ''), $options);
 
         $formatted[] = [
             'question' => $questionText,

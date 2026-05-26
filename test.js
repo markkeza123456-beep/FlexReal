@@ -11,6 +11,7 @@ const progressFill = document.getElementById('progressFill');
 const prevBtn = document.getElementById('prevBtn');
 const nextBtn = document.getElementById('nextBtn');
 const submitBtn = document.getElementById('submitBtn');
+const quizActions = document.querySelector('.quiz-actions');
 const resultBox = document.getElementById('resultBox');
 const backToCourse = document.getElementById('backToCourse');
 
@@ -132,10 +133,10 @@ function renderAnswerKey() {
 }
 
 function renderResultActionButton(isPassed) {
-    const label = isPassed ? 'กลับไปรายวิชา' : 'ทำแบบทดสอบใหม่';
+    if (isPassed) return '';
     return `
         <div class="result-action-wrap">
-            <button type="button" id="resultActionBtn" class="primary-btn">${label}</button>
+            <button type="button" id="resultActionBtn" class="primary-btn">ทำแบบทดสอบใหม่</button>
         </div>
     `;
 }
@@ -144,10 +145,6 @@ function bindResultAction(isPassed) {
     const actionBtn = document.getElementById('resultActionBtn');
     if (!actionBtn) return;
     actionBtn.onclick = () => {
-        if (isPassed) {
-            window.location.href = backToCourse.href;
-            return;
-        }
         window.location.reload();
     };
 }
@@ -176,6 +173,7 @@ async function showResult() {
     prevBtn.hidden = true;
     nextBtn.hidden = true;
     submitBtn.hidden = true;
+    if (quizActions) quizActions.hidden = true;
 
     const saveStatus = document.getElementById('saveStatus');
     const lessonResultsBox = document.getElementById('lessonResultsBox');

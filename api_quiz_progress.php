@@ -55,9 +55,37 @@ try {
 
     $passedLessons = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
 
+    $stmtResults = $conn->prepare(
+        'SELECT lesson_no, score, total_score, status
+         FROM (
+             SELECT
+                 lesson_no,
+                 score,
+                 total_score,
+                 status,
+                 ROW_NUMBER() OVER (PARTITION BY lesson_no ORDER BY COALESCE(test_attempt, 0) DESC, test_id DESC) AS rn
+             FROM public.test
+             WHERE student_id = :student_id
+               AND (
+                    subjects_id = :subjects_id
+                    OR (:subject_name <> \'\' AND course_name = :subject_name)
+               )
+               AND lesson_no IS NOT NULL
+         ) ranked
+         WHERE rn = 1
+         ORDER BY lesson_no ASC'
+    );
+    $stmtResults->execute([
+        ':student_id' => $studentId,
+        ':subjects_id' => $subjectId,
+        ':subject_name' => $subjectName,
+    ]);
+    $lessonResults = $stmtResults->fetchAll(PDO::FETCH_ASSOC);
+
     jsonResponse([
         'status' => 'success',
         'passed_lessons' => $passedLessons,
+        'lesson_results' => $lessonResults,
     ]);
 } catch (Throwable $e) {
     jsonResponse([

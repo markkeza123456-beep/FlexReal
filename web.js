@@ -663,14 +663,26 @@ function downloadCourseLesson(lessonIndex) {
 
 function getLessonVideoPath(lessonIndex) {
     const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 5, Number(lessonIndex) || 1));
+    const subjectKey = String(currentSubjectId || '').trim();
     const candidates = [
-        `videos/${encodeURIComponent(currentSubjectId)}-lesson-${safeIndex}.mp4`,
+        subjectKey ? `videos/${subjectKey}-lesson-${safeIndex}.mp4` : '',
         LESSON_VIDEO_FILES[safeIndex - 1],
         LESSON_VIDEO_FILES[0]
-    ];
-    const selected = candidates.find(Boolean) || '';
+    ].filter(Boolean);
+    const selected = candidates[0] || '';
     if (!selected) return '';
     return `${selected}?v=${VIDEO_CACHE_BUST}`;
+}
+
+function getLessonVideoCandidates(lessonIndex) {
+    const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 5, Number(lessonIndex) || 1));
+    const subjectKey = String(currentSubjectId || '').trim();
+    const list = [
+        subjectKey ? `videos/${subjectKey}-lesson-${safeIndex}.mp4` : '',
+        LESSON_VIDEO_FILES[safeIndex - 1],
+        LESSON_VIDEO_FILES[0]
+    ].filter(Boolean);
+    return Array.from(new Set(list)).map((path) => `${path}?v=${VIDEO_CACHE_BUST}`);
 }
 
 function renderVideoModalBody(lessonIndex) {
@@ -679,7 +691,8 @@ function renderVideoModalBody(lessonIndex) {
     const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 5, Number(lessonIndex) || 1));
     const selectedLesson = currentLessonsData.find((lesson) => lesson.index === safeIndex);
     const selectedTitle = selectedLesson ? selectedLesson.title : `Lesson ${safeIndex}`;
-    const videoPath = getLessonVideoPath(safeIndex);
+    const videoCandidates = getLessonVideoCandidates(safeIndex);
+    const videoPath = videoCandidates[0] || getLessonVideoPath(safeIndex);
     const selectorOptions = currentLessonsData.map((lesson) => `
         <option value="${lesson.index}" ${lesson.index === safeIndex ? 'selected' : ''}>
             บทที่ ${lesson.index}: ${escapeHtml(lesson.title)}
@@ -693,14 +706,36 @@ function renderVideoModalBody(lessonIndex) {
         <select id="video-lesson-select" onchange="changeModalLessonVideo(this.value)" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; margin-bottom:14px;">
             ${selectorOptions}
         </select>
-        <video width="100%" controls autoplay style="border-radius:10px; background:#000;">
-            <source src="${videoPath}" type="video/mp4">
+        <video id="lesson-video-player" width="100%" controls autoplay playsinline style="border-radius:10px; background:#000;">
+            <source id="lesson-video-source" src="${videoPath}" type="video/mp4">
             เบราว์เซอร์ไม่รองรับวิดีโอ
         </video>
+        <p id="video-fallback-status" style="display:none; margin-top:8px; color:#d35400; font-size:13px;"></p>
     `;
 
     const videoElement = body.querySelector('video');
     if (videoElement) {
+        const sourceElement = body.querySelector('#lesson-video-source');
+        const fallbackStatus = body.querySelector('#video-fallback-status');
+        let candidateIndex = 0;
+        videoElement.addEventListener('error', () => {
+            if (!sourceElement) return;
+            candidateIndex += 1;
+            if (candidateIndex >= videoCandidates.length) {
+                if (fallbackStatus) {
+                    fallbackStatus.style.display = 'block';
+                    fallbackStatus.textContent = 'ไม่สามารถเล่นวิดีโอได้ กรุณาตรวจสอบไฟล์วิดีโอของบทนี้';
+                }
+                return;
+            }
+            sourceElement.src = videoCandidates[candidateIndex];
+            if (fallbackStatus) {
+                fallbackStatus.style.display = 'block';
+                fallbackStatus.textContent = `กำลังสลับไฟล์วิดีโอสำรอง (${candidateIndex + 1}/${videoCandidates.length})...`;
+            }
+            videoElement.load();
+            videoElement.play().catch(() => {});
+        });
         videoElement.addEventListener('ended', () => {
             recordLearningEvent('video_open', safeIndex);
             fetchCourseProgress(currentSubjectId);

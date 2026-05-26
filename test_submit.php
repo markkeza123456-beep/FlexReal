@@ -70,6 +70,33 @@ function normalizeAnswerLetter(string $raw): string
     return '';
 }
 
+function normalizeAnswerText(string $raw): string
+{
+    return mb_strtolower(trim($raw));
+}
+
+function resolveCorrectLetter(string $rawCorrect, array $optionValues): string
+{
+    $raw = trim($rawCorrect);
+    $letter = normalizeAnswerLetter($raw);
+    if ($letter !== '') return $letter;
+
+    if (is_numeric($raw)) {
+        $n = (int) $raw;
+        if ($n >= 1 && $n <= 4) return ['A', 'B', 'C', 'D'][$n - 1];
+        if ($n >= 0 && $n <= 3) return ['A', 'B', 'C', 'D'][$n];
+    }
+
+    $rawNorm = normalizeAnswerText($raw);
+    foreach ($optionValues as $idx => $opt) {
+        if (normalizeAnswerText((string) $opt) === $rawNorm) {
+            return ['A', 'B', 'C', 'D'][(int) $idx];
+        }
+    }
+
+    return '';
+}
+
 function loadQuestionsForScoring(PDO $conn, string $subjectId, int $lessonIndex, string $lessonId): array
 {
     $qCols     = tableColumns($conn, 'public', 'quiz_questions');
@@ -80,7 +107,7 @@ function loadQuestionsForScoring(PDO $conn, string $subjectId, int $lessonIndex,
     }
 
     $stmt = $conn->prepare(
-        "SELECT quiz_id AS qid, {$answerCol} AS correct_answer
+        "SELECT quiz_id AS qid, {$answerCol} AS correct_answer, option_a, option_b, option_c, option_d
          FROM public.quiz_questions
          WHERE subjects_id = :sid AND lesson_no = :lno
          ORDER BY quiz_id ASC"
@@ -90,7 +117,7 @@ function loadQuestionsForScoring(PDO $conn, string $subjectId, int $lessonIndex,
     if (!empty($rows)) return ['source' => 'quiz_questions', 'rows' => $rows];
 
     $stmt2 = $conn->prepare(
-        "SELECT questions_id AS qid, correct_answer
+        "SELECT questions_id AS qid, correct_answer, choice_a AS option_a, choice_b AS option_b, choice_c AS option_c, choice_d AS option_d
          FROM public.test_questions
          WHERE lessons_id = ?
          ORDER BY questions_id ASC"
@@ -149,22 +176,39 @@ try {
     // 💥 ระบบตรวจคะแนน Server-side
     foreach ($questions as $index => $q) {
         $selected = '';
+        $selectedText = '';
+        $optionValues = [
+            (string) ($q['option_a'] ?? ''),
+            (string) ($q['option_b'] ?? ''),
+            (string) ($q['option_c'] ?? ''),
+            (string) ($q['option_d'] ?? ''),
+        ];
         if (array_key_exists($index, $answers) && $answers[$index] !== null) {
-            // เช็คว่าเป็นตัวเลข (ปรนัย) หรือข้อความ (ข้อเขียน)
             if (is_numeric($answers[$index])) {
-                $selected = $choiceMap[(int) $answers[$index]] ?? '';
+                $selectedIndex = (int) $answers[$index];
+                $selected = $choiceMap[$selectedIndex] ?? '';
+                $selectedText = trim((string) ($optionValues[$selectedIndex] ?? ''));
             } else {
                 $selected = trim((string) $answers[$index]);
+                $selectedText = $selected;
             }
         }
 
-        $correct = normalizeAnswerLetter((string) ($q['correct_answer'] ?? ''));
-        
-        // ถ้าเป็นข้อเขียน ระบบจะข้ามการให้คะแนนออโต้ไปก่อน
-        if ($correct !== '-' && (isset($q['correct_answer']) && $q['correct_answer'] !== '-')) {
-            if ($correct !== '' && $selected === $correct) {
+        $rawCorrect = trim((string) ($q['correct_answer'] ?? ''));
+        if ($rawCorrect === '' || $rawCorrect === '-') {
+            continue;
+        }
+
+        $correctLetter = resolveCorrectLetter($rawCorrect, $optionValues);
+        if ($correctLetter !== '') {
+            if ($selected === $correctLetter) {
                 $score++;
             }
+            continue;
+        }
+
+        if (normalizeAnswerText($selectedText) === normalizeAnswerText($rawCorrect)) {
+            $score++;
         }
     }
 
@@ -253,3 +297,4 @@ try {
     error_log('[test_submit] ' . $e->getMessage());
     out(['status' => 'error', 'message' => 'DB Error: ' . $e->getMessage()], 500);
 }
+
