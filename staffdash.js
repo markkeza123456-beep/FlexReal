@@ -1,7 +1,12 @@
-﻿(() => {
+﻿/* ============================================
+   NEXORA STAFF PANEL — staffdash.js (ฉบับสมบูรณ์)
+   ============================================ */
+
+(() => {
   let curricula = [];
   let subjects = [];
   let members = [];
+  let teachers = []; // สำหรับเก็บรายชื่ออาจารย์จากฐานข้อมูล
   let lessons = [];
   const initialPage = new URLSearchParams(window.location.search).get('page') || 'dashboard';
   let currentPage = initialPage;
@@ -27,6 +32,7 @@
   const toast = document.getElementById('toast');
   const staffCreateForm = document.getElementById('staffCreateForm');
   const staffUserIdInput = document.getElementById('stf-user-id');
+  const subjectTeacherSelect = document.getElementById('sf-teacher'); // ตัวเลือกอาจารย์ผู้ดูแลวิชา
 
   document.getElementById('menuBtn')?.addEventListener('click', () => sidebar?.classList.toggle('open'));
   document.getElementById('sidebarClose')?.addEventListener('click', () => sidebar?.classList.remove('open'));
@@ -132,6 +138,9 @@
     if (page === 'member-list') {
       renderMembers();
     }
+    if (page === 'subject-add') {
+      populateTeacherSelect(); // อัปเดตรายชื่อครูใน Select ทุกครั้งที่เปิดหน้าเพิ่ม/แก้ไขวิชา
+    }
 
     sidebar?.classList.remove('open');
     window.scrollTo(0, 0);
@@ -157,6 +166,8 @@
       curricula = data.curricula || [];
       subjects = data.subjects || [];
       members = (data.members || []).map(normalizeMember);
+      teachers = data.teachers || []; // รับข้อมูลรายชื่อครูจากฐานข้อมูลหลังบ้าน
+      
       updateDashStats();
 
       if (currentPage === 'curriculum-list') {
@@ -181,6 +192,21 @@
     if (curriculumStat) curriculumStat.textContent = String(curricula.length);
     if (subjectStat) subjectStat.textContent = String(subjects.length);
     if (memberStat) memberStat.textContent = String(members.length);
+  }
+
+  // 💥 ฟังก์ชันโหลดอาจารย์ใส่ใน Select dropdown หน้าจัดการรายวิชา
+  function populateTeacherSelect(selectedTeacherId = '') {
+    if (!subjectTeacherSelect) {
+      return;
+    }
+
+    subjectTeacherSelect.innerHTML = `
+      <option value="">-- เลือกอาจารย์ผู้ดูแลรายวิชา --</option>
+      ${teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+    `;
+    
+    // ตั้งค่าอาจารย์คนเดิมในกรณีที่เป็นการแก้ไขข้อมูล
+    subjectTeacherSelect.value = selectedTeacherId || '';
   }
 
   function renderMembers() {
@@ -211,6 +237,7 @@
       `).join('')
       : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่พบข้อมูล</td></tr>';
   }
+
   window.editMember = id => {
     const member = members.find(item => String(item.id) === String(id));
     if (!member) {
@@ -298,7 +325,7 @@
   });
 
   window.editCurriculum = id => {
-    const curriculum = curricula.find(item => Number(item.id) === Number(id));
+    const curriculum = curricula.find(item => String(item.id) === String(id));
     if (!curriculum) {
       return;
     }
@@ -359,6 +386,7 @@
       return;
     }
 
+    // 💥 อัปเดตตารางแสดงวิชาให้โชว์ "อาจารย์ผู้ดูแลรายวิชา" จากหลังบ้านจริง
     subjectBody.innerHTML = subjects.length
       ? subjects.map(subject => `
         <tr>
@@ -366,26 +394,25 @@
           <td>${subject.name}</td>
           <td>${subject.credit}</td>
           <td><span class="badge ${subject.type === 'required' ? 'required' : 'elective'}">${subject.type === 'required' ? 'บังคับ' : 'วิชาเลือก'}</span></td>
+          <td style="color:var(--orange); font-weight:500;">${subject.teacher_name || 'ยังไม่มีผู้ดูแล'}</td>
           <td>
             <div class="action-btns">
+              <button type="button" class="btn-icon" style="color:var(--blue); border-color:var(--border);" onclick="manageLessons('${subject.id}')" title="จัดการบทเรียน">📚</button>
               <button type="button" class="btn-icon edit" onclick="editSubject('${subject.id}')" title="แก้ไขรายวิชา">✎</button>
               <button type="button" class="btn-icon del" onclick="deleteSubject('${subject.id}')">✕</button>
             </div>
           </td>
         </tr>
       `).join('')
-      : '<tr><td colspan="5" style="text-align:center;">ไม่มีข้อมูลรายวิชา</td></tr>';
+      : '<tr><td colspan="6" style="text-align:center;">ไม่มีข้อมูลรายวิชา</td></tr>';
   }
 
   document.querySelector('[data-goto="subject-add"]')?.addEventListener('click', () => {
     document.getElementById('subjectFormTitle').textContent = 'เพิ่มรายวิชาใหม่';
     document.getElementById('subjectForm').reset();
     document.getElementById('sf-id').value = '';
+    populateTeacherSelect(''); // เคลียร์ค่า Dropdown อาจารย์ให้เป็นค่าเริ่มต้น
   });
-
-  window.openSubjectEditor = (id, section = 'subject') => {
-    window.location.href = `staff_subject_editor.php?subject_id=${encodeURIComponent(id)}&section=${encodeURIComponent(section)}`;
-  };
 
   window.editSubject = id => {
     const subject = subjects.find(item => String(item.id) === String(id));
@@ -399,7 +426,10 @@
     document.getElementById('sf-code').value = subject.code || '';
     document.getElementById('sf-name').value = subject.name || '';
     document.getElementById('sf-credit').value = subject.credit || 0;
-    document.getElementById('sf-type').value = subject.type || 'elective';
+    document.getElementById('sf-type').value = subject.type || 'required';
+    
+    // ส่ง id ของอาจารย์คนเดิมไปค้างไว้ในฟังก์ชันเลือก Dropdown
+    populateTeacherSelect(subject.teachers_id || '');
     goTo('subject-add');
   };
 
@@ -413,6 +443,7 @@
     formData.append('name', document.getElementById('sf-name').value);
     formData.append('credit', document.getElementById('sf-credit').value);
     formData.append('type', document.getElementById('sf-type').value);
+    formData.append('teacher_id', subjectTeacherSelect?.value || ''); // 💥 บันทึกรหัสอาจารย์ผู้ดูแลวิชาเข้าฐานข้อมูล
 
     try {
       await fetchJson('api_staff.php', { method: 'POST', body: formData });
@@ -440,11 +471,8 @@
     });
   };
 
-  window.manageLessons = async (subjectId, subjectName) => {
-    currentSubjectId = subjectId;
-    document.getElementById('detailSubjectTitle').textContent = `วิชา: ${subjectName}`;
-    await loadLessons();
-    goTo('subject-detail');
+  window.manageLessons = (subjectId) => {
+    window.location.href = `staff_subject_editor.php?subject_id=${encodeURIComponent(subjectId)}`;
   };
 
   async function loadLessons() {
@@ -475,8 +503,8 @@
           <td>${lesson.video_url ? `<a href="${lesson.video_url}" target="_blank" style="color:var(--blue);text-decoration:none;">ลิงก์วิดีโอ</a>` : '-'}</td>
           <td>
             <div class="action-btns">
-              <button type="button" class="btn-icon edit" onclick="editLesson(${lesson.id})">✎</button>
-              <button type="button" class="btn-icon del" onclick="deleteLesson(${lesson.id})">✕</button>
+              <button type="button" class="btn-icon edit" onclick="editLesson('${lesson.id}')">✎</button>
+              <button type="button" class="btn-icon del" onclick="deleteLesson('${lesson.id}')">✕</button>
             </div>
           </td>
         </tr>
@@ -492,7 +520,7 @@
   };
 
   window.editLesson = id => {
-    const lesson = lessons.find(item => Number(item.id) === Number(id));
+    const lesson = lessons.find(item => String(item.id) === String(id));
     if (!lesson) {
       return;
     }

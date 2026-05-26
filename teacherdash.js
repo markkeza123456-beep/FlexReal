@@ -1,8 +1,8 @@
-/* ===== teacherdash.js ===== */
+﻿/* ===== teacherdash.js ===== */
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ── Sidebar nav – page view switching ─────────────
+    // โ”€โ”€ Sidebar nav โ€“ page view switching โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
     const navItems = document.querySelectorAll('.nav-item[data-view]');
     function switchView(viewName) {
         document.querySelectorAll('.page-view').forEach(v => v.style.display = 'none');
@@ -17,7 +17,14 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault(); switchView(item.dataset.view);
     }));
 
-    // ── Tabs ในหน้ารายละเอียด ───────────────────────────────────────────
+    const teacherSubjectSelect = document.getElementById('teacherSubjectSelect');
+    teacherSubjectSelect?.addEventListener('change', () => {
+        const subjectId = teacherSubjectSelect.value;
+        const url = new URL(window.location.href);
+        if (subjectId) url.searchParams.set('subject_id', subjectId);
+        else url.searchParams.delete('subject_id');
+        window.location.href = url.pathname.split('/').pop() + url.search;
+    });
     function switchLessonTab(tab) {
         document.querySelectorAll('.lesson-tab-btn').forEach(btn => {
             const isActive = btn.dataset.tab === tab;
@@ -35,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.lesson-tab-btn').forEach(btn => btn.addEventListener('click', () => switchLessonTab(btn.dataset.tab)));
 
 
-    // ── Student search inside detail ───────────────────
+    // โ”€โ”€ Student search inside detail โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
     const detailStudentSearch = document.getElementById('detailStudentSearch');
     if (detailStudentSearch) {
         detailStudentSearch.addEventListener('input', () => {
@@ -47,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ════════════ 1. ระบบจัดการ "บทเรียนย่อย" ════════════ //
+    // โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ• 1. เธฃเธฐเธเธเธเธฑเธ”เธเธฒเธฃ "เธเธ—เน€เธฃเธตเธขเธเธขเนเธญเธข" โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ• //
     const modalOverlay = document.getElementById('modalOverlay');
     document.getElementById('openModalBtn')?.addEventListener('click', () => modalOverlay.classList.add('open'));
     document.getElementById('closeModalBtn')?.addEventListener('click', () => modalOverlay.classList.remove('open'));
@@ -59,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const subjectId = document.getElementById('lessonSubjectId').value;
 
         if (!lessonName) { document.getElementById('lessonNameInput').style.borderColor = '#ef4444'; return; }
-        btn.textContent = '⏳...'; btn.disabled = true;
+        btn.textContent = 'โณ...'; btn.disabled = true;
 
         const fd = new FormData(); fd.append('action', 'add_lesson'); fd.append('lesson_name', lessonName); fd.append('subject_id', subjectId);
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
@@ -67,14 +74,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 location.reload(); 
             } else { 
                 alert(d.message); 
-                if(d.message.includes('ล็อกอิน')) {
+                if(d.message.includes('เธฅเนเธญเธเธญเธดเธ')) {
                     window.location.href = 'login.php';
                 } else {
                     btn.disabled = false;
-                    btn.textContent = '💾 บันทึกบทเรียน';
+                    btn.textContent = '๐’พ เธเธฑเธเธ—เธถเธเธเธ—เน€เธฃเธตเธขเธ';
                 }
             }
-        }).catch(() => { alert('เชื่อมต่อฐานข้อมูลล้มเหลว'); btn.disabled = false; btn.textContent = '💾 บันทึกบทเรียน'; });
+        }).catch(() => { alert('เน€เธเธทเนเธญเธกเธ•เนเธญเธเธฒเธเธเนเธญเธกเธนเธฅเธฅเนเธกเน€เธซเธฅเธง'); btn.disabled = false; btn.textContent = '๐’พ เธเธฑเธเธ—เธถเธเธเธ—เน€เธฃเธตเธขเธ'; });
     });
 
     const editLessonModal = document.getElementById('editLessonModal');
@@ -88,25 +95,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('saveEditLsnBtn')?.addEventListener('click', (e) => {
         const btn = e.target; const id = document.getElementById('editLsnIdInput').value; const name = document.getElementById('editLsnNameInput').value.trim();
-        btn.textContent = '⏳...'; btn.disabled = true;
+        btn.textContent = 'โณ...'; btn.disabled = true;
         const fd = new FormData(); fd.append('action', 'edit_lesson'); fd.append('lesson_id', id); fd.append('lesson_name', name);
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
             if(d.success) {
                 location.reload(); 
             } else { 
                 alert(d.message); 
-                if(d.message.includes('ล็อกอิน')) window.location.href = 'login.php';
-                else { btn.disabled = false; btn.textContent = '💾 บันทึกการแก้ไข'; }
+                if(d.message.includes('เธฅเนเธญเธเธญเธดเธ')) window.location.href = 'login.php';
+                else { btn.disabled = false; btn.textContent = '๐’พ เธเธฑเธเธ—เธถเธเธเธฒเธฃเนเธเนเนเธ'; }
             }
         });
     });
 
     document.querySelectorAll('.btn-del-lsn').forEach(btn => {
         btn.addEventListener('click', () => {
-            if(confirm('ต้องการลบบทเรียนนี้ใช่หรือไม่? (ข้อสอบในบทนี้จะถูกลบไปด้วย)')) {
+            if(confirm('เธ•เนเธญเธเธเธฒเธฃเธฅเธเธเธ—เน€เธฃเธตเธขเธเธเธตเนเนเธเนเธซเธฃเธทเธญเนเธกเน? (เธเนเธญเธชเธญเธเนเธเธเธ—เธเธตเนเธเธฐเธ–เธนเธเธฅเธเนเธเธ”เนเธงเธข)')) {
                 const fd = new FormData(); fd.append('action', 'delete_lesson'); fd.append('lesson_id', btn.dataset.id);
                 fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
-                    if(d.message && d.message.includes('ล็อกอิน')) { alert(d.message); window.location.href = 'login.php'; }
+                    if(d.message && d.message.includes('เธฅเนเธญเธเธญเธดเธ')) { alert(d.message); window.location.href = 'login.php'; }
                     else location.reload();
                 });
             }
@@ -114,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // ════════════ 2. ระบบจัดการ "แบบทดสอบ (Quiz) ใหม่" ════════════ //
+    // โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ• 2. เธฃเธฐเธเธเธเธฑเธ”เธเธฒเธฃ "เนเธเธเธ—เธ”เธชเธญเธ (Quiz) เนเธซเธกเน" โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ• //
 
     const quizTypeAdd = document.getElementById('quizTypeAdd');
     const grpChoiceAdd = document.getElementById('quizChoiceGroupAdd');
@@ -156,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ans = '-';
         }
 
-        btn.textContent = '⏳...'; btn.disabled = true;
+        btn.textContent = 'โณ...'; btn.disabled = true;
         const fd = new FormData();
         fd.append('action', 'add_quiz'); fd.append('lesson_id', lessonId); fd.append('type', type);
         fd.append('question', question); fd.append('choice_a', chA); fd.append('choice_b', chB); 
@@ -167,8 +174,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 location.reload(); 
             } else { 
                 alert(d.message); 
-                if(d.message.includes('ล็อกอิน')) window.location.href = 'login.php';
-                else { btn.disabled = false; btn.textContent = '➕ เพิ่มคำถาม'; }
+                if(d.message.includes('เธฅเนเธญเธเธญเธดเธ')) window.location.href = 'login.php';
+                else { btn.disabled = false; btn.textContent = 'โ• เน€เธเธดเนเธกเธเธณเธ–เธฒเธก'; }
             }
         });
     });
@@ -200,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const r = document.querySelector(`input[name="tfEdit"][value="${ans}"]`);
                 if(r) r.checked = true;
             } else if (type === 'essay') {
-                // ข้อเขียน
+                // เธเนเธญเน€เธเธตเธขเธ
             }
             editQuizModal.classList.add('open');
         });
@@ -226,24 +233,24 @@ document.addEventListener('DOMContentLoaded', () => {
         fd.append('type', type); fd.append('question', document.getElementById('editQuizQuestion').value.trim());
         fd.append('choice_a', chA); fd.append('choice_b', chB); fd.append('choice_c', chC); fd.append('choice_d', chD); fd.append('answer', ans);
 
-        btn.textContent = '⏳...'; btn.disabled = true;
+        btn.textContent = 'โณ...'; btn.disabled = true;
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
             if(d.success) {
                 location.reload(); 
             } else { 
                 alert(d.message); 
-                if(d.message.includes('ล็อกอิน')) window.location.href = 'login.php';
-                else { btn.disabled = false; btn.textContent = '💾 บันทึกการแก้ไข'; }
+                if(d.message.includes('เธฅเนเธญเธเธญเธดเธ')) window.location.href = 'login.php';
+                else { btn.disabled = false; btn.textContent = '๐’พ เธเธฑเธเธ—เธถเธเธเธฒเธฃเนเธเนเนเธ'; }
             }
         });
     });
 
     document.querySelectorAll('.btn-del-quiz').forEach(btn => {
         btn.addEventListener('click', () => {
-            if(confirm('แน่ใจหรือไม่ว่าต้องการลบคำถามนี้ทิ้ง?')) {
+            if(confirm('เนเธเนเนเธเธซเธฃเธทเธญเนเธกเนเธงเนเธฒเธ•เนเธญเธเธเธฒเธฃเธฅเธเธเธณเธ–เธฒเธกเธเธตเนเธ—เธดเนเธ?')) {
                 const fd = new FormData(); fd.append('action', 'delete_quiz'); fd.append('quiz_id', btn.dataset.id);
                 fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
-                    if(d.message && d.message.includes('ล็อกอิน')) { alert(d.message); window.location.href = 'login.php'; }
+                    if(d.message && d.message.includes('เธฅเนเธญเธเธญเธดเธ')) { alert(d.message); window.location.href = 'login.php'; }
                     else location.reload();
                 });
             }
@@ -251,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// ฟังก์ชันโชว์ข้อมูลความคืบหน้านักเรียนเวลาคลิกที่ชื่อ
+// เธเธฑเธเธเนเธเธฑเธเนเธเธงเนเธเนเธญเธกเธนเธฅเธเธงเธฒเธกเธเธทเธเธซเธเนเธฒเธเธฑเธเน€เธฃเธตเธขเธเน€เธงเธฅเธฒเธเธฅเธดเธเธ—เธตเนเธเธทเนเธญ
 window.showStudentProgress = function(element) {
     const name = element.getAttribute('data-name');
     const completed = element.getAttribute('data-completed');
@@ -269,13 +276,14 @@ window.showStudentProgress = function(element) {
     if (lessons && lessons.length > 0) {
         listContainer.innerHTML = lessons.map(l => `
             <div style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: #10b981; font-size: 13.5px; display:flex; align-items:center; gap:10px;">
-                <span style="background:rgba(16,185,129,0.15); padding:4px 6px; border-radius:4px; font-size:11px;">✅</span> 
+                <span style="background:rgba(16,185,129,0.15); padding:4px 6px; border-radius:4px; font-size:11px;">โ…</span> 
                 <span>${l}</span>
             </div>
         `).join('');
     } else {
-        listContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">ยังไม่ได้เริ่มเรียนบทเรียนใดเลย</div>`;
+        listContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">เธขเธฑเธเนเธกเนเนเธ”เนเน€เธฃเธดเนเธกเน€เธฃเธตเธขเธเธเธ—เน€เธฃเธตเธขเธเนเธ”เน€เธฅเธข</div>`;
     }
     
     document.getElementById('studentProgressModal').classList.add('open');
 }
+
