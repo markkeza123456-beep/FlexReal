@@ -14,6 +14,20 @@ const LESSON_VIDEO_FILES = [
     'videos/lesson-math.mp4',
     'videos/lesson-social.mp4'
 ];
+const VIDEO_CACHE_BUST = Date.now();
+const SUBJECT_IMAGE_ENDPOINT = 'subject_image.php';
+
+// ตั้งค่ารูปวิชาเองได้ที่นี่ (ใส่ได้ทั้งรหัสวิชา เช่น SUB004 หรือชื่อวิชา เช่น ประวัติศาสตร์)
+// ตัวอย่าง:
+// 'SUB004': 'images/subjects/history-custom.jpg',
+// 'ประวัติศาสตร์': 'images/subjects/history-custom.jpg'
+const SUBJECT_IMAGE_OVERRIDES = {
+    // 'SUB001': 'images/subjects/english.jpg',
+    // 'SUB002': 'images/subjects/math.jpg',
+    // 'SUB003': 'images/subjects/science.jpg',
+    // 'SUB004': 'images/subjects/history.jpg',
+    // 'SUB005': 'images/subjects/art.jpg'
+};
 
 function pick(obj, ...keys) {
     for (const key of keys) {
@@ -52,6 +66,13 @@ function getDashboardUrlForRole(role) {
         parent: 'parent_dashboard.php'
     };
     return map[String(role || '').toLowerCase()] || 'web.html';
+}
+
+function formatDisplayName(fullName, maxLength = 18) {
+    const name = String(fullName || '').trim();
+    if (!name) return 'ผู้ใช้งาน';
+    if (name.length <= maxLength) return name;
+    return `${name.slice(0, maxLength)}...`;
 }
 
 // 💥 แปลงข้อมูลบทเรียนจากฐานข้อมูล
@@ -305,6 +326,79 @@ function getCourseReturnUrl(courseName) {
     return url.pathname.split('/').pop() + url.search;
 }
 
+function buildSubjectSvgImage(bgStart, bgEnd, emoji, label) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+        <defs>
+            <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="${bgStart}"/>
+                <stop offset="100%" stop-color="${bgEnd}"/>
+            </linearGradient>
+        </defs>
+        <rect width="960" height="540" fill="url(#g)"/>
+        <circle cx="176" cy="136" r="82" fill="rgba(255,255,255,0.25)"/>
+        <circle cx="838" cy="420" r="108" fill="rgba(255,255,255,0.18)"/>
+        <text x="176" y="165" text-anchor="middle" font-size="94">${emoji}</text>
+        <text x="76" y="470" fill="#ffffff" font-size="62" font-weight="700" font-family="Prompt, sans-serif">${label}</text>
+    </svg>`;
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function getSubjectFallbackImage(subjectId, subjectName) {
+    const normalizedId = String(subjectId || '').trim().toUpperCase();
+    const normalizedName = String(subjectName || '').trim();
+    const key = `${normalizedId} ${normalizedName}`;
+    const customById = SUBJECT_IMAGE_OVERRIDES[normalizedId];
+    const customByName = SUBJECT_IMAGE_OVERRIDES[normalizedName];
+    if (customById) return String(customById);
+    if (customByName) return String(customByName);
+
+    if (key.includes('SUB001') || key.includes('อังกฤษ')) {
+        return buildSubjectSvgImage('#4f46e5', '#2563eb', '🔤', 'ภาษาอังกฤษ');
+    }
+    if (key.includes('SUB002') || key.includes('คณิต')) {
+        return buildSubjectSvgImage('#0f766e', '#14b8a6', '🧮', 'คณิตศาสตร์');
+    }
+    if (key.includes('SUB003') || key.includes('วิทย')) {
+        return buildSubjectSvgImage('#0f766e', '#22c55e', '🔬', 'วิทยาศาสตร์');
+    }
+    if (key.includes('SUB004') || key.includes('ประวัติ')) {
+        return buildSubjectSvgImage('#92400e', '#f59e0b', '🏛️', 'ประวัติศาสตร์');
+    }
+    if (key.includes('SUB005') || key.includes('ศิลปะ')) {
+        return buildSubjectSvgImage('#be123c', '#ec4899', '🎨', 'ศิลปะ');
+    }
+    if (key.includes('SUB006') || key.includes('ไทย')) {
+        return buildSubjectSvgImage('#b45309', '#f97316', '📚', 'ภาษาไทย');
+    }
+    if (key.includes('SUB007') || key.includes('สังคม')) {
+        return buildSubjectSvgImage('#1d4ed8', '#06b6d4', '🌍', 'สังคมศึกษา');
+    }
+    return buildSubjectSvgImage('#475569', '#64748b', '📘', normalizedName || normalizedId || 'รายวิชา');
+}
+
+function getSubjectImage(subjectId, subjectName) {
+    const normalizedId = String(subjectId || '').trim().toUpperCase();
+    const normalizedName = String(subjectName || '').trim();
+    const customById = SUBJECT_IMAGE_OVERRIDES[normalizedId];
+    const customByName = SUBJECT_IMAGE_OVERRIDES[normalizedName];
+    if (customById) return String(customById);
+    if (customByName) return String(customByName);
+    if (!normalizedId) return getSubjectFallbackImage(subjectId, subjectName);
+    const params = new URLSearchParams();
+    params.set('id', normalizedId);
+    return `${SUBJECT_IMAGE_ENDPOINT}?${params.toString()}`;
+}
+
+function handleCourseImageError(imageEl) {
+    if (!imageEl) return;
+    const fallback = imageEl.getAttribute('data-fallback') || '';
+    if (fallback && imageEl.src !== fallback) {
+        imageEl.src = fallback;
+        return;
+    }
+    imageEl.onerror = null;
+}
+
 function createCourseCardMarkup(course) {
     const subjectId = pick(course, 'subjects_id', 'Subjects_ID');
     const subjectName = pick(course, 'subjects_name', 'Subjects_Name') || '-';
@@ -314,9 +408,12 @@ function createCourseCardMarkup(course) {
     const tagText = subjectType === 'required' ? 'บังคับ' : 'วิชาเลือก';
     const icon = subjectType === 'required' ? '✓' : '＋';
     const statusText = isEnrolled ? 'ลงทะเบียนแล้ว' : 'ยังไม่ลงทะเบียน';
+    const imageUrl = getSubjectImage(subjectId, subjectName);
+    const fallbackImageUrl = getSubjectFallbackImage(subjectId, subjectName);
 
     return `
-        <div class="card card-no-image" onclick="showCourse('${escapeHtml(subjectId)}')">
+        <div class="card" onclick="showCourse('${escapeHtml(subjectId)}')">
+            <img src="${imageUrl}" data-fallback="${fallbackImageUrl}" onerror="handleCourseImageError(this)" alt="ภาพประกอบวิชา ${escapeHtml(subjectName)}" loading="lazy">
             <div class="card-content">
                 <div class="card-icon">${icon}</div>
                 <span class="card-tag ${subjectType}">${tagText}</span>
@@ -408,22 +505,9 @@ async function loadAllCourses() {
     }
 }
 
-// 💥 โหลดข้อมูลตอนกดเข้าวิชา — เปิดหน้าใหม่เลย
+// 💥 โหลดข้อมูลตอนกดเข้าวิชา
 async function showCourse(subjectId) {
     if (courseIdByName[subjectId]) subjectId = courseIdByName[subjectId];
-    
-    // ถ้าอยู่บน URL ที่มี subject_id ตรงกันอยู่แล้ว ไม่ต้อง navigate ใหม่
-    const currentParams = new URLSearchParams(window.location.search);
-    if (currentParams.get('subject_id') === subjectId) {
-        await _loadCourseDetail(subjectId);
-        return;
-    }
-    
-    // เปิดหน้าใหม่พร้อม subject_id
-    window.location.href = `web.html?subject_id=${encodeURIComponent(subjectId)}`;
-}
-
-async function _loadCourseDetail(subjectId) {
     currentSubjectId = subjectId;
     
     try {
@@ -455,6 +539,10 @@ async function _loadCourseDetail(subjectId) {
 
             openTab({ currentTarget: document.querySelector('.tab-btn') }, 'overview');
             showPage('course-detail');
+            
+            const url = new URL(window.location.href);
+            url.searchParams.set('subject_id', subjectId);
+            window.history.replaceState({}, '', url);
         } else {
             alert('ไม่พบข้อมูลรายวิชา: ' + result.message);
         }
@@ -580,7 +668,9 @@ function getLessonVideoPath(lessonIndex) {
         LESSON_VIDEO_FILES[safeIndex - 1],
         LESSON_VIDEO_FILES[0]
     ];
-    return candidates.find(Boolean);
+    const selected = candidates.find(Boolean) || '';
+    if (!selected) return '';
+    return `${selected}?v=${VIDEO_CACHE_BUST}`;
 }
 
 function renderVideoModalBody(lessonIndex) {
@@ -660,7 +750,6 @@ function showGuide(type) {
     const content = document.getElementById('guide-content');
     const guides = {
         'register': ['ขั้นตอนการสมัคร', '1. กด Login <br> 2. กรอก Email <br> 3. เริ่มเรียน'],
-        'search': ['วิธีค้นหาบทเรียน', 'ใช้ช่อง Search พิมพ์ชื่อวิชาที่สนใจ'],
         'certificate': ['การรับใบประกาศ', 'เรียนจบ 100% ดาวน์โหลดได้ทันที']
     };
     title.innerText = guides[type][0];
@@ -697,7 +786,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (currentUser.logged_in) {
             if (loginBtn) loginBtn.style.display = 'none';
             if (userProfile) userProfile.style.display = 'inline-flex';
-            if (userName) userName.textContent = currentUser.name || 'ผู้ใช้งาน';
+            if (userName) {
+                const fullName = currentUser.name || 'ผู้ใช้งาน';
+                userName.textContent = formatDisplayName(fullName);
+                userName.title = fullName;
+            }
             if (userAvatar) userAvatar.textContent = currentUser.avatar_text || 'U';
             if (userMenu) {
                 const profileLink = userMenu.querySelector('a');
@@ -723,7 +816,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     const subjectId = params.get('subject_id');
     const courseName = params.get('course');
-
-    if (subjectId) { setTimeout(() => { _loadCourseDetail(subjectId); }, 300); } 
+    if (subjectId) { setTimeout(() => { showCourse(subjectId); }, 300); } 
     else if (courseName) { setTimeout(() => { showCourse(courseName); }, 400); }
 });
