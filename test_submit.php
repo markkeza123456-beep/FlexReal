@@ -22,33 +22,13 @@ function tableColumns(PDO $conn, string $schema, string $table): array
     return array_map('strval', $stmt->fetchAll(PDO::FETCH_COLUMN));
 }
 
-<<<<<<< Updated upstream
-function dynamicInsert(PDO $conn, string $table, array $columns, array $data): int
-{
-    $usable = [];
-    $params = [];
-    foreach ($data as $column => $value) {
-        if (in_array($column, $columns, true)) {
-            $usable[] = $column;
-            $params[':' . $column] = $value;
-        }
-    }
-
-    if (empty($usable)) {
-        throw new Exception("ไม่มีคอลัมน์รองรับการบันทึกในตาราง {$table}");
-    }
-
-    $cols = implode(', ', $usable);
-    $vals = implode(', ', array_map(fn($c) => ':' . $c, $usable));
-    $returning = in_array('test_id', $columns, true) ? ' RETURNING test_id' : '';
-    $sql = "INSERT INTO public.{$table} ({$cols}) VALUES ({$vals}){$returning}";
-    $stmt = $conn->prepare($sql);
-    $stmt->execute($params);
-
-    if ($returning !== '') {
-=======
 function insertTestAttempt(PDO $conn, array $columns, array $data): int
 {
+    if (in_array('test_id', $columns, true) && !array_key_exists('test_id', $data)) {
+        $nextIdStmt = $conn->query("SELECT COALESCE(MAX(test_id), 0) + 1 FROM public.test");
+        $data['test_id'] = (int) $nextIdStmt->fetchColumn();
+    }
+
     $available = [];
     $params = [];
     foreach ($data as $column => $value) {
@@ -75,17 +55,12 @@ function insertTestAttempt(PDO $conn, array $columns, array $data): int
     $stmt->execute($params);
 
     if ($supportsReturning) {
->>>>>>> Stashed changes
         $id = $stmt->fetchColumn();
         return $id !== false ? (int) $id : 0;
     }
     return 0;
 }
 
-<<<<<<< Updated upstream
-$data = json_decode(file_get_contents('php://input'), true);
-if (!is_array($data)) {
-=======
 function normalizeAnswerLetter(string $raw): string
 {
     $value = strtoupper(trim($raw));
@@ -139,7 +114,6 @@ function loadQuestionsForScoring(PDO $conn, string $subjectId, int $lessonIndex,
 
 $payload = json_decode(file_get_contents('php://input'), true);
 if (!is_array($payload)) {
->>>>>>> Stashed changes
     out(['status' => 'error', 'message' => 'รูปแบบข้อมูลไม่ถูกต้อง'], 400);
 }
 
@@ -149,22 +123,14 @@ if (!isset($_SESSION['user_id']) || $role !== 'student') {
 }
 
 $studentId = (string) $_SESSION['user_id'];
-<<<<<<< Updated upstream
-$subjectId = trim((string) ($data['subject_id'] ?? ''));
-$lessonIndex = max(1, (int) ($data['lesson_index'] ?? 1));
-$score = (int) ($data['score'] ?? 0);
-$totalScore = max(0, (int) ($data['total_score'] ?? 0));
-$answers = is_array($data['answers'] ?? null) ? $data['answers'] : [];
-$requiredScore = max(1, (int) ceil(max(1, $totalScore) * 0.6));
-$quizStatus = $score >= $requiredScore ? 'pass' : 'fail';
-=======
 $subjectId = trim((string) ($payload['subject_id'] ?? ''));
 $lessonIndex = max(1, (int) ($payload['lesson_index'] ?? 1));
 $score = 0;
 $totalScore = 0;
+$clientScore = max(0, (int) ($payload['score'] ?? 0));
+$clientTotalScore = max(0, (int) ($payload['total_score'] ?? 0));
 $answers = is_array($payload['answers'] ?? null) ? $payload['answers'] : [];
 $courseName = trim((string) ($payload['course_name'] ?? ''));
->>>>>>> Stashed changes
 
 if ($subjectId === '') {
     out(['status' => 'error', 'message' => 'ไม่พบรหัสรายวิชา'], 400);
@@ -174,39 +140,6 @@ try {
     $conn->beginTransaction();
     ensureLearningProgressTables($conn);
 
-<<<<<<< Updated upstream
-    $offset = $lessonIndex - 1;
-    $stmtLesson = $conn->prepare("SELECT lessons_id FROM public.lessons WHERE subjects_id = ? ORDER BY lessons_id ASC LIMIT 1 OFFSET ?");
-    $stmtLesson->execute([$subjectId, $offset]);
-    $lessonId = (string) ($stmtLesson->fetchColumn() ?: '');
-    if ($lessonId === '') {
-        throw new Exception('ไม่พบบทเรียน');
-    }
-
-    $testColumns = tableColumns($conn, 'public', 'test');
-    $testData = [
-        'student_id' => $studentId,
-        'lessons_id' => $lessonId,
-        'subjects_id' => $subjectId,
-        'lesson_no' => $lessonIndex,
-        'score' => $score,
-        'total_score' => $totalScore,
-        'status' => $quizStatus,
-    ];
-    $testId = dynamicInsert($conn, 'test', $testColumns, $testData);
-
-    $stmtQ = $conn->prepare("SELECT questions_id FROM public.test_questions WHERE lessons_id = ? ORDER BY questions_id ASC");
-    $stmtQ->execute([$lessonId]);
-    $questions = $stmtQ->fetchAll(PDO::FETCH_ASSOC);
-
-    $answerColumns = tableColumns($conn, 'public', 'test_answers');
-    $canSaveAnswers = in_array('questions_id', $answerColumns, true) && in_array('selected_choice', $answerColumns, true);
-    $hasTestId = in_array('test_id', $answerColumns, true);
-    $choiceMap = [0 => 'A', 1 => 'B', 2 => 'C', 3 => 'D'];
-
-    if ($canSaveAnswers && $hasTestId && $testId > 0) {
-        $stmtAns = $conn->prepare("INSERT INTO public.test_answers (questions_id, test_id, selected_choice) VALUES (?, ?, ?)");
-=======
     $subjectStmt = $conn->prepare('SELECT subjects_name FROM public.subjects WHERE subjects_id = ? LIMIT 1');
     $subjectStmt->execute([$subjectId]);
     $subjectName = (string) ($subjectStmt->fetchColumn() ?: $courseName);
@@ -238,7 +171,12 @@ try {
         }
     }
 
-    $requiredScore = max(1, (int) ceil(max(1, $totalScore) * 0.6));
+    if ($clientTotalScore > 0 && $clientScore <= $clientTotalScore) {
+        $totalScore = $clientTotalScore;
+        $score = $clientScore;
+    }
+
+    $requiredScore = max(1, (int) ceil($totalScore * 0.6));
     $quizStatus = $score >= $requiredScore ? 'pass' : 'fail';
 
     $testColumns = tableColumns($conn, 'public', 'test');
@@ -276,28 +214,17 @@ try {
 
     if ($canSaveAnswers && $hasTestIdCol && $testId > 0 && !empty($questions)) {
         $insertAnswer = $conn->prepare("INSERT INTO public.test_answers (questions_id, test_id, selected_choice) VALUES (?, ?, ?)");
->>>>>>> Stashed changes
         foreach ($questions as $index => $q) {
             $selected = '-';
             if (array_key_exists($index, $answers) && $answers[$index] !== null) {
                 $selected = $choiceMap[(int) $answers[$index]] ?? '-';
-<<<<<<< Updated upstream
-=======
             }
             if ($questionSource === 'test_questions') {
                 $insertAnswer->execute([(int) $q['qid'], $testId, $selected]);
->>>>>>> Stashed changes
             }
-            $stmtAns->execute([(int) $q['questions_id'], $testId, $selected]);
         }
     }
 
-<<<<<<< Updated upstream
-    if ($quizStatus === 'pass') {
-        $stmtRecord = $conn->prepare("INSERT INTO public.learning_records (student_id, lessons_id, activity_type) VALUES (?, ?, 'quiz_passed') ON CONFLICT DO NOTHING");
-        $stmtRecord->execute([$studentId, $lessonId]);
-    }
-=======
     recordLearningActivity(
         $conn,
         $studentId,
@@ -308,7 +235,6 @@ try {
         $score,
         $totalScore
     );
->>>>>>> Stashed changes
 
     $conn->commit();
     out([
@@ -317,16 +243,13 @@ try {
         'score' => $score,
         'total_score' => $totalScore,
         'required_score' => $requiredScore,
-<<<<<<< Updated upstream
-        'message' => 'บันทึกคำตอบสำเร็จ!'
-=======
         'message' => 'บันทึกผลสอบเรียบร้อย'
->>>>>>> Stashed changes
     ]);
 } catch (Throwable $e) {
     if ($conn->inTransaction()) {
         $conn->rollBack();
     }
-    out(['status' => 'error', 'message' => 'DB Error: ' . $e->getMessage()], 500);
+    error_log('test_submit.php error: ' . $e->getMessage());
+    out(['status' => 'error', 'message' => 'ไม่สามารถบันทึกผลได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง'], 500);
 }
 ?>

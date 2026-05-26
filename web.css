@@ -25,9 +25,28 @@ body { background: #f9ba87; color: var(--deep-blue); }
     align-items: center; justify-content: space-between;
     box-shadow: 0 2px 15px rgba(0,0,0,0.05);
     position: sticky; top: 0; z-index: 1000;
+    gap: 20px;
 }
 .logo { font-size: 24px; font-weight: 800; color: var(--primary-orange); text-decoration: none; cursor: pointer; }
 .nav-links { display: flex; gap: 30px; align-items: center; }
+.nav-search-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    min-width: 180px;
+}
+.nav-search-box {
+    margin-top: 0;
+    max-width: 460px;
+    padding: 12px 20px;
+    border: 1px solid #ff9f5a;
+    box-shadow: none;
+    background: #ffffff;
+    color: #4a2a00;
+}
+.nav-search-box::placeholder {
+    color: #7a4a14;
+}
 .user-profile-wrap {
     position: relative;
 }
@@ -42,6 +61,14 @@ body { background: #f9ba87; color: var(--deep-blue); }
     color: var(--deep-blue);
     font-weight: 600;
     cursor: pointer;
+    max-width: 380px;
+}
+.user-profile #userName {
+    display: inline-block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 280px;
 }
 .user-profile:focus {
     outline: none;
@@ -98,7 +125,32 @@ body { background: #f9ba87; color: var(--deep-blue); }
 
 /* Hero */
 .hero { background: linear-gradient(135deg, #ff6b00 0%, #ff9100 100%); padding: 60px 8%; text-align: center; color: white; }
+.hero h1 {
+    font-size: 72px;
+    line-height: 1.1;
+    margin-bottom: 12px;
+}
 .search-box { width: 100%; max-width: 600px; padding: 18px 30px; border-radius: 50px; border: none; margin-top: 20px; outline: none; box-shadow: var(--shadow); }
+
+@media (max-width: 1100px) {
+    .navbar {
+        flex-wrap: wrap;
+    }
+    .nav-search-container {
+        order: 3;
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .nav-search-box {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 48px;
+    }
+}
 
 /* Course Cards */
 .container { padding: 50px 8%; }

@@ -25,51 +25,44 @@ backToCourse.href = subjectId
     ? `web.html?subject_id=${encodeURIComponent(subjectId)}&course=${encodeURIComponent(courseName)}`
     : `web.html?course=${encodeURIComponent(courseName)}`;
 
-function getProgressRow(summary) {
-    const rows = Array.isArray(summary?.lessons) ? summary.lessons : [];
-    return rows.find((row) => Number(row.lesson_index || 0) === lessonIndex) || {};
+function renderLessonResults(lessonResults) {
+    if (!Array.isArray(lessonResults) || lessonResults.length === 0) {
+        return '<p class="lesson-status-empty">ยังไม่มีข้อมูลคะแนนของแต่ละบท</p>';
+    }
+
+    return `
+        <div class="lesson-status-list">
+            ${lessonResults.map((row) => {
+                const statusRaw = (row.status || '').toLowerCase();
+                const isPass = statusRaw === 'pass';
+                const score = Number(row.score || 0);
+                const total = Math.max(0, Number(row.total_score || 0));
+                return `
+                    <div class="lesson-status-item ${isPass ? 'is-pass' : 'is-fail'}">
+                        <span>บทที่ ${Number(row.lesson_no || 0)}</span>
+                        <span>${isPass ? 'ผ่าน' : 'ไม่ผ่าน'} (${score}/${total})</span>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
 }
 
-async function validateQuizAccess() {
-    if (!subjectId) return { ok: false, message: 'ไม่พบรหัสรายวิชา' };
-
+async function fetchLessonResultsHtml() {
+    if (!subjectId) {
+        return '<p class="lesson-status-empty">ไม่พบรหัสรายวิชา</p>';
+    }
     try {
-        const [summaryResponse, quizProgressResponse] = await Promise.all([
-            fetch(`student_learning_api.php?action=summary&subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin' }),
-            fetch(`api_quiz_progress.php?subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin' })
-        ]);
-
-        const summaryResult = await summaryResponse.json();
-        const quizProgressResult = await quizProgressResponse.json();
-
-        if (summaryResult.status !== 'success') {
-            return { ok: false, message: 'ไม่สามารถตรวจสอบสิทธิ์การทำข้อสอบได้' };
+        const response = await fetch(`api_quiz_progress.php?subject_id=${encodeURIComponent(subjectId)}`, {
+            credentials: 'same-origin'
+        });
+        const result = await response.json();
+        if (result.status !== 'success') {
+            return '<p class="lesson-status-empty">โหลดสถานะแต่ละบทไม่สำเร็จ</p>';
         }
-
-        const passedLessons = new Set(
-            quizProgressResult.status === 'success' && Array.isArray(quizProgressResult.passed_lessons)
-                ? quizProgressResult.passed_lessons.map((v) => Number(v))
-                : []
-        );
-
-        if (lessonIndex > 1 && !passedLessons.has(lessonIndex - 1)) {
-            return { ok: false, message: `ต้องสอบผ่านบทที่ ${lessonIndex - 1} ก่อน` };
-        }
-
-        const currentRow = getProgressRow(summaryResult.summary || {});
-        const openedCount = Number(currentRow.opened_count || 0);
-        const videoCompletedCount = Number(currentRow.video_open_count || 0);
-
-        if (openedCount <= 0) {
-            return { ok: false, message: 'ต้องอ่านบทเรียนให้จบก่อนทำข้อสอบ' };
-        }
-        if (videoCompletedCount <= 0) {
-            return { ok: false, message: 'ต้องดูวิดีโอให้จบก่อนทำข้อสอบ' };
-        }
-
-        return { ok: true, message: '' };
+        return renderLessonResults(result.lesson_results);
     } catch (error) {
-        return { ok: false, message: 'เชื่อมต่อระบบตรวจสอบเงื่อนไขไม่สำเร็จ' };
+        return '<p class="lesson-status-empty">เชื่อมต่อข้อมูลสถานะแต่ละบทไม่สำเร็จ</p>';
     }
 }
 
@@ -144,12 +137,15 @@ async function showResult() {
     const requiredScore = Math.max(1, Math.ceil(quiz.questions.length * 0.6));
     const isPassed = score >= requiredScore;
 
+    const lessonResultsHtml = await fetchLessonResultsHtml();
     resultBox.hidden = false;
     resultBox.innerHTML = `
         <h2>ผลคะแนน</h2>
         <p>คุณได้ <span class="score">${score}/${quiz.questions.length}</span> คะแนน</p>
-        <p>${isPassed ? 'ผ่านเกณฑ์แล้ว ไปบทถัดไปได้' : 'ยังไม่ผ่านเกณฑ์ กรุณาทำซ้ำบทเดิมอีกครั้ง'}</p>
+        <p>${isPassed ? 'ผ่านเกณฑ์แล้ว สามารถกลับไปหน้ารายวิชาได้' : 'ยังไม่ผ่านเกณฑ์ กรุณาทำซ้ำบทเดิมอีกครั้ง'}</p>
         <p>เกณฑ์ผ่าน: ${requiredScore} คะแนน</p>
+        <h3>สถานะแต่ละบท</h3>
+        ${lessonResultsHtml}
         ${isPassed ? renderAnswerKey() : ''}
         <p id="saveStatus">กำลังบันทึกผลแบบทดสอบ...</p>
     `;
@@ -170,26 +166,17 @@ async function showResult() {
         if (result.status === 'success') {
             lastResultPassed = result.quiz_status === 'pass';
             saveStatus.innerText = result.quiz_status === 'pass'
-                ? 'บันทึกผลแล้ว: ผ่านบทนี้ สามารถไปบทถัดไปได้'
+                ? 'บันทึกผลแล้ว: ผ่านบทนี้'
                 : 'บันทึกผลแล้ว: ยังไม่ผ่าน กรุณาทำซ้ำบทนี้';
             const actionHtml = lastResultPassed
-                ? `<button id="resultActionBtn" class="btn-primary">ไปบทถัดไป</button>`
+                ? `<button id="resultActionBtn" class="btn-primary">กลับไปรายวิชา</button>`
                 : `<button id="resultActionBtn" class="btn-primary">กลับไปทำใหม่</button>`;
             resultBox.insertAdjacentHTML('beforeend', actionHtml);
             const resultActionBtn = document.getElementById('resultActionBtn');
             if (resultActionBtn) {
                 resultActionBtn.addEventListener('click', () => {
                     if (lastResultPassed) {
-                        const nextLesson = lessonIndex + 1;
-                        if (nextLesson > 5) {
-                            window.location.href = backToCourse.href;
-                            return;
-                        }
-                        const nextUrl = new URL('test.html', window.location.href);
-                        nextUrl.searchParams.set('course', courseName);
-                        nextUrl.searchParams.set('subject_id', subjectId);
-                        nextUrl.searchParams.set('lesson', String(nextLesson));
-                        window.location.href = nextUrl.pathname.split('/').pop() + nextUrl.search;
+                        window.location.href = backToCourse.href;
                         return;
                     }
                     answers.fill(null);
@@ -202,7 +189,7 @@ async function showResult() {
                 });
             }
         } else {
-            saveStatus.innerText = result.message || 'บันทึกผลไม่สำเร็จ';
+            saveStatus.innerText = 'บันทึกผลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
         }
     } catch (error) {
         saveStatus.innerText = 'เชื่อมต่อระบบบันทึกผลไม่ได้';
@@ -213,16 +200,6 @@ async function loadQuizFromDatabase() {
     if (!subjectId) {
         quizSubtitle.innerText = 'ไม่พบ subject_id';
         quizForm.innerHTML = '<p>ไม่สามารถโหลดข้อสอบได้ กรุณากลับไปเลือกวิชาใหม่</p>';
-        prevBtn.hidden = true;
-        nextBtn.hidden = true;
-        submitBtn.hidden = true;
-        return;
-    }
-
-    const access = await validateQuizAccess();
-    if (!access.ok) {
-        quizSubtitle.innerText = 'ยังไม่ผ่านเงื่อนไขก่อนทำแบบทดสอบ';
-        quizForm.innerHTML = `<p>${access.message}</p>`;
         prevBtn.hidden = true;
         nextBtn.hidden = true;
         submitBtn.hidden = true;

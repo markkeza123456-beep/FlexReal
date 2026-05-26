@@ -35,29 +35,49 @@ try {
     $subjectName = (string) ($stmtSubject->fetchColumn() ?: '');
 
     $stmt = $conn->prepare(
-        'SELECT DISTINCT lesson_no
+        'SELECT lesson_no, status, score, total_score, COALESCE(test_id, 0) AS attempt_order
          FROM public.test
          WHERE student_id = :student_id
            AND (
                 subjects_id = :subjects_id
                 OR (:subject_name <> \'\' AND course_name = :subject_name)
            )
-           AND status = :status
            AND lesson_no IS NOT NULL
-         ORDER BY lesson_no ASC'
+         ORDER BY lesson_no ASC, COALESCE(test_id, 0) DESC'
     );
     $stmt->execute([
         ':student_id' => $studentId,
         ':subjects_id' => $subjectId,
         ':subject_name' => $subjectName,
-        ':status' => 'pass',
     ]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $lessonMap = [];
+    foreach ($rows as $row) {
+        $lessonNo = (int) ($row['lesson_no'] ?? 0);
+        if ($lessonNo <= 0 || isset($lessonMap[$lessonNo])) {
+            continue;
+        }
+        $lessonMap[$lessonNo] = [
+            'lesson_no' => $lessonNo,
+            'status' => (string) ($row['status'] ?? 'fail'),
+            'score' => (int) ($row['score'] ?? 0),
+            'total_score' => (int) ($row['total_score'] ?? 0),
+        ];
+    }
 
-    $passedLessons = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    ksort($lessonMap);
+    $lessonResults = array_values($lessonMap);
+    $passedLessons = [];
+    foreach ($lessonResults as $lesson) {
+        if (($lesson['status'] ?? '') === 'pass') {
+            $passedLessons[] = (int) $lesson['lesson_no'];
+        }
+    }
 
     jsonResponse([
         'status' => 'success',
         'passed_lessons' => $passedLessons,
+        'lesson_results' => $lessonResults,
     ]);
 } catch (Throwable $e) {
     jsonResponse([
