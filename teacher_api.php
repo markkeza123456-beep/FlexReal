@@ -1,125 +1,237 @@
-<?php
+﻿<?php
 session_start();
 require_once 'db_connect.php';
 header('Content-Type: application/json; charset=utf-8');
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
+if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'teacher') {
     echo json_encode(['success' => false, 'message' => 'กรุณาล็อกอินใหม่']);
     exit;
 }
 
 $action = $_POST['action'] ?? '';
+$teacherId = (string) $_SESSION['user_id'];
+
+function teacherOwnsSubject(PDO $conn, string $teacherId, string $subjectId): bool
+{
+    $stmt = $conn->prepare(
+        'SELECT 1
+         FROM public.subjects
+         WHERE subjects_id = :subject_id
+           AND teachers_id = :teacher_id
+         LIMIT 1'
+    );
+    $stmt->execute([
+        ':subject_id' => $subjectId,
+        ':teacher_id' => $teacherId,
+    ]);
+
+    return (bool) $stmt->fetchColumn();
+}
+
+function teacherOwnsLesson(PDO $conn, string $teacherId, string $lessonId): bool
+{
+    $stmt = $conn->prepare(
+        'SELECT 1
+         FROM public.lessons l
+         INNER JOIN public.subjects s ON s.subjects_id = l.subjects_id
+         WHERE l.lessons_id = :lesson_id
+           AND s.teachers_id = :teacher_id
+         LIMIT 1'
+    );
+    $stmt->execute([
+        ':lesson_id' => $lessonId,
+        ':teacher_id' => $teacherId,
+    ]);
+
+    return (bool) $stmt->fetchColumn();
+}
+
+function teacherOwnsQuiz(PDO $conn, string $teacherId, string $quizId): bool
+{
+    $stmt = $conn->prepare(
+        'SELECT 1
+         FROM public.test_questions tq
+         INNER JOIN public.lessons l ON l.lessons_id = tq.lessons_id
+         INNER JOIN public.subjects s ON s.subjects_id = l.subjects_id
+         WHERE tq.questions_id = :quiz_id
+           AND s.teachers_id = :teacher_id
+         LIMIT 1'
+    );
+    $stmt->execute([
+        ':quiz_id' => $quizId,
+        ':teacher_id' => $teacherId,
+    ]);
+
+    return (bool) $stmt->fetchColumn();
+}
 
 try {
-    // ---- 1. เพิ่มบทเรียน (Lessons) ----
     if ($action === 'add_lesson') {
-        $lesson_name = $_POST['lesson_name'] ?? '';
-        $subject_id = $_POST['subject_id'] ?? ''; 
-        if(empty($lesson_name) || empty($subject_id)) throw new Exception("ข้อมูลไม่ครบถ้วน");
+        $lessonName = trim((string) ($_POST['lesson_name'] ?? ''));
+        $subjectId = trim((string) ($_POST['subject_id'] ?? ''));
+        if ($lessonName === '' || $subjectId === '') {
+            throw new Exception('ข้อมูลไม่ครบถ้วน');
+        }
+        if (!teacherOwnsSubject($conn, $teacherId, $subjectId)) {
+            throw new Exception('คุณไม่มีสิทธิ์จัดการรายวิชานี้');
+        }
 
-        // หา ID ล่าสุดที่ขึ้นต้นด้วย L เพื่อรันเลขต่อ (เช่น L001, L002 -> L003)
         $stmtId = $conn->query("SELECT lessons_id FROM public.lessons WHERE lessons_id LIKE 'L%' ORDER BY LENGTH(lessons_id) DESC, lessons_id DESC LIMIT 1");
-        $lastId = $stmtId->fetchColumn();
-        
-        if ($lastId) {
-            $nextNum = intval(substr($lastId, 1)) + 1;
-        } else {
-            $nextNum = 1;
+        $lastId = (string) ($stmtId->fetchColumn() ?: '');
+        $nextNum = $lastId !== '' ? intval(substr($lastId, 1)) + 1 : 1;
+        $lessonId = 'L' . str_pad((string) $nextNum, 3, '0', STR_PAD_LEFT);
+
+        $stmt = $conn->prepare(
+            'INSERT INTO public.lessons (lessons_id, lessons_name, study_hours, subjects_id)
+             VALUES (:id, :name, :hours, :subject_id)'
+        );
+        $stmt->execute([
+            ':id' => $lessonId,
+            ':name' => $lessonName,
+            ':hours' => 1,
+            ':subject_id' => $subjectId,
+        ]);
+
+        echo json_encode(['success' => true, 'message' => 'เพิ่มบทเรียนสำเร็จ']);
+        exit;
+    }
+
+    if ($action === 'edit_lesson') {
+        $lessonId = trim((string) ($_POST['lesson_id'] ?? ''));
+        $lessonName = trim((string) ($_POST['lesson_name'] ?? ''));
+        if ($lessonId === '' || $lessonName === '') {
+            throw new Exception('ข้อมูลไม่ครบถ้วน');
         }
-        $lesson_id = 'L' . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
-
-        $stmt = $conn->prepare("INSERT INTO public.lessons (lessons_id, lessons_name, study_hours, subjects_id) VALUES (:id, :name, :hrs, :sub)");
-        $stmt->execute(['id' => $lesson_id, 'name' => $lesson_name, 'hrs' => 1, 'sub' => $subject_id]);
-        echo json_encode(['success' => true, 'message' => 'เพิ่มบทเรียนสำเร็จ!']);
-    }
-
-    // ---- 2. แก้ไขบทเรียน ----
-    elseif ($action === 'edit_lesson') {
-        $lesson_id = $_POST['lesson_id'] ?? '';
-        $lesson_name = $_POST['lesson_name'] ?? '';
-        if(empty($lesson_id) || empty($lesson_name)) throw new Exception("ข้อมูลไม่ครบถ้วน");
-
-        $stmt = $conn->prepare("UPDATE public.lessons SET lessons_name = :name WHERE lessons_id = :id");
-        $stmt->execute(['name' => $lesson_name, 'id' => $lesson_id]);
-        echo json_encode(['success' => true, 'message' => 'แก้ไขบทเรียนสำเร็จ!']);
-    }
-
-    // ---- 3. ลบบบทเรียน ----
-    elseif ($action === 'delete_lesson') {
-        $lesson_id = $_POST['lesson_id'] ?? '';
-        if(empty($lesson_id)) throw new Exception("ไม่พบรหัสบทเรียน");
-
-        $conn->prepare("DELETE FROM public.test_questions WHERE lessons_id = ?")->execute([$lesson_id]);
-        $conn->prepare("DELETE FROM public.lessons WHERE lessons_id = ?")->execute([$lesson_id]);
-        echo json_encode(['success' => true, 'message' => 'ลบบทเรียนสำเร็จ!']);
-    }
-
-    // ---- 4. เพิ่มแบบทดสอบ ----
-    elseif ($action === 'add_quiz') {
-        $lesson_id = $_POST['lesson_id'] ?? '';
-        $question = $_POST['question'] ?? '';
-        $type = $_POST['type'] ?? 'choice';
-        
-        $cA = $_POST['choice_a'] ?? '';
-        $cB = $_POST['choice_b'] ?? '';
-        $cC = $_POST['choice_c'] ?? '';
-        $cD = $_POST['choice_d'] ?? '';
-        $answer = $_POST['answer'] ?? '';
-
-        if(empty($lesson_id) || empty($question)) throw new Exception("ข้อมูลคำถามไม่ครบ");
-
-        if ($type === 'truefalse') {
-            $cA = 'ถูก'; $cB = 'ผิด'; $cC = '-'; $cD = '-';
-        } elseif ($type === 'essay') {
-            $cA = '-'; $cB = '-'; $cC = '-'; $cD = '-';
-            $answer = '-'; 
+        if (!teacherOwnsLesson($conn, $teacherId, $lessonId)) {
+            throw new Exception('คุณไม่มีสิทธิ์แก้ไขบทเรียนนี้');
         }
 
-        // 💥 แก้ไขแล้ว: ให้ PHP คำนวณหาเลขข้อสอบล่าสุด แล้วบวก 1 เข้าไปเอง
-        $stmtId = $conn->query("SELECT COALESCE(MAX(questions_id), 0) + 1 FROM public.test_questions");
-        $nextId = $stmtId->fetchColumn();
+        $stmt = $conn->prepare('UPDATE public.lessons SET lessons_name = :name WHERE lessons_id = :id');
+        $stmt->execute([
+            ':name' => $lessonName,
+            ':id' => $lessonId,
+        ]);
 
-        $stmt = $conn->prepare("INSERT INTO public.test_questions (questions_id, questions_text, choice_a, choice_b, choice_c, choice_d, correct_answer, lessons_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$nextId, $question, $cA, $cB, $cC, $cD, $answer, $lesson_id]);
-        echo json_encode(['success' => true, 'message' => 'เพิ่มคำถามสำเร็จ!']);
+        echo json_encode(['success' => true, 'message' => 'แก้ไขบทเรียนสำเร็จ']);
+        exit;
     }
 
-    // ---- 5. แก้ไขแบบทดสอบ ----
-    elseif ($action === 'edit_quiz') {
-        $quiz_id = $_POST['quiz_id'] ?? '';
-        $question = $_POST['question'] ?? '';
-        $type = $_POST['type'] ?? 'choice';
-        
-        $cA = $_POST['choice_a'] ?? '';
-        $cB = $_POST['choice_b'] ?? '';
-        $cC = $_POST['choice_c'] ?? '';
-        $cD = $_POST['choice_d'] ?? '';
-        $answer = $_POST['answer'] ?? '';
+    if ($action === 'delete_lesson') {
+        $lessonId = trim((string) ($_POST['lesson_id'] ?? ''));
+        if ($lessonId === '') {
+            throw new Exception('ไม่พบบทเรียน');
+        }
+        if (!teacherOwnsLesson($conn, $teacherId, $lessonId)) {
+            throw new Exception('คุณไม่มีสิทธิ์ลบบทเรียนนี้');
+        }
 
-        if(empty($quiz_id) || empty($question)) throw new Exception("ข้อมูลไม่ครบถ้วน");
+        $conn->prepare('DELETE FROM public.test_questions WHERE lessons_id = ?')->execute([$lessonId]);
+        $conn->prepare('DELETE FROM public.lessons WHERE lessons_id = ?')->execute([$lessonId]);
+        echo json_encode(['success' => true, 'message' => 'ลบบทเรียนสำเร็จ']);
+        exit;
+    }
+
+    if ($action === 'add_quiz') {
+        $lessonId = trim((string) ($_POST['lesson_id'] ?? ''));
+        $type = trim((string) ($_POST['type'] ?? 'choice'));
+        $question = trim((string) ($_POST['question'] ?? ''));
+        if ($lessonId === '' || $question === '') {
+            throw new Exception('ข้อมูลคำถามไม่ครบ');
+        }
+        if (!teacherOwnsLesson($conn, $teacherId, $lessonId)) {
+            throw new Exception('คุณไม่มีสิทธิ์เพิ่มข้อสอบในบทเรียนนี้');
+        }
+
+        $choiceA = (string) ($_POST['choice_a'] ?? '');
+        $choiceB = (string) ($_POST['choice_b'] ?? '');
+        $choiceC = (string) ($_POST['choice_c'] ?? '');
+        $choiceD = (string) ($_POST['choice_d'] ?? '');
+        $answer = (string) ($_POST['answer'] ?? '');
 
         if ($type === 'truefalse') {
-            $cA = 'ถูก'; $cB = 'ผิด'; $cC = '-'; $cD = '-';
+            $choiceA = 'ถูก';
+            $choiceB = 'ผิด';
+            $choiceC = '-';
+            $choiceD = '-';
         } elseif ($type === 'essay') {
-            $cA = '-'; $cB = '-'; $cC = '-'; $cD = '-';
+            $choiceA = '-';
+            $choiceB = '-';
+            $choiceC = '-';
+            $choiceD = '-';
             $answer = '-';
         }
 
-        $stmt = $conn->prepare("UPDATE public.test_questions SET questions_text = ?, choice_a = ?, choice_b = ?, choice_c = ?, choice_d = ?, correct_answer = ? WHERE questions_id = ?");
-        $stmt->execute([$question, $cA, $cB, $cC, $cD, $answer, $quiz_id]);
-        echo json_encode(['success' => true, 'message' => 'แก้ไขคำถามสำเร็จ!']);
+        $stmtId = $conn->query("SELECT COALESCE(MAX(questions_id), 0) + 1 FROM public.test_questions");
+        $nextId = (int) $stmtId->fetchColumn();
+
+        $stmt = $conn->prepare(
+            'INSERT INTO public.test_questions
+                (questions_id, questions_text, choice_a, choice_b, choice_c, choice_d, correct_answer, lessons_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        );
+        $stmt->execute([$nextId, $question, $choiceA, $choiceB, $choiceC, $choiceD, $answer, $lessonId]);
+
+        echo json_encode(['success' => true, 'message' => 'เพิ่มคำถามสำเร็จ']);
+        exit;
     }
 
-    // ---- 6. ลบแบบทดสอบ ----
-    elseif ($action === 'delete_quiz') {
-        $quiz_id = $_POST['quiz_id'] ?? '';
-        if(empty($quiz_id)) throw new Exception("ไม่พบรหัสคำถาม");
+    if ($action === 'edit_quiz') {
+        $quizId = trim((string) ($_POST['quiz_id'] ?? ''));
+        $type = trim((string) ($_POST['type'] ?? 'choice'));
+        $question = trim((string) ($_POST['question'] ?? ''));
+        if ($quizId === '' || $question === '') {
+            throw new Exception('ข้อมูลไม่ครบถ้วน');
+        }
+        if (!teacherOwnsQuiz($conn, $teacherId, $quizId)) {
+            throw new Exception('คุณไม่มีสิทธิ์แก้ไขข้อสอบนี้');
+        }
 
-        $conn->prepare("DELETE FROM public.test_questions WHERE questions_id = ?")->execute([$quiz_id]);
-        echo json_encode(['success' => true, 'message' => 'ลบคำถามสำเร็จ!']);
+        $choiceA = (string) ($_POST['choice_a'] ?? '');
+        $choiceB = (string) ($_POST['choice_b'] ?? '');
+        $choiceC = (string) ($_POST['choice_c'] ?? '');
+        $choiceD = (string) ($_POST['choice_d'] ?? '');
+        $answer = (string) ($_POST['answer'] ?? '');
+
+        if ($type === 'truefalse') {
+            $choiceA = 'ถูก';
+            $choiceB = 'ผิด';
+            $choiceC = '-';
+            $choiceD = '-';
+        } elseif ($type === 'essay') {
+            $choiceA = '-';
+            $choiceB = '-';
+            $choiceC = '-';
+            $choiceD = '-';
+            $answer = '-';
+        }
+
+        $stmt = $conn->prepare(
+            'UPDATE public.test_questions
+             SET questions_text = ?, choice_a = ?, choice_b = ?, choice_c = ?, choice_d = ?, correct_answer = ?
+             WHERE questions_id = ?'
+        );
+        $stmt->execute([$question, $choiceA, $choiceB, $choiceC, $choiceD, $answer, $quizId]);
+
+        echo json_encode(['success' => true, 'message' => 'แก้ไขคำถามสำเร็จ']);
+        exit;
     }
 
-} catch(Exception $e) {
+    if ($action === 'delete_quiz') {
+        $quizId = trim((string) ($_POST['quiz_id'] ?? ''));
+        if ($quizId === '') {
+            throw new Exception('ไม่พบคำถาม');
+        }
+        if (!teacherOwnsQuiz($conn, $teacherId, $quizId)) {
+            throw new Exception('คุณไม่มีสิทธิ์ลบข้อสอบนี้');
+        }
+
+        $conn->prepare('DELETE FROM public.test_questions WHERE questions_id = ?')->execute([$quizId]);
+        echo json_encode(['success' => true, 'message' => 'ลบคำถามสำเร็จ']);
+        exit;
+    }
+
+    throw new Exception('ไม่พบคำสั่งที่ต้องการ');
+} catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => 'DB Error: ' . $e->getMessage()]);
 }
 ?>

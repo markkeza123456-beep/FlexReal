@@ -47,7 +47,7 @@
         </button>
       </div>
 
-      <form class="form" id="regisForm" action="regisstu_action.php" method="POST" enctype="multipart/form-data">
+      <form class="form" id="regisForm" action="regisss_action.php" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="role" id="roleInput" value="student">
 
         <div class="section-label">ข้อมูลส่วนตัว</div>
@@ -59,7 +59,7 @@
               <span class="input-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               </span>
-              <input type="text" id="firstname" name="fullname" placeholder="ชื่อจริง" autocomplete="given-name" />
+              <input type="text" id="firstname" name="firstname" placeholder="ชื่อจริง" autocomplete="given-name" />
               <span class="focus-bar"></span>
             </div>
             <span class="error-msg" id="firstname-error"></span>
@@ -264,29 +264,6 @@
           </div>
         </div>
 
-        <!-- ✅ ห่อทั้ง section-label และ field-cert ไว้ด้วยกัน เพื่อซ่อนพร้อมกันตอนเลือก teacher -->
-        <div class="role-field cert-field">
-        <div class="section-label">เอกสารประกอบ</div>
-
-        <div class="field" id="field-cert">
-          <label class="label">แนบวุฒิการศึกษา<span class="required">*</span></label>
-          <div class="file-upload" id="fileUpload">
-            <input type="file" id="cert" name="cert" accept=".pdf,.jpg,.jpeg,.png" />
-            <div class="file-upload-display" id="fileDisplay">
-              <span class="file-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-              </span>
-              <div class="file-text">
-                <span class="file-name" id="fileName">คลิกเพื่อเลือกไฟล์</span>
-                <span class="file-hint">PDF, JPG, PNG — ขนาดไม่เกิน 5MB</span>
-              </div>
-              <span class="file-badge">UPLOAD</span>
-            </div>
-          </div>
-          <span class="error-msg" id="cert-error"></span>
-        </div>
-        </div><!-- /cert-field wrapper -->
-
         <div class="section-label">ตั้งรหัสผ่าน</div>
 
         <div class="grid-2">
@@ -382,6 +359,7 @@
           </div>
         </div>
 
+        <input type="hidden" name="fullname" id="fullnameHidden">
 
         <button type="submit" class="btn-submit" id="submitBtn">
           <span class="btn-text">สมัครสมาชิก</span>

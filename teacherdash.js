@@ -1,8 +1,8 @@
-/* ===== teacherdash.js ===== */
+﻿/* ===== teacherdash.js ===== */
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ── Sidebar nav – page view switching ─────────────
+    // โ”€โ”€ Sidebar nav โ€“ page view switching โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
     const navItems = document.querySelectorAll('.nav-item[data-view]');
     function switchView(viewName) {
         document.querySelectorAll('.page-view').forEach(v => v.style.display = 'none');
@@ -17,7 +17,14 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault(); switchView(item.dataset.view);
     }));
 
-    // ── Tabs ในหน้ารายละเอียด ───────────────────────────────────────────
+    const teacherSubjectSelect = document.getElementById('teacherSubjectSelect');
+    teacherSubjectSelect?.addEventListener('change', () => {
+        const subjectId = teacherSubjectSelect.value;
+        const url = new URL(window.location.href);
+        if (subjectId) url.searchParams.set('subject_id', subjectId);
+        else url.searchParams.delete('subject_id');
+        window.location.href = url.pathname.split('/').pop() + url.search;
+    });
     function switchLessonTab(tab) {
         document.querySelectorAll('.lesson-tab-btn').forEach(btn => {
             const isActive = btn.dataset.tab === tab;
@@ -35,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.lesson-tab-btn').forEach(btn => btn.addEventListener('click', () => switchLessonTab(btn.dataset.tab)));
 
 
-    // ── Student search inside detail ───────────────────
+    // โ”€โ”€ Student search inside detail โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
     const detailStudentSearch = document.getElementById('detailStudentSearch');
     if (detailStudentSearch) {
         detailStudentSearch.addEventListener('input', () => {
@@ -47,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ════════════ 1. ระบบจัดการ "บทเรียนย่อย" ════════════ //
+    // โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ• 1. เธฃเธฐเธเธเธเธฑเธ”เธเธฒเธฃ "เธเธ—เน€เธฃเธตเธขเธเธขเนเธญเธข" โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ• //
     const modalOverlay = document.getElementById('modalOverlay');
     document.getElementById('openModalBtn')?.addEventListener('click', () => modalOverlay.classList.add('open'));
     document.getElementById('closeModalBtn')?.addEventListener('click', () => modalOverlay.classList.remove('open'));
@@ -59,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const subjectId = document.getElementById('lessonSubjectId').value;
 
         if (!lessonName) { document.getElementById('lessonNameInput').style.borderColor = '#ef4444'; return; }
-        btn.textContent = '⏳...'; btn.disabled = true;
+        btn.textContent = 'โณ...'; btn.disabled = true;
 
         const fd = new FormData(); fd.append('action', 'add_lesson'); fd.append('lesson_name', lessonName); fd.append('subject_id', subjectId);
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
@@ -67,14 +74,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 location.reload(); 
             } else { 
                 alert(d.message); 
-                if(d.message.includes('ล็อกอิน')) {
+                if(d.message.includes('เธฅเนเธญเธเธญเธดเธ')) {
                     window.location.href = 'login.php';
                 } else {
                     btn.disabled = false;
-                    btn.textContent = '💾 บันทึกบทเรียน';
+                    btn.textContent = '๐’พ เธเธฑเธเธ—เธถเธเธเธ—เน€เธฃเธตเธขเธ';
                 }
             }
-        }).catch(() => { alert('เชื่อมต่อฐานข้อมูลล้มเหลว'); btn.disabled = false; btn.textContent = '💾 บันทึกบทเรียน'; });
+        }).catch(() => { alert('เน€เธเธทเนเธญเธกเธ•เนเธญเธเธฒเธเธเนเธญเธกเธนเธฅเธฅเนเธกเน€เธซเธฅเธง'); btn.disabled = false; btn.textContent = '๐’พ เธเธฑเธเธ—เธถเธเธเธ—เน€เธฃเธตเธขเธ'; });
     });
 
     const editLessonModal = document.getElementById('editLessonModal');
@@ -88,25 +95,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('saveEditLsnBtn')?.addEventListener('click', (e) => {
         const btn = e.target; const id = document.getElementById('editLsnIdInput').value; const name = document.getElementById('editLsnNameInput').value.trim();
-        btn.textContent = '⏳...'; btn.disabled = true;
+        btn.textContent = 'โณ...'; btn.disabled = true;
         const fd = new FormData(); fd.append('action', 'edit_lesson'); fd.append('lesson_id', id); fd.append('lesson_name', name);
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
             if(d.success) {
                 location.reload(); 
             } else { 
                 alert(d.message); 
-                if(d.message.includes('ล็อกอิน')) window.location.href = 'login.php';
-                else { btn.disabled = false; btn.textContent = '💾 บันทึกการแก้ไข'; }
+                if(d.message.includes('เธฅเนเธญเธเธญเธดเธ')) window.location.href = 'login.php';
+                else { btn.disabled = false; btn.textContent = '๐’พ เธเธฑเธเธ—เธถเธเธเธฒเธฃเนเธเนเนเธ'; }
             }
         });
     });
 
     document.querySelectorAll('.btn-del-lsn').forEach(btn => {
         btn.addEventListener('click', () => {
-            if(confirm('ต้องการลบบทเรียนนี้ใช่หรือไม่? (ข้อสอบในบทนี้จะถูกลบไปด้วย)')) {
+            if(confirm('เธ•เนเธญเธเธเธฒเธฃเธฅเธเธเธ—เน€เธฃเธตเธขเธเธเธตเนเนเธเนเธซเธฃเธทเธญเนเธกเน? (เธเนเธญเธชเธญเธเนเธเธเธ—เธเธตเนเธเธฐเธ–เธนเธเธฅเธเนเธเธ”เนเธงเธข)')) {
                 const fd = new FormData(); fd.append('action', 'delete_lesson'); fd.append('lesson_id', btn.dataset.id);
                 fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
-                    if(d.message && d.message.includes('ล็อกอิน')) { alert(d.message); window.location.href = 'login.php'; }
+                    if(d.message && d.message.includes('เธฅเนเธญเธเธญเธดเธ')) { alert(d.message); window.location.href = 'login.php'; }
                     else location.reload();
                 });
             }
@@ -114,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // ════════════ 2. ระบบจัดการ "แบบทดสอบ (Quiz) ใหม่" ════════════ //
+    // โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ• 2. เธฃเธฐเธเธเธเธฑเธ”เธเธฒเธฃ "เนเธเธเธ—เธ”เธชเธญเธ (Quiz) เนเธซเธกเน" โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ• //
 
     const quizTypeAdd = document.getElementById('quizTypeAdd');
     const grpChoiceAdd = document.getElementById('quizChoiceGroupAdd');
@@ -156,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ans = '-';
         }
 
-        btn.textContent = '⏳...'; btn.disabled = true;
+        btn.textContent = 'โณ...'; btn.disabled = true;
         const fd = new FormData();
         fd.append('action', 'add_quiz'); fd.append('lesson_id', lessonId); fd.append('type', type);
         fd.append('question', question); fd.append('choice_a', chA); fd.append('choice_b', chB); 
@@ -167,8 +174,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 location.reload(); 
             } else { 
                 alert(d.message); 
-                if(d.message.includes('ล็อกอิน')) window.location.href = 'login.php';
-                else { btn.disabled = false; btn.textContent = '➕ เพิ่มคำถาม'; }
+                if(d.message.includes('เธฅเนเธญเธเธญเธดเธ')) window.location.href = 'login.php';
+                else { btn.disabled = false; btn.textContent = 'โ• เน€เธเธดเนเธกเธเธณเธ–เธฒเธก'; }
             }
         });
     });
@@ -200,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const r = document.querySelector(`input[name="tfEdit"][value="${ans}"]`);
                 if(r) r.checked = true;
             } else if (type === 'essay') {
-                // ข้อเขียน
+                // เธเนเธญเน€เธเธตเธขเธ
             }
             editQuizModal.classList.add('open');
         });
@@ -226,24 +233,24 @@ document.addEventListener('DOMContentLoaded', () => {
         fd.append('type', type); fd.append('question', document.getElementById('editQuizQuestion').value.trim());
         fd.append('choice_a', chA); fd.append('choice_b', chB); fd.append('choice_c', chC); fd.append('choice_d', chD); fd.append('answer', ans);
 
-        btn.textContent = '⏳...'; btn.disabled = true;
+        btn.textContent = 'โณ...'; btn.disabled = true;
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
             if(d.success) {
                 location.reload(); 
             } else { 
                 alert(d.message); 
-                if(d.message.includes('ล็อกอิน')) window.location.href = 'login.php';
-                else { btn.disabled = false; btn.textContent = '💾 บันทึกการแก้ไข'; }
+                if(d.message.includes('เธฅเนเธญเธเธญเธดเธ')) window.location.href = 'login.php';
+                else { btn.disabled = false; btn.textContent = '๐’พ เธเธฑเธเธ—เธถเธเธเธฒเธฃเนเธเนเนเธ'; }
             }
         });
     });
 
     document.querySelectorAll('.btn-del-quiz').forEach(btn => {
         btn.addEventListener('click', () => {
-            if(confirm('แน่ใจหรือไม่ว่าต้องการลบคำถามนี้ทิ้ง?')) {
+            if(confirm('เนเธเนเนเธเธซเธฃเธทเธญเนเธกเนเธงเนเธฒเธ•เนเธญเธเธเธฒเธฃเธฅเธเธเธณเธ–เธฒเธกเธเธตเนเธ—เธดเนเธ?')) {
                 const fd = new FormData(); fd.append('action', 'delete_quiz'); fd.append('quiz_id', btn.dataset.id);
                 fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
-                    if(d.message && d.message.includes('ล็อกอิน')) { alert(d.message); window.location.href = 'login.php'; }
+                    if(d.message && d.message.includes('เธฅเนเธญเธเธญเธดเธ')) { alert(d.message); window.location.href = 'login.php'; }
                     else location.reload();
                 });
             }
@@ -251,88 +258,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// ฟังก์ชันโชว์ข้อมูลนักเรียนเมื่อคลิกที่ชื่อ
+// เธเธฑเธเธเนเธเธฑเธเนเธเธงเนเธเนเธญเธกเธนเธฅเธเธงเธฒเธกเธเธทเธเธซเธเนเธฒเธเธฑเธเน€เธฃเธตเธขเธเน€เธงเธฅเธฒเธเธฅเธดเธเธ—เธตเนเธเธทเนเธญ
 window.showStudentProgress = function(element) {
-    const name      = element.getAttribute('data-name');
-    const cls       = element.getAttribute('data-class') || '-';
-    const score     = parseFloat(element.getAttribute('data-score') || 0);
-    const status    = element.getAttribute('data-status') || '';
-    const pct       = parseInt(element.getAttribute('data-pct') || 0);
-    const completed = parseInt(element.getAttribute('data-completed') || 0);
-    const total     = parseInt(element.getAttribute('data-total') || 0);
-    const jsonStr   = element.getAttribute('data-json');
-    const quizJsonStr = element.getAttribute('data-quiz-json');
-
-    document.getElementById('spm-avatar').textContent = name ? name.charAt(0).toUpperCase() : '?';
-    document.getElementById('spm-student-name').textContent = name;
-    document.getElementById('spm-class-badge').textContent = cls !== '-' ? 'ระดับชั้น ' + cls : 'ไม่ระบุระดับชั้น';
-    document.getElementById('spm-score').textContent = score.toFixed(1);
-    document.getElementById('spm-progress-pct').textContent = pct + '%';
-    document.getElementById('spm-progress-bar').style.width = pct + '%';
-    document.getElementById('spm-lesson-count').textContent = completed + ' / ' + total + ' บทเรียน';
-
-    const statusMap = {
-        'excellent':  { label: 'ดีเยี่ยม', bg: 'rgba(16,185,129,.2)',  color: '#10b981' },
-        'good':       { label: 'ดี',        bg: 'rgba(96,165,250,.2)',  color: '#60a5fa' },
-        'average':    { label: 'ปานกลาง',  bg: 'rgba(251,191,36,.2)',  color: '#fbbf24' },
-        'needs-help': { label: 'ต้องดูแล', bg: 'rgba(239,68,68,.2)',   color: '#ef4444' },
-    };
-    const s = statusMap[status] || { label: '-', bg: 'rgba(255,255,255,.08)', color: '#aaa' };
-    const badge = document.getElementById('spm-status-badge');
-    badge.textContent = s.label; badge.style.background = s.bg; badge.style.color = s.color;
-
-    // ── Tab: บทเรียนที่เรียนแล้ว ──
+    const name = element.getAttribute('data-name');
+    const completed = element.getAttribute('data-completed');
+    const total = element.getAttribute('data-total');
+    const jsonStr = element.getAttribute('data-json');
+    
+    document.getElementById('spm-student-name').innerText = name;
+    document.getElementById('spm-completed-count').innerText = completed;
+    document.getElementById('spm-total-count').innerText = total;
+    
     let lessons = [];
     try { lessons = JSON.parse(jsonStr); } catch(e) {}
+    
     const listContainer = document.getElementById('spm-lesson-list');
     if (lessons && lessons.length > 0) {
-        listContainer.innerHTML = lessons.map(function(l) {
-            return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.15);border-radius:8px;font-size:13px;color:#d1fae5;"><span>✅</span><span>' + l + '</span></div>';
-        }).join('');
+        listContainer.innerHTML = lessons.map(l => `
+            <div style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: #10b981; font-size: 13.5px; display:flex; align-items:center; gap:10px;">
+                <span style="background:rgba(16,185,129,0.15); padding:4px 6px; border-radius:4px; font-size:11px;">โ…</span> 
+                <span>${l}</span>
+            </div>
+        `).join('');
     } else {
-        listContainer.innerHTML = '<div style="text-align:center;padding:32px 16px;color:var(--text-dim,#aaa);font-size:13px;">📚 ยังไม่ได้เริ่มเรียนบทเรียนใดเลย</div>';
+        listContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">เธขเธฑเธเนเธกเนเนเธ”เนเน€เธฃเธดเนเธกเน€เธฃเธตเธขเธเธเธ—เน€เธฃเธตเธขเธเนเธ”เน€เธฅเธข</div>`;
     }
+    
+    document.getElementById('studentProgressModal').classList.add('open');
+}
 
-    // ── Tab: ผลการสอบ ──
-    let quizData = [];
-    try { quizData = JSON.parse(quizJsonStr); } catch(e) {}
-    const quizContainer = document.getElementById('spm-quiz-list');
-
-    function getScoreColor(sc) {
-        if (sc >= 85) return { color: '#10b981', bg: 'rgba(16,185,129,.12)', label: 'ดีเยี่ยม' };
-        if (sc >= 70) return { color: '#60a5fa', bg: 'rgba(96,165,250,.12)', label: 'ดี' };
-        if (sc >= 50) return { color: '#fbbf24', bg: 'rgba(251,191,36,.12)', label: 'ปานกลาง' };
-        return { color: '#ef4444', bg: 'rgba(239,68,68,.12)', label: 'ต้องปรับปรุง' };
-    }
-
-    if (quizData && quizData.length > 0) {
-        quizContainer.innerHTML = quizData.map(function(q) {
-            const sc = q.score;
-            const c = getScoreColor(sc);
-            const barW = Math.min(100, Math.max(0, sc)) + '%';
-            return `<div style="background:${c.bg};border:1px solid ${c.color}33;border-radius:10px;padding:12px 14px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                    <span style="font-size:13px;color:#fff;font-weight:500;">${q.lesson}</span>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <span style="font-size:11px;color:var(--text-dim,#aaa);">ทำ ${q.attempts} ครั้ง</span>
-                        <span style="font-size:15px;font-weight:700;color:${c.color};">${sc.toFixed(1)}</span>
-                    </div>
-                </div>
-                <div style="height:5px;background:rgba(255,255,255,0.08);border-radius:99px;overflow:hidden;">
-                    <div style="height:100%;width:${barW};background:${c.color};border-radius:99px;transition:width 0.5s ease;"></div>
-                </div>
-                <div style="margin-top:4px;font-size:10.5px;color:${c.color};">${c.label}</div>
-            </div>`;
-        }).join('');
-    } else {
-        quizContainer.innerHTML = '<div style="text-align:center;padding:32px 16px;color:var(--text-dim,#aaa);font-size:13px;">🧪 ยังไม่มีผลการสอบ</div>';
-    }
-
-    // Reset to lessons tab
-    if (typeof spmSwitchTab === 'function') spmSwitchTab('lessons');
-
-    const modal = document.getElementById('studentProgressModal');
-    modal.style.display = 'flex';
-    document.getElementById('spmCloseBtn').onclick = function() { modal.style.display = 'none'; };
-    modal.addEventListener('click', function(e) { if (e.target === modal) modal.style.display = 'none'; }, { once: true });
-};

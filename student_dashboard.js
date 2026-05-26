@@ -55,6 +55,12 @@ function statusLabel(score) {
     return map[statusClass(score)] || 'เริ่มต้น';
 }
 
+function subjectTypeBadge(subjectType) {
+    const type = String(subjectType || 'elective').toLowerCase();
+    const label = type === 'required' ? 'วิชาบังคับ' : 'วิชาเลือก';
+    return '<span class="subject-type-badge ' + type + '">' + label + '</span>';
+}
+
 function renderTable(courses) {
     const tbody = document.getElementById('courseTableBody');
     if (!courses.length) {
@@ -69,7 +75,7 @@ function renderTable(courses) {
     tbody.innerHTML = courses.map((item) => `
         <tr>
             <td style="color: #888;">${item.id}</td>
-            <td>${item.name}</td>
+            <td>${item.name} ${subjectTypeBadge(item.subject_type)}</td>
             <td>${Number(item.progress).toFixed(1)}%</td>
             <td>${Number(item.score).toFixed(1)}%</td>
             <td><span class="status-label ${item.class}">${item.status}</span></td>
@@ -86,7 +92,7 @@ function renderLessons(courses) {
 
     container.innerHTML = courses.map((course) => `
         <div class="lesson-card">
-            <h3>${course.name}</h3>
+            <div class="lesson-card-head"><h3>${course.name}</h3>${subjectTypeBadge(course.subject_type)}</div>
             <div class="progress-bar-bg">
                 <div class="progress-bar-fill" style="width: ${course.progress}%"></div>
             </div>
@@ -125,6 +131,22 @@ function renderAssignments(assignments) {
     `).join('');
 }
 
+/* ─────────────────────────────────────────────────
+   Avatar helper — apply URL หรือ dataURL ลง UI
+   ───────────────────────────────────────────────── */
+function _applyAvatarUI(src) {
+    const avatarImg     = document.getElementById('avatarImg');
+    const avatarInitial = document.getElementById('avatarInitial');
+    if (avatarImg) { avatarImg.src = src; avatarImg.style.display = 'block'; }
+    if (avatarInitial) { avatarInitial.style.display = 'none'; }
+
+    const sidebarAvatar = document.getElementById('sidebarAvatar');
+    if (sidebarAvatar) {
+        sidebarAvatar.style.cssText += ';background:none;padding:0;overflow:hidden';
+        sidebarAvatar.innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    }
+}
+
 function updateProfile(student) {
     if (!student) return;
     const name = student.name || 'นักเรียน';
@@ -146,47 +168,25 @@ function updateProfile(student) {
     setValue('profileName', name);
     setValue('profileEmail', student.email || '');
     setValue('profilePhone', student.phone || '');
-
     setValue('profileClass', className);
     setText('sidebarRole', 'นักเรียน - ' + className);
     setText('profileRole', 'นักเรียน · ' + className);
 
     const roleTexts = document.querySelectorAll('.role, .avatar-role');
     roleTexts.forEach((el) => {
-        if (!el.id) {
-            el.textContent = 'นักเรียน - ' + className;
-        }
+        if (!el.id) el.textContent = 'นักเรียน - ' + className;
     });
 
-    // โหลดรูป avatar จาก Supabase (ถ้ายังไม่มีรูปจะ 404 → fallback ตัวอักษร)
-    const avatarUrl = student.avatar_url || null;
-    const avatarImg     = document.getElementById('avatarImg');
-    const avatarInitial = document.getElementById('avatarInitial');
-    const sidebarAvatar = document.getElementById('sidebarAvatar');
-
-    if (avatarUrl && !_cropAvatarDataURL) {
-        const src = avatarUrl + '&cb=' + Date.now();
-        const testImg = new Image();
-        testImg.onload = () => {
-            // รูปมีจริง → แสดง
-            if (avatarImg)     { avatarImg.src = src; avatarImg.style.display = 'block'; }
-            if (avatarInitial) { avatarInitial.style.display = 'none'; }
-            if (sidebarAvatar) {
-                sidebarAvatar.innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-            }
-        };
-        testImg.onerror = () => {
-            // รูปไม่มี (404) → แสดงตัวอักษรแรก
-            if (avatarImg)     { avatarImg.style.display = 'none'; }
-            if (avatarInitial) { avatarInitial.style.display = 'block'; avatarInitial.textContent = firstChar; }
-            if (sidebarAvatar) { sidebarAvatar.textContent = firstChar; }
-        };
-        testImg.src = src;
-    } else if (!_cropAvatarDataURL) {
-        // ไม่มี URL → แสดงตัวอักษรแรก
-        if (avatarImg)     { avatarImg.style.display = 'none'; }
-        if (avatarInitial) { avatarInitial.style.display = 'block'; avatarInitial.textContent = firstChar; }
-        if (sidebarAvatar) { sidebarAvatar.textContent = firstChar; }
+    // โหลด avatar_url จาก DB — ถ้ามีให้แสดงรูป ถ้าไม่มีให้แสดงตัวอักษรแรก
+    if (student.avatar_url) {
+        _applyAvatarUI(student.avatar_url);
+    } else {
+        setText('sidebarAvatar', firstChar);
+        setText('avatarInitial', firstChar);
+        const avatarImg = document.getElementById('avatarImg');
+        if (avatarImg) avatarImg.style.display = 'none';
+        const avatarInitial = document.getElementById('avatarInitial');
+        if (avatarInitial) avatarInitial.style.display = '';
     }
 }
 
@@ -368,7 +368,6 @@ function _cropDraw() {
     const { ctx, img, imgX, imgY, imgW, imgH, zoom, stageW, stageH } = _crop;
     if (!ctx || !img) return;
     ctx.clearRect(0, 0, stageW, stageH);
-    // zoom จากจุดกึ่งกลาง stage
     const drawW = imgW * zoom;
     const drawH = imgH * zoom;
     const drawX = imgX - (zoom - 1) * imgW / 2;
@@ -428,18 +427,15 @@ function _cropConfirm() {
     offscreen.width = offscreen.height = size;
     const oc = offscreen.getContext('2d');
 
-    // ใช้สูตรเดียวกับ _cropDraw
     const drawW = imgW * zoom;
     const drawH = imgH * zoom;
     const drawX = imgX - (zoom - 1) * imgW / 2;
     const drawY = imgY - (zoom - 1) * imgH / 2;
 
-    // วงกลมอยู่กึ่งกลาง stage
     const cx = stageW / 2;
     const cy = stageH / 2;
     const r  = circleSize / 2;
 
-    // แปลงพิกัดวงกลมกลับเป็น source pixel ใน img จริง
     const scaleX = img.naturalWidth  / drawW;
     const scaleY = img.naturalHeight / drawH;
     const srcX = (cx - r - drawX) * scaleX;
@@ -455,27 +451,43 @@ function _cropConfirm() {
     oc.restore();
 
     const dataURL = offscreen.toDataURL('image/png');
-    _cropApplyAvatar(dataURL);
+
+    // แสดงรูปทันทีใน UI
+    _applyAvatarUI(dataURL);
     _cropClose();
+
+    // อัปโหลดไปยัง Supabase ผ่าน uploadavatar_student.php
+    _uploadAvatarToServer(dataURL);
 }
 
-let _cropAvatarDataURL = null;   // เก็บ base64 รูปที่ crop ไว้รอบันทึก
-
-function _cropApplyAvatar(dataURL) {
-    _cropAvatarDataURL = dataURL;  // เก็บไว้ให้ saveProfile ส่งไป server
-
-    const avatarImg     = document.getElementById('avatarImg');
-    const avatarInitial = document.getElementById('avatarInitial');
-    if (avatarImg)     { avatarImg.src = dataURL; avatarImg.style.display = 'block'; }
-    if (avatarInitial) { avatarInitial.style.display = 'none'; }
-
-    const sidebarAvatar = document.getElementById('sidebarAvatar');
-    if (sidebarAvatar) {
-        sidebarAvatar.style.cssText += ';background:none;padding:0;overflow:hidden';
-        sidebarAvatar.innerHTML = `<img src="${dataURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-    }
+/* ─────────────────────────────────────────────────
+   อัปโหลด dataURL ขึ้น Supabase Storage
+   ───────────────────────────────────────────────── */
+function _uploadAvatarToServer(dataURL) {
+    fetch('uploadavatar_student.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ image: dataURL })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            // อัปเดต URL ใน state เพื่อให้รีเพจแล้วรูปยังอยู่
+            if (dashboardState.student) {
+                dashboardState.student.avatar_url = data.url;
+            }
+        } else {
+            console.warn('อัปโหลดรูปไม่สำเร็จ:', data.message);
+        }
+    })
+    .catch(err => console.warn('Avatar upload error:', err));
 }
 
+/* ─────────────────────────────────────────────────
+   previewAvatar — เปิด crop modal เมื่อเลือกไฟล์
+   (แทนที่ของเดิมที่แสดงรูปชั่วคราวเท่านั้น)
+   ───────────────────────────────────────────────── */
 function previewAvatar(input) {
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];
@@ -483,16 +495,17 @@ function previewAvatar(input) {
 
     const reader = new FileReader();
     reader.onload = (e) => {
-        _cropInjectModal();
-        _crop.img = new Image();
-        _crop.img.onload = () => {
-            document.getElementById('avatarCropOverlay').style.display = 'flex';
-            // รอ browser layout ก่อนอ่าน offsetWidth
-            requestAnimationFrame(() => requestAnimationFrame(() => _cropInit()));
+        const image = new Image();
+        image.onload = () => {
+            _crop.img = image;
+            _cropInit();
+            const overlay = document.getElementById('avatarCropOverlay');
+            if (overlay) overlay.style.display = 'flex';
         };
-        _crop.img.src = e.target.result;
+        image.src = e.target.result;
     };
     reader.readAsDataURL(file);
+    // reset input เพื่อให้เลือกไฟล์เดิมซ้ำได้
     input.value = '';
 }
 
@@ -589,21 +602,14 @@ function saveProfile() {
     body.append('phone',       document.getElementById('profilePhone')?.value.trim() ?? '');
     body.append('pwd_current', current);
     body.append('pwd_new',     newPwd);
-    if (_cropAvatarDataURL) {
-        body.append('avatar_base64', _cropAvatarDataURL);
-    }
 
     fetch('update_student_profile.php', { method: 'POST', body })
         .then(r => r.json())
         .then(data => {
             if (data.success) {
                 showFeedback('success', data.message);
-                _cropAvatarDataURL = null;  // ล้างหลังบันทึกสำเร็จ
                 if (dashboardState.student) {
                     dashboardState.student.name = name;
-                    if (data.avatar_url) {
-                        dashboardState.student.avatar_url = data.avatar_url;
-                    }
                     updateProfile(dashboardState.student);
                 }
             } else {
