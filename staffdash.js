@@ -192,6 +192,40 @@
     if (curriculumStat) curriculumStat.textContent = String(curricula.length);
     if (subjectStat) subjectStat.textContent = String(subjects.length);
     if (memberStat) memberStat.textContent = String(members.length);
+
+    renderDashboardTables();
+  }
+
+  function renderDashboardTables() {
+    // หลักสูตรล่าสุด (5 รายการ)
+    const dashCurriculumBody = document.getElementById('dashCurriculumBody');
+    if (dashCurriculumBody) {
+      const latest = curricula.slice(-5).reverse();
+      dashCurriculumBody.innerHTML = latest.length
+        ? latest.map(c => `
+          <tr>
+            <td class="mono" style="color:var(--orange);">${c.code || c.id}</td>
+            <td>${c.name}</td>
+            <td>${c.level || 'ม.ปลาย'}</td>
+          </tr>
+        `).join('')
+        : '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text-muted);">ยังไม่มีข้อมูล</td></tr>';
+    }
+
+    // รายวิชาล่าสุด (5 รายการ)
+    const dashSubjectBody = document.getElementById('dashSubjectBody');
+    if (dashSubjectBody) {
+      const latest = subjects.slice(-5).reverse();
+      dashSubjectBody.innerHTML = latest.length
+        ? latest.map(s => `
+          <tr>
+            <td class="mono" style="color:var(--orange);">${s.code || s.id}</td>
+            <td>${s.name}</td>
+            <td>${s.credit}</td>
+          </tr>
+        `).join('')
+        : '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text-muted);">ยังไม่มีข้อมูล</td></tr>';
+    }
   }
 
   // 💥 ฟังก์ชันโหลดอาจารย์ใส่ใน Select dropdown หน้าจัดการรายวิชา

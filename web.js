@@ -408,9 +408,22 @@ async function loadAllCourses() {
     }
 }
 
-// 💥 โหลดข้อมูลตอนกดเข้าวิชา
+// 💥 โหลดข้อมูลตอนกดเข้าวิชา — เปิดหน้าใหม่เลย
 async function showCourse(subjectId) {
     if (courseIdByName[subjectId]) subjectId = courseIdByName[subjectId];
+    
+    // ถ้าอยู่บน URL ที่มี subject_id ตรงกันอยู่แล้ว ไม่ต้อง navigate ใหม่
+    const currentParams = new URLSearchParams(window.location.search);
+    if (currentParams.get('subject_id') === subjectId) {
+        await _loadCourseDetail(subjectId);
+        return;
+    }
+    
+    // เปิดหน้าใหม่พร้อม subject_id
+    window.location.href = `web.html?subject_id=${encodeURIComponent(subjectId)}`;
+}
+
+async function _loadCourseDetail(subjectId) {
     currentSubjectId = subjectId;
     
     try {
@@ -442,10 +455,6 @@ async function showCourse(subjectId) {
 
             openTab({ currentTarget: document.querySelector('.tab-btn') }, 'overview');
             showPage('course-detail');
-            
-            const url = new URL(window.location.href);
-            url.searchParams.set('subject_id', subjectId);
-            window.history.replaceState({}, '', url);
         } else {
             alert('ไม่พบข้อมูลรายวิชา: ' + result.message);
         }
@@ -714,6 +723,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     const subjectId = params.get('subject_id');
     const courseName = params.get('course');
-    if (subjectId) { setTimeout(() => { showCourse(subjectId); }, 300); } 
+
+    if (subjectId) { setTimeout(() => { _loadCourseDetail(subjectId); }, 300); } 
     else if (courseName) { setTimeout(() => { showCourse(courseName); }, 400); }
 });
