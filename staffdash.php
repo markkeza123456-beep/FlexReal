@@ -101,7 +101,15 @@ if (!empty($_SESSION['name'])) {
     </div>
 
     <div class="sidebar-footer">
-      <div class="user-avatar"><?= htmlspecialchars($avatarInitials) ?></div>
+      <input type="file" id="staffAvatarInput" accept="image/*" style="display:none" onchange="staffPreviewAvatar(this)">
+      <div class="user-avatar" id="staffAvatarCircle"
+           onclick="document.getElementById('staffAvatarInput').click()"
+           title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์"
+           style="cursor:pointer;overflow:hidden;padding:0;flex-shrink:0;">
+        <img id="staffAvatarImg" src="" alt=""
+             style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;">
+        <span id="staffAvatarInitial"><?= htmlspecialchars($avatarInitials) ?></span>
+      </div>
       <div class="user-detail">
         <span class="user-name"><?= htmlspecialchars($displayName) ?></span>
         <span class="user-role"><?= htmlspecialchars($displayRole) ?></span>

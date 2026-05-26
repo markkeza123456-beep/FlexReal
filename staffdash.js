@@ -197,12 +197,12 @@
   }
 
   function renderDashboardTables() {
-    // หลักสูตรล่าสุด (5 รายการ)
+    // หลักสูตรล่าสุด (ทั้งหมด เรียงจากใหม่ไปเก่า)
     const dashCurriculumBody = document.getElementById('dashCurriculumBody');
     if (dashCurriculumBody) {
-      const latest = curricula.slice(-5).reverse();
-      dashCurriculumBody.innerHTML = latest.length
-        ? latest.map(c => `
+      const sorted = [...curricula].reverse();
+      dashCurriculumBody.innerHTML = sorted.length
+        ? sorted.map(c => `
           <tr>
             <td class="mono" style="color:var(--orange);">${c.code || c.id}</td>
             <td>${c.name}</td>
@@ -212,12 +212,12 @@
         : '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text-muted);">ยังไม่มีข้อมูล</td></tr>';
     }
 
-    // รายวิชาล่าสุด (5 รายการ)
+    // รายวิชาล่าสุด (ทั้งหมด เรียงจากใหม่ไปเก่า)
     const dashSubjectBody = document.getElementById('dashSubjectBody');
     if (dashSubjectBody) {
-      const latest = subjects.slice(-5).reverse();
-      dashSubjectBody.innerHTML = latest.length
-        ? latest.map(s => `
+      const sorted = [...subjects].reverse();
+      dashSubjectBody.innerHTML = sorted.length
+        ? sorted.map(s => `
           <tr>
             <td class="mono" style="color:var(--orange);">${s.code || s.id}</td>
             <td>${s.name}</td>
@@ -723,3 +723,165 @@
   goTo(initialPage);
   loadData();
 })();
+
+/* ══════════════════════════════════════════════
+   STAFF AVATAR — Crop & Upload
+   ══════════════════════════════════════════════ */
+const _staffCrop = {
+  img: null, dragging: false,
+  imgX: 0, imgY: 0, imgW: 0, imgH: 0, zoom: 1,
+  lastX: 0, lastY: 0,
+  canvas: null, ctx: null,
+  stage: null, circle: null,
+  stageW: 0, stageH: 0, circleSize: 0,
+};
+
+function _staffApplyAvatarUI(src) {
+  const img  = document.getElementById('staffAvatarImg');
+  const text = document.getElementById('staffAvatarInitial');
+  if (img)  { img.src = src; img.style.display = 'block'; }
+  if (text) { text.style.display = 'none'; }
+}
+
+function _staffCropInjectModal() {
+  if (document.getElementById('staffCropOverlay')) return;
+  document.body.insertAdjacentHTML('beforeend', `
+  <div id="staffCropOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);
+       display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem;box-sizing:border-box">
+    <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);border-radius:16px;
+         padding:1.25rem;width:340px;max-width:100%;color:#fff;font-family:'IBM Plex Sans Thai',sans-serif">
+      <p style="margin:0 0 1rem;font-size:15px;font-weight:500">✂️ ครอปรูปโปรไฟล์</p>
+      <div id="staffCropStage" style="position:relative;width:100%;height:280px;
+           background:#0d0d0d;border-radius:10px;overflow:hidden;cursor:grab;user-select:none;touch-action:none">
+        <canvas id="staffCropCanvas" style="display:block;width:100%;height:100%"></canvas>
+        <div id="staffCropCircle" style="position:absolute;border:2px dashed rgba(255,255,255,0.85);
+             border-radius:50%;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);pointer-events:none"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+        <span style="font-size:12px;color:#aaa;white-space:nowrap">🔍 ซูม</span>
+        <input type="range" id="staffCropZoom" min="100" max="300" value="100" step="1"
+               oninput="_staffCropSetZoom(this.value)"
+               style="flex:1;accent-color:#ff6b1a">
+        <span id="staffCropZoomVal" style="font-size:12px;color:#aaa;min-width:36px">100%</span>
+      </div>
+      <p style="font-size:11px;color:#555;text-align:center;margin:6px 0 1rem">ลากรูปเพื่อจัดตำแหน่ง · เลื่อนซูมเพื่อขยาย</p>
+      <div style="display:flex;gap:8px">
+        <button onclick="_staffCropClose()" style="flex:1;padding:9px 0;font-size:13px;border-radius:8px;
+            border:1px solid rgba(255,255,255,0.15);background:transparent;color:#fff;cursor:pointer;
+            font-family:'IBM Plex Sans Thai',sans-serif">ยกเลิก</button>
+        <button onclick="_staffCropConfirm()" style="flex:1;padding:9px 0;font-size:13px;border-radius:8px;
+            border:1px solid rgba(255,107,26,0.4);background:rgba(255,107,26,0.15);color:#ff6b1a;
+            cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;font-weight:500">✓ ใช้รูปนี้</button>
+      </div>
+    </div>
+  </div>`);
+  const stage = document.getElementById('staffCropStage');
+  stage.addEventListener('mousedown',  _staffCropStartDrag);
+  stage.addEventListener('mousemove',  _staffCropOnDrag);
+  stage.addEventListener('mouseup',    _staffCropEndDrag);
+  stage.addEventListener('mouseleave', _staffCropEndDrag);
+  stage.addEventListener('touchstart', _staffCropStartDrag, { passive: false });
+  stage.addEventListener('touchmove',  _staffCropOnDrag,    { passive: false });
+  stage.addEventListener('touchend',   _staffCropEndDrag);
+}
+
+function _staffCropGetXY(e) {
+  if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  return { x: e.clientX, y: e.clientY };
+}
+function _staffCropStartDrag(e) {
+  _staffCrop.dragging = true;
+  const p = _staffCropGetXY(e); _staffCrop.lastX = p.x; _staffCrop.lastY = p.y; e.preventDefault();
+}
+function _staffCropOnDrag(e) {
+  if (!_staffCrop.dragging) return;
+  const p = _staffCropGetXY(e);
+  _staffCrop.imgX += p.x - _staffCrop.lastX;
+  _staffCrop.imgY += p.y - _staffCrop.lastY;
+  _staffCrop.lastX = p.x; _staffCrop.lastY = p.y;
+  _staffCropDraw(); e.preventDefault();
+}
+function _staffCropEndDrag() { _staffCrop.dragging = false; }
+function _staffCropSetZoom(v) {
+  _staffCrop.zoom = v / 100;
+  document.getElementById('staffCropZoomVal').textContent = v + '%';
+  _staffCropDraw();
+}
+function _staffCropDraw() {
+  const { ctx, img, imgX, imgY, imgW, imgH, zoom, stageW, stageH } = _staffCrop;
+  if (!ctx || !img) return;
+  ctx.clearRect(0, 0, stageW, stageH);
+  const drawW = imgW * zoom, drawH = imgH * zoom;
+  ctx.drawImage(img, imgX - (zoom-1)*imgW/2, imgY - (zoom-1)*imgH/2, drawW, drawH);
+}
+function _staffCropInit() {
+  _staffCropInjectModal();
+  const stage  = document.getElementById('staffCropStage');
+  const canvas = document.getElementById('staffCropCanvas');
+  const circle = document.getElementById('staffCropCircle');
+  _staffCrop.canvas = canvas; _staffCrop.ctx = canvas.getContext('2d');
+  _staffCrop.stage = stage; _staffCrop.circle = circle;
+  _staffCrop.stageW = stage.offsetWidth; _staffCrop.stageH = stage.offsetHeight;
+  _staffCrop.circleSize = Math.min(_staffCrop.stageW, _staffCrop.stageH) * 0.72;
+  canvas.width = _staffCrop.stageW; canvas.height = _staffCrop.stageH;
+  const cs = _staffCrop.circleSize;
+  circle.style.width = cs + 'px'; circle.style.height = cs + 'px';
+  circle.style.left = ((_staffCrop.stageW - cs) / 2) + 'px';
+  circle.style.top  = ((_staffCrop.stageH - cs) / 2) + 'px';
+  _staffCrop.zoom = 1;
+  document.getElementById('staffCropZoom').value = 100;
+  document.getElementById('staffCropZoomVal').textContent = '100%';
+  const scale = Math.max(cs / _staffCrop.img.width, cs / _staffCrop.img.height);
+  _staffCrop.imgW = _staffCrop.img.width  * scale;
+  _staffCrop.imgH = _staffCrop.img.height * scale;
+  _staffCrop.imgX = (_staffCrop.stageW - _staffCrop.imgW) / 2;
+  _staffCrop.imgY = (_staffCrop.stageH - _staffCrop.imgH) / 2;
+  _staffCropDraw();
+}
+function _staffCropClose() {
+  const o = document.getElementById('staffCropOverlay');
+  if (o) o.style.display = 'none';
+}
+function _staffCropConfirm() {
+  const { img, stageW, stageH, circleSize, imgX, imgY, imgW, imgH, zoom } = _staffCrop;
+  if (!img) return;
+  const offscreen = document.createElement('canvas');
+  offscreen.width = offscreen.height = 300;
+  const oc = offscreen.getContext('2d');
+  const drawW = imgW * zoom, drawH = imgH * zoom;
+  const drawX = imgX - (zoom-1)*imgW/2, drawY = imgY - (zoom-1)*imgH/2;
+  const cx = stageW/2, cy = stageH/2, r = circleSize/2;
+  const scaleX = img.naturalWidth / drawW, scaleY = img.naturalHeight / drawH;
+  const srcX = (cx - r - drawX) * scaleX, srcY = (cy - r - drawY) * scaleY;
+  const srcW = circleSize * scaleX,        srcH = circleSize * scaleY;
+  oc.save(); oc.beginPath(); oc.arc(150, 150, 150, 0, Math.PI*2); oc.clip();
+  oc.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, 300, 300); oc.restore();
+  const dataURL = offscreen.toDataURL('image/png');
+  _staffApplyAvatarUI(dataURL);
+  _staffCropClose();
+  fetch('uploadavatar_staff.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+    body: JSON.stringify({ image: dataURL })
+  }).then(r => r.json())
+    .then(d => { if (!d.success) console.warn('อัปโหลดรูปไม่สำเร็จ:', d.message); })
+    .catch(err => console.warn('Avatar upload error:', err));
+}
+function staffPreviewAvatar(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (!file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const image = new Image();
+    image.onload = () => {
+      _staffCrop.img = image;
+      _staffCropInit();
+      document.getElementById('staffCropOverlay').style.display = 'flex';
+    };
+    image.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
