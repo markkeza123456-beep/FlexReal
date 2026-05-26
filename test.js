@@ -131,13 +131,33 @@ function renderAnswerKey() {
     `;
 }
 
+function renderResultActionButton(isPassed) {
+    const label = isPassed ? 'กลับไปรายวิชา' : 'ทำแบบทดสอบใหม่';
+    return `
+        <div class="result-action-wrap">
+            <button type="button" id="resultActionBtn" class="primary-btn">${label}</button>
+        </div>
+    `;
+}
+
+function bindResultAction(isPassed) {
+    const actionBtn = document.getElementById('resultActionBtn');
+    if (!actionBtn) return;
+    actionBtn.onclick = () => {
+        if (isPassed) {
+            window.location.href = backToCourse.href;
+            return;
+        }
+        window.location.reload();
+    };
+}
+
 async function showResult() {
     saveCurrentAnswer();
     const score = answers.reduce((total, answer, index) => total + (answer === quiz.questions[index].answer ? 1 : 0), 0);
     const requiredScore = Math.max(1, Math.ceil(quiz.questions.length * 0.6));
     const isPassed = score >= requiredScore;
 
-    const lessonResultsHtml = await fetchLessonResultsHtml();
     resultBox.hidden = false;
     resultBox.innerHTML = `
         <h2>ผลคะแนน</h2>
@@ -145,18 +165,20 @@ async function showResult() {
         <p>${isPassed ? 'ผ่านเกณฑ์แล้ว สามารถกลับไปหน้ารายวิชาได้' : 'ยังไม่ผ่านเกณฑ์ กรุณาทำซ้ำบทเดิมอีกครั้ง'}</p>
         <p>เกณฑ์ผ่าน: ${requiredScore} คะแนน</p>
         <h3>สถานะแต่ละบท</h3>
-        ${lessonResultsHtml}
+        <div id="lessonResultsBox"><p class="lesson-status-empty">กำลังโหลดสถานะแต่ละบท...</p></div>
         ${isPassed ? renderAnswerKey() : ''}
         <p id="saveStatus">กำลังบันทึกผลแบบทดสอบ...</p>
+        ${renderResultActionButton(isPassed)}
     `;
+    bindResultAction(isPassed);
 
     quizForm.hidden = true;
     prevBtn.hidden = true;
     nextBtn.hidden = true;
-    submitBtn.innerText = 'ทำแบบทดสอบใหม่';
-    submitBtn.hidden = false;
+    submitBtn.hidden = true;
 
     const saveStatus = document.getElementById('saveStatus');
+    const lessonResultsBox = document.getElementById('lessonResultsBox');
     try {
         const result = await saveTestResult(score);
         if (result.status === 'unauthorized') {
@@ -168,28 +190,19 @@ async function showResult() {
             saveStatus.innerText = result.quiz_status === 'pass'
                 ? 'บันทึกผลแล้ว: ผ่านบทนี้'
                 : 'บันทึกผลแล้ว: ยังไม่ผ่าน กรุณาทำซ้ำบทนี้';
-            const actionHtml = lastResultPassed
-                ? `<button id="resultActionBtn" class="btn-primary">กลับไปรายวิชา</button>`
-                : `<button id="resultActionBtn" class="btn-primary">กลับไปทำใหม่</button>`;
-            resultBox.insertAdjacentHTML('beforeend', actionHtml);
-            const resultActionBtn = document.getElementById('resultActionBtn');
-            if (resultActionBtn) {
-                resultActionBtn.addEventListener('click', () => {
-                    if (lastResultPassed) {
-                        window.location.href = backToCourse.href;
-                        return;
-                    }
-                    answers.fill(null);
-                    currentQuestion = 0;
-                    resultBox.hidden = true;
-                    quizForm.hidden = false;
-                    prevBtn.hidden = false;
-                    submitBtn.innerText = 'ส่งคำตอบ';
-                    renderQuestion();
-                });
+            const actionWrap = resultBox.querySelector('.result-action-wrap');
+            if (actionWrap) {
+                actionWrap.outerHTML = renderResultActionButton(lastResultPassed);
+                bindResultAction(lastResultPassed);
+            }
+            if (lessonResultsBox) {
+                lessonResultsBox.innerHTML = await fetchLessonResultsHtml();
             }
         } else {
-            saveStatus.innerText = 'บันทึกผลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+            saveStatus.innerText = result.message || 'บันทึกผลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+            if (lessonResultsBox) {
+                lessonResultsBox.innerHTML = await fetchLessonResultsHtml();
+            }
         }
     } catch (error) {
         saveStatus.innerText = 'เชื่อมต่อระบบบันทึกผลไม่ได้';
@@ -264,14 +277,7 @@ submitBtn.addEventListener('click', () => {
         return;
     }
 
-    answers.fill(null);
-    currentQuestion = 0;
-    lastResultPassed = false;
-    resultBox.hidden = true;
-    quizForm.hidden = false;
-    prevBtn.hidden = false;
-    submitBtn.innerText = 'ส่งคำตอบ';
-    renderQuestion();
+    window.location.href = backToCourse.href;
 });
 
 loadQuizFromDatabase();
