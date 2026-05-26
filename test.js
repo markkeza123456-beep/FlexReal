@@ -78,15 +78,32 @@ function renderQuestion() {
     progressText.innerText = `ข้อ ${currentQuestion + 1} จาก ${quiz.questions.length}`;
     progressFill.style.width = `${((currentQuestion + 1) / quiz.questions.length) * 100}%`;
 
+    // 💥 เช็คว่าเป็นข้อเขียน (อัตนัย) หรือไม่
+    const isEssay = item.options && item.options.length > 0 && item.options[0] === '-';
+
+    let optionsHtml = '';
+    if (isEssay) {
+        optionsHtml = `
+            <div style="margin-top: 15px;">
+                <textarea class="form-input" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: 'Prompt', sans-serif;" rows="4" name="essay_answer" placeholder="พิมพ์คำตอบของคุณที่นี่..." oninput="saveCurrentAnswer()">${answers[currentQuestion] || ''}</textarea>
+            </div>
+        `;
+    } else {
+        optionsHtml = item.options.map((option, index) => {
+            if (option === '-') return ''; // ซ่อนตัวเลือกที่ว่าง
+            return `
+                <label class="option-card">
+                    <input type="radio" name="answer" value="${index}" ${answers[currentQuestion] === index ? 'checked' : ''} onchange="saveCurrentAnswer()">
+                    <span>${option}</span>
+                </label>
+            `;
+        }).join('');
+    }
+
     quizForm.innerHTML = `
         <h2 class="question-title">${currentQuestion + 1}. ${item.question}</h2>
         <div class="option-list">
-            ${item.options.map((option, index) => `
-                <label class="option-card">
-                    <input type="radio" name="answer" value="${index}" ${answers[currentQuestion] === index ? 'checked' : ''}>
-                    <span>${option}</span>
-                </label>
-            `).join('')}
+            ${optionsHtml}
         </div>
     `;
 
@@ -96,11 +113,19 @@ function renderQuestion() {
 }
 
 function saveCurrentAnswer() {
-    const selected = quizForm.querySelector('input[name="answer"]:checked');
-    answers[currentQuestion] = selected ? Number(selected.value) : null;
+    const item = quiz.questions[currentQuestion];
+    const isEssay = item.options && item.options.length > 0 && item.options[0] === '-';
+    
+    if (isEssay) {
+        const textarea = quizForm.querySelector('textarea[name="essay_answer"]');
+        answers[currentQuestion] = textarea ? textarea.value.trim() : null;
+    } else {
+        const selected = quizForm.querySelector('input[name="answer"]:checked');
+        answers[currentQuestion] = selected ? Number(selected.value) : null;
+    }
 }
 
-async function saveTestResult(score) {
+async function saveTestResult() {
     const response = await fetch('test_submit.php', {
         method: 'POST',
         credentials: 'same-origin',
@@ -110,9 +135,7 @@ async function saveTestResult(score) {
             subject_id: subjectId,
             lesson_index: lessonIndex,
             lesson_no: lessonIndex,
-            score,
-            total_score: quiz.questions.length,
-            answers
+            answers: answers // 💥 ส่งแค่คำตอบไปตรวจที่ Backend เพื่อความปลอดภัย
         })
     });
     return response.json();
@@ -123,14 +146,26 @@ function renderAnswerKey() {
         <div class="answer-key">
             <h3>เฉลยข้อสอบ</h3>
             ${quiz.questions.map((item, index) => {
+                const isEssay = item.options && item.options[0] === '-';
                 const correctIndex = item.answer;
-                const selectedIndex = answers[index];
-                const isCorrect = selectedIndex === correctIndex;
+                const selectedAns = answers[index];
+
+                if (isEssay) {
+                    return `
+                        <div class="answer-item is-wrong" style="border-color: #f1c40f; background: #fdfae7;">
+                            <b>ข้อ ${index + 1}: ${item.question}</b>
+                            <p>คำตอบของคุณ: ${selectedAns || 'ไม่ได้ตอบ'}</p>
+                            <p style="color: #e67e22;">(อัตนัย: รออาจารย์ผู้สอนประเมินคะแนน)</p>
+                        </div>
+                    `;
+                }
+
+                const isCorrect = selectedAns === correctIndex;
                 return `
                     <div class="answer-item ${isCorrect ? 'is-correct' : 'is-wrong'}">
                         <b>ข้อ ${index + 1}: ${item.question}</b>
                         <p>คำตอบที่ถูก: ${item.options[correctIndex]}</p>
-                        <p>คำตอบของคุณ: ${selectedIndex === null ? 'ไม่ได้ตอบ' : item.options[selectedIndex]}</p>
+                        <p>คำตอบของคุณ: ${selectedAns === null ? 'ไม่ได้ตอบ' : item.options[selectedAns]}</p>
                     </div>
                 `;
             }).join('')}
@@ -140,48 +175,56 @@ function renderAnswerKey() {
 
 async function showResult() {
     saveCurrentAnswer();
-    const score = answers.reduce((total, answer, index) => total + (answer === quiz.questions[index].answer ? 1 : 0), 0);
-    const requiredScore = Math.max(1, Math.ceil(quiz.questions.length * 0.6));
-    const isPassed = score >= requiredScore;
 
-    resultBox.hidden = false;
-    resultBox.innerHTML = `
-        <h2>ผลคะแนน</h2>
-        <p>คุณได้ <span class="score">${score}/${quiz.questions.length}</span> คะแนน</p>
-        <p>${isPassed ? 'ผ่านเกณฑ์แล้ว ไปบทถัดไปได้' : 'ยังไม่ผ่านเกณฑ์ กรุณาทำซ้ำบทเดิมอีกครั้ง'}</p>
-        <p>เกณฑ์ผ่าน: ${requiredScore} คะแนน</p>
-        ${isPassed ? renderAnswerKey() : ''}
-        <p id="saveStatus">กำลังบันทึกผลแบบทดสอบ...</p>
-    `;
+    if (answers.includes(null) || answers.includes('')) {
+        const confirmSubmit = confirm('คุณยังมีข้อที่ไม่ได้ตอบ ยืนยันที่จะส่งข้อสอบหรือไม่?');
+        if (!confirmSubmit) return;
+    }
 
     quizForm.hidden = true;
     prevBtn.hidden = true;
     nextBtn.hidden = true;
-    submitBtn.innerText = 'ทำแบบทดสอบใหม่';
-    submitBtn.hidden = false;
+    submitBtn.hidden = true;
+    resultBox.hidden = false;
+    resultBox.innerHTML = `
+        <h2>กำลังประมวลผล...</h2>
+        <p id="saveStatus">กำลังบันทึกผลแบบทดสอบ และตรวจคำตอบ...</p>
+    `;
 
-    const saveStatus = document.getElementById('saveStatus');
     try {
-        const result = await saveTestResult(score);
+        const result = await saveTestResult();
+        
         if (result.status === 'unauthorized') {
-            saveStatus.innerText = result.message || 'กรุณาเข้าสู่ระบบก่อนบันทึกผล';
+            document.getElementById('saveStatus').innerText = result.message || 'กรุณาเข้าสู่ระบบก่อนบันทึกผล';
             return;
         }
+
         if (result.status === 'success') {
+            const score = result.score;
+            const totalScore = result.total_score;
+            const requiredScore = result.required_score;
             lastResultPassed = result.quiz_status === 'pass';
-            saveStatus.innerText = result.quiz_status === 'pass'
-                ? 'บันทึกผลแล้ว: ผ่านบทนี้ สามารถไปบทถัดไปได้'
-                : 'บันทึกผลแล้ว: ยังไม่ผ่าน กรุณาทำซ้ำบทนี้';
+
+            resultBox.innerHTML = `
+                <h2>ผลคะแนน</h2>
+                <p>คุณได้ <span class="score">${score}/${totalScore}</span> คะแนน</p>
+                <p>${lastResultPassed ? 'ผ่านเกณฑ์แล้ว ไปบทถัดไปได้' : 'ยังไม่ผ่านเกณฑ์ กรุณาทำซ้ำบทเดิมอีกครั้ง'}</p>
+                <p>เกณฑ์ผ่าน: ${requiredScore} คะแนน</p>
+                ${lastResultPassed ? renderAnswerKey() : renderAnswerKey()}
+                <p id="saveStatus" style="margin-top: 15px; font-weight: 500; color: ${lastResultPassed ? '#27ae60' : '#e74c3c'};">${lastResultPassed ? '✅ บันทึกผลแล้ว: ผ่านบทนี้ สามารถไปบทถัดไปได้' : '❌ บันทึกผลแล้ว: ยังไม่ผ่าน กรุณาทำซ้ำบทนี้'}</p>
+            `;
+
             const actionHtml = lastResultPassed
-                ? `<button id="resultActionBtn" class="btn-primary">ไปบทถัดไป</button>`
-                : `<button id="resultActionBtn" class="btn-primary">กลับไปทำใหม่</button>`;
+                ? `<button id="resultActionBtn" class="btn-primary" style="margin-top:20px;">ไปบทถัดไป</button>`
+                : `<button id="resultActionBtn" class="btn-primary" style="margin-top:20px;">กลับไปทำใหม่</button>`;
             resultBox.insertAdjacentHTML('beforeend', actionHtml);
+
             const resultActionBtn = document.getElementById('resultActionBtn');
             if (resultActionBtn) {
                 resultActionBtn.addEventListener('click', () => {
                     if (lastResultPassed) {
                         const nextLesson = lessonIndex + 1;
-                        if (nextLesson > 5) {
+                        if (nextLesson > 5) { // สมมติว่ามี 5 บทสูดสุด
                             window.location.href = backToCourse.href;
                             return;
                         }
@@ -198,14 +241,16 @@ async function showResult() {
                     quizForm.hidden = false;
                     prevBtn.hidden = false;
                     submitBtn.innerText = 'ส่งคำตอบ';
+                    submitBtn.hidden = true;
+                    nextBtn.hidden = false;
                     renderQuestion();
                 });
             }
         } else {
-            saveStatus.innerText = result.message || 'บันทึกผลไม่สำเร็จ';
+            document.getElementById('saveStatus').innerText = result.message || 'บันทึกผลไม่สำเร็จ';
         }
     } catch (error) {
-        saveStatus.innerText = 'เชื่อมต่อระบบบันทึกผลไม่ได้';
+        document.getElementById('saveStatus').innerText = 'เชื่อมต่อระบบบันทึกผลไม่ได้';
     }
 }
 
@@ -263,10 +308,6 @@ async function loadQuizFromDatabase() {
 
 nextBtn.addEventListener('click', () => {
     saveCurrentAnswer();
-    if (answers[currentQuestion] === null) {
-        alert('กรุณาเลือกคำตอบก่อน');
-        return;
-    }
     currentQuestion += 1;
     renderQuestion();
 });
@@ -279,10 +320,6 @@ prevBtn.addEventListener('click', () => {
 
 submitBtn.addEventListener('click', () => {
     if (!quizForm.hidden) {
-        if (quizForm.querySelector('input[name="answer"]:checked') === null) {
-            alert('กรุณาเลือกคำตอบก่อน');
-            return;
-        }
         showResult();
         return;
     }
