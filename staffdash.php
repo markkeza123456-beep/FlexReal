@@ -1,4 +1,21 @@
 <!DOCTYPE html>
+<?php
+session_start();
+$displayName    = $_SESSION['name'] ?? 'Staff Account';
+$displayRole    = 'เจ้าหน้าที่';
+$avatarInitials = 'ST';
+
+// Avatar initials จากอักษรแรกของแต่ละคำในชื่อ
+if (!empty($_SESSION['name'])) {
+    $parts    = preg_split('/\s+/u', trim($_SESSION['name']));
+    $initials = '';
+    foreach ($parts as $p) {
+        $initials .= mb_strtoupper(mb_substr($p, 0, 1, 'UTF-8'), 'UTF-8');
+        if (mb_strlen($initials, 'UTF-8') >= 2) break;
+    }
+    if ($initials) $avatarInitials = $initials;
+}
+?>
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
@@ -84,10 +101,18 @@
     </div>
 
     <div class="sidebar-footer">
-      <div class="user-avatar">ST</div>
+      <input type="file" id="staffAvatarInput" accept="image/*" style="display:none" onchange="staffPreviewAvatar(this)">
+      <div class="user-avatar" id="staffAvatarCircle"
+           onclick="document.getElementById('staffAvatarInput').click()"
+           title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์"
+           style="cursor:pointer;overflow:hidden;padding:0;flex-shrink:0;">
+        <img id="staffAvatarImg" src="" alt=""
+             style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;">
+        <span id="staffAvatarInitial"><?= htmlspecialchars($avatarInitials) ?></span>
+      </div>
       <div class="user-detail">
-        <span class="user-name">Staff Account</span>
-        <span class="user-role">เจ้าหน้าที่</span>
+        <span class="user-name"><?= htmlspecialchars($displayName) ?></span>
+        <span class="user-role"><?= htmlspecialchars($displayRole) ?></span>
       </div>
       <a class="btn-logout" href="logout.php" title="ออกจากระบบ">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
