@@ -230,6 +230,228 @@ loadDashboardData().catch(() => {
     renderAssignments([]);
 });
 
+<<<<<<< HEAD
+=======
+/* ─────────────────────────────────────────────────
+   Avatar Crop System
+   ───────────────────────────────────────────────── */
+const _crop = {
+    img: null,
+    imgX: 0, imgY: 0,
+    imgW: 0, imgH: 0,
+    zoom: 1,
+    dragging: false,
+    lastX: 0, lastY: 0,
+    canvas: null, ctx: null,
+    stage: null, circle: null,
+    stageW: 0, stageH: 0,
+    circleSize: 0,
+};
+
+function _cropInjectModal() {
+    if (document.getElementById('avatarCropOverlay')) return;
+    const html = `
+    <div id="avatarCropOverlay" style="
+        position:fixed;inset:0;background:rgba(0,0,0,0.6);
+        display:flex;align-items:center;justify-content:center;
+        z-index:9999;padding:1rem;box-sizing:border-box">
+      <div style="
+          background:#1a1a2e;border:1px solid rgba(255,255,255,0.1);
+          border-radius:16px;padding:1.25rem;width:340px;max-width:100%;
+          color:#fff;font-family:'Kanit',sans-serif">
+        <p style="margin:0 0 1rem;font-size:15px;font-weight:500">✂️ ครอปรูปโปรไฟล์</p>
+        <div id="cropStage" style="
+            position:relative;width:100%;height:280px;
+            background:#0d0d1a;border-radius:10px;overflow:hidden;
+            cursor:grab;user-select:none;touch-action:none">
+          <canvas id="cropCanvas" style="display:block;width:100%;height:100%"></canvas>
+          <div id="cropCircle" style="
+              position:absolute;border:2px dashed rgba(255,255,255,0.85);
+              border-radius:50%;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);
+              pointer-events:none"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+          <span style="font-size:12px;color:#aaa;white-space:nowrap">🔍 ซูม</span>
+          <input type="range" id="cropZoomSlider" min="100" max="300" value="100" step="1"
+                 oninput="_cropSetZoom(this.value)"
+                 style="flex:1;accent-color:#f97316">
+          <span id="cropZoomVal" style="font-size:12px;color:#aaa;min-width:36px">100%</span>
+        </div>
+        <p style="font-size:11px;color:#666;text-align:center;margin:6px 0 1rem">
+          ลากรูปเพื่อจัดตำแหน่ง · เลื่อนซูมเพื่อขยาย
+        </p>
+        <div style="display:flex;gap:8px">
+          <button onclick="_cropClose()" style="
+              flex:1;padding:9px 0;font-size:13px;border-radius:8px;
+              border:1px solid rgba(255,255,255,0.15);background:transparent;
+              color:#fff;cursor:pointer;font-family:'Kanit',sans-serif">
+            ยกเลิก
+          </button>
+          <button onclick="_cropConfirm()" style="
+              flex:1;padding:9px 0;font-size:13px;border-radius:8px;
+              border:1px solid rgba(249,115,22,0.4);
+              background:rgba(249,115,22,0.15);color:#f97316;
+              cursor:pointer;font-family:'Kanit',sans-serif;font-weight:500">
+            ✓ ใช้รูปนี้
+          </button>
+        </div>
+      </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+
+    const stage = document.getElementById('cropStage');
+    stage.addEventListener('mousedown',  _cropStartDrag);
+    stage.addEventListener('mousemove',  _cropOnDrag);
+    stage.addEventListener('mouseup',    _cropEndDrag);
+    stage.addEventListener('mouseleave', _cropEndDrag);
+    stage.addEventListener('touchstart', _cropStartDrag, { passive: false });
+    stage.addEventListener('touchmove',  _cropOnDrag,    { passive: false });
+    stage.addEventListener('touchend',   _cropEndDrag);
+}
+
+function _cropGetXY(e) {
+    if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    return { x: e.clientX, y: e.clientY };
+}
+
+function _cropStartDrag(e) {
+    _crop.dragging = true;
+    const p = _cropGetXY(e);
+    _crop.lastX = p.x;
+    _crop.lastY = p.y;
+    e.preventDefault();
+}
+
+function _cropOnDrag(e) {
+    if (!_crop.dragging) return;
+    const p = _cropGetXY(e);
+    _crop.imgX += p.x - _crop.lastX;
+    _crop.imgY += p.y - _crop.lastY;
+    _crop.lastX = p.x;
+    _crop.lastY = p.y;
+    _cropDraw();
+    e.preventDefault();
+}
+
+function _cropEndDrag() {
+    _crop.dragging = false;
+}
+
+function _cropSetZoom(v) {
+    _crop.zoom = v / 100;
+    document.getElementById('cropZoomVal').textContent = v + '%';
+    _cropDraw();
+}
+
+function _cropDraw() {
+    const { ctx, img, imgX, imgY, imgW, imgH, zoom, stageW, stageH } = _crop;
+    if (!ctx || !img) return;
+    ctx.clearRect(0, 0, stageW, stageH);
+    // zoom จากจุดกึ่งกลาง stage
+    const drawW = imgW * zoom;
+    const drawH = imgH * zoom;
+    const drawX = imgX - (zoom - 1) * imgW / 2;
+    const drawY = imgY - (zoom - 1) * imgH / 2;
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+}
+
+function _cropInit() {
+    _cropInjectModal();
+    const stage = document.getElementById('cropStage');
+    const canvas = document.getElementById('cropCanvas');
+    const circle = document.getElementById('cropCircle');
+
+    _crop.canvas = canvas;
+    _crop.ctx = canvas.getContext('2d');
+    _crop.stage = stage;
+    _crop.circle = circle;
+    _crop.stageW = stage.offsetWidth;
+    _crop.stageH = stage.offsetHeight;
+    _crop.circleSize = Math.min(_crop.stageW, _crop.stageH) * 0.72;
+
+    canvas.width  = _crop.stageW;
+    canvas.height = _crop.stageH;
+
+    const cs = _crop.circleSize;
+    circle.style.width  = cs + 'px';
+    circle.style.height = cs + 'px';
+    circle.style.left   = ((_crop.stageW - cs) / 2) + 'px';
+    circle.style.top    = ((_crop.stageH - cs) / 2) + 'px';
+
+    _crop.zoom = 1;
+    const slider = document.getElementById('cropZoomSlider');
+    if (slider) { slider.value = 100; }
+    const zoomVal = document.getElementById('cropZoomVal');
+    if (zoomVal) { zoomVal.textContent = '100%'; }
+
+    const scale = Math.max(cs / _crop.img.width, cs / _crop.img.height);
+    _crop.imgW = _crop.img.width  * scale;
+    _crop.imgH = _crop.img.height * scale;
+    _crop.imgX = (_crop.stageW - _crop.imgW) / 2;
+    _crop.imgY = (_crop.stageH - _crop.imgH) / 2;
+
+    _cropDraw();
+}
+
+function _cropClose() {
+    const overlay = document.getElementById('avatarCropOverlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function _cropConfirm() {
+    const { img, stageW, stageH, circleSize, imgX, imgY, imgW, imgH, zoom } = _crop;
+    if (!img) return;
+
+    const offscreen = document.createElement('canvas');
+    const size = 300;
+    offscreen.width = offscreen.height = size;
+    const oc = offscreen.getContext('2d');
+
+    // ใช้สูตรเดียวกับ _cropDraw
+    const drawW = imgW * zoom;
+    const drawH = imgH * zoom;
+    const drawX = imgX - (zoom - 1) * imgW / 2;
+    const drawY = imgY - (zoom - 1) * imgH / 2;
+
+    // วงกลมอยู่กึ่งกลาง stage
+    const cx = stageW / 2;
+    const cy = stageH / 2;
+    const r  = circleSize / 2;
+
+    // แปลงพิกัดวงกลมกลับเป็น source pixel ใน img จริง
+    const scaleX = img.naturalWidth  / drawW;
+    const scaleY = img.naturalHeight / drawH;
+    const srcX = (cx - r - drawX) * scaleX;
+    const srcY = (cy - r - drawY) * scaleY;
+    const srcW = circleSize * scaleX;
+    const srcH = circleSize * scaleY;
+
+    oc.save();
+    oc.beginPath();
+    oc.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    oc.clip();
+    oc.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, size, size);
+    oc.restore();
+
+    const dataURL = offscreen.toDataURL('image/png');
+    _cropApplyAvatar(dataURL);
+    _cropClose();
+}
+
+function _cropApplyAvatar(dataURL) {
+    const avatarImg     = document.getElementById('avatarImg');
+    const avatarInitial = document.getElementById('avatarInitial');
+    if (avatarImg)     { avatarImg.src = dataURL; avatarImg.style.display = 'block'; }
+    if (avatarInitial) { avatarInitial.style.display = 'none'; }
+
+    const sidebarAvatar = document.getElementById('sidebarAvatar');
+    if (sidebarAvatar) {
+        sidebarAvatar.style.cssText += ';background:none;padding:0;overflow:hidden';
+        sidebarAvatar.innerHTML = `<img src="${dataURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    }
+}
+
+>>>>>>> parent of 7c728d4 (u)
 function previewAvatar(input) {
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];
