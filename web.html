@@ -13,6 +13,7 @@
 <nav class="navbar">
     <a href="web.html" class="logo" onclick="showPage('home')">Flexible Learning Hub</a>
     <div class="nav-links">
+        <input type="text" id="searchInput" class="nav-search-input" onfocus="showPage('home')" onkeyup="filterCourses()" placeholder="ค้นหาบทเรียนที่คุณสนใจ...">
         <a href="web.html" onclick="showPage('home')" style="text-decoration:none; color:inherit; font-weight:500;">หน้าหลัก</a>
         
         <div class="dropdown">
@@ -26,7 +27,6 @@
             <button class="dropbtn">คู่มือการเรียน ▾</button>
             <div class="dropdown-content">
                 <a href="#" onclick="showGuide('register')">ขั้นตอนการสมัคร</a>
-                <a href="#" onclick="showGuide('search')">ค้นหาบทเรียน</a>
                 <a href="#" onclick="showGuide('certificate')">การรับใบประกาศ</a>
             </div> 
         </div>
@@ -57,9 +57,6 @@
     <div class="hero">
         <h1>Learning Hub</h1>
         <p style="margin-top:10px; opacity:0.9;">ค้นพบรายวิชาออนไลน์ที่ตอบโจทย์ชีวิตคุณ</p>
-        <div class="search-container">
-            <input type="text" id="searchInput" class="search-box" onkeyup="filterCourses()" placeholder="ค้นหาบทเรียนที่คุณสนใจ...">
-        </div>
     </div>
 
     <div class="container">
