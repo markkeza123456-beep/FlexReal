@@ -56,7 +56,7 @@ try {
     ensureCurriculumSubjectTypeColumn($conn);
 
     $studentStmt = $conn->prepare(
-        'SELECT student_id, student_name, email, tel, studcurriculums_id,
+        'SELECT student_id, student_name, email, tel, studcurriculums_id, avatar_url,
                 COALESCE(NULLIF(TRIM(student_level), \'\'), NULLIF(TRIM(education_level), \'\'), \'-\') AS class_name
          FROM public.student
          WHERE student_id = :student_id
@@ -130,6 +130,7 @@ try {
             'email' => (string) ($student['email'] ?? ''),
             'phone' => (string) ($student['tel'] ?? ''),
             'class_name' => (string) ($student['class_name'] ?? '-'),
+            'avatar_url' => (string) ($student['avatar_url'] ?? ''),
         ],
         'stats' => [
             'course_count' => $courseCount,

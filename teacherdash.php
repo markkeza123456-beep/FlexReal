@@ -389,12 +389,17 @@ $stats = [
                             <td class="mono"><?= str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) ?></td>
                             <td>
                                 <a href="#" class="student-progress-link" 
+                                   data-id="<?= h($student['id']) ?>"
                                    data-name="<?= h($student['name']) ?>"
+                                   data-class="<?= h($student['class']) ?>"
+                                   data-score="<?= h($student['score']) ?>"
+                                   data-status="<?= h($student['status']) ?>"
                                    data-completed="<?= h($student['completed_lessons']) ?>"
                                    data-total="<?= h($student['total_lessons']) ?>"
+                                   data-pct="<?= h($student['progress_pct']) ?>"
                                    data-json="<?= $student['completed_names_json'] ?>"
-                                   onclick="showStudentProgress(this); return false;"
-                                   style="color:#60a5fa; font-weight:500; text-decoration:none; display:flex; align-items:center; gap:6px;" title="คลิกเพื่อดูบทเรียนที่ผ่านแล้ว">
+                                   onclick="openStudentModal(this); return false;"
+                                   style="color:#60a5fa; font-weight:500; text-decoration:none; display:flex; align-items:center; gap:6px;" title="คลิกเพื่อดูข้อมูลนักเรียน">
                                     <?= h($student['name']) ?> <span style="font-size:12px; color:var(--text-dim);">ℹ️ </span>
                                 </a>
                             </td>
@@ -561,12 +566,17 @@ $stats = [
                                 <td class="mono"><?= str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) ?></td>
                                 <td>
                                     <a href="#" class="student-progress-link" 
+                                       data-id="<?= h($student['id']) ?>"
                                        data-name="<?= h($student['name']) ?>"
+                                       data-class="<?= h($student['class']) ?>"
+                                       data-score="<?= h($student['score']) ?>"
+                                       data-status="<?= h($student['status']) ?>"
                                        data-completed="<?= h($student['completed_lessons']) ?>"
                                        data-total="<?= h($student['total_lessons']) ?>"
+                                       data-pct="<?= h($student['progress_pct']) ?>"
                                        data-json="<?= $student['completed_names_json'] ?>"
-                                       onclick="showStudentProgress(this); return false;"
-                                       style="color:#60a5fa; font-weight:500; text-decoration:none; display:flex; align-items:center; gap:6px;" title="คลิกเพื่อดูบทเรียนที่ผ่านแล้ว">
+                                       onclick="openStudentModal(this); return false;"
+                                       style="color:#60a5fa; font-weight:500; text-decoration:none; display:flex; align-items:center; gap:6px;" title="คลิกเพื่อดูข้อมูลนักเรียน">
                                         <?= h($student['name']) ?> <span style="font-size:12px; color:var(--text-dim);">ℹ️</span>
                                     </a>
                                 </td>
@@ -1151,10 +1161,6 @@ async function saveTeacherPassword() {
     }
 }
 
-function h(?string $value): string {
-    return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
-}
-
 function showMsg(id, msg, success) {
     const el = document.getElementById(id);
     el.style.display = 'block';
@@ -1164,6 +1170,172 @@ function showMsg(id, msg, success) {
     el.textContent = msg;
     setTimeout(() => { el.style.display = 'none'; }, 4000);
 }
+</script>
+
+<!-- ===== Student Detail Modal ===== -->
+<div class="modal-overlay" id="studentDetailModal" style="z-index:1100;">
+    <div class="modal" style="max-width:620px;width:95%;max-height:90vh;overflow-y:auto;">
+        <div class="modal-header" style="position:sticky;top:0;background:var(--bg2);z-index:1;border-bottom:1px solid var(--border);padding:20px 24px;">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div id="sdm-avatar" style="width:48px;height:48px;border-radius:50%;background:var(--orange-dim);border:2px solid var(--orange);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--orange);flex-shrink:0;"></div>
+                <div>
+                    <h3 class="modal-title" id="sdm-name" style="font-size:17px;margin:0;"></h3>
+                    <div id="sdm-class" style="font-size:12px;color:var(--text-muted);margin-top:3px;"></div>
+                </div>
+            </div>
+            <button class="modal-close" onclick="document.getElementById('studentDetailModal').classList.remove('open')">✕</button>
+        </div>
+
+        <div class="modal-body" style="padding:24px;">
+            <!-- Summary cards -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;">
+                <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;">
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">คะแนนเฉลี่ย</div>
+                    <div id="sdm-score" style="font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;"></div>
+                </div>
+                <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;">
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">ความคืบหน้า</div>
+                    <div id="sdm-pct" style="font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#60a5fa;"></div>
+                </div>
+                <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;">
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">บทที่ผ่าน</div>
+                    <div id="sdm-lessons" style="font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#10b981;"></div>
+                </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div style="margin-bottom:24px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-size:12px;color:var(--text-muted);font-weight:500;">ความคืบหน้าโดยรวม</span>
+                    <span id="sdm-pct-label" style="font-size:12px;color:var(--text-dim);"></span>
+                </div>
+                <div style="height:8px;background:var(--bg3);border-radius:100px;overflow:hidden;border:1px solid var(--border);">
+                    <div id="sdm-progress-bar" style="height:100%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:100px;transition:width .5s ease;width:0%;"></div>
+                </div>
+            </div>
+
+            <!-- Lesson scores section (loaded via fetch) -->
+            <div style="margin-bottom:8px;">
+                <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+                    📊 คะแนนแต่ละบทเรียน
+                </div>
+                <div id="sdm-lesson-list" style="display:flex;flex-direction:column;gap:10px;">
+                    <div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px;">
+                        <div style="font-size:24px;margin-bottom:8px;">⏳</div>
+                        กำลังโหลดข้อมูล...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const statusColors = {
+    'excellent': { color: '#10b981', label: 'ดีเยี่ยม' },
+    'good':      { color: '#3b82f6', label: 'ดี' },
+    'average':   { color: '#f59e0b', label: 'ปานกลาง' },
+    'needs-help':{ color: '#ef4444', label: 'ต้องดูแล' },
+};
+
+async function openStudentModal(el) {
+    const id       = el.dataset.id;
+    const name     = el.dataset.name;
+    const cls      = el.dataset.class;
+    const score    = parseFloat(el.dataset.score);
+    const status   = el.dataset.status;
+    const completed= parseInt(el.dataset.completed);
+    const total    = parseInt(el.dataset.total);
+    const pct      = parseInt(el.dataset.pct);
+
+    const sc = statusColors[status] || { color: '#f97316', label: '' };
+
+    // Fill header
+    document.getElementById('sdm-avatar').textContent = name.charAt(0).toUpperCase();
+    document.getElementById('sdm-name').textContent   = name;
+    document.getElementById('sdm-class').textContent  = 'ระดับชั้น: ' + (cls || '-');
+
+    // Fill cards
+    const scoreEl = document.getElementById('sdm-score');
+    scoreEl.textContent = score.toFixed(1);
+    scoreEl.style.color = sc.color;
+
+    document.getElementById('sdm-pct').textContent     = pct + '%';
+    document.getElementById('sdm-lessons').textContent = completed + '/' + total;
+
+    // Progress bar
+    document.getElementById('sdm-progress-bar').style.width = pct + '%';
+    document.getElementById('sdm-pct-label').textContent     = 'สำเร็จ ' + completed + ' จาก ' + total + ' บทเรียน';
+
+    // Reset lesson list
+    document.getElementById('sdm-lesson-list').innerHTML = `
+        <div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px;">
+            <div style="font-size:24px;margin-bottom:8px;">⏳</div>กำลังโหลดข้อมูล...
+        </div>`;
+
+    document.getElementById('studentDetailModal').classList.add('open');
+
+    // Fetch lesson scores
+    try {
+        const res  = await fetch('get_student_detail.php?student_id=' + encodeURIComponent(id));
+        const data = await res.json();
+        renderLessonScores(data.lessons || []);
+    } catch (e) {
+        document.getElementById('sdm-lesson-list').innerHTML =
+            '<div style="color:#ef4444;text-align:center;padding:20px;font-size:13px;">❌ โหลดข้อมูลไม่สำเร็จ</div>';
+    }
+}
+
+function renderLessonScores(lessons) {
+    const container = document.getElementById('sdm-lesson-list');
+    if (!lessons.length) {
+        container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px;background:var(--bg3);border-radius:var(--radius-sm);border:1px dashed var(--border);">📭 ยังไม่มีข้อมูลคะแนน</div>';
+        return;
+    }
+
+    container.innerHTML = lessons.map((l, i) => {
+        const pct    = l.quiz_total_score > 0 ? Math.round((l.best_quiz_score / l.quiz_total_score) * 100) : 0;
+        const passed = pct >= 60;
+        const bar    = passed ? '#10b981' : (pct > 0 ? '#f59e0b' : '#374151');
+        const badge  = passed
+            ? '<span style="font-size:11px;padding:2px 8px;border-radius:100px;background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3);">✅ ผ่าน</span>'
+            : (pct > 0
+                ? '<span style="font-size:11px;padding:2px 8px;border-radius:100px;background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.3);">⚠️ ไม่ผ่าน</span>'
+                : '<span style="font-size:11px;padding:2px 8px;border-radius:100px;background:rgba(75,85,99,.2);color:#6b7280;border:1px solid rgba(75,85,99,.3);">— ยังไม่ทำ</span>');
+
+        return `
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:28px;height:28px;border-radius:50%;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--orange);font-weight:600;flex-shrink:0;">${i+1}</div>
+                    <div>
+                        <div style="font-size:13.5px;color:#fff;font-weight:500;line-height:1.3;">${escHtml(l.lesson_name)}</div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${escHtml(l.subject_name)}</div>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:${bar};font-weight:600;">${l.best_quiz_score}/${l.quiz_total_score}</span>
+                    ${badge}
+                </div>
+            </div>
+            <div style="height:5px;background:var(--bg2);border-radius:100px;overflow:hidden;">
+                <div style="height:100%;width:${pct}%;background:${bar};border-radius:100px;transition:width .4s ease;"></div>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:5px;text-align:right;">${pct}%</div>
+        </div>`;
+    }).join('');
+}
+
+function escHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML;
+}
+
+// Close on backdrop click
+document.getElementById('studentDetailModal').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+});
 </script>
 
 <script src="teacherdash.js"></script>

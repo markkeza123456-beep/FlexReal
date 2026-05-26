@@ -5,8 +5,8 @@ require_once 'db_connect.php'; // ไฟล์ที่ใช้ $conn เชื
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $role = $_POST['role'];
     $userid = $_POST['userid'];
-    $fullname = $_POST['fullname'];
-    $password = $_POST['password'];
+    $fullname = trim($_POST['fullname']);
+    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
     try {
         if ($role === 'student') {

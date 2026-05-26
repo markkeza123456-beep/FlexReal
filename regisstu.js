@@ -332,10 +332,12 @@
 
     // ---- เอกสาร (เฉพาะ student และ teacher) ----
     if (currentRole === 'student' || currentRole === 'teacher') {
-      if (!fileInput.files[0]) {
-        valid = setError('field-cert', 'cert-error', 'กรุณาแนบไฟล์วุฒิการศึกษา') && valid;
-      } else if (fileInput.files[0].size > 5 * 1024 * 1024) {
-        valid = setError('field-cert', 'cert-error', 'ไฟล์ต้องมีขนาดไม่เกิน 5MB') && valid;
+      if (fileInput) {
+        if (!fileInput.files[0]) {
+          valid = setError('field-cert', 'cert-error', 'กรุณาแนบไฟล์วุฒิการศึกษา') && valid;
+        } else if (fileInput.files[0].size > 5 * 1024 * 1024) {
+          valid = setError('field-cert', 'cert-error', 'ไฟล์ต้องมีขนาดไม่เกิน 5MB') && valid;
+        }
       }
     }
 
@@ -395,6 +397,12 @@
       const firstError = document.querySelector('.has-error');
       firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
+    }
+
+    // รวมชื่อ + นามสกุลก่อน submit
+    const fullnameHidden = document.getElementById('fullnameHidden');
+    if (fullnameHidden) {
+      fullnameHidden.value = (valueOf('firstname') + ' ' + valueOf('lastname')).trim();
     }
 
     setLoading(true);

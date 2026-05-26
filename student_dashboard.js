@@ -131,6 +131,22 @@ function renderAssignments(assignments) {
     `).join('');
 }
 
+/* ─────────────────────────────────────────────────
+   Avatar helper — apply URL หรือ dataURL ลง UI
+   ───────────────────────────────────────────────── */
+function _applyAvatarUI(src) {
+    const avatarImg     = document.getElementById('avatarImg');
+    const avatarInitial = document.getElementById('avatarInitial');
+    if (avatarImg) { avatarImg.src = src; avatarImg.style.display = 'block'; }
+    if (avatarInitial) { avatarInitial.style.display = 'none'; }
+
+    const sidebarAvatar = document.getElementById('sidebarAvatar');
+    if (sidebarAvatar) {
+        sidebarAvatar.style.cssText += ';background:none;padding:0;overflow:hidden';
+        sidebarAvatar.innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    }
+}
+
 function updateProfile(student) {
     if (!student) return;
     const name = student.name || 'นักเรียน';
@@ -149,22 +165,29 @@ function updateProfile(student) {
     setText('dashboardWelcome', `ยินดีต้อนรับกลับมา, ${name} 👋`);
     setText('sidebarName', name);
     setText('displayName', name);
-    setText('sidebarAvatar', firstChar);
-    setText('avatarInitial', firstChar);
     setValue('profileName', name);
     setValue('profileEmail', student.email || '');
     setValue('profilePhone', student.phone || '');
-
     setValue('profileClass', className);
     setText('sidebarRole', 'นักเรียน - ' + className);
     setText('profileRole', 'นักเรียน · ' + className);
 
     const roleTexts = document.querySelectorAll('.role, .avatar-role');
     roleTexts.forEach((el) => {
-        if (!el.id) {
-            el.textContent = 'นักเรียน - ' + className;
-        }
+        if (!el.id) el.textContent = 'นักเรียน - ' + className;
     });
+
+    // โหลด avatar_url จาก DB — ถ้ามีให้แสดงรูป ถ้าไม่มีให้แสดงตัวอักษรแรก
+    if (student.avatar_url) {
+        _applyAvatarUI(student.avatar_url);
+    } else {
+        setText('sidebarAvatar', firstChar);
+        setText('avatarInitial', firstChar);
+        const avatarImg = document.getElementById('avatarImg');
+        if (avatarImg) avatarImg.style.display = 'none';
+        const avatarInitial = document.getElementById('avatarInitial');
+        if (avatarInitial) avatarInitial.style.display = '';
+    }
 }
 
 function updateStats(stats, courses) {
@@ -230,8 +253,6 @@ loadDashboardData().catch(() => {
     renderAssignments([]);
 });
 
-<<<<<<< HEAD
-=======
 /* ─────────────────────────────────────────────────
    Avatar Crop System
    ───────────────────────────────────────────────── */
@@ -347,7 +368,6 @@ function _cropDraw() {
     const { ctx, img, imgX, imgY, imgW, imgH, zoom, stageW, stageH } = _crop;
     if (!ctx || !img) return;
     ctx.clearRect(0, 0, stageW, stageH);
-    // zoom จากจุดกึ่งกลาง stage
     const drawW = imgW * zoom;
     const drawH = imgH * zoom;
     const drawX = imgX - (zoom - 1) * imgW / 2;
@@ -407,18 +427,15 @@ function _cropConfirm() {
     offscreen.width = offscreen.height = size;
     const oc = offscreen.getContext('2d');
 
-    // ใช้สูตรเดียวกับ _cropDraw
     const drawW = imgW * zoom;
     const drawH = imgH * zoom;
     const drawX = imgX - (zoom - 1) * imgW / 2;
     const drawY = imgY - (zoom - 1) * imgH / 2;
 
-    // วงกลมอยู่กึ่งกลาง stage
     const cx = stageW / 2;
     const cy = stageH / 2;
     const r  = circleSize / 2;
 
-    // แปลงพิกัดวงกลมกลับเป็น source pixel ใน img จริง
     const scaleX = img.naturalWidth  / drawW;
     const scaleY = img.naturalHeight / drawH;
     const srcX = (cx - r - drawX) * scaleX;
@@ -434,44 +451,62 @@ function _cropConfirm() {
     oc.restore();
 
     const dataURL = offscreen.toDataURL('image/png');
-    _cropApplyAvatar(dataURL);
+
+    // แสดงรูปทันทีใน UI
+    _applyAvatarUI(dataURL);
     _cropClose();
+
+    // อัปโหลดไปยัง Supabase ผ่าน uploadavatar_student.php
+    _uploadAvatarToServer(dataURL);
 }
 
-function _cropApplyAvatar(dataURL) {
-    const avatarImg     = document.getElementById('avatarImg');
-    const avatarInitial = document.getElementById('avatarInitial');
-    if (avatarImg)     { avatarImg.src = dataURL; avatarImg.style.display = 'block'; }
-    if (avatarInitial) { avatarInitial.style.display = 'none'; }
-
-    const sidebarAvatar = document.getElementById('sidebarAvatar');
-    if (sidebarAvatar) {
-        sidebarAvatar.style.cssText += ';background:none;padding:0;overflow:hidden';
-        sidebarAvatar.innerHTML = `<img src="${dataURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-    }
+/* ─────────────────────────────────────────────────
+   อัปโหลด dataURL ขึ้น Supabase Storage
+   ───────────────────────────────────────────────── */
+function _uploadAvatarToServer(dataURL) {
+    fetch('uploadavatar_student.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ image: dataURL })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            // อัปเดต URL ใน state เพื่อให้รีเพจแล้วรูปยังอยู่
+            if (dashboardState.student) {
+                dashboardState.student.avatar_url = data.url;
+            }
+        } else {
+            console.warn('อัปโหลดรูปไม่สำเร็จ:', data.message);
+        }
+    })
+    .catch(err => console.warn('Avatar upload error:', err));
 }
 
->>>>>>> parent of 7c728d4 (u)
+/* ─────────────────────────────────────────────────
+   previewAvatar — เปิด crop modal เมื่อเลือกไฟล์
+   (แทนที่ของเดิมที่แสดงรูปชั่วคราวเท่านั้น)
+   ───────────────────────────────────────────────── */
 function previewAvatar(input) {
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];
     if (!file.type.startsWith('image/')) return;
+
     const reader = new FileReader();
     reader.onload = (e) => {
-        const img = document.getElementById('avatarImg');
-        const initial = document.getElementById('avatarInitial');
-        img.src = e.target.result;
-        img.style.display = 'block';
-        initial.style.display = 'none';
-        const sideAvatar = document.getElementById('sidebarAvatar');
-        if (sideAvatar) {
-            sideAvatar.style.background = 'none';
-            sideAvatar.style.padding = '0';
-            sideAvatar.style.overflow = 'hidden';
-            sideAvatar.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-        }
+        const image = new Image();
+        image.onload = () => {
+            _crop.img = image;
+            _cropInit();
+            const overlay = document.getElementById('avatarCropOverlay');
+            if (overlay) overlay.style.display = 'flex';
+        };
+        image.src = e.target.result;
     };
     reader.readAsDataURL(file);
+    // reset input เพื่อให้เลือกไฟล์เดิมซ้ำได้
+    input.value = '';
 }
 
 function togglePwd(id, btn) {
@@ -566,7 +601,7 @@ function saveProfile() {
     body.append('email',       document.getElementById('profileEmail')?.value.trim() ?? '');
     body.append('phone',       document.getElementById('profilePhone')?.value.trim() ?? '');
     body.append('pwd_current', current);
-    body.append('pwd_new', newPwd);
+    body.append('pwd_new',     newPwd);
 
     fetch('update_student_profile.php', { method: 'POST', body })
         .then(r => r.json())
