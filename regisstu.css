@@ -3,20 +3,20 @@
    ============================================ */
 
 :root {
-  --bg:             #0a0a0a;
-  --surface:        #111111;
-  --card:           #141414;
-  --border:         #232323;
+  --bg:             #f9ba87;
+  --surface:        #ffffff;
+  --card:           #fffaf6;
+  --border:         #f3d2be;
   --border-hover:   #ff6b1a;
   --orange:         #ff6b1a;
   --orange-light:   #ff8c45;
   --orange-dim:     rgba(255, 107, 26, 0.12);
-  --orange-glow:    rgba(255, 107, 26, 0.35);
-  --text-primary:   #f5f5f5;
-  --text-secondary: #888888;
-  --text-muted:     #444444;
+  --orange-glow:    rgba(255, 107, 26, 0.22);
+  --text-primary:   #2d3436;
+  --text-secondary: #636e72;
+  --text-muted:     #8a8f98;
   --error:          #ff4444;
-  --success:        #22c55e;
+  --success:        #ff8c45;
   --radius:         12px;
   --radius-sm:      8px;
   --transition:     0.25s cubic-bezier(0.4, 0, 0.2, 1);

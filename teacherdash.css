@@ -4,15 +4,15 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-    --bg:         #0f0f0f;
-    --bg2:        #181818;
-    --bg3:        #222222;
-    --border:     #2e2e2e;
-    --orange:     #f97316;
-    --orange-dim: rgba(249,115,22,.15);
-    --text:       #e8e8e8;
-    --text-dim:   #888;
-    --text-muted: #555;
+    --bg:         #f9ba87;
+    --bg2:        #ffffff;
+    --bg3:        #fff4ed;
+    --border:     #f3d2be;
+    --orange:     #ff6b1a;
+    --orange-dim: rgba(255,107,26,.12);
+    --text:       #2d3436;
+    --text-dim:   #636e72;
+    --text-muted: #8a8f98;
     --sidebar-w:  230px;
     --radius:     12px;
     --radius-sm:  8px;
