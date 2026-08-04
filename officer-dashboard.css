@@ -5,8 +5,8 @@
   --line: #f3d2be;
   --text: #2d3436;
   --text-soft: #636e72;
-  --primary: #f97316;
-  --primary-soft: rgba(249, 115, 22, 0.15);
+  --primary: #f4511e;
+  --primary-soft: rgba(244, 81, 30, 0.15);
   --radius-lg: 22px;
   --radius-md: 16px;
   --radius-sm: 12px;
@@ -44,7 +44,7 @@ button {
 
 .sidebar {
   padding: 24px 18px;
-  background: #141414;
+  background: var(--surface);
   border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
@@ -119,8 +119,8 @@ button {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: rgba(249, 115, 22, 0.15);
-  color: #f97316;
+  background: rgba(244, 81, 30, 0.15);
+  color: #f4511e;
   font-weight: 700;
 }
 
@@ -379,3 +379,4 @@ button {
     grid-template-columns: 1fr;
   }
 }
+

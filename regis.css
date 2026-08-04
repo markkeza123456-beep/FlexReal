@@ -2,11 +2,11 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --accent:       #ff6b1a;
+    --accent:       #f4511e;
     --accent-light: #fff0e6;
     --accent-mid:   #ff9d5c;
     --accent-dark:  #9a3f00;
-    --blue:         #ff8c45;
+    --blue:         #ff7043;
     --bg:           #F8F9FA;
     --surface:      #FFFFFF;
     --surface2:     #F1F3F5;
@@ -62,7 +62,7 @@
     border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
   }
-  .brand-icon svg { width: 18px; height: 18px; color: #fff; }
+  .brand-icon svg { width: 18px; height: 18px; color: #2d3436; }
   .brand-name { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.2; }
   .brand-sub  { font-size: 11px; color: var(--text3); }
   .student-pill {
@@ -177,7 +177,7 @@
     background: linear-gradient(135deg, var(--accent-dark) 0%, var(--accent) 60%, var(--accent-mid) 100%);
     border-radius: var(--radius);
     padding: 24px 28px;
-    color: #fff;
+    color: #2d3436;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
@@ -386,7 +386,7 @@
   .btn-primary {
     background: var(--accent);
     border-color: var(--accent);
-    color: #fff;
+    color: #2d3436;
   }
   .btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
   .btn-danger {
@@ -501,7 +501,7 @@
     font-size: 10px; font-weight: 600; color: var(--text3);
     position: relative; z-index: 1;
   }
-  .step-item.done .step-dot { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .step-item.done .step-dot { background: var(--accent); border-color: var(--accent); color: #2d3436; }
   .step-item.current .step-dot {
     background: var(--surface); border-color: var(--accent);
     color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light);
@@ -588,5 +588,6 @@
     display: flex; align-items: center; justify-content: center;
     flex-direction: column;
   }
-  .ring-pct { font-size: 18px; font-weight: 700; color: #fff; line-height: 1; }
+  .ring-pct { font-size: 18px; font-weight: 700; color: #2d3436; line-height: 1; }
   .ring-sub { font-size: 9px; color: rgba(255,255,255,0.7); }
+

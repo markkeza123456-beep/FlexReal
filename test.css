@@ -1,5 +1,5 @@
 :root {
-    --orange: #ff6b00;
+    --orange: #f4511e;
     --orange-dark: #e65a00;
     --ink: #263033;
     --muted: #68777c;
@@ -256,3 +256,4 @@ body {
         padding: 11px 12px;
     }
 }
+

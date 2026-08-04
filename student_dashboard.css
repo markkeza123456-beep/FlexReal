@@ -1,8 +1,8 @@
-﻿:root {
+:root {
     --bg-dark: #f9ba87;
     --card-bg: #ffffff;
     --sidebar-bg: #ffffff;
-    --accent-orange: #ff6b1a;
+    --accent-orange: #f4511e;
     --text-main: #2d3436;
     --text-muted: #636e72;
     --border-color: #f3d2be;
@@ -87,7 +87,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 }
 .btn-logout:hover { background: rgba(239,68,68,0.12); color: #ef4444; }
 
-/* โ”€โ”€ Settings / Profile Page โ”€โ”€ */
+/* ?��?�� Settings / Profile Page ?��?�� */
 .user-profile {
     display: flex;
     align-items: center;
@@ -280,7 +280,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
     max-width: 620px;
 }
 
-/* ── Card Header + Search ── */
+/* -- Card Header + Search -- */
 .card-header {
     display: flex;
     align-items: center;
@@ -318,3 +318,4 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
     border-color: var(--accent-orange);
     box-shadow: 0 0 0 3px rgba(255,122,0,0.12);
 }
+
