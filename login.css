@@ -281,7 +281,7 @@ body {
 
 .pin-digit:focus {
   border-color: var(--orange);
-  background: #181818;
+  background: #ffffff;
   box-shadow: 0 0 0 3px var(--orange-dim), 0 0 14px var(--orange-dim);
   transform: translateY(-2px) scale(1.05);
 }
@@ -339,7 +339,7 @@ body {
 .input-wrap input::placeholder { color: var(--text-muted); }
 .input-wrap input:focus {
   border-color: var(--orange);
-  background: #181818;
+  background: #ffffff;
   box-shadow: 0 0 0 3px var(--orange-dim), 0 0 20px var(--orange-dim);
 }
 
@@ -423,7 +423,7 @@ body {
 }
 .checkbox-custom::after {
   content: '';
-  width: 8px; height: 5px;
+  widthwidth: 8px; height: 5px;
   border-left: 2px solid #fff;
   border-bottom: 2px solid #fff;
   transform: rotate(-45deg) translate(1px,-1px);

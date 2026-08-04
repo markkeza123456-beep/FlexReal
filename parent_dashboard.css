@@ -1,4 +1,5 @@
 :root {
+<<<<<<< HEAD
   --bg-dark: #f9ba87;
   --card-bg: #ffffff;
   --sidebar-bg: #ffffff;
@@ -7,10 +8,20 @@
   --text-main: #2d3436;
   --text-muted: #636e72;
   --border: #f3d2be;
+=======
+  --bg-dark: #121212;
+  --card-bg: #1e1e1e;
+  --sidebar-bg: #1a1a1a;
+  --accent: #ff7a00;
+  --accent-dim: rgba(255,122,0,0.15);
+  --text-main: #ffffff;
+  --text-muted: #888888;
+  --border: #2d2d2d;
+>>>>>>> parent of 8ca59e9 (ff)
   --red: #ef4444;
-  --blue: #f59e0b;
-  --green: #fb923c;
-  --purple: #ea580c;
+  --blue: #3b82f6;
+  --green: #22c55e;
+  --purple: #a855f7;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Kanit', sans-serif; background: var(--bg-dark); color: var(--text-main); height: 100vh; overflow: hidden; }
@@ -107,8 +118,8 @@ body { font-family: 'Kanit', sans-serif; background: var(--bg-dark); color: var(
 .notif-item:last-child { border-bottom: none; }
 .notif-icon { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; }
 .notif-icon.warn { background: rgba(239,68,68,0.15); color: var(--red); }
-.notif-icon.info { background: rgba(245,158,11,0.15); color: var(--blue); }
-.notif-icon.ok { background: rgba(251,146,60,0.15); color: var(--green); }
+.notif-icon.info { background: rgba(59,130,246,0.15); color: var(--blue); }
+.notif-icon.ok { background: rgba(34,197,94,0.15); color: var(--green); }
 .notif-text { flex: 1; }
 .notif-text p { font-size: 0.8rem; line-height: 1.4; }
 .notif-text span { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; display: block; }
@@ -119,8 +130,8 @@ body { font-family: 'Kanit', sans-serif; background: var(--bg-dark); color: var(
 .grade-table td { padding: 0.65rem 0.5rem; border-bottom: 1px solid var(--border); }
 .grade-table tr:last-child td { border-bottom: none; }
 .grade-pill { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
-.grade-a { background: rgba(251,146,60,0.12); color: var(--green); }
-.grade-b { background: rgba(245,158,11,0.12); color: var(--blue); }
+.grade-a { background: rgba(34,197,94,0.12); color: var(--green); }
+.grade-b { background: rgba(59,130,246,0.12); color: var(--blue); }
 .grade-c { background: rgba(255,122,0,0.12); color: var(--accent); }
 .grade-d { background: rgba(239,68,68,0.12); color: var(--red); }
 
@@ -157,7 +168,11 @@ select, input[type="text"] {
   font-size: 0.85rem;
   width: 100%;
 }
+<<<<<<< HEAD
 select:focus, input[type="text"]:focus { outline: none; border-color: var(--accent); }
 
 
 
+=======
+select:focus, input[type="text"]:focus { outline: none; border-color: var(--accent); }
+>>>>>>> parent of 8ca59e9 (ff)

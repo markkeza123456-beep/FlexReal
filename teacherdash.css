@@ -4,6 +4,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
+<<<<<<< HEAD
     --bg:         #f9ba87;
     --bg2:        #ffffff;
     --bg3:        #fff4ed;
@@ -13,6 +14,17 @@
     --text:       #2d3436;
     --text-dim:   #636e72;
     --text-muted: #8a8f98;
+=======
+    --bg:         #0f0f0f;
+    --bg2:        #181818;
+    --bg3:        #222222;
+    --border:     #2e2e2e;
+    --orange:     #f97316;
+    --orange-dim: rgba(249,115,22,.15);
+    --text:       #e8e8e8;
+    --text-dim:   #888;
+    --text-muted: #555;
+>>>>>>> parent of 8ca59e9 (ff)
     --sidebar-w:  230px;
     --radius:     12px;
     --radius-sm:  8px;
@@ -565,5 +577,9 @@ html, body {
 .sub-lesson-row td { background: color-mix(in srgb, var(--bg3) 60%, transparent); border-bottom: 1px solid var(--border); }
 .sub-lesson-row:last-of-type td { border-bottom: 1px solid var(--border); }
 .lesson-main-row[data-expanded="true"] .lesson-title-cell { color: var(--orange); }
+<<<<<<< HEAD
 .btn-expand-sub { flex-shrink: 0; }
 
+=======
+.btn-expand-sub { flex-shrink: 0; }
+>>>>>>> parent of 8ca59e9 (ff)

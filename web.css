@@ -1,5 +1,9 @@
 :root {
+<<<<<<< HEAD
     --primary-orange: #f4511e;
+=======
+    --primary-orange: #ff6b00;
+>>>>>>> parent of 8ca59e9 (ff)
     --dark-orange: #e65a00;
     --soft-orange: #fff4ed;
     --deep-blue: #2d3436;
@@ -111,7 +115,11 @@ body { background: #f9ba87; color: var(--deep-blue); }
 .dropdown:hover .dropdown-content { display: block; }
 
 /* Hero */
+<<<<<<< HEAD
 .hero { background: linear-gradient(135deg, #f4511e 0%, #ff7043 100%); padding: 60px 8%; text-align: center; color: white; }
+=======
+.hero { background: linear-gradient(135deg, #ff6b00 0%, #ff9100 100%); padding: 60px 8%; text-align: center; color: white; }
+>>>>>>> parent of 8ca59e9 (ff)
 .hero h1 { font-size: 68px; font-weight: 800; line-height: 1.1; }
 .search-box { width: 100%; max-width: 600px; padding: 18px 30px; border-radius: 50px; border: none; margin-top: 20px; outline: none; box-shadow: var(--shadow); }
 
@@ -188,7 +196,11 @@ body { background: #f9ba87; color: var(--deep-blue); }
 }
 
 /* Steps Section */
+<<<<<<< HEAD
 .steps-bg { background: white; padding: 60px 8%; margin-top: 20px; border-top: 1px solid #f4511e; }
+=======
+.steps-bg { background: white; padding: 60px 8%; margin-top: 20px; border-top: 1px solid #ff6b00; }
+>>>>>>> parent of 8ca59e9 (ff)
 .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; text-align: center; }
 .step-icon { width: 65px; height: 65px; background: var(--soft-orange); color: var(--primary-orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 22px; font-weight: bold; border: 2px solid var(--primary-orange); }
 

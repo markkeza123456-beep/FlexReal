@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 :root {
     --bg-dark: #f9ba87;
     --card-bg: #ffffff;
@@ -9,6 +10,16 @@
     --blue: #f59e0b;
     --green: #fb923c;
     --purple: #ea580c;
+=======
+﻿:root {
+    --bg-dark: #121212;
+    --card-bg: #1e1e1e;
+    --sidebar-bg: #1a1a1a;
+    --accent-orange: #ff7a00;
+    --text-main: #ffffff;
+    --text-muted: #888888;
+    --border-color: #2d2d2d;
+>>>>>>> parent of 8ca59e9 (ff)
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -31,9 +42,9 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 /* Cards & Grid */
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem; }
 .stat-card { background: var(--card-bg); padding: 1.5rem; border-radius: 14px; border-left: 4px solid var(--accent-orange); }
-.stat-card.blue { border-color: var(--blue); }
-.stat-card.green { border-color: var(--green); }
-.stat-card.purple { border-color: var(--purple); }
+.stat-card.blue { border-color: #3b82f6; }
+.stat-card.green { border-color: #22c55e; }
+.stat-card.purple { border-color: #a855f7; }
 .stat-card .value { font-size: 2.2rem; font-weight: 700; margin: 0.4rem 0; }
 
 .content-card { background: var(--card-bg); padding: 2rem; border-radius: 16px; }
@@ -64,14 +75,14 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .lesson-card-head h3 { margin:0; }
 .subject-type-badge { display:inline-flex; align-items:center; padding:4px 10px; border-radius:999px; font-size:.72rem; font-weight:600; white-space:nowrap; }
 .subject-type-badge.required { background: rgba(255, 122, 0, 0.14); color: var(--accent-orange); }
-.subject-type-badge.elective { background: rgba(245, 158, 11, 0.14); color: var(--blue); }
+.subject-type-badge.elective { background: rgba(59, 130, 246, 0.14); color: #60a5fa; }
 .progress-bar-bg { background: #333; height: 8px; border-radius: 10px; margin: 10px 0; overflow: hidden; }
 .progress-bar-fill { background: var(--accent-orange); height: 100%; }
 
 /* Status Labels */
 .status-label { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; }
 .excellent { background: rgba(255, 122, 0, 0.1); color: var(--accent-orange); }
-.good { background: rgba(245, 158, 11, 0.1); color: var(--blue); }
+.good { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
 /* Logout button */
 .btn-logout {
     display: flex;
@@ -317,5 +328,9 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
     outline: none;
     border-color: var(--accent-orange);
     box-shadow: 0 0 0 3px rgba(255,122,0,0.12);
+<<<<<<< HEAD
 }
 
+=======
+}
+>>>>>>> parent of 8ca59e9 (ff)
