@@ -457,7 +457,7 @@ $stats = [
                 <?php if ($defaultSubject): ?>
                     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
                         <div>
-                            <div style="font-size:24px;font-weight:700;color:#fff;margin-bottom:6px">▶ <?= h($defaultSubject['title']) ?></div>
+                            <div style="font-size:24px;font-weight:700;color:var(--text);margin-bottom:6px">▶ <?= h($defaultSubject['title']) ?></div>
                             <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--text-dim)">
                                 <span>📚 <?= h($defaultSubject['subject']) ?></span>
                                 <span>👥 <?= (int)$defaultSubject['students'] ?> คน</span>
@@ -471,9 +471,9 @@ $stats = [
             </div>
 
             <div class="lesson-tabs" style="display:flex;gap:0;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--bg2)">
-                <button class="lesson-tab-btn active" data-tab="overview" style="flex:1;padding:14px;background:var(--orange-dim);border:none;border-right:1px solid var(--border);color:var(--orange);font-family:'Kanit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;">📋 ภาพรวมบทเรียน</button>
-                <button class="lesson-tab-btn" data-tab="students" style="flex:1;padding:14px;background:none;border:none;border-right:1px solid var(--border);color:var(--text-dim);font-family:'Kanit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s">👥 รายชื่อนักเรียน</button>
-                <button class="lesson-tab-btn" data-tab="quiz" style="flex:1;padding:14px;background:none;border:none;color:var(--text-dim);font-family:'Kanit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s">🧪 คลังแบบทดสอบ</button>
+                <button class="lesson-tab-btn active" data-tab="overview" style="flex:1;padding:14px;background:var(--orange-dim);border:none;border-right:1px solid var(--border);color:var(--text);font-family:'Kanit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;">📋 ภาพรวมบทเรียน</button>
+                <button class="lesson-tab-btn" data-tab="students" style="flex:1;padding:14px;background:none;border:none;border-right:1px solid var(--border);color:var(--text);font-family:'Kanit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s">👥 รายชื่อนักเรียน</button>
+                <button class="lesson-tab-btn" data-tab="quiz" style="flex:1;padding:14px;background:none;border:none;color:var(--text);font-family:'Kanit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s">🧪 คลังแบบทดสอบ</button>
             </div>
 
             <div class="lesson-tab-content card" id="lessonTab-overview">
@@ -492,7 +492,7 @@ $stats = [
                                 <div style="display:flex;flex-direction:column;gap:8px;font-size:13.5px">
                                     <div style="display:flex;justify-content:space-between">
                                         <span style="color:var(--text-dim)">นักเรียนลงทะเบียน</span>
-                                        <span class="mono" style="color:#fff"><?= (int)$defaultSubject['students'] ?> คน</span>
+                                        <span class="mono" style="color:var(--text)"><?= (int)$defaultSubject['students'] ?> คน</span>
                                     </div>
                                 </div>
                             </div>
@@ -500,7 +500,7 @@ $stats = [
 
                         <div style="border-top:1px solid var(--border);padding-top:24px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                                <h3 style="font-size:16px;color:#fff;font-weight:600;">รายการบทเรียนย่อย</h3>
+                                <h3 style="font-size:16px;color:var(--text);font-weight:600;">รายการบทเรียนย่อย</h3>
                             </div>
                             <div style="display:flex;flex-direction:column;gap:12px;">
                                 <?php 
@@ -513,7 +513,7 @@ $stats = [
                                             <?= $i+1 ?>
                                         </div>
                                         <div>
-                                            <div style="color:#fff;font-size:15px;font-weight:500;"><?= h($subLesson['title']) ?></div>
+                                            <div style="color:var(--text);font-size:15px;font-weight:500;"><?= h($subLesson['title']) ?></div>
                                             <div style="color:var(--text-dim);font-size:12px;margin-top:2px;">⏳ <?= h($subLesson['duration']) ?></div>
                                         </div>
                                     </div>
@@ -819,7 +819,7 @@ $stats = [
         <div class="content-grid" style="grid-template-columns: 1fr;">
             <div class="card" style="text-align: center; padding: 60px 20px;">
                 <div style="font-size: 48px; margin-bottom: 20px;">📊</div>
-                <h2 style="color: #fff; margin-bottom: 10px;">ระบบออกรายงานกำลังอยู่ระหว่างการพัฒนา</h2>
+                <h2 style="color: var(--text); margin-bottom: 10px;">ระบบออกรายงานกำลังอยู่ระหว่างการพัฒนา</h2>
                 <button class="btn-add-lesson" style="margin: 0 auto; background: var(--bg3); color: var(--text-muted); cursor: not-allowed;">📥 ส่งออกรายงาน (เร็วๆ นี้)</button>
             </div>
         </div>
@@ -838,7 +838,7 @@ $stats = [
             <div class="card" style="padding:28px;">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:22px;">
                     <span style="font-size:16px;">👤</span>
-                    <h3 style="color:#fff;font-size:15px;font-weight:600;">โปรไฟล์</h3>
+                    <h3 style="color:var(--text);font-size:15px;font-weight:600;">โปรไฟล์</h3>
                 </div>
 
                 <div style="display:flex;align-items:center;gap:20px;margin-bottom:24px;">
@@ -854,7 +854,7 @@ $stats = [
                         <input type="file" id="avatarFileInput" accept="image/*" style="display:none">
                     </div>
                     <div>
-                        <div style="font-size:17px;font-weight:700;color:#fff;"><?= h($teacher['name']) ?></div>
+                        <div style="font-size:17px;font-weight:700;color:var(--text);"><?= h($teacher['name']) ?></div>
                         <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">อาจารย์ผู้สอน</div>
                         <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">คลิกที่รูปเพื่อเปลี่ยน</div>
                     </div>
@@ -889,7 +889,7 @@ $stats = [
 
                 <div id="profileMsg" style="display:none;margin-top:14px;padding:10px 14px;border-radius:6px;font-size:13px;"></div>
 
-                <button onclick="saveTeacherProfile()" style="margin-top:18px;width:100%;padding:12px;background:var(--orange);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Kanit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+                <button onclick="saveTeacherProfile()" style="margin-top:18px;width:100%;padding:12px;background:var(--orange);color:var(--text);border:none;border-radius:var(--radius-sm);font-family:'Kanit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
                     💾 บันทึกข้อมูล
                 </button>
             </div>
@@ -897,7 +897,7 @@ $stats = [
             <div class="card" style="padding:28px;">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:22px;">
                     <span style="font-size:16px;">🔒</span>
-                    <h3 style="color:#fff;font-size:15px;font-weight:600;">เปลี่ยนรหัสผ่าน</h3>
+                    <h3 style="color:var(--text);font-size:15px;font-weight:600;">เปลี่ยนรหัสผ่าน</h3>
                 </div>
                 <div style="display:flex;flex-direction:column;gap:14px;">
                     <div style="display:flex;flex-direction:column;gap:6px;">
@@ -946,7 +946,7 @@ $stats = [
 
         <div style="display:flex;gap:10px;">
             <button id="cropCancelBtn2" style="flex:1;padding:10px;border-radius:8px;border:1px solid #444;background:none;color:#ccc;cursor:pointer;font-size:14px;">ยกเลิก</button>
-            <button id="cropConfirmBtn" style="flex:2;padding:10px;border-radius:8px;border:none;background:var(--orange,#f97316);color:#fff;font-weight:700;cursor:pointer;font-size:14px;">✅ ใช้รูปนี้</button>
+            <button id="cropConfirmBtn" style="flex:2;padding:10px;border-radius:8px;border:none;background:var(--orange,#f97316);color:var(--text);font-weight:700;cursor:pointer;font-size:14px;">✅ ใช้รูปนี้</button>
         </div>
     </div>
 </div>
@@ -1216,7 +1216,7 @@ function showMsg(id, msg, success) {
 
             <!-- Lesson scores section (loaded via fetch) -->
             <div style="margin-bottom:8px;">
-                <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+                <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
                     📊 คะแนนแต่ละบทเรียน
                 </div>
                 <div id="sdm-lesson-list" style="display:flex;flex-direction:column;gap:10px;">
@@ -1309,7 +1309,7 @@ function renderLessonScores(lessons) {
                 <div style="display:flex;align-items:center;gap:10px;">
                     <div style="width:28px;height:28px;border-radius:50%;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--orange);font-weight:600;flex-shrink:0;">${i+1}</div>
                     <div>
-                        <div style="font-size:13.5px;color:#fff;font-weight:500;line-height:1.3;">${escHtml(l.lesson_name)}</div>
+                        <div style="font-size:13.5px;color:var(--text);font-weight:500;line-height:1.3;">${escHtml(l.lesson_name)}</div>
                         <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${escHtml(l.subject_name)}</div>
                     </div>
                 </div>
