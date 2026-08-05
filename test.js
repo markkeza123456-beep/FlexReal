@@ -14,6 +14,7 @@ const submitBtn = document.getElementById('submitBtn');
 const quizActions = document.querySelector('.quiz-actions');
 const resultBox = document.getElementById('resultBox');
 const backToCourse = document.getElementById('backToCourse');
+const QUIZ_PASS_RATIO = 0.8;
 
 let quiz = { subtitle: '', questions: [] };
 let answers = [];
@@ -152,7 +153,7 @@ function bindResultAction(isPassed) {
 async function showResult() {
     saveCurrentAnswer();
     const score = answers.reduce((total, answer, index) => total + (answer === quiz.questions[index].answer ? 1 : 0), 0);
-    const requiredScore = Math.max(1, Math.ceil(quiz.questions.length * 0.6));
+    const requiredScore = Math.max(1, Math.ceil(quiz.questions.length * QUIZ_PASS_RATIO));
     const isPassed = score >= requiredScore;
 
     resultBox.hidden = false;

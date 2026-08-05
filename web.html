@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="web.css">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="theme.css">
 </head>
 <body>
 
@@ -71,7 +72,6 @@
             <div class="course-section-block">
                 <div class="section-head-row">
                     <h2 class="section-title">วิชาที่เรียน</h2>
-                    <p class="section-subtitle">วิชาที่หลักสูตรกำหนดให้เรียนและวิชาที่คุณลงทะเบียนแล้ว</p>
                 </div>
                 <div class="grid" id="required-course-grid"></div>
             </div>
@@ -79,7 +79,6 @@
             <div class="course-section-block">
                 <div class="section-head-row">
                     <h2 class="section-title">วิชาเลือก</h2>
-                    <p class="section-subtitle">เลือกลงทะเบียนเพิ่มได้ด้วยตนเอง</p>
                 </div>
                 <div class="grid" id="elective-course-grid"></div>
             </div>
@@ -151,7 +150,6 @@
 
             <div class="course-sidebar">
                 <div class="sidebar-card">
-                    <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--deep-blue);">Free</h2>
                     <button class="btn-enroll" id="enroll-course-btn" onclick="enrollCourseAndOpenLearning()">ลงทะเบียน</button>
                     
                     <div class="meta-list">
@@ -160,14 +158,7 @@
                         <div class="meta-item"><span>📝 Quizzes</span> <b id="detail-quiz-count">0 ชุด</b></div>
                         <div class="meta-item"><span>🌐 Language</span> <b>ภาษาไทย</b></div>
                         <div class="meta-item"><span>📊 Progress</span> <b id="detail-progress">0%</b></div>
-                        <div class="meta-item"><span>🎯 Best score</span> <b id="detail-score">0%</b></div>
-                        <div class="meta-item"><span>🎓 Certificate</span> <b>yes</b></div>
-                    </div>
-                    
-                    <div style="margin-top: 20px; display: flex; justify-content: center; gap: 20px; color: var(--text-gray);">
-                        <i class="fab fa-facebook" style="cursor:pointer;"></i> 
-                        <i class="fab fa-twitter" style="cursor:pointer;"></i> 
-                        <i class="fab fa-linkedin" style="cursor:pointer;"></i>
+                        <div class="meta-item"><span>🎯 Score</span> <b id="detail-score">0%</b></div>
                     </div>
                 </div>
             </div>
@@ -218,7 +209,6 @@
 
             <div class="course-sidebar">
                 <div class="sidebar-card">
-                    <h2 style="font-size: 28px; margin-bottom: 20px; color: var(--deep-blue);">Free</h2>
                     <button class="btn-enroll is-enrolled">กำลังเรียน</button>
 
                     <div class="meta-list">
@@ -227,14 +217,7 @@
                         <div class="meta-item"><span>📝 Quizzes</span> <b id="learning-quiz-count">0 ชุด</b></div>
                         <div class="meta-item"><span>🌐 Language</span> <b>ภาษาไทย</b></div>
                         <div class="meta-item"><span>📊 Progress</span> <b id="learning-progress">0%</b></div>
-                        <div class="meta-item"><span>🎯 Best score</span> <b id="learning-score">0%</b></div>
-                        <div class="meta-item"><span>🎓 Certificate</span> <b>yes</b></div>
-                    </div>
-
-                    <div style="margin-top: 20px; display: flex; justify-content: center; gap: 20px; color: var(--text-gray);">
-                        <i class="fab fa-facebook" style="cursor:pointer;"></i>
-                        <i class="fab fa-twitter" style="cursor:pointer;"></i>
-                        <i class="fab fa-linkedin" style="cursor:pointer;"></i>
+                        <div class="meta-item"><span>🎯 Score</span> <b id="learning-score">0%</b></div>
                     </div>
                 </div>
             </div>

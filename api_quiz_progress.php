@@ -3,6 +3,8 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/db_connect.php';
 
+const QUIZ_PASS_RATIO = 0.8;
+
 function jsonResponse(array $payload, int $statusCode = 200): void
 {
     http_response_code($statusCode);
@@ -42,8 +44,14 @@ try {
                 subjects_id = :subjects_id
                 OR (:subject_name <> \'\' AND course_name = :subject_name)
            )
-           AND status = :status
            AND lesson_no IS NOT NULL
+           AND (
+                status = :status
+                OR (
+                    total_score > 0
+                    AND score >= CEIL(total_score * :pass_ratio)
+                )
+           )
          ORDER BY lesson_no ASC'
     );
     $stmt->execute([
@@ -51,6 +59,7 @@ try {
         ':subjects_id' => $subjectId,
         ':subject_name' => $subjectName,
         ':status' => 'pass',
+        ':pass_ratio' => QUIZ_PASS_RATIO,
     ]);
 
     $passedLessons = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));

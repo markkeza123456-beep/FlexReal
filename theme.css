@@ -1,0 +1,182 @@
+/* Shared light theme for all Flexible Learning Hub screens. */
+:root {
+  --bg: #f9ba87;
+  --bg-dark: #f9ba87;
+  --bg2: #fffaf6;
+  --bg3: #fff4ed;
+  --surface: #fffaf6;
+  --surface-muted: #fff4ed;
+  --card: #fffaf6;
+  --card-bg: #fffaf6;
+  --sidebar-bg: #fffaf6;
+  --paper: #fffaf6;
+
+  --border: #f3d2be;
+  --border-color: #f3d2be;
+  --border-hover: #ff6b1a;
+  --line: #f3d2be;
+
+  --orange: #ff6b1a;
+  --orange-light: #ff8c45;
+  --orange-dark: #d85615;
+  --orange-dim: rgba(255, 107, 26, 0.12);
+  --orange-glow: rgba(255, 107, 26, 0.22);
+  --primary: #ff6b1a;
+  --primary-orange: #ff6b1a;
+  --primary-soft: rgba(255, 107, 26, 0.14);
+  --accent: #ff6b1a;
+  --accent-light: #fff0e6;
+  --accent-mid: #ff9d5c;
+  --accent-dark: #b8430b;
+  --accent-dim: rgba(255, 107, 26, 0.14);
+  --soft: #fff0e6;
+  --soft-orange: #fff0e6;
+  --dark-orange: #d85615;
+
+  --text: #2d3436;
+  --text-main: #2d3436;
+  --text-primary: #2d3436;
+  --deep-blue: #2d3436;
+  --ink: #2d3436;
+  --text-secondary: #526067;
+  --text-soft: #526067;
+  --text-dim: #526067;
+  --text-gray: #526067;
+  --text-muted: #667176;
+  --muted: #667176;
+
+  --shadow: 0 14px 32px rgba(115, 71, 35, 0.16);
+  --shadow-md: 0 18px 38px rgba(115, 71, 35, 0.18);
+}
+
+html { color-scheme: light; }
+
+body {
+  background-color: var(--bg) !important;
+  background-image:
+    radial-gradient(circle at 86% 10%, rgba(255, 140, 69, 0.24), transparent 28rem),
+    linear-gradient(rgba(255, 107, 26, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 107, 26, 0.045) 1px, transparent 1px) !important;
+  background-size: auto, 48px 48px, 48px 48px !important;
+  background-attachment: fixed !important;
+  color: var(--text-primary) !important;
+}
+
+.sidebar,
+.navbar,
+.topbar,
+.quiz-nav {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+.card,
+.content-card,
+.panel,
+.metric-card,
+.stat-card,
+.info-card,
+.profile-card,
+.brand-block,
+.sidebar-note,
+.empty-state,
+.updated-box,
+.assignment-item,
+.lesson-card,
+.msg-item,
+.child-tab,
+.lesson-item,
+.question-card,
+.quiz-card,
+.result-card,
+.modal-content,
+.modal-box {
+  background-color: var(--card) !important;
+  border-color: var(--border) !important;
+}
+
+main,
+.main,
+.main-content,
+.page-content,
+.content,
+.content-area,
+.page-header,
+.quiz-shell,
+.quiz-head,
+.course-detail,
+table,
+th,
+td {
+  color: var(--text-primary);
+}
+
+h1, h2, h3, h4, h5, h6,
+.title,
+.page-title,
+.card-title,
+.section-title,
+.brand-name,
+.logo-name,
+.profile-name,
+.stat-value,
+.score-cell {
+  color: var(--text-primary) !important;
+}
+
+p,
+.subtitle,
+.description,
+.text-muted,
+.muted,
+.page-header p,
+.stat-label,
+.stat-sub,
+.profile-role {
+  color: var(--text-secondary);
+}
+
+input,
+textarea,
+select {
+  background-color: #ffffff !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 1;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 26, 0.14) !important;
+}
+
+.menu-item.active,
+.nav-item.active,
+.child-tab.active {
+  background-color: var(--accent-dim) !important;
+  color: var(--text-primary) !important;
+}
+
+.btn-submit,
+.btn-primary,
+.btn-orange,
+.btn-save,
+.btn-enroll,
+.btn-action,
+.action-button {
+  background: linear-gradient(135deg, var(--orange), var(--orange-light)) !important;
+  border-color: var(--orange) !important;
+  color: #ffffff !important;
+}
+
+.footer {
+  background-color: var(--text-primary) !important;
+  color: #ffffff;
+}

@@ -9,6 +9,7 @@
   @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap');
 
 </style>
+<link rel="stylesheet" href="theme.css">
 </head>
 <body>
 <div class="layout">

@@ -126,6 +126,8 @@ function loadQuestionsForScoring(PDO $conn, string $subjectId, int $lessonIndex,
     return ['source' => 'test_questions', 'rows' => $stmt2->fetchAll(PDO::FETCH_ASSOC)];
 }
 
+const QUIZ_PASS_RATIO = 0.8;
+
 $payload = json_decode((string) file_get_contents('php://input'), true);
 if (!is_array($payload)) {
     out(['status' => 'error', 'message' => 'รูปแบบข้อมูลไม่ถูกต้อง'], 400);
@@ -212,7 +214,7 @@ try {
         }
     }
 
-    $requiredScore = max(1, (int) ceil(max(1, $totalScore) * 0.6));
+    $requiredScore = max(1, (int) ceil(max(1, $totalScore) * QUIZ_PASS_RATIO));
     $quizStatus    = $score >= $requiredScore ? 'pass' : 'fail';
 
     $attemptNo = 1;

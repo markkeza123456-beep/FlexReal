@@ -6,6 +6,7 @@
     <title>Flexible Learning Hub - Student Portal</title>
     <link rel="stylesheet" href="student_dashboard.css">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="theme.css">
 </head>
 <body>
     <div class="dashboard-container">

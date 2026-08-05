@@ -91,6 +91,7 @@
     .parent-profile { transition: background .2s; padding: 8px; margin: -8px; border-radius: 10px; }
     .parent-profile:hover { background: rgba(255,255,255,0.05); }
   </style>
+  <link rel="stylesheet" href="theme.css" />
 </head>
 <body>
 

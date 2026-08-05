@@ -2,26 +2,19 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-<<<<<<< HEAD
-    --accent:       #f4511e;
+    --accent:       #ff6b1a;
     --accent-light: #fff0e6;
     --accent-mid:   #ff9d5c;
-    --accent-dark:  #9a3f00;
-    --blue:         #ff7043;
-=======
-    --accent:       #1D9E75;
-    --accent-light: #E1F5EE;
-    --accent-mid:   #5DCAA5;
-    --accent-dark:  #085041;
->>>>>>> parent of 8ca59e9 (ff)
-    --bg:           #F8F9FA;
-    --surface:      #FFFFFF;
-    --surface2:     #F1F3F5;
-    --border:       rgba(0,0,0,0.08);
-    --border-med:   rgba(0,0,0,0.14);
-    --text:         #1A1A1A;
-    --text2:        #555;
-    --text3:        #888;
+    --accent-dark:  #b8430b;
+    --blue:         #3b82f6;
+    --bg:           #f9ba87;
+    --surface:      #fffaf6;
+    --surface2:     #fff4ed;
+    --border:       #f3d2be;
+    --border-med:   #e9b997;
+    --text:         #2d3436;
+    --text2:        #526067;
+    --text3:        #667176;
     --radius:       12px;
     --radius-sm:    8px;
     --shadow:       0 2px 12px rgba(0,0,0,0.07);
@@ -595,11 +588,5 @@
     display: flex; align-items: center; justify-content: center;
     flex-direction: column;
   }
-<<<<<<< HEAD
   .ring-pct { font-size: 18px; font-weight: 700; color: #2d3436; line-height: 1; }
   .ring-sub { font-size: 9px; color: rgba(255,255,255,0.7); }
-
-=======
-  .ring-pct { font-size: 18px; font-weight: 700; color: #fff; line-height: 1; }
-  .ring-sub { font-size: 9px; color: rgba(255,255,255,0.7); }
->>>>>>> parent of 8ca59e9 (ff)

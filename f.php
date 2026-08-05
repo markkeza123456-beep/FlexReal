@@ -83,6 +83,7 @@
         .footer { background: var(--deep-blue); color: white; padding: 50px 8%; text-align: center; margin-top: 50px; }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="theme.css">
 </head>
 <body>
 

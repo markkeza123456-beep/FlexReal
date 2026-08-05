@@ -7,6 +7,7 @@ let currentLessonsData = [];
 let currentProgressSummary = null;
 let currentPassedLessons = new Set();
 let currentUser = { logged_in: false, role: '' };
+const QUIZ_TOTAL_LESSONS = 5;
 const LESSON_VIDEO_FILES = [
     'videos/lesson1.mp4.mp4',
     'videos/lesson-thai.mp4',
@@ -16,6 +17,7 @@ const LESSON_VIDEO_FILES = [
 ];
 const VIDEO_CACHE_BUST = Date.now();
 const SUBJECT_IMAGE_ENDPOINT = 'subject_image.php';
+const QUIZ_PASS_RATIO = 0.8;
 
 // ตั้งค่ารูปวิชาเองได้ที่นี่ (ใส่ได้ทั้งรหัสวิชา เช่น SUB004 หรือชื่อวิชา เช่น ประวัติศาสตร์)
 // ตัวอย่าง:
@@ -155,7 +157,7 @@ function getLessonStatusInfo(lessonIndex) {
     const score = Number(row.best_quiz_score || 0);
     const total = Number(row.quiz_total_score || 0);
     const hasAttempt = total > 0;
-    const passed = isLessonPassed(lessonIndex);
+    const passed = hasAttempt ? (score / Math.max(total, 1)) >= QUIZ_PASS_RATIO : isLessonPassed(lessonIndex);
 
     if (passed) return { label: 'ผ่าน', color: '#1e8449', bg: '#eafaf1', scoreText: hasAttempt ? `${score}/${total}` : '-' };
     if (hasAttempt) return { label: 'ไม่ผ่าน', color: '#c0392b', bg: '#fdecea', scoreText: `${score}/${total}` };
@@ -254,20 +256,51 @@ function updateCourseMeta(course, lessons) {
     setText('learning-quiz-count', `${lessonCount} ชุด`);
 }
 
-function applyCourseProgressSummary(summary) {
-    currentProgressSummary = summary || null;
-    const progressText = `${Number(summary?.progress_percent || 0).toFixed(1)}%`;
-    const scoreText = `${Number(summary?.best_score_percent || 0).toFixed(1)}%`;
+function getAutoQuizProgressPercent() {
+    const totalLessons = Math.max(1, currentLessonsData.length || QUIZ_TOTAL_LESSONS);
+    const completedLessons = Math.min(getCompletedLessonSet().size, totalLessons);
+    return (completedLessons / totalLessons) * 100;
+}
+
+function getCompletedLessonSet() {
+    const completed = new Set();
+    const lessons = Array.isArray(currentProgressSummary?.lessons) ? currentProgressSummary.lessons : [];
+    lessons.forEach((row) => {
+        const lessonIndex = Number(row.lesson_index || 0);
+        const score = Number(row.best_quiz_score || 0);
+        const total = Number(row.quiz_total_score || 0);
+        const passedByScore = total > 0 ? (score / Math.max(total, 1)) >= QUIZ_PASS_RATIO : false;
+        const passedByApi = currentPassedLessons.has(lessonIndex);
+        if (lessonIndex > 0 && (passedByScore || passedByApi)) {
+            completed.add(lessonIndex);
+        }
+    });
+    if (completed.size === 0) {
+        currentPassedLessons.forEach((lessonIndex) => completed.add(lessonIndex));
+    }
+    return completed;
+}
+
+function syncProgressDisplay() {
+    const progressText = `${getAutoQuizProgressPercent().toFixed(1)}%`;
+    const scoreText = `${Number(currentProgressSummary?.best_score_percent || 0).toFixed(1)}%`;
+    currentPassedLessons = getCompletedLessonSet();
     setText('detail-progress', progressText);
     setText('detail-score', scoreText);
     setText('learning-progress', progressText);
     setText('learning-score', scoreText);
+}
+
+function applyCourseProgressSummary(summary) {
+    currentProgressSummary = summary || null;
+    syncProgressDisplay();
     renderAllLessonAccordions();
 }
 
 async function fetchQuizProgress(subjectId) {
     if (!subjectId || !enrolledCourses[subjectId]) {
         currentPassedLessons = new Set();
+        syncProgressDisplay();
         renderAllLessonAccordions(); return;
     }
     try {
@@ -277,6 +310,7 @@ async function fetchQuizProgress(subjectId) {
             currentPassedLessons = new Set(result.passed_lessons.map((v) => Number(v)));
         } else { currentPassedLessons = new Set(); }
     } catch (error) { currentPassedLessons = new Set(); }
+    syncProgressDisplay();
     renderAllLessonAccordions();
 }
 
@@ -527,8 +561,8 @@ async function showCourse(subjectId) {
             currentLessonsData = buildLessonsFromDB(Array.isArray(lessons) ? lessons : []);
             updateCourseMeta(course, lessons);
             
-            applyCourseProgressSummary(null);
             currentPassedLessons = new Set();
+            applyCourseProgressSummary(null);
             renderAllLessonAccordions();
 
             updateEnrollButton(false);
@@ -573,11 +607,11 @@ async function checkCourseEnrollment(subjectId) {
             if (result.enrolled) { fetchCourseProgress(subjectId); fetchQuizProgress(subjectId); }
         } else if (result.status === 'unauthorized') {
             enrolledCourses[subjectId] = false; updateEnrollButton(false); setCurriculumAccess(false);
-            applyCourseProgressSummary(null); currentPassedLessons = new Set(); renderAllLessonAccordions();
+            currentPassedLessons = new Set(); applyCourseProgressSummary(null); renderAllLessonAccordions();
         }
     } catch (error) {
         enrolledCourses[subjectId] = false; updateEnrollButton(false); setCurriculumAccess(false);
-        applyCourseProgressSummary(null); currentPassedLessons = new Set(); renderAllLessonAccordions();
+        currentPassedLessons = new Set(); applyCourseProgressSummary(null); renderAllLessonAccordions();
     }
 }
 

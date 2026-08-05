@@ -284,6 +284,7 @@ $stats = [
         }
         .choice-label { font-weight: 600; color: var(--text-dim); font-size: 14px; width: 16px; text-align: center; }
     </style>
+    <link rel="stylesheet" href="theme.css">
 </head>
 <body>
 <aside class="sidebar">
