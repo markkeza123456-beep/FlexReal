@@ -1,23 +1,12 @@
 :root {
-<<<<<<< HEAD
   --bg: #f9ba87;
   --surface: #ffffff;
   --surface-muted: #fff4ed;
   --line: #f3d2be;
   --text: #2d3436;
   --text-soft: #636e72;
-  --primary: #f4511e;
-  --primary-soft: rgba(244, 81, 30, 0.15);
-=======
-  --bg: #0f0f0f;
-  --surface: #181818;
-  --surface-muted: #232323;
-  --line: #2e2e2e;
-  --text: #e8e8e8;
-  --text-soft: #9aa0a6;
-  --primary: #f97316;
-  --primary-soft: rgba(249, 115, 22, 0.15);
->>>>>>> parent of 8ca59e9 (ff)
+  --primary: #ff6b1a;
+  --primary-soft: rgba(255, 107, 26, 0.15);
   --radius-lg: 22px;
   --radius-md: 16px;
   --radius-sm: 12px;
@@ -130,8 +119,8 @@ button {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: rgba(244, 81, 30, 0.15);
-  color: #f4511e;
+  background: var(--primary-soft);
+  color: var(--primary);
   font-weight: 700;
 }
 

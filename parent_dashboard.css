@@ -1,23 +1,12 @@
 :root {
-<<<<<<< HEAD
   --bg-dark: #f9ba87;
   --card-bg: #ffffff;
   --sidebar-bg: #ffffff;
-  --accent: #f4511e;
-  --accent-dim: rgba(244,81,30,0.15);
+  --accent: #ff6b1a;
+  --accent-dim: rgba(255,107,26,0.15);
   --text-main: #2d3436;
   --text-muted: #636e72;
   --border: #f3d2be;
-=======
-  --bg-dark: #121212;
-  --card-bg: #1e1e1e;
-  --sidebar-bg: #1a1a1a;
-  --accent: #ff7a00;
-  --accent-dim: rgba(255,122,0,0.15);
-  --text-main: #ffffff;
-  --text-muted: #888888;
-  --border: #2d2d2d;
->>>>>>> parent of 8ca59e9 (ff)
   --red: #ef4444;
   --blue: #3b82f6;
   --green: #22c55e;
@@ -168,11 +157,5 @@ select, input[type="text"] {
   font-size: 0.85rem;
   width: 100%;
 }
-<<<<<<< HEAD
 select:focus, input[type="text"]:focus { outline: none; border-color: var(--accent); }
-
-
-
-=======
 select:focus, input[type="text"]:focus { outline: none; border-color: var(--accent); }
->>>>>>> parent of 8ca59e9 (ff)

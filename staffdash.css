@@ -6,26 +6,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap');
 
 :root {
-<<<<<<< HEAD
   --bg:           #f9ba87;
   --surface:      #ffffff;
   --card:         #fffaf6;
   --card-hover:   #fff4ed;
   --border:       #f3d2be;
-  --border-hover: #f4511e;
-=======
-  --bg:           #0a0a0a;
-  --surface:      #111111;
-  --card:         #141414;
-  --card-hover:   #191919;
-  --border:       #232323;
   --border-hover: #ff6b1a;
->>>>>>> parent of 8ca59e9 (ff)
 
-  --orange:       #f4511e;
-  --orange-light: #ff7043;
-  --orange-dim:   rgba(244,81,30,.12);
-  --orange-glow:  rgba(244,81,30,.35);
+  --orange:       #ff6b1a;
+  --orange-light: #ff8c45;
+  --orange-dim:   rgba(255,107,26,.12);
+  --orange-glow:  rgba(255,107,26,.35);
 
   --blue:         #3b82f6;
   --blue-dim:     rgba(59,130,246,.12);
@@ -379,21 +370,12 @@ body {
   font-size: .72rem; font-weight: 600; letter-spacing: .04em;
   white-space: nowrap;
 }
-<<<<<<< HEAD
-.badge.active   { background: var(--green-dim);  color: var(--green);  border: 1px solid rgba(251,146,60,.2); }
-.badge.draft    { background: rgba(244,81,30,.1); color: var(--orange); border: 1px solid rgba(244,81,30,.2); }
-.badge.inactive { background: rgba(68,68,68,.2); color: var(--text-muted); border: 1px solid var(--border); }
-.badge.required { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(245,158,11,.2); }
-.badge.elective { background: rgba(244,81,30,.1); color: var(--orange); border: 1px solid rgba(244,81,30,.2); }
-.badge.activity { background: var(--green-dim); color: var(--green); border: 1px solid rgba(251,146,60,.2); }
-=======
 .badge.active   { background: var(--green-dim);  color: var(--green);  border: 1px solid rgba(34,197,94,.2); }
 .badge.draft    { background: rgba(255,107,26,.1); color: var(--orange); border: 1px solid rgba(255,107,26,.2); }
 .badge.inactive { background: rgba(68,68,68,.2); color: var(--text-muted); border: 1px solid var(--border); }
 .badge.required { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(59,130,246,.2); }
 .badge.elective { background: rgba(168,85,247,.1); color: #a855f7; border: 1px solid rgba(168,85,247,.2); }
 .badge.activity { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,.2); }
->>>>>>> parent of 8ca59e9 (ff)
 
 /* Action buttons in table */
 .action-btns { display: flex; gap: 6px; }
@@ -605,10 +587,4 @@ body {
   .stat-grid { grid-template-columns: 1fr 1fr; }
   .page-header { flex-direction: column; }
   .search-wrap input { width: 140px; }
-<<<<<<< HEAD
 }
-
-
-=======
-}
->>>>>>> parent of 8ca59e9 (ff)

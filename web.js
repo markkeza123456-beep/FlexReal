@@ -406,7 +406,6 @@ function createCourseCardMarkup(course) {
     const subjectType = normalizeSubjectType(pick(course, 'subject_type', 'type'));
     const isEnrolled = isTruthy(pick(course, 'is_enrolled', 'Is_Enrolled'));
     const tagText = subjectType === 'required' ? 'บังคับ' : 'วิชาเลือก';
-    const icon = subjectType === 'required' ? '✓' : '＋';
     const statusText = isEnrolled ? 'ลงทะเบียนแล้ว' : 'ยังไม่ลงทะเบียน';
     const imageUrl = getSubjectImage(subjectId, subjectName);
     const fallbackImageUrl = getSubjectFallbackImage(subjectId, subjectName);
@@ -415,7 +414,6 @@ function createCourseCardMarkup(course) {
         <div class="card" onclick="showCourse('${escapeHtml(subjectId)}')">
             <img src="${imageUrl}" data-fallback="${fallbackImageUrl}" onerror="handleCourseImageError(this)" alt="ภาพประกอบวิชา ${escapeHtml(subjectName)}" loading="lazy">
             <div class="card-content">
-                <div class="card-icon">${icon}</div>
                 <span class="card-tag ${subjectType}">${tagText}</span>
                 <h3>${escapeHtml(subjectName)}</h3>
                 <p>${escapeHtml(subjectDesc)}</p>

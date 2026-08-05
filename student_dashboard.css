@@ -1,25 +1,15 @@
-<<<<<<< HEAD
-:root {
+ï»¿:root {
     --bg-dark: #f9ba87;
     --card-bg: #ffffff;
     --sidebar-bg: #ffffff;
-    --accent-orange: #f4511e;
+    --accent-orange: #ff6b1a;
     --text-main: #2d3436;
     --text-muted: #636e72;
     --border-color: #f3d2be;
-    --blue: #f59e0b;
-    --green: #fb923c;
-    --purple: #ea580c;
-=======
-ï»¿:root {
-    --bg-dark: #121212;
-    --card-bg: #1e1e1e;
-    --sidebar-bg: #1a1a1a;
-    --accent-orange: #ff7a00;
-    --text-main: #ffffff;
-    --text-muted: #888888;
-    --border-color: #2d2d2d;
->>>>>>> parent of 8ca59e9 (ff)
+    --blue: #3b82f6;
+    --green: #22c55e;
+    --purple: #a855f7;
+}
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -98,7 +88,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 }
 .btn-logout:hover { background: rgba(239,68,68,0.12); color: #ef4444; }
 
-/* ?”€?”€ Settings / Profile Page ?”€?”€ */
+/* ?â€â‚¬?â€â‚¬ Settings / Profile Page ?â€â‚¬?â€â‚¬ */
 .user-profile {
     display: flex;
     align-items: center;
@@ -328,9 +318,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
     outline: none;
     border-color: var(--accent-orange);
     box-shadow: 0 0 0 3px rgba(255,122,0,0.12);
-<<<<<<< HEAD
 }
 
-=======
-}
->>>>>>> parent of 8ca59e9 (ff)
+
+
