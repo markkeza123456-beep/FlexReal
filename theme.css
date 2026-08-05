@@ -64,10 +64,19 @@ body {
 
 .sidebar,
 .navbar,
-.topbar,
 .quiz-nav {
   background-color: var(--surface) !important;
   border-color: var(--border) !important;
+}
+
+/* Dashboard headings should sit directly on the page, not inside a white card. */
+.topbar,
+.page-header,
+.header {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
 }
 
 .card,
@@ -179,4 +188,16 @@ select:focus {
 .footer {
   background-color: var(--text-primary) !important;
   color: #ffffff;
+}
+
+/* Preserve high contrast for text placed on the orange hero and dark footer. */
+.hero > h1,
+.hero > h2,
+.hero > h3,
+.hero > p,
+.hero .hero-title,
+.hero .hero-subtitle,
+.footer,
+.footer * {
+  color: #ffffff !important;
 }
