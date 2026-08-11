@@ -131,13 +131,14 @@
             <tr>
               <th style="width: 96px;">รูปภาพ</th>
               <th>ชื่อบทเรียน</th>
+              <th>เอกสาร</th>
               <th>วิดีโอ</th>
               <th style="width: 140px;">จัดการ</th>
             </tr>
           </thead>
           <tbody id="lessonTableBody">
             <tr>
-              <td colspan="4" class="empty-cell">กำลังโหลดบทเรียน...</td>
+              <td colspan="5" class="empty-cell">กำลังโหลดบทเรียน...</td>
             </tr>
           </tbody>
         </table>
@@ -167,24 +168,66 @@
             <textarea id="lessonContent" rows="5" placeholder="สรุปรายละเอียดของบทเรียนนี้"></textarea>
           </div>
         </div>
-        <div class="form-grid-2">
-          <div class="form-field">
-            <label class="form-label" for="lessonImage">รูปภาพหน้าปก</label>
-            <div class="input-wrap file-wrap">
-              <span class="input-icon">🖼</span>
-              <input type="file" id="lessonImage" accept="image/*" />
+        <div class="lesson-resource-grid">
+          <div class="resource-card">
+            <div class="resource-head">
+              <div class="resource-icon document">📄</div>
+              <div>
+                <h4>เอกสารประกอบการเรียน</h4>
+                <p>อัปโหลดไฟล์ PDF หรือเอกสารสำหรับผู้เรียน</p>
+              </div>
             </div>
-            <div class="image-preview" id="imagePreview" hidden>
-              <img id="previewImage" alt="ภาพตัวอย่างบทเรียน" />
-              <span id="previewLabel">รูปปัจจุบัน</span>
+            <div class="form-field compact">
+              <label class="form-label" for="lessonDocument">ไฟล์เอกสาร</label>
+              <div class="input-wrap file-wrap">
+                <span class="input-icon">↥</span>
+                <input type="file" id="lessonDocument" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*" />
+              </div>
+            </div>
+            <div class="resource-preview" id="documentPreview" hidden>
+              <span class="resource-pill">ไฟล์ปัจจุบัน</span>
+              <a id="documentPreviewLink" href="#" target="_blank" rel="noopener noreferrer"></a>
             </div>
           </div>
-          <div class="form-field">
-            <label class="form-label" for="lessonVideo">ลิงก์วิดีโอ</label>
-            <div class="input-wrap">
-              <span class="input-icon">▶</span>
-              <input type="url" id="lessonVideo" placeholder="https://..." />
+          <div class="resource-card">
+            <div class="resource-head">
+              <div class="resource-icon video">🎬</div>
+              <div>
+                <h4>วิดีโอประกอบการเรียน</h4>
+                <p>อัปโหลดวิดีโอหรือวางลิงก์วิดีโอภายนอก</p>
+              </div>
             </div>
+            <div class="form-grid-2 compact-grid">
+              <div class="form-field compact">
+                <label class="form-label" for="lessonVideoFile">ไฟล์วิดีโอ</label>
+                <div class="input-wrap file-wrap">
+                  <span class="input-icon">↥</span>
+                  <input type="file" id="lessonVideoFile" accept="video/*" />
+                </div>
+              </div>
+              <div class="form-field compact">
+                <label class="form-label" for="lessonVideoUrl">ลิงก์วิดีโอ</label>
+                <div class="input-wrap">
+                  <span class="input-icon">▶</span>
+                  <input type="url" id="lessonVideoUrl" placeholder="https://..." />
+                </div>
+              </div>
+            </div>
+            <div class="resource-preview" id="videoPreview" hidden>
+              <span class="resource-pill">ไฟล์/ลิงก์ปัจจุบัน</span>
+              <a id="videoPreviewLink" href="#" target="_blank" rel="noopener noreferrer"></a>
+            </div>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="lessonImage">รูปภาพหน้าปก</label>
+          <div class="input-wrap file-wrap">
+            <span class="input-icon">🖼</span>
+            <input type="file" id="lessonImage" accept="image/*" />
+          </div>
+          <div class="image-preview" id="imagePreview" hidden>
+            <img id="previewImage" alt="ภาพตัวอย่างบทเรียน" />
+            <span id="previewLabel">รูปปัจจุบัน</span>
           </div>
         </div>
         <div class="form-actions">

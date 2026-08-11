@@ -19,6 +19,7 @@ const VIDEO_CACHE_BUST = Date.now();
 const SUBJECT_IMAGE_ENDPOINT = 'subject_image.php';
 const QUIZ_PASS_RATIO = 0.8;
 const COURSE_CACHE_MAX_AGE_MS = 30 * 60 * 1000;
+const REQUEST_TIMEOUT_MS = 8000;
 
 // ตั้งค่ารูปวิชาเองได้ที่นี่ (ใส่ได้ทั้งรหัสวิชา เช่น SUB004 หรือชื่อวิชา เช่น ประวัติศาสตร์)
 // ตัวอย่าง:
@@ -112,6 +113,23 @@ function formatDisplayName(fullName, maxLength = 18) {
     return `${name.slice(0, maxLength)}...`;
 }
 
+function appendCacheBust(path) {
+    const safePath = String(path || '').trim();
+    if (!safePath) return '';
+    const separator = safePath.includes('?') ? '&' : '?';
+    return `${safePath}${separator}v=${VIDEO_CACHE_BUST}`;
+}
+
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+        window.clearTimeout(timer);
+    }
+}
+
 // 💥 แปลงข้อมูลบทเรียนจากฐานข้อมูล
 function buildLessonsFromDB(lessons) {
     const normalized = Array.isArray(lessons) ? lessons : [];
@@ -122,6 +140,11 @@ function buildLessonsFromDB(lessons) {
             index: index + 1,
             id: lsnId,
             title: lsnName,
+            documentPath: pick(lsn, 'document_path', 'Document_Path') || '',
+            documentName: pick(lsn, 'document_name', 'Document_Name') || '',
+            videoPath: pick(lsn, 'video_path', 'Video_Path') || '',
+            videoName: pick(lsn, 'video_name', 'Video_Name') || '',
+            videoUrl: pick(lsn, 'video_url', 'Video_Url') || '',
             expanded: false
         };
     });
@@ -221,14 +244,14 @@ function renderLessonAccordion(containerId) {
                     <div class="curriculum-item">
                         <div class="curr-left">
                             <span class="curr-icon">📄</span>
-                            <div class="curr-text"><b>เอกสารประกอบบทเรียน</b><p>เปิดอ่านเอกสาร</p></div>
+                            <div class="curr-text"><b>เอกสารประกอบบทเรียน</b><p>${escapeHtml(lesson.documentName || 'เปิดอ่านเอกสาร')}</p></div>
                         </div>
                         <button class="btn-orange" onclick="downloadCourseLesson(${lesson.index})" ${canAccessLesson(lesson.index) ? '' : 'disabled'}>เปิดอ่าน</button>
                     </div>
                     <div class="curriculum-item">
                         <div class="curr-left">
                             <span class="curr-icon">🎬</span>
-                            <div class="curr-text"><b>วิดีโอสรุปบทเรียน</b><p>รับชมวิดีโอ</p></div>
+                            <div class="curr-text"><b>วิดีโอสรุปบทเรียน</b><p>${escapeHtml(lesson.videoName || 'รับชมวิดีโอ')}</p></div>
                         </div>
                         <button class="btn-orange" onclick="openCourseVideo(${lesson.index})" ${isVideoUnlocked(lesson.index) ? '' : 'disabled'}>ชมวิดีโอ</button>
                     </div>
@@ -325,7 +348,7 @@ async function fetchQuizProgress(subjectId) {
         renderAllLessonAccordions(); return;
     }
     try {
-        const response = await fetch(`api_quiz_progress.php?subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin' });
+        const response = await fetchJsonWithTimeout(`api_quiz_progress.php?subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin' });
         const result = await response.json();
         if (result.status === 'success' && Array.isArray(result.passed_lessons)) {
             currentPassedLessons = new Set(result.passed_lessons.map((v) => Number(v)));
@@ -338,7 +361,7 @@ async function fetchQuizProgress(subjectId) {
 async function fetchCourseProgress(subjectId) {
     if (!subjectId || !enrolledCourses[subjectId]) { applyCourseProgressSummary(null); return; }
     try {
-        const response = await fetch(`student_learning_api.php?action=summary&subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin' });
+        const response = await fetchJsonWithTimeout(`student_learning_api.php?action=summary&subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin' });
         const result = await response.json();
         if (result.status === 'success') applyCourseProgressSummary(result.summary || null); 
     } catch (error) { applyCourseProgressSummary(null); }
@@ -528,7 +551,7 @@ function renderCourseSections(courses) {
 // 💥 โหลดวิชาทั้งหมด
 async function loadAllCourses() {
     try {
-        const response = await fetch('api_courses.php?action=get_all');
+        const response = await fetchJsonWithTimeout('api_courses.php?action=get_all');
         const result = await response.json();
         const dropdown = document.getElementById('course-dropdown');
         if (!dropdown) return;
@@ -559,9 +582,19 @@ async function loadAllCourses() {
         }
     } catch (error) {
         console.error("Error loading courses:", error);
+        const cachedCourses = readCachedCourses();
+        if (cachedCourses.length > 0) {
+            primeCourseCache(cachedCourses);
+            renderCourseSections(cachedCourses);
+            const dropdown = document.getElementById('course-dropdown');
+            if (dropdown && dropdown.children.length === 0) {
+                dropdown.innerHTML = '<a href="#" onclick="return false;">แสดงข้อมูลจากแคชชั่วคราว</a>';
+            }
+            return;
+        }
         renderCourseSections([]);
         const grid = document.getElementById('course-grid');
-        if (grid) grid.innerHTML = '<p style="text-align:center;">ไม่สามารถเชื่อมต่อฐานข้อมูลได้</p>';
+        if (grid) grid.innerHTML = '<p style="text-align:center;">ไม่สามารถเชื่อมต่อฐานข้อมูลได้ หรือใช้เวลานานเกินไป</p>';
     }
 }
 
@@ -589,7 +622,7 @@ async function showCourse(subjectId) {
     checkCourseEnrollment(subjectId);
     
     try {
-        const response = await fetch(`api_courses.php?action=get_detail&id=${subjectId}`);
+        const response = await fetchJsonWithTimeout(`api_courses.php?action=get_detail&id=${subjectId}`);
         const result = await response.json();
         if (requestedSubjectId !== currentSubjectId) return;
         
@@ -641,7 +674,7 @@ function goToCourseLearning() {
 
 async function checkCourseEnrollment(subjectId) {
     try {
-        const response = await fetch(`course_enrollment_api.php?subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin' });
+        const response = await fetchJsonWithTimeout(`course_enrollment_api.php?subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin' });
         const result = await response.json();
         if (result.status === 'success') {
             const isEnrolled = Boolean(result.enrolled);
@@ -690,7 +723,7 @@ async function enrollCourseAndOpenLearning() {
     if (enrolledCourses[currentSubjectId]) { goToCourseLearning(); return; }
     try {
         const formData = new FormData(); formData.append('subject_id', currentSubjectId);
-        const response = await fetch('course_enrollment_api.php', { method: 'POST', body: formData, credentials: 'same-origin' });
+        const response = await fetchJsonWithTimeout('course_enrollment_api.php', { method: 'POST', body: formData, credentials: 'same-origin' });
         const result = await response.json();
 
         if (result.status === 'unauthorized') {
@@ -746,10 +779,33 @@ function setCurriculumAccess(isEnrolled) {
     }
 }
 
+function getLessonRecord(lessonIndex) {
+    return Array.isArray(currentLessonsData)
+        ? currentLessonsData.find((lesson) => lesson.index === Number(lessonIndex)) || null
+        : null;
+}
+
+function getLessonDocumentSource(lessonIndex) {
+    const lesson = getLessonRecord(lessonIndex);
+    if (!lesson) return '';
+    return String(lesson.documentPath || '').trim();
+}
+
+function getLessonVideoSource(lessonIndex) {
+    const lesson = getLessonRecord(lessonIndex);
+    if (!lesson) return '';
+    return String(lesson.videoPath || lesson.videoUrl || '').trim();
+}
+
 function downloadCourseLesson(lessonIndex) {
     if (!enrolledCourses[currentSubjectId]) { alert('กรุณาลงรายวิชาก่อนอ่านเอกสาร'); return; }
     if (!canAccessLesson(lessonIndex || 1)) { alert(`กรุณาผ่านแบบทดสอบบทที่ ${Number(lessonIndex || 1) - 1} ก่อน`); return; }
     recordLearningEvent('lesson_open', lessonIndex || 1);
+    const documentSource = getLessonDocumentSource(lessonIndex || 1);
+    if (documentSource) {
+        window.open(documentSource, '_blank');
+        return;
+    }
     const params = new URLSearchParams();
     params.set('subject_id', currentSubjectId); params.set('lesson', String(lessonIndex || 1));
     if (currentCourseName) params.set('course_name', currentCourseName);
@@ -758,6 +814,8 @@ function downloadCourseLesson(lessonIndex) {
 
 function getLessonVideoPath(lessonIndex) {
     const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 5, Number(lessonIndex) || 1));
+    const lessonSource = getLessonVideoSource(safeIndex);
+    if (lessonSource) return lessonSource;
     const subjectKey = String(currentSubjectId || '').trim();
     const candidates = [
         subjectKey ? `videos/${subjectKey}-lesson-${safeIndex}.mp4` : '',
@@ -771,20 +829,22 @@ function getLessonVideoPath(lessonIndex) {
 
 function getLessonVideoCandidates(lessonIndex) {
     const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 5, Number(lessonIndex) || 1));
+    const lessonSource = getLessonVideoSource(safeIndex);
     const subjectKey = String(currentSubjectId || '').trim();
     const list = [
+        lessonSource,
         subjectKey ? `videos/${subjectKey}-lesson-${safeIndex}.mp4` : '',
         LESSON_VIDEO_FILES[safeIndex - 1],
         LESSON_VIDEO_FILES[0]
     ].filter(Boolean);
-    return Array.from(new Set(list)).map((path) => `${path}?v=${VIDEO_CACHE_BUST}`);
+    return Array.from(new Set(list)).map((path) => appendCacheBust(path));
 }
 
 function renderVideoModalBody(lessonIndex) {
     const body = document.getElementById('modal-body');
     if (!body) return;
     const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 5, Number(lessonIndex) || 1));
-    const selectedLesson = currentLessonsData.find((lesson) => lesson.index === safeIndex);
+    const selectedLesson = getLessonRecord(safeIndex);
     const selectedTitle = selectedLesson ? selectedLesson.title : `Lesson ${safeIndex}`;
     const videoCandidates = getLessonVideoCandidates(safeIndex);
     const videoPath = videoCandidates[0] || getLessonVideoPath(safeIndex);
@@ -902,7 +962,7 @@ function showContact(type) {
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const sessionResponse = await fetch('student_session.php', { credentials: 'same-origin' });
+        const sessionResponse = await fetchJsonWithTimeout('student_session.php', { credentials: 'same-origin' });
         const user = await sessionResponse.json();
         const loginBtn = document.getElementById('loginBtn');
         const userProfile = document.getElementById('userProfile');

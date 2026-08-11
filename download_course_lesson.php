@@ -39,6 +39,39 @@ function subjectLegacySlug(string $courseName): string
     return $map[$courseName] ?? 'lesson1';
 }
 
+function ensureLessonMediaColumns(PDO $conn): void
+{
+    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS document_path VARCHAR(255)");
+    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS document_name VARCHAR(255)");
+    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS video_path VARCHAR(255)");
+    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS video_name VARCHAR(255)");
+}
+
+function resolveStoredLessonDocument(PDO $conn, string $subjectId, int $lessonNo): ?string
+{
+    ensureLessonMediaColumns($conn);
+    $stmt = $conn->prepare(
+        "SELECT COALESCE(document_path, '') AS document_path
+         FROM public.lessons
+         WHERE subjects_id = :subject_id
+         ORDER BY lessons_id ASC"
+    );
+    $stmt->execute([':subject_id' => $subjectId]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $row = $rows[max(0, $lessonNo - 1)] ?? null;
+    if (!$row) {
+        return null;
+    }
+
+    $documentPath = trim((string) ($row['document_path'] ?? ''));
+    if ($documentPath === '') {
+        return null;
+    }
+
+    $absolutePath = __DIR__ . DIRECTORY_SEPARATOR . ltrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $documentPath), DIRECTORY_SEPARATOR);
+    return is_file($absolutePath) ? $absolutePath : null;
+}
+
 function resolveLessonPdfPath(string $subjectId, string $courseName, int $lessonNo): ?string
 {
     $lessonNo = max(1, $lessonNo);
@@ -106,7 +139,10 @@ if ($courseName === '') {
     $courseName = (string) ($stmtCourse->fetchColumn() ?: '');
 }
 
-$filePath = resolveLessonPdfPath($subjectId, $courseName, $lessonNo);
+$filePath = resolveStoredLessonDocument($conn, $subjectId, $lessonNo);
+if ($filePath === null) {
+    $filePath = resolveLessonPdfPath($subjectId, $courseName, $lessonNo);
+}
 if ($filePath === null) {
     deny('ไม่พบไฟล์เอกสารของบทนี้', 404);
 }

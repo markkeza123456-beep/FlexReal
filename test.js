@@ -15,6 +15,7 @@ const quizActions = document.querySelector('.quiz-actions');
 const resultBox = document.getElementById('resultBox');
 const backToCourse = document.getElementById('backToCourse');
 const QUIZ_PASS_RATIO = 0.8;
+const REQUEST_TIMEOUT_MS = 8000;
 
 let quiz = { subtitle: '', questions: [] };
 let answers = [];
@@ -27,44 +28,13 @@ backToCourse.href = subjectId
     ? `web.html?subject_id=${encodeURIComponent(subjectId)}&course=${encodeURIComponent(courseName)}`
     : `web.html?course=${encodeURIComponent(courseName)}`;
 
-function renderLessonResults(lessonResults) {
-    if (!Array.isArray(lessonResults) || lessonResults.length === 0) {
-        return '<p class="lesson-status-empty">ยังไม่มีข้อมูลคะแนนของแต่ละบท</p>';
-    }
-
-    return `
-        <div class="lesson-status-list">
-            ${lessonResults.map((row) => {
-                const statusRaw = (row.status || '').toLowerCase();
-                const isPass = statusRaw === 'pass';
-                const score = Number(row.score || 0);
-                const total = Math.max(0, Number(row.total_score || 0));
-                return `
-                    <div class="lesson-status-item ${isPass ? 'is-pass' : 'is-fail'}">
-                        <span>บทที่ ${Number(row.lesson_no || 0)}</span>
-                        <span>${isPass ? 'ผ่าน' : 'ไม่ผ่าน'} (${score}/${total})</span>
-                    </div>
-                `;
-            }).join('')}
-        </div>
-    `;
-}
-
-async function fetchLessonResultsHtml() {
-    if (!subjectId) {
-        return '<p class="lesson-status-empty">ไม่พบรหัสรายวิชา</p>';
-    }
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
     try {
-        const response = await fetch(`api_quiz_progress.php?subject_id=${encodeURIComponent(subjectId)}`, {
-            credentials: 'same-origin'
-        });
-        const result = await response.json();
-        if (result.status !== 'success') {
-            return '<p class="lesson-status-empty">โหลดสถานะแต่ละบทไม่สำเร็จ</p>';
-        }
-        return renderLessonResults(result.lesson_results);
-    } catch (error) {
-        return '<p class="lesson-status-empty">เชื่อมต่อข้อมูลสถานะแต่ละบทไม่สำเร็จ</p>';
+        return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+        window.clearTimeout(timer);
     }
 }
 
@@ -96,7 +66,7 @@ function saveCurrentAnswer() {
 }
 
 async function saveTestResult(score) {
-    const response = await fetch('test_submit.php', {
+    const response = await fetchJsonWithTimeout('test_submit.php', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -162,8 +132,6 @@ async function showResult() {
         <p>คุณได้ <span class="score">${score}/${quiz.questions.length}</span> คะแนน</p>
         <p>${isPassed ? 'ผ่านเกณฑ์แล้ว สามารถกลับไปหน้ารายวิชาได้' : 'ยังไม่ผ่านเกณฑ์ กรุณาทำซ้ำบทเดิมอีกครั้ง'}</p>
         <p>เกณฑ์ผ่าน: ${requiredScore} คะแนน</p>
-        <h3>สถานะแต่ละบท</h3>
-        <div id="lessonResultsBox"><p class="lesson-status-empty">กำลังโหลดสถานะแต่ละบท...</p></div>
         ${isPassed ? renderAnswerKey() : ''}
         <p id="saveStatus">กำลังบันทึกผลแบบทดสอบ...</p>
         ${renderResultActionButton(isPassed)}
@@ -177,34 +145,52 @@ async function showResult() {
     if (quizActions) quizActions.hidden = true;
 
     const saveStatus = document.getElementById('saveStatus');
-    const lessonResultsBox = document.getElementById('lessonResultsBox');
+    window.__lastQuizSaveResult = { ok: false, status: 'pending', score, totalScore: quiz.questions.length };
     try {
         const result = await saveTestResult(score);
         if (result.status === 'unauthorized') {
-            saveStatus.innerText = result.message || 'กรุณาเข้าสู่ระบบก่อนบันทึกผล';
+            window.__lastQuizSaveResult = { ok: false, status: 'unauthorized', error: result.message || 'unauthorized', score, totalScore: quiz.questions.length };
+            saveStatus.innerText = '';
+            console.warn('[quiz-save] unauthorized', result.message || '');
             return;
         }
         if (result.status === 'success') {
             lastResultPassed = result.quiz_status === 'pass';
-            saveStatus.innerText = result.quiz_status === 'pass'
-                ? 'บันทึกผลแล้ว: ผ่านบทนี้'
-                : 'บันทึกผลแล้ว: ยังไม่ผ่าน กรุณาทำซ้ำบทนี้';
+            window.__lastQuizSaveResult = {
+                ok: true,
+                status: result.quiz_status || 'success',
+                score,
+                totalScore: quiz.questions.length,
+                requiredScore,
+            };
+            saveStatus.innerText = 'บันทึกผลแล้ว';
+            console.info('[quiz-save] success', window.__lastQuizSaveResult);
             const actionWrap = resultBox.querySelector('.result-action-wrap');
             if (actionWrap) {
                 actionWrap.outerHTML = renderResultActionButton(lastResultPassed);
                 bindResultAction(lastResultPassed);
             }
-            if (lessonResultsBox) {
-                lessonResultsBox.innerHTML = await fetchLessonResultsHtml();
-            }
         } else {
-            saveStatus.innerText = result.message || 'บันทึกผลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
-            if (lessonResultsBox) {
-                lessonResultsBox.innerHTML = await fetchLessonResultsHtml();
-            }
+            window.__lastQuizSaveResult = {
+                ok: false,
+                status: result.status || 'error',
+                error: result.message || 'save_failed',
+                score,
+                totalScore: quiz.questions.length,
+            };
+            saveStatus.innerText = '';
+            console.warn('[quiz-save] failed', window.__lastQuizSaveResult);
         }
     } catch (error) {
-        saveStatus.innerText = 'เชื่อมต่อระบบบันทึกผลไม่ได้';
+        window.__lastQuizSaveResult = {
+            ok: false,
+            status: 'exception',
+            error: error?.message || String(error),
+            score,
+            totalScore: quiz.questions.length,
+        };
+        saveStatus.innerText = '';
+        console.error('[quiz-save] exception', error);
     }
 }
 
@@ -219,7 +205,7 @@ async function loadQuizFromDatabase() {
     }
 
     try {
-        const response = await fetch(`api_quiz.php?action=get_questions&subject_id=${encodeURIComponent(subjectId)}&lesson=${lessonIndex}`, {
+        const response = await fetchJsonWithTimeout(`api_quiz.php?action=get_questions&subject_id=${encodeURIComponent(subjectId)}&lesson=${lessonIndex}`, {
             credentials: 'same-origin'
         });
         const result = await response.json();
@@ -243,10 +229,12 @@ async function loadQuizFromDatabase() {
         renderQuestion();
     } catch (error) {
         quizSubtitle.innerText = 'โหลดข้อสอบไม่สำเร็จ';
-        quizForm.innerHTML = '<p>ไม่สามารถเชื่อมต่อฐานข้อมูลข้อสอบได้</p>';
+        quizForm.innerHTML = '<p>ไม่สามารถเชื่อมต่อฐานข้อมูลข้อสอบได้ หรือใช้เวลานานเกินไป</p><button type="button" class="primary-btn" id="retryQuizBtn" style="margin-top:12px;">ลองโหลดใหม่</button>';
         prevBtn.hidden = true;
         nextBtn.hidden = true;
         submitBtn.hidden = true;
+        const retryBtn = document.getElementById('retryQuizBtn');
+        if (retryBtn) retryBtn.onclick = () => window.location.reload();
     }
 }
 

@@ -252,7 +252,8 @@ try {
                   && in_array('selected_choice', $answerCols, true)
                   && in_array('test_id',         $answerCols, true)
                   && $testId > 0
-                  && !empty($questions);
+                  && !empty($questions)
+                  && $questionSource === 'test_questions';
 
     // 💥 บันทึกคำตอบข้อเขียนหรือปรนัยลง DB
     if ($canSaveAns) {
