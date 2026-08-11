@@ -678,10 +678,22 @@ $stats = [
                     <h3 class="modal-title">➕ เพิ่มบทเรียนย่อย</h3>
                     <button class="modal-close" onclick="document.getElementById('modalOverlay').classList.remove('open')">✕</button>
                 </div>
-                <div class="modal">
+                <div class="modal-body">
                     <div class="form-group">
                         <label>ชื่อบทเรียนย่อย</label>
                         <input type="text" class="form-input" id="lessonNameInput" placeholder="เช่น 1.1 ตรรกศาสตร์เบื้องต้น">
+                    </div>
+                    <div class="form-group">
+                        <label>เอกสารประกอบบทเรียน</label>
+                        <input type="file" class="form-input" id="lessonDocument" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*">
+                    </div>
+                    <div class="form-group">
+                        <label>วิดีโอประกอบบทเรียน</label>
+                        <input type="file" class="form-input" id="lessonVideoFile" accept="video/*">
+                    </div>
+                    <div class="form-group">
+                        <label>ลิงก์วิดีโอภายนอก</label>
+                        <input type="url" class="form-input" id="lessonVideoUrl" placeholder="https://...">
                     </div>
                     <input type="hidden" id="lessonSubjectId" value="<?= h($defaultSubjectId) ?>">
                 </div>

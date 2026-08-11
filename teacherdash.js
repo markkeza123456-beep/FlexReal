@@ -64,24 +64,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = e.target;
         const lessonName = document.getElementById('lessonNameInput').value.trim();
         const subjectId = document.getElementById('lessonSubjectId').value;
+        const lessonDocument = document.getElementById('lessonDocument')?.files?.[0] || null;
+        const lessonVideoFile = document.getElementById('lessonVideoFile')?.files?.[0] || null;
+        const lessonVideoUrl = document.getElementById('lessonVideoUrl')?.value.trim() || '';
 
         if (!lessonName) { document.getElementById('lessonNameInput').style.borderColor = '#ef4444'; return; }
-        btn.textContent = 'โณ...'; btn.disabled = true;
+        btn.textContent = 'กำลังบันทึก...'; btn.disabled = true;
 
-        const fd = new FormData(); fd.append('action', 'add_lesson'); fd.append('lesson_name', lessonName); fd.append('subject_id', subjectId);
+        const fd = new FormData();
+        fd.append('action', 'add_lesson');
+        fd.append('lesson_name', lessonName);
+        fd.append('subject_id', subjectId);
+        if (lessonDocument) fd.append('lesson_document', lessonDocument);
+        if (lessonVideoFile) fd.append('lesson_video', lessonVideoFile);
+        if (lessonVideoUrl) fd.append('video_url', lessonVideoUrl);
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
             if(d.success) {
                 location.reload(); 
             } else { 
-                alert(d.message); 
-                if(d.message.includes('เธฅเนเธญเธเธญเธดเธ')) {
+                console.error('saveLesson failed:', d);
+                alert('บันทึกบทเรียนไม่สำเร็จ กรุณาตรวจสอบข้อมูลแล้วลองใหม่อีกครั้ง'); 
+                if (String(d.message || '').includes('ล็อกอิน')) {
                     window.location.href = 'login.php';
                 } else {
                     btn.disabled = false;
-                    btn.textContent = '๐’พ เธเธฑเธเธ—เธถเธเธเธ—เน€เธฃเธตเธขเธ';
+                    btn.textContent = 'บันทึกบทเรียน';
                 }
             }
-        }).catch(() => { alert('เน€เธเธทเนเธญเธกเธ•เนเธญเธเธฒเธเธเนเธญเธกเธนเธฅเธฅเนเธกเน€เธซเธฅเธง'); btn.disabled = false; btn.textContent = '๐’พ เธเธฑเธเธ—เธถเธเธเธ—เน€เธฃเธตเธขเธ'; });
+        }).catch((error) => { console.error('saveLesson request failed:', error); alert('เชื่อมต่อฐานข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'); btn.disabled = false; btn.textContent = 'บันทึกบทเรียน'; });
     });
 
     const editLessonModal = document.getElementById('editLessonModal');

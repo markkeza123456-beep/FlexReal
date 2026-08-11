@@ -25,7 +25,40 @@ function ensureLessonMediaColumns(PDO $conn): void
     $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS video_name VARCHAR(255)");
 }
 
-function uploadLessonFile(string $fieldName, string $subDir, string $prefix): array
+function sanitizePathSegment(string $value, string $fallback = 'unknown'): string
+{
+    $value = trim($value);
+    if ($value === '') {
+        return $fallback;
+    }
+
+    $value = preg_replace('/[^A-Za-z0-9._-]+/', '_', $value);
+    $value = trim((string) $value, "._-");
+    return $value !== '' ? $value : $fallback;
+}
+
+function generateLessonId(PDO $conn): string
+{
+    $stmtId = $conn->query("SELECT lessons_id FROM public.lessons WHERE lessons_id LIKE 'L%' ORDER BY LENGTH(lessons_id) DESC, lessons_id DESC LIMIT 1");
+    $lastId = $stmtId->fetchColumn();
+    $nextNum = $lastId ? intval(substr((string) $lastId, 1)) + 1 : 1;
+    return 'L' . str_pad((string) $nextNum, 3, '0', STR_PAD_LEFT);
+}
+
+function buildLessonMediaSegments(string $teacherId, string $subjectId, string $lessonId, string $mediaType): array
+{
+    return [
+        'teachers',
+        sanitizePathSegment($teacherId, 'unassigned'),
+        'subjects',
+        sanitizePathSegment($subjectId, 'subject'),
+        'lessons',
+        sanitizePathSegment($lessonId, 'lesson'),
+        sanitizePathSegment($mediaType, 'files'),
+    ];
+}
+
+function uploadLessonFile(string $fieldName, array $segments, string $prefix): array
 {
     if (!isset($_FILES[$fieldName]) || !is_array($_FILES[$fieldName])) {
         return ['path' => '', 'name' => ''];
@@ -36,7 +69,8 @@ function uploadLessonFile(string $fieldName, string $subDir, string $prefix): ar
         return ['path' => '', 'name' => ''];
     }
 
-    $uploadDir = __DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . $subDir;
+    $relativeDir = 'uploads/' . implode('/', $segments);
+    $uploadDir = __DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativeDir);
     if (!is_dir($uploadDir)) {
         mkdir($uploadDir, 0777, true);
     }
@@ -52,7 +86,7 @@ function uploadLessonFile(string $fieldName, string $subDir, string $prefix): ar
     }
 
     return [
-        'path' => 'uploads/' . $subDir . '/' . $targetName,
+        'path' => $relativeDir . '/' . $targetName,
         'name' => $originalName !== '' ? $originalName : $targetName,
     ];
 }
@@ -316,6 +350,23 @@ try {
             $subjectId = $_POST['subject_id'] ?? '';
             if (empty($subjectId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
             ensureLessonMediaColumns($conn);
+            $isNewLesson = trim((string) $lessonId) === '';
+
+            $subjectStmt = $conn->prepare("
+                SELECT
+                    subjects_id,
+                    COALESCE(teachers_id, '') AS teachers_id
+                FROM public.subjects
+                WHERE subjects_id = :subject_id
+                LIMIT 1
+            ");
+            $subjectStmt->execute([':subject_id' => $subjectId]);
+            $subjectRow = $subjectStmt->fetch(PDO::FETCH_ASSOC);
+            if (!$subjectRow) {
+                jsonResponse(['status' => 'error', 'message' => 'ไม่พบรายวิชานี้'], 404);
+            }
+
+            $teacherId = trim((string) ($subjectRow['teachers_id'] ?? ''));
 
             $currentLesson = [
                 'document_path' => '',
@@ -340,6 +391,10 @@ try {
                 $currentLesson = $currentStmt->fetch(PDO::FETCH_ASSOC) ?: $currentLesson;
             }
 
+            if ($isNewLesson) {
+                $lessonId = generateLessonId($conn);
+            }
+
             $imagePath = '';
             if (isset($_FILES['image']) && (int) $_FILES['image']['error'] === UPLOAD_ERR_OK) {
                 $uploadDir = __DIR__ . '/uploads';
@@ -348,8 +403,8 @@ try {
                 if (move_uploaded_file($_FILES['image']['tmp_name'], $uploadDir . '/' . $fileName)) { $imagePath = 'uploads/' . $fileName; }
             }
 
-            $documentUpload = uploadLessonFile('document', 'lesson-documents', 'lesson_doc');
-            $videoUpload = uploadLessonFile('video_file', 'lesson-videos', 'lesson_video');
+            $documentUpload = uploadLessonFile('document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc');
+            $videoUpload = uploadLessonFile('video_file', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'videos'), 'lesson_video');
             $videoUrl = postValue('video_url');
             if ($videoUrl === '') {
                 $videoUrl = (string) ($currentLesson['video_url'] ?? '');
@@ -370,7 +425,7 @@ try {
                 ':video_path' => $videoPath,
                 ':video_name' => $videoName,
             ];
-            if (!empty($lessonId)) {
+            if (!$isNewLesson) {
                 $baseParams[':id'] = $lessonId;
                 if ($imagePath !== '') {
                     $statement = $conn->prepare("
@@ -400,10 +455,7 @@ try {
                     ");
                 }
             } else {
-                $stmtId = $conn->query("SELECT lessons_id FROM public.lessons WHERE lessons_id LIKE 'L%' ORDER BY LENGTH(lessons_id) DESC, lessons_id DESC LIMIT 1");
-                $lastId = $stmtId->fetchColumn();
-                $nextNum = $lastId ? intval(substr($lastId, 1)) + 1 : 1;
-                $baseParams[':id'] = 'L' . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
+                $baseParams[':id'] = $lessonId;
                 $baseParams[':image_path'] = $imagePath;
                 $statement = $conn->prepare("
                     INSERT INTO public.lessons (

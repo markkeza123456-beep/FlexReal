@@ -11,6 +11,81 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'teacher') {
 $action = $_POST['action'] ?? '';
 $teacherId = (string) $_SESSION['user_id'];
 
+function ensureLessonMediaColumns(PDO $conn): void
+{
+    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS document_path VARCHAR(255)");
+    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS document_name VARCHAR(255)");
+    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS video_path VARCHAR(255)");
+    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS video_name VARCHAR(255)");
+    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS video_url VARCHAR(255)");
+}
+
+function sanitizePathSegment(string $value, string $fallback = 'unknown'): string
+{
+    $value = trim($value);
+    if ($value === '') {
+        return $fallback;
+    }
+
+    $value = preg_replace('/[^A-Za-z0-9._-]+/', '_', $value);
+    $value = trim((string) $value, "._-");
+    return $value !== '' ? $value : $fallback;
+}
+
+function generateLessonId(PDO $conn): string
+{
+    $stmtId = $conn->query("SELECT lessons_id FROM public.lessons WHERE lessons_id LIKE 'L%' ORDER BY LENGTH(lessons_id) DESC, lessons_id DESC LIMIT 1");
+    $lastId = $stmtId->fetchColumn();
+    $nextNum = $lastId ? intval(substr((string) $lastId, 1)) + 1 : 1;
+    return 'L' . str_pad((string) $nextNum, 3, '0', STR_PAD_LEFT);
+}
+
+function buildLessonMediaSegments(string $teacherId, string $subjectId, string $lessonId, string $mediaType): array
+{
+    return [
+        'teachers',
+        sanitizePathSegment($teacherId, 'unassigned'),
+        'subjects',
+        sanitizePathSegment($subjectId, 'subject'),
+        'lessons',
+        sanitizePathSegment($lessonId, 'lesson'),
+        sanitizePathSegment($mediaType, 'files'),
+    ];
+}
+
+function uploadLessonFile(string $fieldName, array $segments, string $prefix): array
+{
+    if (!isset($_FILES[$fieldName]) || !is_array($_FILES[$fieldName])) {
+        return ['path' => '', 'name' => ''];
+    }
+
+    $file = $_FILES[$fieldName];
+    if ((int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        return ['path' => '', 'name' => ''];
+    }
+
+    $relativeDir = 'uploads/' . implode('/', $segments);
+    $uploadDir = __DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativeDir);
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+    }
+
+    $originalName = trim((string) ($file['name'] ?? ''));
+    $safeName = preg_replace('/[^A-Za-z0-9._-]/', '_', basename($originalName));
+    $safeName = $safeName !== '' ? $safeName : ($prefix . '_' . time());
+    $targetName = $prefix . '_' . time() . '_' . $safeName;
+    $targetPath = $uploadDir . DIRECTORY_SEPARATOR . $targetName;
+
+    if (!move_uploaded_file((string) $file['tmp_name'], $targetPath)) {
+        return ['path' => '', 'name' => ''];
+    }
+
+    return [
+        'path' => $relativeDir . '/' . $targetName,
+        'name' => $originalName !== '' ? $originalName : $targetName,
+    ];
+}
+
 function teacherOwnsSubject(PDO $conn, string $teacherId, string $subjectId): bool
 {
     $stmt = $conn->prepare(
@@ -76,20 +151,46 @@ try {
             throw new Exception('คุณไม่มีสิทธิ์จัดการรายวิชานี้');
         }
 
-        $stmtId = $conn->query("SELECT lessons_id FROM public.lessons WHERE lessons_id LIKE 'L%' ORDER BY LENGTH(lessons_id) DESC, lessons_id DESC LIMIT 1");
-        $lastId = (string) ($stmtId->fetchColumn() ?: '');
-        $nextNum = $lastId !== '' ? intval(substr($lastId, 1)) + 1 : 1;
-        $lessonId = 'L' . str_pad((string) $nextNum, 3, '0', STR_PAD_LEFT);
+        ensureLessonMediaColumns($conn);
+        $lessonId = generateLessonId($conn);
+        $documentUpload = uploadLessonFile('lesson_document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc');
+        $videoUpload = uploadLessonFile('lesson_video', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'videos'), 'lesson_video');
+        $videoUrl = trim((string) ($_POST['video_url'] ?? ''));
 
         $stmt = $conn->prepare(
-            'INSERT INTO public.lessons (lessons_id, lessons_name, study_hours, subjects_id)
-             VALUES (:id, :name, :hours, :subject_id)'
+            'INSERT INTO public.lessons (
+                lessons_id,
+                lessons_name,
+                study_hours,
+                subjects_id,
+                document_path,
+                document_name,
+                video_path,
+                video_name,
+                video_url
+            )
+             VALUES (
+                :id,
+                :name,
+                :hours,
+                :subject_id,
+                :document_path,
+                :document_name,
+                :video_path,
+                :video_name,
+                :video_url
+            )'
         );
         $stmt->execute([
             ':id' => $lessonId,
             ':name' => $lessonName,
             ':hours' => 1,
             ':subject_id' => $subjectId,
+            ':document_path' => $documentUpload['path'],
+            ':document_name' => $documentUpload['name'],
+            ':video_path' => $videoUpload['path'],
+            ':video_name' => $videoUpload['name'],
+            ':video_url' => $videoUrl,
         ]);
 
         echo json_encode(['success' => true, 'message' => 'เพิ่มบทเรียนสำเร็จ']);
