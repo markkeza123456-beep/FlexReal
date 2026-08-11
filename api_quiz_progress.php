@@ -19,6 +19,8 @@ if (!isset($_SESSION['user_id']) || $role !== 'student') {
         'passed_lessons' => [],
     ], 401);
 }
+$studentId = (string) $_SESSION['user_id'];
+session_write_close();
 
 $subjectId = trim((string) ($_GET['subject_id'] ?? ''));
 if ($subjectId === '') {
@@ -26,7 +28,6 @@ if ($subjectId === '') {
 }
 
 try {
-    $studentId = (string) $_SESSION['user_id'];
     $stmtSubject = $conn->prepare(
         'SELECT subjects_name
          FROM public.subjects

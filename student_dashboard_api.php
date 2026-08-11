@@ -50,6 +50,8 @@ if (!isset($_SESSION['user_id']) || $role !== 'student') {
 }
 
 $studentId = (string) $_SESSION['user_id'];
+// คำขอนี้อ่าน session อย่างเดียว: ปลดล็อกทันทีเพื่อไม่ให้การออกจากระบบต้องรอ query หน้าแดชบอร์ด
+session_write_close();
 
 try {
     ensureLearningProgressTables($conn);

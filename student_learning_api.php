@@ -96,6 +96,8 @@ if ($studentId === null) {
         'message' => 'กรุณาเข้าสู่ระบบนักเรียนก่อนใช้งาน',
     ], 401);
 }
+// ไม่ได้แก้ไข session ใน API นี้ จึงปล่อย lock ระหว่างดึง/บันทึกความคืบหน้า
+session_write_close();
 
 $action = strtolower((string) ($_GET['action'] ?? $_POST['action'] ?? 'summary'));
 

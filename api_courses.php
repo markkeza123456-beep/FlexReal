@@ -4,6 +4,8 @@ require_once 'db_connect.php';
 header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? '';
+// API นี้อ่าน session เท่านั้น ปลดล็อกเพื่อไม่ให้ขวางการออกจากระบบหรือคำขออื่น
+session_write_close();
 
 function loadLessons(PDO $conn, string $subjectId): array
 {
