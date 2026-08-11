@@ -150,6 +150,7 @@ try {
     echo json_encode([
         'status' => 'success',
         'redirect_url' => $redirectUrl,
+        'user_id' => (string) $userData['user_id'],
     ], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     echo json_encode([

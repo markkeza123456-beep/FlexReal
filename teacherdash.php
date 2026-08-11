@@ -288,7 +288,7 @@ $stats = [
 </head>
 <body>
 <aside class="sidebar">
-    <div class="sidebar-logo">
+    <a class="sidebar-logo" href="web.html" title="กลับหน้าหลักและรายวิชา">
         <div class="logo-icon">
             <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
                 <polygon points="16,2 30,10 30,22 16,30 2,22 2,10" fill="none" stroke="#f97316" stroke-width="2.5"/>
@@ -299,7 +299,7 @@ $stats = [
             <div class="logo-name">FLEXIBLE</div>
             <div class="logo-sub">LEARNING HUB</div>
         </div>
-    </div>
+    </a>
 
     <nav class="sidebar-nav">
         <a href="#" class="nav-item active" data-view="dashboard"><span class="nav-icon">📊</span><span>แดชบอร์ด</span></a>

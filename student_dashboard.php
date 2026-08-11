@@ -12,10 +12,10 @@
     <div class="dashboard-container">
         <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="logo-section">
+            <a class="logo-section" href="web.html" title="กลับหน้าหลักและรายวิชา">
                 <h2>FLEXIBLE</h2>
                 <span>LEARNING HUB</span>
-            </div>
+            </a>
             <nav class="menu">
                 <div class="menu-item active" id="btn-dashboard">
                     <span class="icon">⊞</span> แดชบอร์ด

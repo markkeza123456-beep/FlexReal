@@ -98,7 +98,7 @@
 <div class="wrap">
   <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="logo">
+    <a class="logo" href="web.html" title="กลับหน้าหลักและรายวิชา">
       <div class="logo-icon">
         <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
           <polygon points="20,2 38,12 38,28 20,38 2,28 2,12" fill="none" stroke="currentColor" stroke-width="2"/>
@@ -110,7 +110,7 @@
         <div class="logo-text">FLEXIBLE</div>
         <div class="logo-sub">LEARNING HUB</div>
       </div>
-    </div>
+    </a>
 
     <nav class="menu">
       <div class="menu-item active" onclick="showPage('overview', this)">

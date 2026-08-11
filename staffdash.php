@@ -37,6 +37,7 @@ if (!empty($_SESSION['name'])) {
   <!-- ========== SIDEBAR ========== -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
+      <a class="brand-home-link" href="web.html" title="กลับหน้าหลักและรายวิชา">
       <div class="brand-icon">
         <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
           <polygon points="18,3 33,12 33,27 18,33 3,27 3,12" fill="none" stroke="currentColor" stroke-width="2"/>
@@ -48,6 +49,7 @@ if (!empty($_SESSION['name'])) {
         <span class="brand-name">NEXORA</span>
         <span class="brand-sub">STAFF PANEL</span>
       </div>
+      </a>
       <button class="sidebar-close" id="sidebarClose" title="ปิดเมนู">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>

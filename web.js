@@ -3,11 +3,11 @@ let currentSubjectId = '';
 let currentCourseName = '';
 let enrolledCourses = {};
 let courseIdByName = {};
+let courseCacheById = {};
 let currentLessonsData = [];
 let currentProgressSummary = null;
 let currentPassedLessons = new Set();
 let currentUser = { logged_in: false, role: '' };
-const QUIZ_TOTAL_LESSONS = 5;
 const LESSON_VIDEO_FILES = [
     'videos/lesson1.mp4.mp4',
     'videos/lesson-thai.mp4',
@@ -18,6 +18,7 @@ const LESSON_VIDEO_FILES = [
 const VIDEO_CACHE_BUST = Date.now();
 const SUBJECT_IMAGE_ENDPOINT = 'subject_image.php';
 const QUIZ_PASS_RATIO = 0.8;
+const COURSE_CACHE_MAX_AGE_MS = 30 * 60 * 1000;
 
 // ตั้งค่ารูปวิชาเองได้ที่นี่ (ใส่ได้ทั้งรหัสวิชา เช่น SUB004 หรือชื่อวิชา เช่น ประวัติศาสตร์)
 // ตัวอย่าง:
@@ -60,6 +61,40 @@ function isStudentLoggedIn() {
     return Boolean(currentUser?.logged_in) && String(currentUser?.role || '').toLowerCase() === 'student';
 }
 
+function getCourseCacheKey() {
+    return `flexible-course-cache:${currentUser?.user_id || 'guest'}`;
+}
+
+function primeCourseCache(courses) {
+    courseIdByName = {};
+    courseCacheById = {};
+    (Array.isArray(courses) ? courses : []).forEach((course) => {
+        const subjectId = pick(course, 'subjects_id', 'Subjects_ID');
+        const subjectName = pick(course, 'subjects_name', 'Subjects_Name');
+        if (subjectName) courseIdByName[subjectName] = subjectId;
+        if (subjectId) {
+            courseCacheById[subjectId] = course;
+            enrolledCourses[subjectId] = isTruthy(pick(course, 'is_enrolled', 'Is_Enrolled'));
+        }
+    });
+}
+
+function readCachedCourses() {
+    try {
+        const stored = JSON.parse(sessionStorage.getItem(getCourseCacheKey()) || 'null');
+        if (!stored || !Array.isArray(stored.courses) || Date.now() - Number(stored.savedAt || 0) > COURSE_CACHE_MAX_AGE_MS) return [];
+        return stored.courses;
+    } catch (error) {
+        return [];
+    }
+}
+
+function saveCachedCourses(courses) {
+    try {
+        sessionStorage.setItem(getCourseCacheKey(), JSON.stringify({ savedAt: Date.now(), courses }));
+    } catch (error) {}
+}
+
 function getDashboardUrlForRole(role) {
     const map = {
         student: 'student_dashboard.php',
@@ -80,10 +115,7 @@ function formatDisplayName(fullName, maxLength = 18) {
 // 💥 แปลงข้อมูลบทเรียนจากฐานข้อมูล
 function buildLessonsFromDB(lessons) {
     const normalized = Array.isArray(lessons) ? lessons : [];
-    const firstLessonTitle = normalized.length > 0
-        ? (pick(normalized[0], 'lessons_name', 'Lessons_Name') || 'บทเรียนที่ 1')
-        : 'บทเรียนที่ 1';
-    const output = normalized.map((lsn, index) => {
+    return normalized.map((lsn, index) => {
         const lsnId = pick(lsn, 'lessons_id', 'Lessons_ID') || `tmp_${index}`;
         const lsnName = pick(lsn, 'lessons_name', 'Lessons_Name') || `บทเรียนที่ ${index + 1}`;
         return {
@@ -93,17 +125,6 @@ function buildLessonsFromDB(lessons) {
             expanded: false
         };
     });
-
-    for (let i = output.length + 1; i <= 5; i += 1) {
-        output.push({
-            index: i,
-            id: `auto_${i}`,
-            title: firstLessonTitle,
-            expanded: false
-        });
-    }
-
-    return output;
 }
 
 function isLessonPassed(lessonIndex) { return currentPassedLessons.has(Number(lessonIndex)); }
@@ -257,7 +278,7 @@ function updateCourseMeta(course, lessons) {
 }
 
 function getAutoQuizProgressPercent() {
-    const totalLessons = Math.max(1, currentLessonsData.length || QUIZ_TOTAL_LESSONS);
+    const totalLessons = Math.max(1, currentLessonsData.length);
     const completedLessons = Math.min(getCompletedLessonSet().size, totalLessons);
     return (completedLessons / totalLessons) * 100;
 }
@@ -352,6 +373,13 @@ function showPage(pageId) {
     const targetPage = document.getElementById(pageId);
     if (targetPage) targetPage.classList.add('active');
     window.scrollTo(0, 0);
+}
+
+function goHome(event) {
+    if (event) event.preventDefault();
+    showPage('home');
+    window.history.replaceState({}, '', window.location.pathname);
+    return false;
 }
 
 function getCourseReturnUrl(courseName) {
@@ -507,13 +535,13 @@ async function loadAllCourses() {
         
         if (result.status === 'success') {
             dropdown.innerHTML = '';
-            courseIdByName = {};
             const courses = Array.isArray(result.data) ? result.data : [];
+            primeCourseCache(courses);
+            saveCachedCourses(courses);
             
             courses.forEach(course => {
                 const subjectId = pick(course, 'subjects_id', 'Subjects_ID');
                 const subjectName = pick(course, 'subjects_name', 'Subjects_Name');
-                if (subjectName) courseIdByName[subjectName] = subjectId;
                 if (subjectId) {
                     const a = document.createElement('a');
                     a.href = '#'; a.textContent = subjectName || subjectId;
@@ -541,10 +569,29 @@ async function loadAllCourses() {
 async function showCourse(subjectId) {
     if (courseIdByName[subjectId]) subjectId = courseIdByName[subjectId];
     currentSubjectId = subjectId;
+    const requestedSubjectId = subjectId;
+    const cachedCourse = courseCacheById[subjectId];
+
+    // เปลี่ยนหน้าและใช้ข้อมูลที่มีในหน่วยความจำทันที ไม่รอคำขอรายละเอียดรายวิชา
+    // แล้วค่อยเติมข้อมูลบทเรียนจริงเมื่อ API ตอบกลับ
+    showPage('course-detail');
+    if (cachedCourse) {
+        currentCourseName = pick(cachedCourse, 'subjects_name', 'Subjects_Name');
+        document.getElementById('detail-title').innerText = currentCourseName;
+        document.getElementById('detail-desc-top').innerText = pick(cachedCourse, 'subjects_description', 'Subjects_Description') || 'รายละเอียดเบื้องต้น';
+        document.getElementById('detail-desc').innerText = pick(cachedCourse, 'subjects_description', 'Subjects_Description') || 'คำอธิบายรายวิชา...';
+        updateEnrollButton(Boolean(enrolledCourses[subjectId]));
+        setCurriculumAccess(Boolean(enrolledCourses[subjectId]));
+    } else {
+        setEnrollmentButtonLoading();
+        setCurriculumAccess(false);
+    }
+    checkCourseEnrollment(subjectId);
     
     try {
         const response = await fetch(`api_courses.php?action=get_detail&id=${subjectId}`);
         const result = await response.json();
+        if (requestedSubjectId !== currentSubjectId) return;
         
         if (result.status === 'success') {
             const course = result.course;
@@ -565,12 +612,7 @@ async function showCourse(subjectId) {
             applyCourseProgressSummary(null);
             renderAllLessonAccordions();
 
-            updateEnrollButton(false);
-            setCurriculumAccess(false);
-            checkCourseEnrollment(subjectId); 
-
             openTab({ currentTarget: document.querySelector('.tab-btn') }, 'overview');
-            showPage('course-detail');
             
             const url = new URL(window.location.href);
             url.searchParams.set('subject_id', subjectId);
@@ -579,6 +621,7 @@ async function showCourse(subjectId) {
             alert('ไม่พบข้อมูลรายวิชา: ' + result.message);
         }
     } catch (error) {
+        if (requestedSubjectId !== currentSubjectId) return;
         console.error("Error fetching course detail:", error);
         alert('เชื่อมต่อฐานข้อมูลล้มเหลว');
     }
@@ -601,23 +644,43 @@ async function checkCourseEnrollment(subjectId) {
         const response = await fetch(`course_enrollment_api.php?subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin' });
         const result = await response.json();
         if (result.status === 'success') {
-            enrolledCourses[subjectId] = Boolean(result.enrolled);
-            updateEnrollButton(Boolean(result.enrolled));
-            setCurriculumAccess(Boolean(result.enrolled));
-            if (result.enrolled) { fetchCourseProgress(subjectId); fetchQuizProgress(subjectId); }
+            const isEnrolled = Boolean(result.enrolled);
+            enrolledCourses[subjectId] = isEnrolled;
+            if (subjectId !== currentSubjectId) return isEnrolled;
+            updateEnrollButton(isEnrolled);
+            setCurriculumAccess(isEnrolled);
+            if (isEnrolled) { fetchCourseProgress(subjectId); fetchQuizProgress(subjectId); }
+            return isEnrolled;
         } else if (result.status === 'unauthorized') {
+            if (subjectId !== currentSubjectId) return false;
             enrolledCourses[subjectId] = false; updateEnrollButton(false); setCurriculumAccess(false);
             currentPassedLessons = new Set(); applyCourseProgressSummary(null); renderAllLessonAccordions();
+        } else {
+            if (subjectId !== currentSubjectId) return false;
+            enrolledCourses[subjectId] = false;
+            updateEnrollButton(false);
+            setCurriculumAccess(false);
         }
     } catch (error) {
+        if (subjectId !== currentSubjectId) return false;
         enrolledCourses[subjectId] = false; updateEnrollButton(false); setCurriculumAccess(false);
         currentPassedLessons = new Set(); applyCourseProgressSummary(null); renderAllLessonAccordions();
     }
+    return false;
+}
+
+function setEnrollmentButtonLoading() {
+    const button = document.getElementById('enroll-course-btn');
+    if (!button) return;
+    button.disabled = true;
+    button.innerText = 'กำลังตรวจสอบสถานะ...';
+    button.classList.remove('is-enrolled');
 }
 
 function updateEnrollButton(isEnrolled) {
     const button = document.getElementById('enroll-course-btn');
     if (!button) return;
+    button.disabled = false;
     if(isEnrolled) { button.innerText = 'เข้าเรียน'; button.classList.add('is-enrolled'); } 
     else { button.innerText = 'ลงทะเบียน'; button.classList.remove('is-enrolled'); }
 }
@@ -640,7 +703,7 @@ async function enrollCourseAndOpenLearning() {
         if (result.status !== 'success') { alert(result.message || 'ไม่สามารถลงรายวิชาได้'); return; }
 
         enrolledCourses[currentSubjectId] = true; updateEnrollButton(true); setCurriculumAccess(true);
-        await loadAllCourses();
+        loadAllCourses();
         fetchCourseProgress(currentSubjectId); fetchQuizProgress(currentSubjectId); goToCourseLearning();
     } catch (error) { alert('เชื่อมต่อระบบลงรายวิชาไม่ได้ กรุณาลองใหม่อีกครั้ง'); }
 }
@@ -873,6 +936,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             if (loginBtn) loginBtn.style.display = 'inline-block';
             if (userProfile) userProfile.style.display = 'none';
+        }
+
+        const cachedCourses = readCachedCourses();
+        if (cachedCourses.length > 0) {
+            primeCourseCache(cachedCourses);
+            renderCourseSections(cachedCourses);
         }
     } catch (error) {
         currentUser = { logged_in: false, role: '' };

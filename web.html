@@ -12,10 +12,10 @@
 <body>
 
 <nav class="navbar">
-    <a href="web.html" class="logo" onclick="showPage('home')">Flexible Learning Hub</a>
+    <a href="web.html" class="logo" onclick="return goHome(event)">Flexible Learning Hub</a>
     <div class="nav-links">
         <input type="text" id="searchInput" class="nav-search-input" onfocus="showPage('home')" onkeyup="filterCourses()" placeholder="ค้นหาบทเรียนที่คุณสนใจ...">
-        <a href="web.html" onclick="showPage('home')" style="text-decoration:none; color:inherit; font-weight:500;">หน้าหลัก</a>
+        <a href="web.html" onclick="return goHome(event)" style="text-decoration:none; color:inherit; font-weight:500;">หน้าหลัก</a>
         
         <div class="dropdown">
             <button class="dropbtn">หมวดหมู่ ▾</button>

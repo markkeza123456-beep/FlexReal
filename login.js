@@ -51,6 +51,22 @@
     }
   }
 
+  async function warmStudentCourseCache(userId) {
+    if (!userId) return;
+    try {
+      const response = await fetch('api_courses.php?action=get_all', { credentials: 'same-origin' });
+      const data = await response.json();
+      if (data.status === 'success' && Array.isArray(data.data)) {
+        sessionStorage.setItem(`flexible-course-cache:${userId}`, JSON.stringify({
+          savedAt: Date.now(),
+          courses: data.data
+        }));
+      }
+    } catch (error) {
+      // ถ้าพรีโหลดไม่สำเร็จ หน้าหลักจะดึงข้อมูลตามปกติ
+    }
+  }
+
   roleTabs.forEach((tab) => {
     tab.addEventListener('click', () => {
       activeRole = tab.dataset.role;
@@ -90,6 +106,7 @@
 
       if (result.status === 'success') {
         showToast('เข้าสู่ระบบสำเร็จ', 'success');
+        if (activeRole === 'student') await warmStudentCourseCache(result.user_id);
         setTimeout(() => {
           window.location.href = getSafeReturnUrl() || result.redirect_url;
         }, 1000);
