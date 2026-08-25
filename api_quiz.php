@@ -135,11 +135,12 @@ try {
         exit;
     }
 
-    $rows = loadFromQuizQuestions($conn, $subjectId, $lessonNo);
-    $fromQuizQuestions = !empty($rows);
-
-    if (!$fromQuizQuestions) {
-        $rows = loadFromTestQuestions($conn, $lessonId);
+    // คำถามที่อาจารย์เพิ่มอยู่ใน test_questions จึงต้องแสดงก่อนชุดคำถามเก่า
+    $rows = loadFromTestQuestions($conn, $lessonId);
+    $fromQuizQuestions = false;
+    if (empty($rows)) {
+        $rows = loadFromQuizQuestions($conn, $subjectId, $lessonNo);
+        $fromQuizQuestions = true;
     }
 
     if (empty($rows)) {

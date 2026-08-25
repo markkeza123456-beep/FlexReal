@@ -146,16 +146,7 @@ function loadQuestionsForScoring(PDO $conn, string $subjectId, int $lessonIndex,
                    : (in_array('answer', $qCols, true)       ? 'answer' : "''");
     }
 
-    $stmt = $conn->prepare(
-        "SELECT quiz_id AS qid, {$answerCol} AS correct_answer, option_a, option_b, option_c, option_d
-         FROM public.quiz_questions
-         WHERE subjects_id = :sid AND lesson_no = :lno
-         ORDER BY quiz_id ASC"
-    );
-    $stmt->execute([':sid' => $subjectId, ':lno' => $lessonIndex]);
-    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    if (!empty($rows)) return ['source' => 'quiz_questions', 'rows' => $rows];
-
+    // ต้องใช้แหล่งเดียวกับ api_quiz: คำถามที่อาจารย์เพิ่มใน test_questions มาก่อน
     $stmt2 = $conn->prepare(
         "SELECT questions_id AS qid, correct_answer, choice_a AS option_a, choice_b AS option_b, choice_c AS option_c, choice_d AS option_d
          FROM public.test_questions
@@ -163,7 +154,17 @@ function loadQuestionsForScoring(PDO $conn, string $subjectId, int $lessonIndex,
          ORDER BY questions_id ASC"
     );
     $stmt2->execute([$lessonId]);
-    return ['source' => 'test_questions', 'rows' => $stmt2->fetchAll(PDO::FETCH_ASSOC)];
+    $rows = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+    if (!empty($rows)) return ['source' => 'test_questions', 'rows' => $rows];
+
+    $stmt = $conn->prepare(
+        "SELECT quiz_id AS qid, {$answerCol} AS correct_answer, option_a, option_b, option_c, option_d
+         FROM public.quiz_questions
+         WHERE subjects_id = :sid AND lesson_no = :lno
+         ORDER BY quiz_id ASC"
+    );
+    $stmt->execute([':sid' => $subjectId, ':lno' => $lessonIndex]);
+    return ['source' => 'quiz_questions', 'rows' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
 }
 
 const QUIZ_PASS_RATIO = 0.8;
