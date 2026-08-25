@@ -55,6 +55,24 @@ function buildVideoMediaSegments(string $teacherId, string $subjectId): array
     return ['teachers', sanitizePathSegment($teacherId), 'subjects', sanitizePathSegment($subjectId), 'videos'];
 }
 
+function ensureEssaySubmissionTable(PDO $conn): void
+{
+    $conn->exec("CREATE TABLE IF NOT EXISTS public.essay_submissions (
+        submission_id BIGSERIAL PRIMARY KEY,
+        test_id INTEGER NOT NULL,
+        student_id VARCHAR(50) NOT NULL,
+        subjects_id VARCHAR(50) NOT NULL,
+        lessons_id VARCHAR(50) NOT NULL,
+        questions_id INTEGER NOT NULL,
+        answer_text TEXT NOT NULL,
+        review_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+        teacher_id VARCHAR(50),
+        teacher_comment TEXT,
+        reviewed_at TIMESTAMP,
+        submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )");
+}
+
 function uploadLessonFile(string $fieldName, array $segments, string $prefix, bool $required = false): array
 {
     if (!isset($_FILES[$fieldName]) || !is_array($_FILES[$fieldName])) {
@@ -375,6 +393,44 @@ try {
         if ($subjectId === '' || $videoId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) throw new Exception('คุณไม่มีสิทธิ์ลบวิดีโอนี้');
         $conn->prepare('DELETE FROM public.videos WHERE videos_id = :id AND subjects_id = :subject_id')->execute([':id' => $videoId, ':subject_id' => $subjectId]);
         echo json_encode(['success' => true, 'message' => 'ลบวิดีโอสำเร็จ']);
+        exit;
+    }
+
+    if ($action === 'get_essay_submissions') {
+        $subjectId = trim((string) ($_POST['subject_id'] ?? ''));
+        if ($subjectId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) throw new Exception('คุณไม่มีสิทธิ์จัดการรายวิชานี้');
+        ensureEssaySubmissionTable($conn);
+        $stmt = $conn->prepare(
+            'SELECT es.submission_id, es.test_id, es.answer_text, es.review_status, es.teacher_comment, es.submitted_at,
+                    st.student_name, l.lessons_name, tq.questions_text
+             FROM public.essay_submissions es
+             INNER JOIN public.student st ON st.student_id = es.student_id
+             INNER JOIN public.lessons l ON l.lessons_id = es.lessons_id
+             INNER JOIN public.test_questions tq ON tq.questions_id = es.questions_id
+             WHERE es.subjects_id = :subject_id
+             ORDER BY CASE WHEN es.review_status = \'pending\' THEN 0 ELSE 1 END, es.submitted_at DESC'
+        );
+        $stmt->execute([':subject_id' => $subjectId]);
+        echo json_encode(['success' => true, 'submissions' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+        exit;
+    }
+
+    if ($action === 'review_essay_submission') {
+        $submissionId = (int) ($_POST['submission_id'] ?? 0);
+        $decision = trim((string) ($_POST['decision'] ?? ''));
+        if ($submissionId <= 0 || !in_array($decision, ['pass', 'fail'], true)) throw new Exception('ข้อมูลการตรวจไม่ถูกต้อง');
+        ensureEssaySubmissionTable($conn);
+        $lookup = $conn->prepare('SELECT es.test_id, es.subjects_id FROM public.essay_submissions es INNER JOIN public.subjects s ON s.subjects_id = es.subjects_id WHERE es.submission_id = :id AND s.teachers_id = :teacher_id');
+        $lookup->execute([':id' => $submissionId, ':teacher_id' => $teacherId]);
+        $row = $lookup->fetch(PDO::FETCH_ASSOC);
+        if (!$row) throw new Exception('ไม่พบคำตอบข้อเขียนหรือคุณไม่มีสิทธิ์ตรวจ');
+        $conn->prepare('UPDATE public.essay_submissions SET review_status = :decision, teacher_id = :teacher_id, teacher_comment = :comment, reviewed_at = CURRENT_TIMESTAMP WHERE submission_id = :id')->execute([':decision' => $decision, ':teacher_id' => $teacherId, ':comment' => trim((string) ($_POST['comment'] ?? '')), ':id' => $submissionId]);
+        $testId = (int) $row['test_id'];
+        $statusStmt = $conn->prepare("SELECT CASE WHEN EXISTS (SELECT 1 FROM public.essay_submissions WHERE test_id = :test_id AND review_status = 'fail') THEN 'fail' WHEN EXISTS (SELECT 1 FROM public.essay_submissions WHERE test_id = :test_id AND review_status = 'pending') THEN 'pending_review' ELSE 'pass' END");
+        $statusStmt->execute([':test_id' => $testId]);
+        $testStatus = (string) $statusStmt->fetchColumn();
+        $conn->prepare('UPDATE public.test SET status = :status WHERE test_id = :test_id')->execute([':status' => $testStatus, ':test_id' => $testId]);
+        echo json_encode(['success' => true, 'message' => $testStatus === 'pending_review' ? 'บันทึกผลแล้ว ยังมีข้อเขียนรอตรวจ' : 'บันทึกผลการตรวจแล้ว']);
         exit;
     }
 

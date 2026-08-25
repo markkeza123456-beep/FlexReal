@@ -218,6 +218,13 @@ async function showResult() {
                 requiredScore,
             };
             saveStatus.innerText = 'บันทึกผลแล้ว';
+            if (result.pending_review) {
+                const pendingNotice = document.createElement('p');
+                pendingNotice.textContent = 'ส่งคำตอบข้อเขียนแล้ว รออาจารย์ตรวจและยืนยันผล';
+                pendingNotice.style.color = '#b45309';
+                pendingNotice.style.fontWeight = '600';
+                saveStatus.before(pendingNotice);
+            }
             console.info('[quiz-save] success', window.__lastQuizSaveResult);
             const actionWrap = resultBox.querySelector('.result-action-wrap');
             if (actionWrap) {

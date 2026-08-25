@@ -31,6 +31,27 @@ function nextTestId(PDO $conn): int
     return (int) $stmt->fetchColumn();
 }
 
+function ensureEssaySubmissionTable(PDO $conn): void
+{
+    $conn->exec(
+        "CREATE TABLE IF NOT EXISTS public.essay_submissions (
+            submission_id BIGSERIAL PRIMARY KEY,
+            test_id INTEGER NOT NULL,
+            student_id VARCHAR(50) NOT NULL,
+            subjects_id VARCHAR(50) NOT NULL,
+            lessons_id VARCHAR(50) NOT NULL,
+            questions_id INTEGER NOT NULL,
+            answer_text TEXT NOT NULL,
+            review_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+            teacher_id VARCHAR(50),
+            teacher_comment TEXT,
+            reviewed_at TIMESTAMP,
+            submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )"
+    );
+    $conn->exec("CREATE INDEX IF NOT EXISTS idx_essay_submissions_teacher_queue ON public.essay_submissions (subjects_id, review_status, submitted_at)");
+}
+
 function insertTestAttempt(PDO $conn, array $columns, array $data): int
 {
     $available = [];
@@ -170,6 +191,7 @@ if ($subjectId === '') {
 try {
     $conn->beginTransaction();
     ensureLearningProgressTables($conn);
+    ensureEssaySubmissionTable($conn);
 
     $s = $conn->prepare('SELECT subjects_name FROM public.subjects WHERE subjects_id = ? LIMIT 1');
     $s->execute([$subjectId]);
@@ -192,6 +214,7 @@ try {
     $questionSource  = $questionPayload['source'];
     $totalScore      = 0;
     $score           = 0;
+    $essayResponses  = [];
     $choiceMap       = [0 => 'A', 1 => 'B', 2 => 'C', 3 => 'D'];
 
     // 💥 ระบบตรวจคะแนน Server-side
@@ -205,6 +228,12 @@ try {
             (string) ($q['option_d'] ?? ''),
         ];
         $questionType = inferQuestionType($optionValues, (string) ($q['correct_answer'] ?? ''));
+        if ($questionType === 'essay' && array_key_exists($index, $answers)) {
+            $essayText = trim((string) ($answers[$index] ?? ''));
+            if ($essayText !== '') {
+                $essayResponses[] = ['question_id' => (int) $q['qid'], 'answer_text' => $essayText];
+            }
+        }
         $rawCorrect = trim((string) ($q['correct_answer'] ?? ''));
         $isScoreable = $questionType !== 'essay' || ($rawCorrect !== '' && $rawCorrect !== '-');
         if ($isScoreable) {
@@ -245,7 +274,7 @@ try {
     }
 
     $requiredScore = max(1, (int) ceil(max(1, $totalScore) * QUIZ_PASS_RATIO));
-    $quizStatus    = $score >= $requiredScore ? 'pass' : 'fail';
+    $quizStatus    = !empty($essayResponses) ? 'pending_review' : ($score >= $requiredScore ? 'pass' : 'fail');
 
     $attemptNo = 1;
     try {
@@ -303,6 +332,23 @@ try {
         }
     }
 
+    if (!empty($essayResponses) && $testId > 0 && $questionSource === 'test_questions') {
+        $essayStmt = $conn->prepare(
+            'INSERT INTO public.essay_submissions (test_id, student_id, subjects_id, lessons_id, questions_id, answer_text)
+             VALUES (:test_id, :student_id, :subjects_id, :lessons_id, :questions_id, :answer_text)'
+        );
+        foreach ($essayResponses as $response) {
+            $essayStmt->execute([
+                ':test_id' => $testId,
+                ':student_id' => $studentId,
+                ':subjects_id' => $subjectId,
+                ':lessons_id' => $lessonId,
+                ':questions_id' => $response['question_id'],
+                ':answer_text' => $response['answer_text'],
+            ]);
+        }
+    }
+
     recordLearningActivity(
         $conn,
         $studentId,
@@ -323,6 +369,7 @@ try {
         'total_score'    => $totalScore,
         'required_score' => $requiredScore,
         'message'        => 'บันทึกผลสอบเรียบร้อย',
+        'pending_review' => !empty($essayResponses),
     ]);
 
 } catch (Throwable $e) {
@@ -330,4 +377,3 @@ try {
     error_log('[test_submit] ' . $e->getMessage());
     out(['status' => 'error', 'message' => 'DB Error: ' . $e->getMessage()], 500);
 }
-

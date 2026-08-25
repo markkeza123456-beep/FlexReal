@@ -39,7 +39,45 @@ document.addEventListener('DOMContentLoaded', () => {
             el.style.display = el.id === `lessonTab-${tab}` ? 'block' : 'none';
         });
     }
-    document.querySelectorAll('.lesson-tab-btn').forEach(btn => btn.addEventListener('click', () => switchLessonTab(btn.dataset.tab)));
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    }
+
+    async function loadEssaySubmissions() {
+        const subjectId = teacherSubjectSelect?.value || '';
+        const list = document.getElementById('essaySubmissionList');
+        if (!list || !subjectId) return;
+        list.innerHTML = '<div style="padding:24px;color:var(--text-muted)">กำลังโหลดคำตอบข้อเขียน...</div>';
+        const form = new FormData(); form.append('action', 'get_essay_submissions'); form.append('subject_id', subjectId);
+        try {
+            const data = await (await fetch('teacher_api.php', { method: 'POST', body: form })).json();
+            if (!data.success) throw new Error(data.message || 'โหลดข้อมูลไม่สำเร็จ');
+            const rows = data.submissions || [];
+            list.innerHTML = rows.length ? rows.map(row => {
+                const reviewed = row.review_status !== 'pending';
+                const status = row.review_status === 'pass' ? 'ผ่าน' : row.review_status === 'fail' ? 'ไม่ผ่าน' : 'รอตรวจ';
+                return `<article style="padding:18px;border:1px solid var(--border);border-radius:12px;background:var(--bg3)">
+                    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><strong>${escapeHtml(row.student_name)}</strong><span class="badge badge-${reviewed ? (row.review_status === 'pass' ? 'active' : 'needs-help') : 'draft'}">${status}</span></div>
+                    <div style="font-size:12px;color:var(--text-muted);margin:5px 0 12px">${escapeHtml(row.lessons_name)} · ส่งเมื่อ ${escapeHtml(row.submitted_at)}</div>
+                    <p style="font-weight:600;margin-bottom:7px">คำถาม: ${escapeHtml(row.questions_text)}</p><div style="white-space:pre-wrap;padding:12px;border-radius:8px;background:#fff;border:1px solid var(--border)">${escapeHtml(row.answer_text)}</div>
+                    ${reviewed ? `<p style="margin-top:12px;font-size:13px">ผลตรวจ: <b>${status}</b>${row.teacher_comment ? ` · ${escapeHtml(row.teacher_comment)}` : ''}</p>` : `<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><input class="form-input essay-comment" data-id="${row.submission_id}" placeholder="ความเห็นถึงนักเรียน (ไม่บังคับ)" style="flex:1;min-width:220px"><button class="btn-save essay-review" data-id="${row.submission_id}" data-decision="pass">ผ่าน</button><button class="btn-cancel essay-review" data-id="${row.submission_id}" data-decision="fail">ไม่ผ่าน</button></div>`}
+                </article>`;
+            }).join('') : '<div style="padding:30px;text-align:center;color:var(--text-muted)">ยังไม่มีคำตอบข้อเขียนที่ส่งมาตรวจในวิชานี้</div>';
+        } catch (error) { list.innerHTML = `<div style="padding:24px;color:#dc2626">${escapeHtml(error.message || 'โหลดข้อมูลไม่สำเร็จ')}</div>`; }
+    }
+
+    document.querySelectorAll('.lesson-tab-btn').forEach(btn => btn.addEventListener('click', () => {
+        switchLessonTab(btn.dataset.tab);
+        if (btn.dataset.tab === 'essay') loadEssaySubmissions();
+    }));
+
+    document.getElementById('essaySubmissionList')?.addEventListener('click', async (event) => {
+        const button = event.target.closest('.essay-review'); if (!button) return;
+        const comment = document.querySelector(`.essay-comment[data-id="${button.dataset.id}"]`)?.value || '';
+        button.disabled = true;
+        const form = new FormData(); form.append('action', 'review_essay_submission'); form.append('submission_id', button.dataset.id); form.append('decision', button.dataset.decision); form.append('comment', comment);
+        try { const data = await (await fetch('teacher_api.php', { method: 'POST', body: form })).json(); if (!data.success) throw new Error(data.message); await loadEssaySubmissions(); } catch (error) { alert(error.message || 'บันทึกผลการตรวจไม่สำเร็จ'); button.disabled = false; }
+    });
 
 
     // โ”€โ”€ Student search inside detail โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€

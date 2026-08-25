@@ -49,7 +49,8 @@ try {
            AND (
                 status = :status
                 OR (
-                    total_score > 0
+                    status <> \'pending_review\'
+                    AND total_score > 0
                     AND score >= CEIL(total_score * :pass_ratio)
                 )
            )

@@ -502,6 +502,7 @@ $stats = [
                 <button class="lesson-tab-btn active" data-tab="overview" style="flex:1;padding:14px;background:var(--orange-dim);border:none;border-right:1px solid var(--border);color:var(--text);font-family:'Kanit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;">📋 ภาพรวมบทเรียน</button>
                 <button class="lesson-tab-btn" data-tab="students" style="flex:1;padding:14px;background:none;border:none;border-right:1px solid var(--border);color:var(--text);font-family:'Kanit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s">👥 รายชื่อนักเรียน</button>
                 <button class="lesson-tab-btn" data-tab="quiz" style="flex:1;padding:14px;background:none;border:none;color:var(--text);font-family:'Kanit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s">🧪 คลังแบบทดสอบ</button>
+                <button class="lesson-tab-btn" data-tab="essay" style="flex:1;padding:14px;background:none;border:none;color:var(--text);font-family:'Kanit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s">✍️ ตรวจข้อเขียน</button>
             </div>
 
             <div class="lesson-tab-content card" id="lessonTab-overview">
@@ -698,6 +699,13 @@ $stats = [
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
+            </div>
+
+            <div class="lesson-tab-content card" id="lessonTab-essay" style="display:none">
+                <div class="card-header">
+                    <div><h3 class="card-title" style="font-size:14px">คำตอบข้อเขียนของนักเรียน</h3><p style="font-size:12px;color:var(--text-muted);margin-top:4px">ตรวจผ่านหรือไม่ผ่าน ระบบจะบันทึกผลแยกตามรายวิชาและบทเรียน</p></div>
+                </div>
+                <div id="essaySubmissionList" style="display:flex;flex-direction:column;gap:12px"><div style="padding:24px;color:var(--text-muted)">กำลังโหลดคำตอบข้อเขียน...</div></div>
             </div>
         </div>
 
