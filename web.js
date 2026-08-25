@@ -8,6 +8,9 @@ let currentLessonsData = [];
 let currentProgressSummary = null;
 let currentPassedLessons = new Set();
 let currentUser = { logged_in: false, role: '' };
+let currentAssignmentsData = [];
+let currentAssignmentId = '';
+let currentAssignmentSubmissions = {};
 const LESSON_VIDEO_FILES = [
     'videos/lesson1.mp4.mp4',
     'videos/lesson-thai.mp4',
@@ -145,6 +148,7 @@ function buildLessonsFromDB(lessons) {
             videoPath: pick(lsn, 'video_path', 'Video_Path') || '',
             videoName: pick(lsn, 'video_name', 'Video_Name') || '',
             videoUrl: pick(lsn, 'video_url', 'Video_Url') || '',
+            isPlaceholder: isTruthy(pick(lsn, 'is_placeholder', 'Is_Placeholder')),
             expanded: false
         };
     });
@@ -180,7 +184,11 @@ function hasCompletedLessonVideo(lessonIndex) {
 }
 
 function isVideoUnlocked(lessonIndex) {
-    return canAccessLesson(lessonIndex) && hasReadLessonDocument(lessonIndex);
+    if (!canAccessLesson(lessonIndex)) return false;
+    const lesson = getLessonRecord(lessonIndex);
+    const hasUploadedVideo = Boolean(String(lesson?.videoPath || lesson?.videoUrl || '').trim());
+    if (hasUploadedVideo) return true;
+    return hasReadLessonDocument(lessonIndex);
 }
 
 function isQuizUnlocked(lessonIndex) {
@@ -191,7 +199,9 @@ function isQuizUnlocked(lessonIndex) {
 function getLessonLockMessage(lessonIndex) {
     if (!canAccessLesson(lessonIndex)) return `ปลดล็อกเมื่อผ่านแบบทดสอบบทที่ ${Number(lessonIndex) - 1}`;
     if (!hasReadLessonDocument(lessonIndex)) return 'ต้องอ่านบทเรียนให้จบก่อน';
-    if (!hasCompletedLessonVideo(lessonIndex)) return 'ต้องชมวิดีโอให้จบก่อนเริ่ม Quiz';
+    const lesson = getLessonRecord(lessonIndex);
+    const hasUploadedVideo = Boolean(String(lesson?.videoPath || lesson?.videoUrl || '').trim());
+    if (!hasCompletedLessonVideo(lessonIndex) && hasUploadedVideo) return 'ต้องชมวิดีโอให้จบก่อนเริ่ม Quiz';
     return '';
 }
 
@@ -228,6 +238,24 @@ function renderLessonAccordion(containerId) {
 
     const html = currentLessonsData.map((lesson) => {
         const status = getLessonStatusInfo(lesson.index);
+        if (lesson.isPlaceholder) {
+            return `
+            <div class="lesson-accordion is-expanded lesson-placeholder">
+                <div class="lesson-header" style="cursor:default;">
+                    <span>บทที่ ${lesson.index}: ${escapeHtml(lesson.title)}</span>
+                    <span class="lesson-chevron">•</span>
+                </div>
+                <div class="lesson-body">
+                    <div class="curriculum-list">
+                        <div class="assignment-empty-state" style="margin-top: 6px;">
+                            <strong>บทเรียนนี้ยังไม่มีเนื้อหา</strong>
+                            <div>ระบบสร้างไว้ครบ 3 บทเพื่อให้โครงสร้างรายวิชาเหมือนกันทุกวิชา</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        }
         return `
         <div class="lesson-accordion ${lesson.expanded ? 'is-expanded' : 'is-collapsed'}">
             <button type="button" class="lesson-header" onclick="toggleLesson(${lesson.index})" aria-expanded="${lesson.expanded ? 'true' : 'false'}">
@@ -281,6 +309,447 @@ function renderAllLessonAccordions() {
 function setText(id, value) {
     const element = document.getElementById(id);
     if (element) element.textContent = value;
+}
+
+function getAssignmentStoreKey() {
+    return `flexible-assignments:${String(currentSubjectId || 'global')}`;
+}
+
+function getAssignmentSelectionKey() {
+    return `flexible-assignments-active:${String(currentSubjectId || 'global')}`;
+}
+
+function getAssignmentSubmissionKey() {
+    return `flexible-assignments-submissions:${String(currentSubjectId || 'global')}`;
+}
+
+function safeJsonParse(raw, fallback) {
+    try {
+        return JSON.parse(raw);
+    } catch (error) {
+        return fallback;
+    }
+}
+
+function normalizeAssignmentRecord(item, index = 0) {
+    const now = new Date();
+    const dueDate = String(pick(item, 'due_date', 'dueDate')).trim();
+    return {
+        id: String(pick(item, 'id', 'assignment_id')) || `assignment-${Date.now()}-${index}`,
+        title: String(pick(item, 'title', 'name')) || `งานที่ ${index + 1}`,
+        description: String(pick(item, 'description', 'detail')) || 'ยังไม่มีคำอธิบายงาน',
+        dueDate: dueDate || new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 16),
+        points: String(pick(item, 'points', 'score')) || '10',
+        attachmentName: String(pick(item, 'attachmentName', 'file_name')) || '',
+        attachmentUrl: String(pick(item, 'attachmentUrl', 'file_url')) || '',
+        createdAt: String(pick(item, 'createdAt', 'created_at')) || now.toISOString(),
+        createdBy: String(pick(item, 'createdBy', 'author')) || (currentUser?.name || 'อาจารย์'),
+    };
+}
+
+function readStoredAssignments() {
+    try {
+        const raw = localStorage.getItem(getAssignmentStoreKey());
+        const parsed = safeJsonParse(raw, []);
+        return Array.isArray(parsed) ? parsed.map((item, index) => normalizeAssignmentRecord(item, index)) : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function saveStoredAssignments(assignments) {
+    try {
+        localStorage.setItem(getAssignmentStoreKey(), JSON.stringify(Array.isArray(assignments) ? assignments : []));
+    } catch (error) {}
+}
+
+function readStoredAssignmentSelection() {
+    try {
+        return localStorage.getItem(getAssignmentSelectionKey()) || '';
+    } catch (error) {
+        return '';
+    }
+}
+
+function saveStoredAssignmentSelection(assignmentId) {
+    try {
+        localStorage.setItem(getAssignmentSelectionKey(), String(assignmentId || ''));
+    } catch (error) {}
+}
+
+function readStoredSubmissions() {
+    try {
+        const raw = localStorage.getItem(getAssignmentSubmissionKey());
+        const parsed = safeJsonParse(raw, {});
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch (error) {
+        return {};
+    }
+}
+
+function saveStoredSubmissions(submissions) {
+    try {
+        localStorage.setItem(getAssignmentSubmissionKey(), JSON.stringify(submissions && typeof submissions === 'object' ? submissions : {}));
+    } catch (error) {}
+}
+
+function formatAssignmentDueDate(value) {
+    if (!value) return 'ไม่ระบุวันส่ง';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat('th-TH', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    }).format(date);
+}
+
+function syncAssignmentComposerVisibility() {
+    const shouldShow = Boolean(currentUser?.logged_in) && ['teacher', 'staff'].includes(String(currentUser?.role || '').toLowerCase());
+    document.querySelectorAll('.assignment-compose-btn').forEach((button) => {
+        button.style.display = shouldShow ? 'inline-flex' : 'none';
+    });
+}
+
+function getCurrentAssignmentList() {
+    currentAssignmentsData = readStoredAssignments();
+    currentAssignmentSubmissions = readStoredSubmissions();
+    const storedSelection = readStoredAssignmentSelection();
+    if (storedSelection && currentAssignmentsData.some((assignment) => assignment.id === storedSelection)) {
+        currentAssignmentId = storedSelection;
+    } else {
+        currentAssignmentId = currentAssignmentsData[0]?.id || '';
+    }
+    return currentAssignmentsData;
+}
+
+function selectAssignment(assignmentId) {
+    currentAssignmentId = String(assignmentId || '');
+    saveStoredAssignmentSelection(currentAssignmentId);
+    renderAssignmentPanels();
+}
+
+function getActiveAssignment() {
+    if (!currentAssignmentsData.length) return null;
+    const active = currentAssignmentsData.find((assignment) => assignment.id === currentAssignmentId);
+    return active || currentAssignmentsData[0] || null;
+}
+
+function renderAssignmentCards(assignments, containerId, scope) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!Array.isArray(assignments) || assignments.length === 0) {
+        container.innerHTML = `
+            <div class="assignment-empty-state">
+                <strong>ยังไม่มีงานที่มอบหมาย</strong>
+                <div>อาจารย์สามารถกด <b>+ เพิ่มงาน</b> เพื่อสร้างงานรูปแบบเดียวกับ Google Classroom ได้ทันที</div>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = assignments.map((assignment) => {
+        const isActive = assignment.id === currentAssignmentId;
+        const submission = currentAssignmentSubmissions[assignment.id] || {};
+        const submissionStatus = submission.status === 'submitted' ? 'ส่งแล้ว' : 'ยังไม่ส่ง';
+        const submissionPillClass = submission.status === 'submitted' ? '' : 'is-muted';
+        const attachmentMarkup = assignment.attachmentUrl || assignment.attachmentName
+            ? `<div class="assignment-attachments">${assignment.attachmentUrl ? `<a class="assignment-file-chip" href="${escapeHtml(assignment.attachmentUrl)}" target="_blank" rel="noopener"><span>📎 ${escapeHtml(assignment.attachmentName || 'ไฟล์แนบ')}</span></a>` : `<div class="assignment-file-chip"><span>📎 ${escapeHtml(assignment.attachmentName)}</span></div>`}</div>`
+            : '';
+
+        return `
+            <article class="assignment-card ${isActive ? 'is-active' : ''}" onclick="selectAssignment('${escapeHtml(assignment.id)}')">
+                <div class="assignment-card-main">
+                    <div class="assignment-icon">🗂️</div>
+                    <div class="assignment-copy">
+                        <div class="assignment-topline">
+                            <div>
+                                <h5>${escapeHtml(assignment.title)}</h5>
+                                <div class="assignment-description">${escapeHtml(assignment.description)}</div>
+                            </div>
+                            <span class="assignment-pill ${submissionPillClass}">${submissionStatus}</span>
+                        </div>
+                        <div class="assignment-meta">
+                            <span>กำหนดส่ง ${escapeHtml(formatAssignmentDueDate(assignment.dueDate))}</span>
+                            <span>${escapeHtml(assignment.points)} คะแนน</span>
+                            <span>โดย ${escapeHtml(assignment.createdBy || 'อาจารย์')}</span>
+                        </div>
+                        ${attachmentMarkup}
+                    </div>
+                </div>
+                <div class="assignment-action-row">
+                    <button type="button" class="assignment-link-btn" onclick="event.stopPropagation(); selectAssignment('${escapeHtml(assignment.id)}');">${isActive ? 'กำลังดูงานนี้' : 'เลือกงานนี้'}</button>
+                </div>
+            </article>
+        `;
+    }).join('');
+}
+
+function renderAssignmentSidebar(scope, assignments) {
+    const body = document.getElementById(`${scope}-assignment-sidebar-body`);
+    const countLabel = document.getElementById(`assignment-count-${scope}`);
+    if (!body) return;
+
+    const activeAssignment = getActiveAssignment();
+    if (countLabel) {
+        countLabel.textContent = `${assignments.length} งาน`;
+    }
+
+    if (!Array.isArray(assignments) || assignments.length === 0) {
+        body.innerHTML = `
+            <div class="assignment-empty-state">
+                <strong>ยังไม่มีงานที่มอบหมาย</strong>
+                <div>อาจารย์สามารถกด <b>+ เพิ่มงาน</b> เพื่อสร้างงานใหม่ และนักเรียนจะเห็นงานนี้ในแถบด้านขวาทันที</div>
+            </div>
+        `;
+        return;
+    }
+
+    if (!Boolean(currentUser?.logged_in)) {
+        body.innerHTML = `
+            <div class="assignment-sidebar-empty">
+                กรุณาเข้าสู่ระบบเพื่อดูสถานะงานและส่งงาน
+            </div>
+        `;
+        return;
+    }
+
+    if (['teacher', 'staff'].includes(String(currentUser?.role || '').toLowerCase())) {
+        const earliestDue = assignments
+            .filter((assignment) => assignment.dueDate)
+            .slice()
+            .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))[0];
+        body.innerHTML = `
+            <div class="assignment-status-box">
+                <strong>มุมอาจารย์</strong>
+                งานทั้งหมด ${assignments.length} งาน
+                <br>งานที่กำหนดส่งเร็วที่สุด: ${escapeHtml(earliestDue ? formatAssignmentDueDate(earliestDue.dueDate) : 'ยังไม่มีงาน')}
+            </div>
+            <div class="assignment-sidebar-empty">
+                ใช้ปุ่ม <b>+ เพิ่มงาน</b> เพื่อสร้างงานใหม่ โดยข้อมูลจะถูกเก็บไว้ในเบราว์เซอร์เครื่องนี้
+            </div>
+        `;
+        return;
+    }
+
+    const selectOptions = assignments.map((assignment) => `
+        <option value="${escapeHtml(assignment.id)}" ${assignment.id === currentAssignmentId ? 'selected' : ''}>${escapeHtml(assignment.title)}</option>
+    `).join('');
+
+    const activeSubmission = activeAssignment ? (currentAssignmentSubmissions[activeAssignment.id] || {}) : {};
+    const submissionFileName = String(activeSubmission.fileName || '').trim();
+    const submissionStatusText = activeSubmission.status === 'submitted'
+        ? 'ส่งงานแล้ว'
+        : 'ยังไม่ได้ส่งงาน';
+
+    body.innerHTML = `
+        <label style="display:block;font-size:13px;font-weight:600;color:var(--deep-blue);margin-bottom:6px;">เลือกงาน</label>
+        <select id="${scope}-assignment-select" class="assignment-sidebar-select" onchange="selectAssignment(this.value)">
+            ${selectOptions}
+        </select>
+        <div class="assignment-status-box">
+            <strong>${escapeHtml(activeAssignment ? activeAssignment.title : 'ยังไม่มีงาน')}</strong>
+            ${activeAssignment ? `
+                กำหนดส่ง: ${escapeHtml(formatAssignmentDueDate(activeAssignment.dueDate))}
+                <br>คะแนนเต็ม: ${escapeHtml(activeAssignment.points)} คะแนน
+                <br>สถานะ: ${escapeHtml(submissionStatusText)}
+            ` : 'อาจารย์ยังไม่ได้สร้างงานสำหรับวิชานี้'}
+        </div>
+        <div class="assignment-submit-summary">
+            <label style="display:block;font-size:13px;font-weight:600;color:var(--deep-blue);">แนบไฟล์ส่งงาน</label>
+            <input type="file" id="${scope}-assignment-file" class="assignment-sidebar-input" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*,.zip,.rar">
+            <textarea id="${scope}-assignment-note" class="assignment-sidebar-textarea" placeholder="พิมพ์ข้อความประกอบงาน (ถ้ามี)"></textarea>
+            <button type="button" class="assignment-submit-btn" onclick="submitAssignmentFromSidebar('${scope}')">ส่งงาน</button>
+            <div class="assignment-sidebar-empty">
+                ${submissionFileName ? `ไฟล์ล่าสุด: <b>${escapeHtml(submissionFileName)}</b>` : 'ยังไม่มีไฟล์ส่งงาน'}
+            </div>
+        </div>
+    `;
+}
+
+function renderAssignmentPanels() {
+    const assignments = getCurrentAssignmentList();
+    renderAssignmentCards(assignments, 'detail-assignment-list', 'detail');
+    renderAssignmentCards(assignments, 'learning-assignment-list', 'learning');
+    renderAssignmentSidebar('detail', assignments);
+    renderAssignmentSidebar('learning', assignments);
+    syncAssignmentComposerVisibility();
+}
+
+function renderAssignmentComposer() {
+    const body = document.getElementById('modal-body');
+    if (!body) return;
+
+    getCurrentAssignmentList();
+    const selected = getActiveAssignment();
+    const previewMarkup = currentAssignmentsData.length > 0
+        ? currentAssignmentsData.slice(0, 3).map((assignment) => `
+            <div class="assignment-preview-card">
+                <div class="assignment-preview-title">${escapeHtml(assignment.title)}</div>
+                <div class="assignment-preview-text">${escapeHtml(assignment.description)}</div>
+                <div class="assignment-preview-meta">
+                    <span>กำหนดส่ง ${escapeHtml(formatAssignmentDueDate(assignment.dueDate))}</span>
+                    <span>${escapeHtml(assignment.points)} คะแนน</span>
+                </div>
+            </div>
+        `).join('')
+        : `<div class="assignment-preview-empty">ยังไม่มีรายการงานในวิชานี้</div>`;
+
+    body.innerHTML = `
+        <div class="assignment-composer">
+            <div>
+                <h3 style="margin-bottom:8px; color:var(--primary-orange);">➕ เพิ่มงานแบบ Classroom</h3>
+                <p style="color:var(--text-gray); line-height:1.6;">สร้างงานใหม่พร้อมชื่อ, คำอธิบาย, วันกำหนดส่ง และไฟล์แนบได้ในรูปแบบเดียวกับ Google Classroom</p>
+            </div>
+            <div class="assignment-composer-grid">
+                <div class="assignment-composer-panel">
+                    <h4>รายละเอียดงาน</h4>
+                    <div class="assignment-composer-field">
+                        <label for="assignmentTitleInput">ชื่องาน</label>
+                        <input id="assignmentTitleInput" type="text" placeholder="เช่น ใบงานที่ 1: การอ่านบทความ">
+                    </div>
+                    <div class="assignment-composer-field">
+                        <label for="assignmentDescriptionInput">คำอธิบายงาน</label>
+                        <textarea id="assignmentDescriptionInput" placeholder="อธิบายสิ่งที่นักเรียนต้องทำ"></textarea>
+                    </div>
+                    <div class="assignment-composer-field">
+                        <label for="assignmentDueInput">กำหนดส่ง</label>
+                        <input id="assignmentDueInput" type="datetime-local">
+                    </div>
+                    <div class="assignment-composer-field">
+                        <label for="assignmentPointsInput">คะแนนเต็ม</label>
+                        <input id="assignmentPointsInput" type="number" min="1" step="1" value="10">
+                    </div>
+                    <div class="assignment-composer-field">
+                        <label for="assignmentFileNameInput">ชื่อไฟล์แนบ (ถ้ามี)</label>
+                        <input id="assignmentFileNameInput" type="text" placeholder="เช่น worksheet.pdf">
+                    </div>
+                    <div class="assignment-composer-field">
+                        <label for="assignmentFileUploadInput">อัปโหลดไฟล์แนบ</label>
+                        <input id="assignmentFileUploadInput" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*,.zip,.rar">
+                    </div>
+                    <div class="assignment-composer-field">
+                        <label for="assignmentFileUrlInput">ลิงก์ไฟล์แนบ</label>
+                        <input id="assignmentFileUrlInput" type="url" placeholder="https://...">
+                    </div>
+                    <button type="button" class="assignment-submit-btn" onclick="saveAssignmentFromComposer()">บันทึกงาน</button>
+                </div>
+                <div class="assignment-preview-panel">
+                    <h4>ตัวอย่างการ์ดงาน</h4>
+                    ${selected ? `
+                        <div class="assignment-preview-card">
+                            <div class="assignment-preview-title">${escapeHtml(selected.title)}</div>
+                            <div class="assignment-preview-text">${escapeHtml(selected.description)}</div>
+                            <div class="assignment-preview-meta">
+                                <span>กำหนดส่ง ${escapeHtml(formatAssignmentDueDate(selected.dueDate))}</span>
+                                <span>${escapeHtml(selected.points)} คะแนน</span>
+                            </div>
+                        </div>
+                    ` : '<div class="assignment-preview-empty">เมื่อบันทึกงานใหม่ รายการจะปรากฏในลิสต์นี้ทันที</div>'}
+                    ${previewMarkup}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function openAssignmentComposer() {
+    if (!currentSubjectId) {
+        alert('กรุณาเปิดรายวิชาก่อนเพิ่มงาน');
+        return;
+    }
+    const canCreate = Boolean(currentUser?.logged_in) && ['teacher', 'staff'].includes(String(currentUser?.role || '').toLowerCase());
+    if (!canCreate) {
+        alert('เฉพาะอาจารย์หรือเจ้าหน้าที่เท่านั้นที่สามารถเพิ่มงานได้');
+        return;
+    }
+    renderAssignmentComposer();
+    const modal = document.getElementById('modal-overlay');
+    if (modal) modal.style.display = 'flex';
+}
+
+function saveAssignmentFromComposer() {
+    const titleInput = document.getElementById('assignmentTitleInput');
+    const descriptionInput = document.getElementById('assignmentDescriptionInput');
+    const dueInput = document.getElementById('assignmentDueInput');
+    const pointsInput = document.getElementById('assignmentPointsInput');
+    const fileNameInput = document.getElementById('assignmentFileNameInput');
+    const fileUploadInput = document.getElementById('assignmentFileUploadInput');
+    const fileUrlInput = document.getElementById('assignmentFileUrlInput');
+    const title = String(titleInput?.value || '').trim();
+    const description = String(descriptionInput?.value || '').trim();
+    const dueDate = String(dueInput?.value || '').trim();
+    const points = String(pointsInput?.value || '10').trim();
+    const uploadedFile = fileUploadInput?.files?.[0] || null;
+    const attachmentName = String(fileNameInput?.value || uploadedFile?.name || '').trim();
+    const attachmentUrl = String(fileUrlInput?.value || '').trim();
+
+    if (!title) {
+        if (titleInput) titleInput.focus();
+        alert('กรุณากรอกชื่องาน');
+        return;
+    }
+    if (!description) {
+        if (descriptionInput) descriptionInput.focus();
+        alert('กรุณากรอกคำอธิบายงาน');
+        return;
+    }
+    if (!dueDate) {
+        if (dueInput) dueInput.focus();
+        alert('กรุณาระบุวันกำหนดส่ง');
+        return;
+    }
+
+    const assignments = readStoredAssignments();
+    assignments.unshift(normalizeAssignmentRecord({
+        id: `assignment-${Date.now()}`,
+        title,
+        description,
+        dueDate,
+        points,
+        attachmentName,
+        attachmentUrl,
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser?.name || 'อาจารย์',
+    }, assignments.length));
+    saveStoredAssignments(assignments);
+    saveStoredAssignmentSelection(assignments[0].id);
+    closeModal();
+    renderAssignmentPanels();
+}
+
+function submitAssignmentFromSidebar(scope) {
+    if (!Boolean(currentUser?.logged_in)) {
+        alert('กรุณาเข้าสู่ระบบก่อนส่งงาน');
+        return;
+    }
+    if (String(currentUser?.role || '').toLowerCase() !== 'student') {
+        alert('ฟอร์มส่งงานนี้เหมาะสำหรับนักเรียน');
+        return;
+    }
+    const assignment = getActiveAssignment();
+    if (!assignment) {
+        alert('ยังไม่มีงานให้ส่ง');
+        return;
+    }
+
+    const fileInput = document.getElementById(`${scope}-assignment-file`);
+    const noteInput = document.getElementById(`${scope}-assignment-note`);
+    const file = fileInput?.files?.[0] || null;
+    const note = String(noteInput?.value || '').trim();
+    const fileName = file ? file.name : '';
+
+    const submissions = readStoredSubmissions();
+    submissions[assignment.id] = {
+        status: 'submitted',
+        fileName,
+        note,
+        submittedAt: new Date().toISOString(),
+    };
+    saveStoredSubmissions(submissions);
+    currentAssignmentSubmissions = submissions;
+    renderAssignmentPanels();
+    alert('ส่งงานเรียบร้อยแล้ว');
 }
 
 function updateInstructorInfo(course) {
@@ -644,6 +1113,7 @@ async function showCourse(subjectId) {
             currentPassedLessons = new Set();
             applyCourseProgressSummary(null);
             renderAllLessonAccordions();
+            renderAssignmentPanels();
 
             openTab({ currentTarget: document.querySelector('.tab-btn') }, 'overview');
             
@@ -667,6 +1137,7 @@ function goToCourseLearning() {
     document.getElementById('learning-desc').innerText = document.getElementById('detail-desc').innerText;
     document.getElementById('learning-duration').innerText = document.getElementById('detail-duration').innerText;
     renderAllLessonAccordions();
+    renderAssignmentPanels();
     showPage('course-learning');
     openLearningTab({ currentTarget: document.querySelector("#course-learning .tab-btn[onclick*='learning-curriculum']") }, 'learning-curriculum');
     recordLearningEvent('course_enter', 1);
@@ -813,7 +1284,7 @@ function downloadCourseLesson(lessonIndex) {
 }
 
 function getLessonVideoPath(lessonIndex) {
-    const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 5, Number(lessonIndex) || 1));
+    const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 3, Number(lessonIndex) || 1));
     const lessonSource = getLessonVideoSource(safeIndex);
     if (lessonSource) return lessonSource;
     const subjectKey = String(currentSubjectId || '').trim();
@@ -828,7 +1299,7 @@ function getLessonVideoPath(lessonIndex) {
 }
 
 function getLessonVideoCandidates(lessonIndex) {
-    const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 5, Number(lessonIndex) || 1));
+    const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 3, Number(lessonIndex) || 1));
     const lessonSource = getLessonVideoSource(safeIndex);
     const subjectKey = String(currentSubjectId || '').trim();
     const list = [
@@ -843,7 +1314,7 @@ function getLessonVideoCandidates(lessonIndex) {
 function renderVideoModalBody(lessonIndex) {
     const body = document.getElementById('modal-body');
     if (!body) return;
-    const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 5, Number(lessonIndex) || 1));
+    const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 3, Number(lessonIndex) || 1));
     const selectedLesson = getLessonRecord(safeIndex);
     const selectedTitle = selectedLesson ? selectedLesson.title : `Lesson ${safeIndex}`;
     const videoCandidates = getLessonVideoCandidates(safeIndex);
@@ -910,7 +1381,12 @@ window.changeModalLessonVideo = function(lessonIndex) {
 function openCourseVideo(lessonIndex) {
     if (!enrolledCourses[currentSubjectId]) { alert('กรุณาลงรายวิชาก่อนชมวิดีโอ'); return; }
     if (!canAccessLesson(lessonIndex || 1)) { alert(`กรุณาผ่านแบบทดสอบบทที่ ${Number(lessonIndex || 1) - 1} ก่อน`); return; }
-    if (!hasReadLessonDocument(lessonIndex || 1)) { alert('กรุณาอ่านบทเรียนให้จบก่อนดูวิดีโอ'); return; }
+    const lesson = getLessonRecord(lessonIndex || 1);
+    const hasUploadedVideo = Boolean(String(lesson?.videoPath || lesson?.videoUrl || '').trim());
+    if (!hasUploadedVideo && !hasReadLessonDocument(lessonIndex || 1)) {
+        alert('กรุณาอ่านบทเรียนให้จบก่อนดูวิดีโอ');
+        return;
+    }
     const modal = document.getElementById('modal-overlay');
     renderVideoModalBody(lessonIndex || 1);
     modal.style.display = 'flex';
@@ -997,6 +1473,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (loginBtn) loginBtn.style.display = 'inline-block';
             if (userProfile) userProfile.style.display = 'none';
         }
+
+        syncAssignmentComposerVisibility();
 
         const cachedCourses = readCachedCourses();
         if (cachedCourses.length > 0) {

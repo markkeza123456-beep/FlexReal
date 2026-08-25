@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('saveEditLsnBtn')?.addEventListener('click', (e) => {
         const btn = e.target; const id = document.getElementById('editLsnIdInput').value; const name = document.getElementById('editLsnNameInput').value.trim();
-        btn.textContent = 'โณ...'; btn.disabled = true;
+        btn.textContent = '⏳ กำลังบันทึก...'; btn.disabled = true;
         const fd = new FormData(); fd.append('action', 'edit_lesson'); fd.append('lesson_id', id); fd.append('lesson_name', name);
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
             if(d.success) {
@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else { 
                 alert(d.message); 
                 if(d.message.includes('เธฅเนเธญเธเธญเธดเธ')) window.location.href = 'login.php';
-                else { btn.disabled = false; btn.textContent = '๐’พ เธเธฑเธเธ—เธถเธเธเธฒเธฃเนเธเนเนเธ'; }
+                else { btn.disabled = false; btn.textContent = '💾 บันทึกการแก้ไข'; }
             }
         });
     });
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ans = '-';
         }
 
-        btn.textContent = 'โณ...'; btn.disabled = true;
+        btn.textContent = '⏳ กำลังบันทึก...'; btn.disabled = true;
         const fd = new FormData();
         fd.append('action', 'add_quiz'); fd.append('lesson_id', lessonId); fd.append('type', type);
         fd.append('question', question); fd.append('choice_a', chA); fd.append('choice_b', chB); 
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else { 
                 alert(d.message); 
                 if(d.message.includes('เธฅเนเธญเธเธญเธดเธ')) window.location.href = 'login.php';
-                else { btn.disabled = false; btn.textContent = 'โ• เน€เธเธดเนเธกเธเธณเธ–เธฒเธก'; }
+                else { btn.disabled = false; btn.textContent = '➕ เพิ่มคำถาม'; }
             }
         });
     });
@@ -243,14 +243,14 @@ document.addEventListener('DOMContentLoaded', () => {
         fd.append('type', type); fd.append('question', document.getElementById('editQuizQuestion').value.trim());
         fd.append('choice_a', chA); fd.append('choice_b', chB); fd.append('choice_c', chC); fd.append('choice_d', chD); fd.append('answer', ans);
 
-        btn.textContent = 'โณ...'; btn.disabled = true;
+        btn.textContent = '⏳ กำลังบันทึก...'; btn.disabled = true;
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
             if(d.success) {
                 location.reload(); 
             } else { 
                 alert(d.message); 
                 if(d.message.includes('เธฅเนเธญเธเธญเธดเธ')) window.location.href = 'login.php';
-                else { btn.disabled = false; btn.textContent = '๐’พ เธเธฑเธเธ—เธถเธเธเธฒเธฃเนเธเนเนเธ'; }
+                else { btn.disabled = false; btn.textContent = '💾 บันทึกการแก้ไข'; }
             }
         });
     });
@@ -286,7 +286,7 @@ window.showStudentProgress = function(element) {
     if (lessons && lessons.length > 0) {
         listContainer.innerHTML = lessons.map(l => `
             <div style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: #10b981; font-size: 13.5px; display:flex; align-items:center; gap:10px;">
-                <span style="background:rgba(16,185,129,0.15); padding:4px 6px; border-radius:4px; font-size:11px;">โ…</span> 
+                <span style="background:rgba(16,185,129,0.15); padding:4px 6px; border-radius:4px; font-size:11px;">✅</span> 
                 <span>${l}</span>
             </div>
         `).join('');

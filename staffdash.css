@@ -76,23 +76,49 @@ body {
   padding: 20px 16px 16px;
   border-bottom: 1px solid var(--border);
 }
-.brand-home-link { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; text-decoration: none; }
-.brand-icon {
-  width: 36px; height: 36px; flex-shrink: 0;
-  color: var(--orange);
-  filter: drop-shadow(0 0 6px var(--orange-glow));
+.brand-home-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  flex: 1;
+  text-decoration: none;
 }
-.brand-icon svg { width: 100%; height: 100%; }
-.brand-text { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
-.brand-name {
-  font-family: 'Orbitron', sans-serif;
-  font-size: .85rem; font-weight: 700;
-  letter-spacing: .15em; color: var(--text-primary);
+.flex-brand-mark {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
 }
-.brand-sub {
+.flex-brand-mark svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.flex-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+  padding-top: 2px;
+}
+.flex-brand-name {
   font-family: 'Orbitron', sans-serif;
-  font-size: .5rem; letter-spacing: .18em;
-  color: var(--orange); opacity: .8;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: .14em;
+  color: #2f353b;
+  line-height: 1;
+}
+.flex-brand-sub {
+  font-family: 'Orbitron', sans-serif;
+  font-size: .58rem;
+  font-weight: 700;
+  letter-spacing: .28em;
+  color: #6d747b;
+  line-height: 1;
 }
 .sidebar-close {
   display: none; background: none; border: none;

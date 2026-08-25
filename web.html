@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub</title>
     <link rel="stylesheet" href="web.css">
+    <link rel="stylesheet" href="assignment.css">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="theme.css">
@@ -117,6 +118,7 @@
                     <button class="tab-btn active" onclick="openTab(event, 'overview')">รายละเอียด</button>
                     <button class="tab-btn" onclick="openTab(event, 'curriculum')">เนื้อหาในคอร์ส</button>
                     <button class="tab-btn" onclick="openTab(event, 'instructor')">ผู้สอน</button>
+                    <button class="tab-btn" onclick="openTab(event, 'assignments')">งานที่มอบหมาย</button>
                 </div>
 
                 <div id="overview" class="tab-content active">
@@ -142,6 +144,36 @@
                                 <b id="detail-instructor-name">อาจารย์ผู้เชี่ยวชาญประจำหลักสูตร</b>
                                 <p id="detail-instructor-role" style="color:var(--text-gray); font-size:14px;">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="assignments" class="tab-content">
+                    <div class="info-card classroom-board">
+                        <div class="classroom-board-head">
+                            <div>
+                                <div class="classroom-kicker">Classwork</div>
+                                <h3 class="classroom-board-title">งานที่มอบหมายในรายวิชานี้</h3>
+                                <p class="classroom-board-subtitle">หน้าตาและการใช้งานถูกปรับให้ใกล้กับ Google Classroom มากขึ้น</p>
+                            </div>
+                            <button type="button" class="btn-orange assignment-compose-btn" onclick="openAssignmentComposer()">+ เพิ่มงาน</button>
+                        </div>
+
+                        <div class="classroom-layout">
+                            <div class="classroom-stream">
+                                <div class="classroom-stream-head">
+                                    <h4>รายการงาน</h4>
+                                    <span class="classroom-muted" id="assignment-count-detail">0 งาน</span>
+                                </div>
+                                <div id="detail-assignment-list" class="assignment-list"></div>
+                            </div>
+
+                            <aside class="classroom-sidebar">
+                                <div class="classroom-side-card">
+                                    <div class="classroom-side-title">งานของคุณ</div>
+                                    <div id="detail-assignment-sidebar-body" class="assignment-sidebar-body"></div>
+                                </div>
+                            </aside>
                         </div>
                     </div>
                 </div>
@@ -178,6 +210,7 @@
                     <button class="tab-btn" onclick="openLearningTab(event, 'learning-overview')">รายละเอียด</button>
                     <button class="tab-btn active" onclick="openLearningTab(event, 'learning-curriculum')">เนื้อหาในคอร์ส</button>
                     <button class="tab-btn" onclick="openLearningTab(event, 'learning-instructor')">ผู้สอน</button>
+                    <button class="tab-btn" onclick="openLearningTab(event, 'learning-assignments')">งานที่มอบหมาย</button>
                 </div>
 
                 <div id="learning-overview" class="learning-tab-content">
@@ -202,6 +235,36 @@
                                 <b id="learning-instructor-name">อาจารย์ผู้เชี่ยวชาญประจำหลักสูตร</b>
                                 <p id="learning-instructor-role" style="color:var(--text-gray); font-size:14px;">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="learning-assignments" class="learning-tab-content">
+                    <div class="info-card classroom-board">
+                        <div class="classroom-board-head">
+                            <div>
+                                <div class="classroom-kicker">Classwork</div>
+                                <h3 class="classroom-board-title">งานที่มอบหมายในรายวิชานี้</h3>
+                                <p class="classroom-board-subtitle">เลือกงาน แนบไฟล์ และส่งงานได้ในที่เดียวเหมือนหน้า Classroom</p>
+                            </div>
+                            <button type="button" class="btn-orange assignment-compose-btn" onclick="openAssignmentComposer()">+ เพิ่มงาน</button>
+                        </div>
+
+                        <div class="classroom-layout">
+                            <div class="classroom-stream">
+                                <div class="classroom-stream-head">
+                                    <h4>รายการงาน</h4>
+                                    <span class="classroom-muted" id="assignment-count-learning">0 งาน</span>
+                                </div>
+                                <div id="learning-assignment-list" class="assignment-list"></div>
+                            </div>
+
+                            <aside class="classroom-sidebar">
+                                <div class="classroom-side-card">
+                                    <div class="classroom-side-title">งานของคุณ</div>
+                                    <div id="learning-assignment-sidebar-body" class="assignment-sidebar-body"></div>
+                                </div>
+                            </aside>
                         </div>
                     </div>
                 </div>

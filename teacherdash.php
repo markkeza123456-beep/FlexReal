@@ -16,6 +16,26 @@ function h(?string $value): string {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
+function normalizeLessonSlots(array $lessons, int $targetCount = 3, string $subjectId = ''): array {
+    $normalized = [];
+    foreach (array_slice(array_values($lessons), 0, $targetCount) as $index => $lessonRow) {
+        $lessonRow['is_placeholder'] = false;
+        $normalized[] = $lessonRow;
+    }
+
+    for ($i = count($normalized) + 1; $i <= $targetCount; $i++) {
+        $normalized[] = [
+            'id' => sprintf('PH-%s-%d', $subjectId ?: 'SUB', $i),
+            'title' => 'บทที่ ' . $i,
+            'duration' => 'ยังไม่มีเนื้อหา',
+            'status' => 'draft',
+            'is_placeholder' => true,
+        ];
+    }
+
+    return $normalized;
+}
+
 function scoreStatus(float $score): string {
     if ($score >= 85) return 'excellent';
     if ($score >= 70) return 'good';
@@ -84,13 +104,13 @@ foreach ($subjectRows as $row) {
         'students' => $studentCount,
         'progress' => 0, 
         'status' => $lessonCount > 0 ? 'active' : 'draft',
-        'lesson_count' => $lessonCount,
+        'lesson_count' => 3,
         'avg_score' => 0,
     ];
 
     if ($subjectId) $subjectIds[] = $subjectId;
     if ($subjectName) $subjectNames[] = $subjectName;
-    $totalLessonCount += $lessonCount;
+    $totalLessonCount += 3;
 }
 
 $subjectMap = [];
@@ -122,6 +142,10 @@ if (!empty($subjectIds)) {
             'status' => 'active',
         ];
     }
+}
+
+foreach ($subjectIds as $subjectId) {
+    $subLessonsBySubject[$subjectId] = normalizeLessonSlots($subLessonsBySubject[$subjectId] ?? [], 3, $subjectId);
 }
 
 // 4. ดึงข้อมูลนักเรียนและคะแนน
@@ -507,8 +531,9 @@ $stats = [
                                 <?php 
                                 if ($defaultSubjectId && !empty($subLessonsBySubject[$defaultSubjectId])): 
                                     foreach ($subLessonsBySubject[$defaultSubjectId] as $i => $subLesson):
+                                        $isPlaceholderLesson = !empty($subLesson['is_placeholder']);
                                 ?>
-                                <div style="background:var(--bg3);padding:16px 20px;border-radius:var(--radius-sm);border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                                <div style="background:<?= $isPlaceholderLesson ? 'rgba(255,255,255,0.65)' : 'var(--bg3)' ?>;padding:16px 20px;border-radius:var(--radius-sm);border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; flex-wrap:wrap; gap:12px;<?= $isPlaceholderLesson ? 'opacity:0.85;' : '' ?>">
                                     <div style="display:flex;align-items:center;gap:16px;">
                                         <div style="width:36px;height:36px;background:var(--bg2);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--orange);font-weight:600;font-size:14px;border:1px solid rgba(249,115,22,0.2);">
                                             <?= $i+1 ?>
@@ -519,14 +544,15 @@ $stats = [
                                         </div>
                                     </div>
                                     <div style="display:flex;align-items:center;gap:10px;">
-                                        <span class="badge badge-<?= h($subLesson['status']) ?>" style="margin-right:8px;"><?= $subLesson['status'] === 'active' ? 'เผยแพร่' : 'ฉบับร่าง' ?></span>
-                                        
-                                        <button class="btn-open-add-quiz" data-id="<?= h($subLesson['id']) ?>" data-name="<?= h($subLesson['title']) ?>">
-                                            <span style="font-size:16px;line-height:1;">+</span> เพิ่มแบบทดสอบ
-                                        </button>
-                                        
-                                        <button class="action-icon-btn btn-edit-lsn" data-id="<?= h($subLesson['id']) ?>" data-name="<?= h($subLesson['title']) ?>" title="แก้ไขบทเรียน">📝</button>
-                                        <button class="action-icon-btn btn-del-lsn" data-id="<?= h($subLesson['id']) ?>" title="ลบบทเรียน" style="color:#ef4444;">🗑</button>
+                                        <span class="badge badge-<?= h($subLesson['status']) ?>" style="margin-right:8px;"><?= $isPlaceholderLesson ? 'ยังไม่มีเนื้อหา' : 'เผยแพร่' ?></span>
+                                        <?php if (!$isPlaceholderLesson): ?>
+                                            <button class="btn-open-add-quiz" data-id="<?= h($subLesson['id']) ?>" data-name="<?= h($subLesson['title']) ?>">
+                                                <span style="font-size:16px;line-height:1;">+</span> เพิ่มแบบทดสอบ
+                                            </button>
+                                            
+                                            <button class="action-icon-btn btn-edit-lsn" data-id="<?= h($subLesson['id']) ?>" data-name="<?= h($subLesson['title']) ?>" title="แก้ไขบทเรียน">📝</button>
+                                            <button class="action-icon-btn btn-del-lsn" data-id="<?= h($subLesson['id']) ?>" title="ลบบทเรียน" style="color:#ef4444;">🗑</button>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                                 <?php 

@@ -11,7 +11,30 @@ function loadLessons(PDO $conn, string $subjectId): array
 {
     $stmtL = $conn->prepare("SELECT * FROM public.lessons WHERE subjects_id = ? ORDER BY lessons_id ASC");
     $stmtL->execute([$subjectId]);
-    return $stmtL->fetchAll(PDO::FETCH_ASSOC);
+    $lessons = $stmtL->fetchAll(PDO::FETCH_ASSOC);
+
+    $normalized = [];
+    foreach (array_slice($lessons, 0, 3) as $index => $lessonRow) {
+        $lessonRow['is_placeholder'] = false;
+        $normalized[] = $lessonRow;
+    }
+
+    for ($i = count($normalized) + 1; $i <= 3; $i++) {
+        $normalized[] = [
+            'lessons_id' => sprintf('PH-%s-%d', $subjectId ?: 'SUB', $i),
+            'lessons_name' => 'บทที่ ' . $i,
+            'study_hours' => 1,
+            'subjects_id' => $subjectId,
+            'document_path' => '',
+            'document_name' => '',
+            'video_path' => '',
+            'video_name' => '',
+            'video_url' => '',
+            'is_placeholder' => true,
+        ];
+    }
+
+    return $normalized;
 }
 
 try {

@@ -38,16 +38,15 @@ if (!empty($_SESSION['name'])) {
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <a class="brand-home-link" href="web.html" title="กลับหน้าหลักและรายวิชา">
-      <div class="brand-icon">
-        <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <polygon points="18,3 33,12 33,27 18,33 3,27 3,12" fill="none" stroke="currentColor" stroke-width="2"/>
-          <polygon points="18,9 27,14 27,24 18,28 9,24 9,14" fill="currentColor" opacity="0.18"/>
-          <circle cx="18" cy="18" r="4" fill="currentColor"/>
+      <div class="flex-brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="32,6 53,18 53,42 32,56 11,42 11,18" fill="none" stroke="#f07f37" stroke-width="5" stroke-linejoin="round"/>
+          <polygon points="32,15 45,23 45,39 32,47 19,39 19,23" fill="#f4e8db"/>
         </svg>
       </div>
-      <div class="brand-text">
-        <span class="brand-name">NEXORA</span>
-        <span class="brand-sub">STAFF PANEL</span>
+      <div class="flex-brand-text">
+        <span class="flex-brand-name">FLEXIBLE</span>
+        <span class="flex-brand-sub">LEARNING HUB</span>
       </div>
       </a>
       <button class="sidebar-close" id="sidebarClose" title="ปิดเมนู">
