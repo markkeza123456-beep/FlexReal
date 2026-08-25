@@ -247,6 +247,36 @@ CREATE TABLE Lessons (
 
 
 
+-- ตารางวิดีโอการเรียน: วิดีโอแต่ละรายการอยู่ในวิชาเดียว
+-- Lessons_ID เป็น NULL ได้ หากวิดีโอนั้นเป็นวิดีโอรวมของทั้งวิชา
+CREATE TABLE Videos (
+
+    Videos_ID BIGSERIAL PRIMARY KEY,
+
+    Videos_Title VARCHAR(200) NOT NULL,
+
+    Videos_URL VARCHAR(500) NOT NULL,
+
+    Videos_Description TEXT,
+
+    Duration_Seconds INT,
+
+    Display_Order INT NOT NULL DEFAULT 1,
+
+    Created_At TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    Subjects_ID VARCHAR(50) NOT NULL REFERENCES Subjects(Subjects_ID) ON DELETE CASCADE,
+
+    Lessons_ID VARCHAR(50) REFERENCES Lessons(Lessons_ID) ON DELETE SET NULL
+
+);
+
+-- ให้ค้น/เรียงวิดีโอของแต่ละวิชาได้เร็ว
+CREATE INDEX idx_videos_subject_order
+    ON Videos (Subjects_ID, Display_Order);
+
+
+
 -- ตารางที่ 3.14
 
 CREATE TABLE Test_Questions (

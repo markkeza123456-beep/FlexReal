@@ -15,9 +15,6 @@ function ensureLessonMediaColumns(PDO $conn): void
 {
     $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS document_path VARCHAR(255)");
     $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS document_name VARCHAR(255)");
-    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS video_path VARCHAR(255)");
-    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS video_name VARCHAR(255)");
-    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS video_url VARCHAR(255)");
 }
 
 function sanitizePathSegment(string $value, string $fallback = 'unknown'): string
@@ -53,15 +50,31 @@ function buildLessonMediaSegments(string $teacherId, string $subjectId, string $
     ];
 }
 
-function uploadLessonFile(string $fieldName, array $segments, string $prefix): array
+function buildVideoMediaSegments(string $teacherId, string $subjectId): array
+{
+    return ['teachers', sanitizePathSegment($teacherId), 'subjects', sanitizePathSegment($subjectId), 'videos'];
+}
+
+function uploadLessonFile(string $fieldName, array $segments, string $prefix, bool $required = false): array
 {
     if (!isset($_FILES[$fieldName]) || !is_array($_FILES[$fieldName])) {
+        if ($required) throw new Exception('กรุณาเลือกไฟล์วิดีโอ');
         return ['path' => '', 'name' => ''];
     }
 
     $file = $_FILES[$fieldName];
-    if ((int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-        return ['path' => '', 'name' => ''];
+    $errorCode = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+    if ($errorCode !== UPLOAD_ERR_OK) {
+        if ($errorCode === UPLOAD_ERR_NO_FILE && !$required) return ['path' => '', 'name' => ''];
+        $errors = [
+            UPLOAD_ERR_INI_SIZE => 'ไฟล์วิดีโอมีขนาดเกินค่าที่ PHP อนุญาต',
+            UPLOAD_ERR_FORM_SIZE => 'ไฟล์วิดีโอมีขนาดเกินค่าที่แบบฟอร์มอนุญาต',
+            UPLOAD_ERR_PARTIAL => 'อัปโหลดไฟล์ไม่สมบูรณ์ กรุณาลองใหม่',
+            UPLOAD_ERR_NO_FILE => 'กรุณาเลือกไฟล์วิดีโอ',
+            UPLOAD_ERR_NO_TMP_DIR => 'ไม่พบโฟลเดอร์ชั่วคราวสำหรับอัปโหลด',
+            UPLOAD_ERR_CANT_WRITE => 'เซิร์ฟเวอร์ไม่สามารถบันทึกไฟล์วิดีโอได้',
+        ];
+        throw new Exception($errors[$errorCode] ?? 'เกิดข้อผิดพลาดระหว่างอัปโหลดไฟล์วิดีโอ');
     }
 
     $relativeDir = 'uploads/' . implode('/', $segments);
@@ -77,7 +90,7 @@ function uploadLessonFile(string $fieldName, array $segments, string $prefix): a
     $targetPath = $uploadDir . DIRECTORY_SEPARATOR . $targetName;
 
     if (!move_uploaded_file((string) $file['tmp_name'], $targetPath)) {
-        return ['path' => '', 'name' => ''];
+        throw new Exception('เซิร์ฟเวอร์ไม่สามารถย้ายไฟล์วิดีโอไปยังโฟลเดอร์จัดเก็บได้');
     }
 
     return [
@@ -154,8 +167,6 @@ try {
         ensureLessonMediaColumns($conn);
         $lessonId = generateLessonId($conn);
         $documentUpload = uploadLessonFile('lesson_document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc');
-        $videoUpload = uploadLessonFile('lesson_video', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'videos'), 'lesson_video');
-        $videoUrl = trim((string) ($_POST['video_url'] ?? ''));
 
         $stmt = $conn->prepare(
             'INSERT INTO public.lessons (
@@ -164,10 +175,7 @@ try {
                 study_hours,
                 subjects_id,
                 document_path,
-                document_name,
-                video_path,
-                video_name,
-                video_url
+                document_name
             )
              VALUES (
                 :id,
@@ -175,10 +183,7 @@ try {
                 :hours,
                 :subject_id,
                 :document_path,
-                :document_name,
-                :video_path,
-                :video_name,
-                :video_url
+                :document_name
             )'
         );
         $stmt->execute([
@@ -188,9 +193,6 @@ try {
             ':subject_id' => $subjectId,
             ':document_path' => $documentUpload['path'],
             ':document_name' => $documentUpload['name'],
-            ':video_path' => $videoUpload['path'],
-            ':video_name' => $videoUpload['name'],
-            ':video_url' => $videoUrl,
         ]);
 
         echo json_encode(['success' => true, 'message' => 'เพิ่มบทเรียนสำเร็จ']);
@@ -328,6 +330,51 @@ try {
 
         $conn->prepare('DELETE FROM public.test_questions WHERE questions_id = ?')->execute([$quizId]);
         echo json_encode(['success' => true, 'message' => 'ลบคำถามสำเร็จ']);
+        exit;
+    }
+
+    if ($action === 'get_videos') {
+        $subjectId = trim((string) ($_POST['subject_id'] ?? ''));
+        if ($subjectId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) {
+            throw new Exception('คุณไม่มีสิทธิ์จัดการรายวิชานี้');
+        }
+        $lessonStmt = $conn->prepare('SELECT lessons_id AS id, lessons_name AS title FROM public.lessons WHERE subjects_id = :subject_id ORDER BY lessons_id');
+        $lessonStmt->execute([':subject_id' => $subjectId]);
+        $videoStmt = $conn->prepare('SELECT v.videos_id AS id, v.videos_title AS title, v.videos_url AS url, COALESCE(v.videos_description, \'\') AS description, v.duration_seconds, v.display_order, v.lessons_id, COALESCE(l.lessons_name, \'\') AS lesson_title FROM public.videos v LEFT JOIN public.lessons l ON l.lessons_id = v.lessons_id WHERE v.subjects_id = :subject_id ORDER BY v.display_order, v.videos_id');
+        $videoStmt->execute([':subject_id' => $subjectId]);
+        echo json_encode(['success' => true, 'lessons' => $lessonStmt->fetchAll(PDO::FETCH_ASSOC), 'videos' => $videoStmt->fetchAll(PDO::FETCH_ASSOC)]);
+        exit;
+    }
+
+    if ($action === 'save_video') {
+        $subjectId = trim((string) ($_POST['subject_id'] ?? ''));
+        $videoId = trim((string) ($_POST['video_id'] ?? ''));
+        $title = trim((string) ($_POST['title'] ?? ''));
+        if ($subjectId === '' || $title === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) {
+            throw new Exception('ข้อมูลไม่ครบถ้วนหรือคุณไม่มีสิทธิ์จัดการรายวิชานี้');
+        }
+        $upload = uploadLessonFile('video_file', buildVideoMediaSegments($teacherId, $subjectId), 'video', true);
+        $url = $upload['path'];
+        $lessonId = trim((string) ($_POST['lesson_id'] ?? ''));
+        if ($lessonId !== '' && !teacherOwnsLesson($conn, $teacherId, $lessonId)) throw new Exception('บทเรียนที่เลือกไม่ถูกต้อง');
+        $params = [':title' => $title, ':url' => $url, ':description' => trim((string) ($_POST['description'] ?? '')), ':subject_id' => $subjectId, ':lesson_id' => $lessonId !== '' ? $lessonId : null];
+        if ($videoId === '') {
+            $stmt = $conn->prepare('INSERT INTO public.videos (videos_title, videos_url, videos_description, subjects_id, lessons_id) VALUES (:title, :url, :description, :subject_id, :lesson_id)');
+        } else {
+            $params[':id'] = $videoId;
+            $stmt = $conn->prepare('UPDATE public.videos SET videos_title = :title, videos_url = :url, videos_description = :description, lessons_id = :lesson_id WHERE videos_id = :id AND subjects_id = :subject_id');
+        }
+        $stmt->execute($params);
+        echo json_encode(['success' => true, 'message' => 'บันทึกวิดีโอสำเร็จ']);
+        exit;
+    }
+
+    if ($action === 'delete_video') {
+        $subjectId = trim((string) ($_POST['subject_id'] ?? ''));
+        $videoId = trim((string) ($_POST['video_id'] ?? ''));
+        if ($subjectId === '' || $videoId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) throw new Exception('คุณไม่มีสิทธิ์ลบวิดีโอนี้');
+        $conn->prepare('DELETE FROM public.videos WHERE videos_id = :id AND subjects_id = :subject_id')->execute([':id' => $videoId, ':subject_id' => $subjectId]);
+        echo json_encode(['success' => true, 'message' => 'ลบวิดีโอสำเร็จ']);
         exit;
     }
 

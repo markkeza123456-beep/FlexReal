@@ -123,7 +123,10 @@
           <p class="panel-label">Lessons</p>
           <h3>รายการบทเรียน</h3>
         </div>
-        <button type="button" class="btn-primary" id="addLessonBtn"><span class="btn-text">+ เพิ่มบทเรียน</span></button>
+        <div class="form-actions">
+          <a class="btn-ghost" id="manageVideosLink" href="#">จัดการวิดีโอ</a>
+          <button type="button" class="btn-primary" id="addLessonBtn"><span class="btn-text">+ เพิ่มบทเรียน</span></button>
+        </div>
       </div>
       <div class="table-wrap">
         <table class="data-table">
@@ -132,13 +135,12 @@
               <th style="width: 96px;">รูปภาพ</th>
               <th>ชื่อบทเรียน</th>
               <th>เอกสาร</th>
-              <th>วิดีโอ</th>
               <th style="width: 140px;">จัดการ</th>
             </tr>
           </thead>
           <tbody id="lessonTableBody">
             <tr>
-              <td colspan="5" class="empty-cell">กำลังโหลดบทเรียน...</td>
+              <td colspan="4" class="empty-cell">กำลังโหลดบทเรียน...</td>
             </tr>
           </tbody>
         </table>
@@ -187,35 +189,6 @@
             <div class="resource-preview" id="documentPreview" hidden>
               <span class="resource-pill">ไฟล์ปัจจุบัน</span>
               <a id="documentPreviewLink" href="#" target="_blank" rel="noopener noreferrer"></a>
-            </div>
-          </div>
-          <div class="resource-card">
-            <div class="resource-head">
-              <div class="resource-icon video">🎬</div>
-              <div>
-                <h4>วิดีโอประกอบการเรียน</h4>
-                <p>อัปโหลดวิดีโอหรือวางลิงก์วิดีโอภายนอก</p>
-              </div>
-            </div>
-            <div class="form-grid-2 compact-grid">
-              <div class="form-field compact">
-                <label class="form-label" for="lessonVideoFile">ไฟล์วิดีโอ</label>
-                <div class="input-wrap file-wrap">
-                  <span class="input-icon">↥</span>
-                  <input type="file" id="lessonVideoFile" accept="video/*" />
-                </div>
-              </div>
-              <div class="form-field compact">
-                <label class="form-label" for="lessonVideoUrl">ลิงก์วิดีโอ</label>
-                <div class="input-wrap">
-                  <span class="input-icon">▶</span>
-                  <input type="url" id="lessonVideoUrl" placeholder="https://..." />
-                </div>
-              </div>
-            </div>
-            <div class="resource-preview" id="videoPreview" hidden>
-              <span class="resource-pill">ไฟล์/ลิงก์ปัจจุบัน</span>
-              <a id="videoPreviewLink" href="#" target="_blank" rel="noopener noreferrer"></a>
             </div>
           </div>
         </div>

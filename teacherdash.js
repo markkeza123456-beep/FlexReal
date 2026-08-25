@@ -65,8 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const lessonName = document.getElementById('lessonNameInput').value.trim();
         const subjectId = document.getElementById('lessonSubjectId').value;
         const lessonDocument = document.getElementById('lessonDocument')?.files?.[0] || null;
-        const lessonVideoFile = document.getElementById('lessonVideoFile')?.files?.[0] || null;
-        const lessonVideoUrl = document.getElementById('lessonVideoUrl')?.value.trim() || '';
 
         if (!lessonName) { document.getElementById('lessonNameInput').style.borderColor = '#ef4444'; return; }
         btn.textContent = 'กำลังบันทึก...'; btn.disabled = true;
@@ -76,8 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
         fd.append('lesson_name', lessonName);
         fd.append('subject_id', subjectId);
         if (lessonDocument) fd.append('lesson_document', lessonDocument);
-        if (lessonVideoFile) fd.append('lesson_video', lessonVideoFile);
-        if (lessonVideoUrl) fd.append('video_url', lessonVideoUrl);
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
             if(d.success) {
                 location.reload(); 
@@ -296,4 +292,3 @@ window.showStudentProgress = function(element) {
     
     document.getElementById('studentProgressModal').classList.add('open');
 }
-

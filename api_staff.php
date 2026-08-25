@@ -17,12 +17,10 @@ function postValue(string $key, $default = '') {
     return isset($_POST[$key]) ? trim((string) $_POST[$key]) : $default;
 }
 
-function ensureLessonMediaColumns(PDO $conn): void
+function ensureLessonDocumentColumns(PDO $conn): void
 {
     $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS document_path VARCHAR(255)");
     $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS document_name VARCHAR(255)");
-    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS video_path VARCHAR(255)");
-    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS video_name VARCHAR(255)");
 }
 
 function sanitizePathSegment(string $value, string $fallback = 'unknown'): string
@@ -55,6 +53,17 @@ function buildLessonMediaSegments(string $teacherId, string $subjectId, string $
         'lessons',
         sanitizePathSegment($lessonId, 'lesson'),
         sanitizePathSegment($mediaType, 'files'),
+    ];
+}
+
+function buildVideoMediaSegments(string $teacherId, string $subjectId): array
+{
+    return [
+        'teachers',
+        sanitizePathSegment($teacherId, 'unassigned'),
+        'subjects',
+        sanitizePathSegment($subjectId, 'subject'),
+        'videos',
     ];
 }
 
@@ -279,7 +288,7 @@ try {
         case 'getLessons':
             $subjectId = $_GET['subject_id'] ?? '';
             if (empty($subjectId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
-            ensureLessonMediaColumns($conn);
+            ensureLessonDocumentColumns($conn);
             $lessonStmt = $conn->prepare("
                 SELECT
                     lessons_id AS id,
@@ -287,10 +296,7 @@ try {
                     image_path,
                     study_hours AS content,
                     COALESCE(document_path, '') AS document_path,
-                    COALESCE(document_name, '') AS document_name,
-                    COALESCE(video_path, '') AS video_path,
-                    COALESCE(video_name, '') AS video_name,
-                    COALESCE(video_url, '') AS video_url
+                    COALESCE(document_name, '') AS document_name
                 FROM public.lessons
                 WHERE subjects_id = :subject_id
                 ORDER BY lessons_id ASC
@@ -302,7 +308,7 @@ try {
         case 'getSubjectEditorData':
             $subjectId = $_GET['subject_id'] ?? '';
             if (empty($subjectId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
-            ensureLessonMediaColumns($conn);
+            ensureLessonDocumentColumns($conn);
 
             $subjectStmt = $conn->prepare("
                 SELECT
@@ -328,10 +334,7 @@ try {
                     study_hours AS content,
                     image_path,
                     COALESCE(document_path, '') AS document_path,
-                    COALESCE(document_name, '') AS document_name,
-                    COALESCE(video_path, '') AS video_path,
-                    COALESCE(video_name, '') AS video_name,
-                    COALESCE(video_url, '') AS video_url
+                    COALESCE(document_name, '') AS document_name
                 FROM public.lessons
                 WHERE subjects_id = :subject_id
                 ORDER BY lessons_id ASC
@@ -349,7 +352,7 @@ try {
             $lessonId = $_POST['id'] ?? '';
             $subjectId = $_POST['subject_id'] ?? '';
             if (empty($subjectId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
-            ensureLessonMediaColumns($conn);
+            ensureLessonDocumentColumns($conn);
             $isNewLesson = trim((string) $lessonId) === '';
 
             $subjectStmt = $conn->prepare("
@@ -371,18 +374,12 @@ try {
             $currentLesson = [
                 'document_path' => '',
                 'document_name' => '',
-                'video_path' => '',
-                'video_name' => '',
-                'video_url' => '',
             ];
             if (!empty($lessonId)) {
                 $currentStmt = $conn->prepare("
                     SELECT
                         COALESCE(document_path, '') AS document_path,
-                        COALESCE(document_name, '') AS document_name,
-                        COALESCE(video_path, '') AS video_path,
-                        COALESCE(video_name, '') AS video_name,
-                        COALESCE(video_url, '') AS video_url
+                        COALESCE(document_name, '') AS document_name
                     FROM public.lessons
                     WHERE lessons_id = :id
                     LIMIT 1
@@ -404,26 +401,15 @@ try {
             }
 
             $documentUpload = uploadLessonFile('document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc');
-            $videoUpload = uploadLessonFile('video_file', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'videos'), 'lesson_video');
-            $videoUrl = postValue('video_url');
-            if ($videoUrl === '') {
-                $videoUrl = (string) ($currentLesson['video_url'] ?? '');
-            }
-
             $documentPath = $documentUpload['path'] !== '' ? $documentUpload['path'] : (string) ($currentLesson['document_path'] ?? '');
             $documentName = $documentUpload['name'] !== '' ? $documentUpload['name'] : (string) ($currentLesson['document_name'] ?? '');
-            $videoPath = $videoUpload['path'] !== '' ? $videoUpload['path'] : (string) ($currentLesson['video_path'] ?? '');
-            $videoName = $videoUpload['name'] !== '' ? $videoUpload['name'] : (string) ($currentLesson['video_name'] ?? '');
 
             $baseParams = [
                 ':subject_id' => $subjectId,
                 ':title' => postValue('title'),
                 ':content' => postValue('content'),
-                ':video_url' => $videoUrl,
                 ':document_path' => $documentPath,
                 ':document_name' => $documentName,
-                ':video_path' => $videoPath,
-                ':video_name' => $videoName,
             ];
             if (!$isNewLesson) {
                 $baseParams[':id'] = $lessonId;
@@ -433,11 +419,8 @@ try {
                         SET lessons_name = :title,
                             study_hours = :content,
                             image_path = :image_path,
-                            video_url = :video_url,
                             document_path = :document_path,
-                            document_name = :document_name,
-                            video_path = :video_path,
-                            video_name = :video_name
+                            document_name = :document_name
                         WHERE lessons_id = :id
                     ");
                     $baseParams[':image_path'] = $imagePath;
@@ -446,11 +429,8 @@ try {
                         UPDATE public.lessons
                         SET lessons_name = :title,
                             study_hours = :content,
-                            video_url = :video_url,
                             document_path = :document_path,
-                            document_name = :document_name,
-                            video_path = :video_path,
-                            video_name = :video_name
+                            document_name = :document_name
                         WHERE lessons_id = :id
                     ");
                 }
@@ -464,22 +444,16 @@ try {
                         lessons_name,
                         study_hours,
                         image_path,
-                        video_url,
                         document_path,
-                        document_name,
-                        video_path,
-                        video_name
+                        document_name
                     ) VALUES (
                         :id,
                         :subject_id,
                         :title,
                         :content,
                         :image_path,
-                        :video_url,
                         :document_path,
-                        :document_name,
-                        :video_path,
-                        :video_name
+                        :document_name
                     )
                 ");
             }
@@ -491,6 +465,111 @@ try {
             $lessonId = $_POST['id'] ?? '';
             $statement = $conn->prepare("DELETE FROM public.lessons WHERE lessons_id = :id");
             $statement->execute([':id' => $lessonId]);
+            jsonResponse(['status' => 'success']);
+            break;
+
+        case 'getVideoEditorData':
+            $subjectId = trim((string) ($_GET['subject_id'] ?? ''));
+            if ($subjectId === '') { jsonResponse(['status' => 'error', 'message' => 'Missing subject ID'], 400); }
+
+            $subjectStmt = $conn->prepare("
+                SELECT subjects_id AS id, subjects_name AS name, COALESCE(teachers_id, '') AS teachers_id
+                FROM public.subjects
+                WHERE subjects_id = :id
+                LIMIT 1
+            ");
+            $subjectStmt->execute([':id' => $subjectId]);
+            $subject = $subjectStmt->fetch(PDO::FETCH_ASSOC);
+            if (!$subject) { jsonResponse(['status' => 'error', 'message' => 'ไม่พบรายวิชานี้'], 404); }
+
+            $lessonStmt = $conn->prepare("SELECT lessons_id AS id, lessons_name AS title FROM public.lessons WHERE subjects_id = :subject_id ORDER BY lessons_id ASC");
+            $lessonStmt->execute([':subject_id' => $subjectId]);
+
+            $videoStmt = $conn->prepare("
+                SELECT
+                    v.videos_id AS id,
+                    v.videos_title AS title,
+                    v.videos_url AS url,
+                    COALESCE(v.videos_description, '') AS description,
+                    v.duration_seconds,
+                    v.display_order,
+                    v.lessons_id,
+                    COALESCE(l.lessons_name, '') AS lesson_title
+                FROM public.videos v
+                LEFT JOIN public.lessons l ON l.lessons_id = v.lessons_id
+                WHERE v.subjects_id = :subject_id
+                ORDER BY v.display_order ASC, v.videos_id ASC
+            ");
+            $videoStmt->execute([':subject_id' => $subjectId]);
+
+            jsonResponse([
+                'status' => 'success',
+                'subject' => $subject,
+                'lessons' => fetchAllRows($lessonStmt),
+                'videos' => fetchAllRows($videoStmt),
+            ]);
+            break;
+
+        case 'saveVideo':
+            $subjectId = postValue('subject_id');
+            $videoId = trim((string) ($_POST['id'] ?? ''));
+            $title = postValue('title');
+            if ($subjectId === '' || $title === '') { jsonResponse(['status' => 'error', 'message' => 'กรุณาระบุวิชาและชื่อวิดีโอ'], 400); }
+
+            $subjectStmt = $conn->prepare("SELECT COALESCE(teachers_id, '') AS teachers_id FROM public.subjects WHERE subjects_id = :id LIMIT 1");
+            $subjectStmt->execute([':id' => $subjectId]);
+            $teacherId = $subjectStmt->fetchColumn();
+            if ($teacherId === false) { jsonResponse(['status' => 'error', 'message' => 'ไม่พบรายวิชานี้'], 404); }
+
+            $currentUrl = '';
+            if ($videoId !== '') {
+                $currentStmt = $conn->prepare("SELECT videos_url FROM public.videos WHERE videos_id = :id AND subjects_id = :subject_id LIMIT 1");
+                $currentStmt->execute([':id' => $videoId, ':subject_id' => $subjectId]);
+                $currentUrl = (string) ($currentStmt->fetchColumn() ?: '');
+                if ($currentUrl === '') { jsonResponse(['status' => 'error', 'message' => 'ไม่พบวิดีโอที่ต้องการแก้ไข'], 404); }
+            }
+
+            $upload = uploadLessonFile('video_file', buildVideoMediaSegments((string) $teacherId, $subjectId), 'video');
+            $videoUrl = postValue('url');
+            if ($upload['path'] !== '') {
+                $videoUrl = $upload['path'];
+            } elseif ($videoUrl === '') {
+                $videoUrl = $currentUrl;
+            }
+            if ($videoUrl === '') { jsonResponse(['status' => 'error', 'message' => 'กรุณาอัปโหลดไฟล์วิดีโอหรือระบุลิงก์วิดีโอ'], 400); }
+
+            $lessonId = postValue('lesson_id');
+            if ($lessonId !== '') {
+                $lessonStmt = $conn->prepare("SELECT 1 FROM public.lessons WHERE lessons_id = :lesson_id AND subjects_id = :subject_id");
+                $lessonStmt->execute([':lesson_id' => $lessonId, ':subject_id' => $subjectId]);
+                if (!$lessonStmt->fetchColumn()) { jsonResponse(['status' => 'error', 'message' => 'บทเรียนที่เลือกไม่ได้อยู่ในรายวิชานี้'], 400); }
+            }
+
+            $params = [
+                ':title' => $title,
+                ':url' => $videoUrl,
+                ':description' => postValue('description'),
+                ':duration' => postValue('duration') !== '' ? (int) postValue('duration') : null,
+                ':display_order' => max(1, (int) (postValue('display_order', '1') ?: 1)),
+                ':subject_id' => $subjectId,
+                ':lesson_id' => $lessonId !== '' ? $lessonId : null,
+            ];
+            if ($videoId === '') {
+                $statement = $conn->prepare("INSERT INTO public.videos (videos_title, videos_url, videos_description, duration_seconds, display_order, subjects_id, lessons_id) VALUES (:title, :url, :description, :duration, :display_order, :subject_id, :lesson_id)");
+            } else {
+                $params[':id'] = $videoId;
+                $statement = $conn->prepare("UPDATE public.videos SET videos_title = :title, videos_url = :url, videos_description = :description, duration_seconds = :duration, display_order = :display_order, lessons_id = :lesson_id WHERE videos_id = :id AND subjects_id = :subject_id");
+            }
+            $statement->execute($params);
+            jsonResponse(['status' => 'success']);
+            break;
+
+        case 'deleteVideo':
+            $videoId = trim((string) ($_POST['id'] ?? ''));
+            $subjectId = postValue('subject_id');
+            if ($videoId === '' || $subjectId === '') { jsonResponse(['status' => 'error', 'message' => 'Missing video ID'], 400); }
+            $statement = $conn->prepare("DELETE FROM public.videos WHERE videos_id = :id AND subjects_id = :subject_id");
+            $statement->execute([':id' => $videoId, ':subject_id' => $subjectId]);
             jsonResponse(['status' => 'success']);
             break;
 

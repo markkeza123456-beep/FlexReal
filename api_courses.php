@@ -9,7 +9,23 @@ session_write_close();
 
 function loadLessons(PDO $conn, string $subjectId): array
 {
-    $stmtL = $conn->prepare("SELECT * FROM public.lessons WHERE subjects_id = ? ORDER BY lessons_id ASC");
+    $stmtL = $conn->prepare("
+        SELECT
+            l.*,
+            COALESCE(v.videos_url, '') AS video_path,
+            COALESCE(v.videos_url, '') AS video_url
+        FROM public.lessons l
+        LEFT JOIN LATERAL (
+            SELECT videos_url
+            FROM public.videos
+            WHERE subjects_id = l.subjects_id
+              AND lessons_id = l.lessons_id
+            ORDER BY display_order ASC, videos_id ASC
+            LIMIT 1
+        ) v ON TRUE
+        WHERE l.subjects_id = ?
+        ORDER BY l.lessons_id ASC
+    ");
     $stmtL->execute([$subjectId]);
     $lessons = $stmtL->fetchAll(PDO::FETCH_ASSOC);
 

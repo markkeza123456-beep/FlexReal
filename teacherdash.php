@@ -473,9 +473,12 @@ $stats = [
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <button class="btn-add-lesson" id="openModalBtn" style="font-size:13px;padding:8px 14px" data-subject-id="<?= h($defaultSubjectId) ?>" <?= $defaultSubjectId === '' ? 'disabled' : '' ?>>
-                    <span class="plus">+</span> เพิ่มบทเรียนย่อย
-                </button>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <a class="btn-add-lesson" style="font-size:13px;padding:8px 14px;text-decoration:none" href="teacher_video_editor.php?subject_id=<?= urlencode($defaultSubjectId) ?>" <?= $defaultSubjectId === '' ? 'aria-disabled="true"' : '' ?>>🎬 จัดการวิดีโอ</a>
+                    <button class="btn-add-lesson" id="openModalBtn" style="font-size:13px;padding:8px 14px" data-subject-id="<?= h($defaultSubjectId) ?>" <?= $defaultSubjectId === '' ? 'disabled' : '' ?>>
+                        <span class="plus">+</span> เพิ่มบทเรียนย่อย
+                    </button>
+                </div>
             </div>
 
             <div class="card" id="lessonDetailHeader" style="padding: 24px;">
@@ -712,14 +715,6 @@ $stats = [
                     <div class="form-group">
                         <label>เอกสารประกอบบทเรียน</label>
                         <input type="file" class="form-input" id="lessonDocument" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*">
-                    </div>
-                    <div class="form-group">
-                        <label>วิดีโอประกอบบทเรียน</label>
-                        <input type="file" class="form-input" id="lessonVideoFile" accept="video/*">
-                    </div>
-                    <div class="form-group">
-                        <label>ลิงก์วิดีโอภายนอก</label>
-                        <input type="url" class="form-input" id="lessonVideoUrl" placeholder="https://...">
                     </div>
                     <input type="hidden" id="lessonSubjectId" value="<?= h($defaultSubjectId) ?>">
                 </div>

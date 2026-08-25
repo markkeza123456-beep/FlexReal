@@ -1,6 +1,6 @@
 (() => {
   const params = new URLSearchParams(window.location.search);
-  const subjectId = Number(params.get('subject_id') || 0);
+  const subjectId = (params.get('subject_id') || '').trim();
   const initialSection = params.get('section') || 'subject';
 
   let subject = null;
@@ -21,8 +21,6 @@
   const previewLabel = document.getElementById('previewLabel');
   const documentPreview = document.getElementById('documentPreview');
   const documentPreviewLink = document.getElementById('documentPreviewLink');
-  const videoPreview = document.getElementById('videoPreview');
-  const videoPreviewLink = document.getElementById('videoPreviewLink');
 
   function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
@@ -94,7 +92,6 @@
     lessonFormTitle.textContent = 'เพิ่มบทเรียนใหม่';
     setCurrentImage('');
     setResourcePreview(documentPreview, documentPreviewLink, '', '');
-    setResourcePreview(videoPreview, videoPreviewLink, '', '');
   }
 
   function renderHero() {
@@ -108,6 +105,7 @@
 
     document.getElementById('statSubjectName').textContent = subject.name;
     document.getElementById('statLessonCount').textContent = `${lessons.length} รายการ`;
+    document.getElementById('manageVideosLink').href = `staff_video_editor.php?subject_id=${encodeURIComponent(subject.id)}`;
   }
 
   function renderSubjectForm() {
@@ -135,39 +133,6 @@
             ? `<img src="${escapeHtml(lesson.image_path)}" alt="${escapeHtml(lesson.title)}" class="thumb" />`
             : '<div class="thumb-empty">ไม่มีรูป</div>'}
         </td>
-        <td>${escapeHtml(lesson.title)}</td>
-        <td>
-          ${lesson.video_url
-            ? `<a class="video-link" href="${escapeHtml(lesson.video_url)}" target="_blank" rel="noopener noreferrer">เปิดลิงก์วิดีโอ</a>`
-            : '-'}
-        </td>
-        <td>
-          <div class="action-btns">
-            <button type="button" class="btn-icon" data-edit-lesson="${lesson.id}" title="แก้ไขบทเรียน">✎</button>
-            <button type="button" class="btn-icon danger" data-delete-lesson="${lesson.id}" title="ลบบทเรียน">✖</button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
-  }
-
-  function renderLessons() {
-    if (!lessons.length) {
-      lessonTableBody.innerHTML = `
-        <tr>
-          <td colspan="5" class="empty-cell">ยังไม่มีบทเรียนในรายวิชานี้</td>
-        </tr>
-      `;
-      return;
-    }
-
-    lessonTableBody.innerHTML = lessons.map((lesson) => `
-      <tr>
-        <td>
-          ${lesson.image_path
-            ? `<img src="${escapeHtml(lesson.image_path)}" alt="${escapeHtml(lesson.title)}" class="thumb" />`
-            : '<div class="thumb-empty">ไม่มีรูป</div>'}
-        </td>
         <td>
           <div class="lesson-title-cell">
             <strong>${escapeHtml(lesson.title)}</strong>
@@ -178,13 +143,6 @@
           ${lesson.document_path
             ? `<a class="resource-link document" href="${escapeHtml(lesson.document_path)}" target="_blank" rel="noopener noreferrer">${escapeHtml(lesson.document_name || 'เปิดเอกสาร')}</a>`
             : '<span class="resource-empty">ยังไม่มีเอกสาร</span>'}
-        </td>
-        <td>
-          ${lesson.video_path
-            ? `<a class="resource-link video" href="${escapeHtml(lesson.video_path)}" target="_blank" rel="noopener noreferrer">${escapeHtml(lesson.video_name || 'เปิดวิดีโอ')}</a>`
-            : (lesson.video_url
-              ? `<a class="resource-link video" href="${escapeHtml(lesson.video_url)}" target="_blank" rel="noopener noreferrer">เปิดลิงก์วิดีโอ</a>`
-              : '<span class="resource-empty">ยังไม่มีวิดีโอ</span>')}
         </td>
         <td>
           <div class="action-btns">
@@ -214,7 +172,7 @@
   }
 
   async function loadEditorData() {
-    if (subjectId <= 0) {
+    if (!subjectId) {
       setErrorState('ไม่พบรหัสรายวิชาที่ต้องการแก้ไข');
       return;
     }
@@ -259,7 +217,6 @@
     document.getElementById('lessonId').value = lesson.id;
     document.getElementById('lessonTitle').value = lesson.title || '';
     document.getElementById('lessonContent').value = lesson.content || '';
-    document.getElementById('lessonVideoUrl').value = lesson.video_url || '';
     lessonFormTitle.textContent = `แก้ไขบทเรียน: ${lesson.title}`;
     setCurrentImage(lesson.image_path || '');
     setResourcePreview(
@@ -267,12 +224,6 @@
       documentPreviewLink,
       lesson.document_path || '',
       lesson.document_name || 'ไฟล์เอกสารปัจจุบัน'
-    );
-    setResourcePreview(
-      videoPreview,
-      videoPreviewLink,
-      lesson.video_path || lesson.video_url || '',
-      lesson.video_name || lesson.video_url || 'ไฟล์วิดีโอปัจจุบัน'
     );
     lessonEditor.classList.add('is-highlighted');
     lessonEditor.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -353,7 +304,6 @@
     formData.append('subject_id', subjectId);
     formData.append('title', document.getElementById('lessonTitle').value.trim());
     formData.append('content', document.getElementById('lessonContent').value.trim());
-    formData.append('video_url', document.getElementById('lessonVideoUrl').value.trim());
 
     const imageInput = document.getElementById('lessonImage');
     if (imageInput.files[0]) {
@@ -365,10 +315,6 @@
       formData.append('document', documentInput.files[0]);
     }
 
-    const videoInput = document.getElementById('lessonVideoFile');
-    if (videoInput.files[0]) {
-      formData.append('video_file', videoInput.files[0]);
-    }
 
     try {
       const response = await fetch('api_staff.php', {
