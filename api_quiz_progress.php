@@ -3,7 +3,7 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/db_connect.php';
 
-const QUIZ_PASS_RATIO = 0.8;
+const QUIZ_PASS_RATIO = 1.0;
 
 function jsonResponse(array $payload, int $statusCode = 200): void
 {

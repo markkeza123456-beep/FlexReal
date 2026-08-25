@@ -14,7 +14,7 @@ const submitBtn = document.getElementById('submitBtn');
 const quizActions = document.querySelector('.quiz-actions');
 const resultBox = document.getElementById('resultBox');
 const backToCourse = document.getElementById('backToCourse');
-const QUIZ_PASS_RATIO = 0.8;
+const QUIZ_PASS_RATIO = 1.0;
 const REQUEST_TIMEOUT_MS = 8000;
 
 let quiz = { subtitle: '', questions: [] };
@@ -323,6 +323,8 @@ prevBtn.addEventListener('click', () => {
 
 submitBtn.addEventListener('click', () => {
     if (!quizForm.hidden) {
+        // บันทึกค่าจากฟอร์มปัจจุบันก่อนตรวจ โดยเฉพาะข้อเขียนข้อสุดท้าย
+        saveCurrentAnswer();
         const item = quiz.questions[currentQuestion];
         if (isEssayQuestion(item)) {
             if (!String(answers[currentQuestion] || '').trim()) {

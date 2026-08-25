@@ -135,13 +135,9 @@ try {
         exit;
     }
 
-    // คำถามที่อาจารย์เพิ่มอยู่ใน test_questions จึงต้องแสดงก่อนชุดคำถามเก่า
+    // ตารางหลักเพียงตารางเดียวสำหรับคำถามที่อาจารย์เพิ่ม ทั้งปรนัยและข้อเขียน
     $rows = loadFromTestQuestions($conn, $lessonId);
     $fromQuizQuestions = false;
-    if (empty($rows)) {
-        $rows = loadFromQuizQuestions($conn, $subjectId, $lessonNo);
-        $fromQuizQuestions = true;
-    }
 
     if (empty($rows)) {
         echo json_encode(['status' => 'error', 'message' => 'ยังไม่มีข้อสอบของบทนี้'], JSON_UNESCAPED_UNICODE);

@@ -139,14 +139,7 @@ function inferQuestionType(array $optionValues, string $correctAnswer): string
 
 function loadQuestionsForScoring(PDO $conn, string $subjectId, int $lessonIndex, string $lessonId): array
 {
-    $qCols     = tableColumns($conn, 'public', 'quiz_questions');
-    $answerCol = 'correct_answer';
-    if (!in_array($answerCol, $qCols, true)) {
-        $answerCol = in_array('correct_option', $qCols, true) ? 'correct_option'
-                   : (in_array('answer', $qCols, true)       ? 'answer' : "''");
-    }
-
-    // ต้องใช้แหล่งเดียวกับ api_quiz: คำถามที่อาจารย์เพิ่มใน test_questions มาก่อน
+    // ตารางหลักเพียงตารางเดียวสำหรับข้อสอบทุกประเภท รวมข้อเขียน
     $stmt2 = $conn->prepare(
         "SELECT questions_id AS qid, correct_answer, choice_a AS option_a, choice_b AS option_b, choice_c AS option_c, choice_d AS option_d
          FROM public.test_questions
@@ -154,20 +147,10 @@ function loadQuestionsForScoring(PDO $conn, string $subjectId, int $lessonIndex,
          ORDER BY questions_id ASC"
     );
     $stmt2->execute([$lessonId]);
-    $rows = $stmt2->fetchAll(PDO::FETCH_ASSOC);
-    if (!empty($rows)) return ['source' => 'test_questions', 'rows' => $rows];
-
-    $stmt = $conn->prepare(
-        "SELECT quiz_id AS qid, {$answerCol} AS correct_answer, option_a, option_b, option_c, option_d
-         FROM public.quiz_questions
-         WHERE subjects_id = :sid AND lesson_no = :lno
-         ORDER BY quiz_id ASC"
-    );
-    $stmt->execute([':sid' => $subjectId, ':lno' => $lessonIndex]);
-    return ['source' => 'quiz_questions', 'rows' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
+    return ['source' => 'test_questions', 'rows' => $stmt2->fetchAll(PDO::FETCH_ASSOC)];
 }
 
-const QUIZ_PASS_RATIO = 0.8;
+const QUIZ_PASS_RATIO = 1.0;
 
 $payload = json_decode((string) file_get_contents('php://input'), true);
 if (!is_array($payload)) {
@@ -321,6 +304,10 @@ try {
             "INSERT INTO public.test_answers (questions_id, test_id, selected_choice) VALUES (?, ?, ?)"
         );
         foreach ($questions as $index => $q) {
+            $options = [(string) ($q['option_a'] ?? ''), (string) ($q['option_b'] ?? ''), (string) ($q['option_c'] ?? ''), (string) ($q['option_d'] ?? '')];
+            if (inferQuestionType($options, (string) ($q['correct_answer'] ?? '')) === 'essay') {
+                continue; // ข้อเขียนเก็บใน essay_submissions ซึ่งรองรับข้อความยาว
+            }
             $selected = '-';
             if (array_key_exists($index, $answers) && $answers[$index] !== null) {
                 if (is_numeric($answers[$index])) {
