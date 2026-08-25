@@ -97,6 +97,25 @@ function resolveCorrectLetter(string $rawCorrect, array $optionValues): string
     return '';
 }
 
+function inferQuestionType(array $optionValues, string $correctAnswer): string
+{
+    $normalizedOptions = array_values(array_filter(array_map(static function ($value) {
+        return trim((string) $value);
+    }, $optionValues), static function ($value) {
+        return $value !== '' && $value !== '-';
+    }));
+
+    if (empty($normalizedOptions)) {
+        return 'essay';
+    }
+
+    if (count($normalizedOptions) === 2) {
+        return 'truefalse';
+    }
+
+    return 'choice';
+}
+
 function loadQuestionsForScoring(PDO $conn, string $subjectId, int $lessonIndex, string $lessonId): array
 {
     $qCols     = tableColumns($conn, 'public', 'quiz_questions');
@@ -171,7 +190,7 @@ try {
     $questionPayload = loadQuestionsForScoring($conn, $subjectId, $lessonIndex, $lessonId);
     $questions       = $questionPayload['rows'];
     $questionSource  = $questionPayload['source'];
-    $totalScore      = count($questions);
+    $totalScore      = 0;
     $score           = 0;
     $choiceMap       = [0 => 'A', 1 => 'B', 2 => 'C', 3 => 'D'];
 
@@ -185,6 +204,12 @@ try {
             (string) ($q['option_c'] ?? ''),
             (string) ($q['option_d'] ?? ''),
         ];
+        $questionType = inferQuestionType($optionValues, (string) ($q['correct_answer'] ?? ''));
+        $rawCorrect = trim((string) ($q['correct_answer'] ?? ''));
+        $isScoreable = $questionType !== 'essay' || ($rawCorrect !== '' && $rawCorrect !== '-');
+        if ($isScoreable) {
+            $totalScore++;
+        }
         if (array_key_exists($index, $answers) && $answers[$index] !== null) {
             if (is_numeric($answers[$index])) {
                 $selectedIndex = (int) $answers[$index];
@@ -196,8 +221,13 @@ try {
             }
         }
 
-        $rawCorrect = trim((string) ($q['correct_answer'] ?? ''));
         if ($rawCorrect === '' || $rawCorrect === '-') {
+            if (!$isScoreable) {
+                continue;
+            }
+            if ($questionType === 'essay') {
+                continue;
+            }
             continue;
         }
 
@@ -209,7 +239,7 @@ try {
             continue;
         }
 
-        if (normalizeAnswerText($selectedText) === normalizeAnswerText($rawCorrect)) {
+        if ($isScoreable && normalizeAnswerText($selectedText) === normalizeAnswerText($rawCorrect)) {
             $score++;
         }
     }

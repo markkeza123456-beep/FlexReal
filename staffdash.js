@@ -109,6 +109,14 @@
     };
   }
 
+  function formatPlainNumber(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      return '0';
+    }
+    return String(Math.trunc(numeric));
+  }
+
   window.goTo = function goTo(page) {
     if (!document.getElementById(`page-${page}`)) {
       page = 'dashboard';
@@ -189,9 +197,9 @@
     const subjectStat = document.getElementById('stat-subject');
     const memberStat = document.getElementById('stat-student');
 
-    if (curriculumStat) curriculumStat.textContent = String(curricula.length);
-    if (subjectStat) subjectStat.textContent = String(subjects.length);
-    if (memberStat) memberStat.textContent = String(members.length);
+    if (curriculumStat) curriculumStat.textContent = formatPlainNumber(curricula.length);
+    if (subjectStat) subjectStat.textContent = formatPlainNumber(subjects.length);
+    if (memberStat) memberStat.textContent = formatPlainNumber(members.length);
 
     renderDashboardTables();
   }
@@ -221,7 +229,7 @@
           <tr>
             <td class="mono" style="color:var(--orange);">${s.code || s.id}</td>
             <td>${s.name}</td>
-            <td>${s.credit}</td>
+            <td>${formatPlainNumber(s.credit)}</td>
           </tr>
         `).join('')
         : '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text-muted);">ยังไม่มีข้อมูล</td></tr>';
@@ -426,7 +434,7 @@
         <tr>
           <td class="mono">${subject.code}</td>
           <td>${subject.name}</td>
-          <td>${subject.credit}</td>
+          <td>${formatPlainNumber(subject.credit)}</td>
           <td><span class="badge ${subject.type === 'required' ? 'required' : 'elective'}">${subject.type === 'required' ? 'บังคับ' : 'วิชาเลือก'}</span></td>
           <td style="color:var(--orange); font-weight:500;">${subject.teacher_name || 'ยังไม่มีผู้ดูแล'}</td>
           <td>

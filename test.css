@@ -157,6 +157,46 @@ body {
     accent-color: var(--orange);
 }
 
+.essay-card {
+    display: grid;
+    gap: 10px;
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fffdfb;
+}
+
+.essay-label {
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.essay-input {
+    width: 100%;
+    min-height: 180px;
+    resize: vertical;
+    border: 1px solid #e7d8cc;
+    border-radius: 12px;
+    padding: 14px 16px;
+    font: inherit;
+    line-height: 1.7;
+    color: var(--ink);
+    background: #fff;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.essay-input:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(244, 81, 30, 0.12);
+}
+
+.essay-note {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
 .quiz-actions {
     display: flex;
     justify-content: space-between;

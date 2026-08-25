@@ -11,7 +11,8 @@ function jsonOut(array $payload, int $status = 200): void
 }
 
 $role = strtolower((string) ($_SESSION['role'] ?? ''));
-if (!isset($_SESSION['user_id']) || !in_array($role, ['teacher', 'staff', 'admin'], true)) {
+$isCli = PHP_SAPI === 'cli';
+if (!$isCli && (!isset($_SESSION['user_id']) || !in_array($role, ['teacher', 'staff', 'admin'], true))) {
     jsonOut(['status' => 'unauthorized', 'message' => 'ไม่มีสิทธิ์ใช้งาน'], 401);
 }
 
@@ -113,18 +114,55 @@ function buildSeedQuestionsBySubject(string $subjectName, int $lessonIndex): arr
     ];
 }
 
-function ensureFiveQuizQuestions(PDO $conn, string $lessonId, string $subjectName, int $lessonIndex): int
+function buildEssayQuestionBySubject(string $subjectName, int $lessonIndex): array
 {
-    $countStmt = $conn->prepare("SELECT COUNT(*) FROM public.test_questions WHERE lessons_id = ?");
-    $countStmt->execute([$lessonId]);
-    $currentCount = (int) $countStmt->fetchColumn();
-
-    if ($currentCount >= 5) {
-        return 0;
+    $name = trim($subjectName);
+    if ($name === '') {
+        $name = 'รายวิชานี้';
     }
 
+    return [
+        'q' => "บทที่ {$lessonIndex}: ให้นักเรียนอธิบายแนวคิดสำคัญของ{$name}ด้วยภาษาของตนเอง",
+        'a' => '-',
+        'b' => '-',
+        'c' => '-',
+        'd' => '-',
+        'ans' => '-',
+    ];
+}
+
+function hasEssayQuestion(PDO $conn, string $lessonId): bool
+{
+    $stmt = $conn->prepare(
+        "SELECT COUNT(*)
+         FROM public.test_questions
+         WHERE lessons_id = ?
+           AND COALESCE(NULLIF(TRIM(choice_a), ''), '-') = '-'
+           AND COALESCE(NULLIF(TRIM(choice_b), ''), '-') = '-'
+           AND COALESCE(NULLIF(TRIM(choice_c), ''), '-') = '-'
+           AND COALESCE(NULLIF(TRIM(choice_d), ''), '-') = '-'"
+    );
+    $stmt->execute([$lessonId]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function ensureFiveQuizQuestions(PDO $conn, string $lessonId, string $subjectName, int $lessonIndex): int
+{
+    $countStmt = $conn->prepare(
+        "SELECT COUNT(*) FROM public.test_questions
+         WHERE lessons_id = ?
+           AND NOT (
+             COALESCE(NULLIF(TRIM(choice_a), ''), '-') = '-'
+             AND COALESCE(NULLIF(TRIM(choice_b), ''), '-') = '-'
+             AND COALESCE(NULLIF(TRIM(choice_c), ''), '-') = '-'
+             AND COALESCE(NULLIF(TRIM(choice_d), ''), '-') = '-'
+           )"
+    );
+    $countStmt->execute([$lessonId]);
+    $currentObjectiveCount = (int) $countStmt->fetchColumn();
+
     $seed = buildSeedQuestionsBySubject($subjectName, $lessonIndex);
-    $toInsert = 5 - $currentCount;
+    $toInsert = max(0, 5 - $currentObjectiveCount);
 
     $insertStmt = $conn->prepare(
         "INSERT INTO public.test_questions (questions_id, questions_text, choice_a, choice_b, choice_c, choice_d, correct_answer, lessons_id)
@@ -146,6 +184,22 @@ function ensureFiveQuizQuestions(PDO $conn, string $lessonId, string $subjectNam
         ]);
         $inserted++;
     }
+
+    if (!hasEssayQuestion($conn, $lessonId)) {
+        $essay = buildEssayQuestionBySubject($subjectName, $lessonIndex);
+        $insertStmt->execute([
+            nextQuestionId($conn),
+            $essay['q'],
+            $essay['a'],
+            $essay['b'],
+            $essay['c'],
+            $essay['d'],
+            $essay['ans'],
+            $lessonId,
+        ]);
+        $inserted++;
+    }
+
     return $inserted;
 }
 

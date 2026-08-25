@@ -425,7 +425,6 @@ function getCurrentAssignmentList() {
 function selectAssignment(assignmentId) {
     currentAssignmentId = String(assignmentId || '');
     saveStoredAssignmentSelection(currentAssignmentId);
-    renderAssignmentPanels();
 }
 
 function getActiveAssignment() {
@@ -715,7 +714,6 @@ function saveAssignmentFromComposer() {
     saveStoredAssignments(assignments);
     saveStoredAssignmentSelection(assignments[0].id);
     closeModal();
-    renderAssignmentPanels();
 }
 
 function submitAssignmentFromSidebar(scope) {
@@ -748,7 +746,6 @@ function submitAssignmentFromSidebar(scope) {
     };
     saveStoredSubmissions(submissions);
     currentAssignmentSubmissions = submissions;
-    renderAssignmentPanels();
     alert('ส่งงานเรียบร้อยแล้ว');
 }
 
@@ -1113,7 +1110,6 @@ async function showCourse(subjectId) {
             currentPassedLessons = new Set();
             applyCourseProgressSummary(null);
             renderAllLessonAccordions();
-            renderAssignmentPanels();
 
             openTab({ currentTarget: document.querySelector('.tab-btn') }, 'overview');
             
@@ -1137,7 +1133,6 @@ function goToCourseLearning() {
     document.getElementById('learning-desc').innerText = document.getElementById('detail-desc').innerText;
     document.getElementById('learning-duration').innerText = document.getElementById('detail-duration').innerText;
     renderAllLessonAccordions();
-    renderAssignmentPanels();
     showPage('course-learning');
     openLearningTab({ currentTarget: document.querySelector("#course-learning .tab-btn[onclick*='learning-curriculum']") }, 'learning-curriculum');
     recordLearningEvent('course_enter', 1);

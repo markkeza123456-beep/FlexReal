@@ -38,22 +38,47 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEO
     }
 }
 
+function isEssayQuestion(item) {
+    return String(item?.type || '').toLowerCase() === 'essay';
+}
+
+function isScoreableQuestion(item) {
+    if (!item) return false;
+    if (isEssayQuestion(item)) {
+        const answerText = String(item.answer_text || '').trim();
+        return answerText !== '' && answerText !== '-';
+    }
+    return Number(item.answer) >= 0;
+}
+
 function renderQuestion() {
     const item = quiz.questions[currentQuestion];
     progressText.innerText = `ข้อ ${currentQuestion + 1} จาก ${quiz.questions.length}`;
     progressFill.style.width = `${((currentQuestion + 1) / quiz.questions.length) * 100}%`;
 
-    quizForm.innerHTML = `
-        <h2 class="question-title">${currentQuestion + 1}. ${item.question}</h2>
-        <div class="option-list">
-            ${item.options.map((option, index) => `
-                <label class="option-card">
-                    <input type="radio" name="answer" value="${index}" ${answers[currentQuestion] === index ? 'checked' : ''}>
-                    <span>${option}</span>
-                </label>
-            `).join('')}
-        </div>
-    `;
+    if (isEssayQuestion(item)) {
+        const savedText = typeof answers[currentQuestion] === 'string' ? answers[currentQuestion] : '';
+        quizForm.innerHTML = `
+            <h2 class="question-title">${currentQuestion + 1}. ${item.question}</h2>
+            <div class="essay-card">
+                <label class="essay-label" for="essayAnswerInput">พิมพ์คำตอบของคุณ</label>
+                <textarea id="essayAnswerInput" class="essay-input" rows="6" placeholder="พิมพ์คำตอบข้อเขียนที่นี่...">${savedText}</textarea>
+                <p class="essay-note">ข้อเขียนจะเก็บคำตอบไว้และนำไปใช้ประกอบการตรวจ</p>
+            </div>
+        `;
+    } else {
+        quizForm.innerHTML = `
+            <h2 class="question-title">${currentQuestion + 1}. ${item.question}</h2>
+            <div class="option-list">
+                ${item.options.map((option, index) => `
+                    <label class="option-card">
+                        <input type="radio" name="answer" value="${index}" ${answers[currentQuestion] === index ? 'checked' : ''}>
+                        <span>${option}</span>
+                    </label>
+                `).join('')}
+            </div>
+        `;
+    }
 
     prevBtn.disabled = currentQuestion === 0;
     nextBtn.hidden = currentQuestion === quiz.questions.length - 1;
@@ -61,11 +86,19 @@ function renderQuestion() {
 }
 
 function saveCurrentAnswer() {
+    const item = quiz.questions[currentQuestion];
+    if (isEssayQuestion(item)) {
+        const textArea = document.getElementById('essayAnswerInput');
+        const value = String(textArea?.value || '').trim();
+        answers[currentQuestion] = value || null;
+        return;
+    }
+
     const selected = quizForm.querySelector('input[name="answer"]:checked');
     answers[currentQuestion] = selected ? Number(selected.value) : null;
 }
 
-async function saveTestResult(score) {
+async function saveTestResult(score, totalScore = quiz.questions.length) {
     const response = await fetchJsonWithTimeout('test_submit.php', {
         method: 'POST',
         credentials: 'same-origin',
@@ -76,7 +109,7 @@ async function saveTestResult(score) {
             lesson_index: lessonIndex,
             lesson_no: lessonIndex,
             score,
-            total_score: quiz.questions.length,
+            total_score: totalScore,
             answers
         })
     });
@@ -88,14 +121,25 @@ function renderAnswerKey() {
         <div class="answer-key">
             <h3>เฉลยข้อสอบ</h3>
             ${quiz.questions.map((item, index) => {
-                const correctIndex = item.answer;
+                const correctIndex = Number(item.answer);
                 const selectedIndex = answers[index];
-                const isCorrect = selectedIndex === correctIndex;
+                const isEssay = isEssayQuestion(item);
+                const essayAnswerText = String(item.answer_text || '').trim();
+                const isCorrect = !isEssay && selectedIndex === correctIndex;
                 return `
                     <div class="answer-item ${isCorrect ? 'is-correct' : 'is-wrong'}">
                         <b>ข้อ ${index + 1}: ${item.question}</b>
-                        <p>คำตอบที่ถูก: ${item.options[correctIndex]}</p>
-                        <p>คำตอบของคุณ: ${selectedIndex === null ? 'ไม่ได้ตอบ' : item.options[selectedIndex]}</p>
+                        ${isEssay
+                            ? `<p>คำตอบที่ถูก: ${essayAnswerText && essayAnswerText !== '-' ? essayAnswerText : 'รอครูตรวจ'}</p>`
+                            : `<p>คำตอบที่ถูก: ${item.options[correctIndex]}</p>`
+                        }
+                        <p>คำตอบของคุณ: ${
+                            selectedIndex === null || selectedIndex === undefined || selectedIndex === ''
+                                ? 'ไม่ได้ตอบ'
+                                : isEssay
+                                    ? selectedIndex
+                                    : item.options[selectedIndex]
+                        }</p>
                     </div>
                 `;
             }).join('')}
@@ -122,16 +166,26 @@ function bindResultAction(isPassed) {
 
 async function showResult() {
     saveCurrentAnswer();
-    const score = answers.reduce((total, answer, index) => total + (answer === quiz.questions[index].answer ? 1 : 0), 0);
-    const requiredScore = Math.max(1, Math.ceil(quiz.questions.length * QUIZ_PASS_RATIO));
+    const scorableQuestions = quiz.questions.filter((item) => isScoreableQuestion(item));
+    const essayCount = quiz.questions.filter((item) => isEssayQuestion(item) && !isScoreableQuestion(item)).length;
+    const score = scorableQuestions.reduce((total, item, index) => {
+        const answer = answers[quiz.questions.indexOf(item)];
+        return total + (
+            answer === item.answer || String(answer || '').trim() === String(item.answer_text || '').trim()
+                ? 1
+                : 0
+        );
+    }, 0);
+    const requiredScore = Math.max(1, Math.ceil(scorableQuestions.length * QUIZ_PASS_RATIO));
     const isPassed = score >= requiredScore;
 
     resultBox.hidden = false;
     resultBox.innerHTML = `
         <h2>ผลคะแนน</h2>
-        <p>คุณได้ <span class="score">${score}/${quiz.questions.length}</span> คะแนน</p>
+        <p>คุณได้ <span class="score">${score}/${scorableQuestions.length}</span> คะแนน</p>
         <p>${isPassed ? 'ผ่านเกณฑ์แล้ว สามารถกลับไปหน้ารายวิชาได้' : 'ยังไม่ผ่านเกณฑ์ กรุณาทำซ้ำบทเดิมอีกครั้ง'}</p>
         <p>เกณฑ์ผ่าน: ${requiredScore} คะแนน</p>
+        ${essayCount > 0 ? `<p>มีข้อเขียน ${essayCount} ข้อ รอครูตรวจ</p>` : ''}
         ${isPassed ? renderAnswerKey() : ''}
         <p id="saveStatus">กำลังบันทึกผลแบบทดสอบ...</p>
         ${renderResultActionButton(isPassed)}
@@ -145,11 +199,11 @@ async function showResult() {
     if (quizActions) quizActions.hidden = true;
 
     const saveStatus = document.getElementById('saveStatus');
-    window.__lastQuizSaveResult = { ok: false, status: 'pending', score, totalScore: quiz.questions.length };
+    window.__lastQuizSaveResult = { ok: false, status: 'pending', score, totalScore: scorableQuestions.length };
     try {
-        const result = await saveTestResult(score);
+        const result = await saveTestResult(score, scorableQuestions.length);
         if (result.status === 'unauthorized') {
-            window.__lastQuizSaveResult = { ok: false, status: 'unauthorized', error: result.message || 'unauthorized', score, totalScore: quiz.questions.length };
+            window.__lastQuizSaveResult = { ok: false, status: 'unauthorized', error: result.message || 'unauthorized', score, totalScore: scorableQuestions.length };
             saveStatus.innerText = '';
             console.warn('[quiz-save] unauthorized', result.message || '');
             return;
@@ -160,7 +214,7 @@ async function showResult() {
                 ok: true,
                 status: result.quiz_status || 'success',
                 score,
-                totalScore: quiz.questions.length,
+                totalScore: scorableQuestions.length,
                 requiredScore,
             };
             saveStatus.innerText = 'บันทึกผลแล้ว';
@@ -176,7 +230,7 @@ async function showResult() {
                 status: result.status || 'error',
                 error: result.message || 'save_failed',
                 score,
-                totalScore: quiz.questions.length,
+                totalScore: scorableQuestions.length,
             };
             saveStatus.innerText = '';
             console.warn('[quiz-save] failed', window.__lastQuizSaveResult);
@@ -187,7 +241,7 @@ async function showResult() {
             status: 'exception',
             error: error?.message || String(error),
             score,
-            totalScore: quiz.questions.length,
+            totalScore: scorableQuestions.length,
         };
         saveStatus.innerText = '';
         console.error('[quiz-save] exception', error);
@@ -240,7 +294,13 @@ async function loadQuizFromDatabase() {
 
 nextBtn.addEventListener('click', () => {
     saveCurrentAnswer();
-    if (answers[currentQuestion] === null) {
+    const item = quiz.questions[currentQuestion];
+    if (isEssayQuestion(item)) {
+        if (!String(answers[currentQuestion] || '').trim()) {
+            alert('กรุณาพิมพ์คำตอบก่อน');
+            return;
+        }
+    } else if (answers[currentQuestion] === null) {
         alert('กรุณาเลือกคำตอบก่อน');
         return;
     }
@@ -256,7 +316,13 @@ prevBtn.addEventListener('click', () => {
 
 submitBtn.addEventListener('click', () => {
     if (!quizForm.hidden) {
-        if (quizForm.querySelector('input[name="answer"]:checked') === null) {
+        const item = quiz.questions[currentQuestion];
+        if (isEssayQuestion(item)) {
+            if (!String(answers[currentQuestion] || '').trim()) {
+                alert('กรุณาพิมพ์คำตอบก่อน');
+                return;
+            }
+        } else if (quizForm.querySelector('input[name="answer"]:checked') === null) {
             alert('กรุณาเลือกคำตอบก่อน');
             return;
         }

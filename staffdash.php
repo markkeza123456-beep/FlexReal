@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <?php
 session_start();
-$displayName    = $_SESSION['name'] ?? 'Staff Account';
+$displayName    = $_SESSION['name'] ?? 'บัญชีเจ้าหน้าที่';
 $displayRole    = 'เจ้าหน้าที่';
 $avatarInitials = 'ST';
 
@@ -20,7 +20,7 @@ if (!empty($_SESSION['name'])) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Staff Dashboard | NEXORA</title>
+  <title>แดชบอร์ดเจ้าหน้าที่ | Flexible Learning Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -155,7 +155,7 @@ if (!empty($_SESSION['name'])) {
         <div class="page-header">
           <div>
             <div class="page-title">แดชบอร์ด</div>
-            <div class="page-sub">ภาพรวมระบบ NEXORA Staff Panel</div>
+            <div class="page-sub">ภาพรวมระบบเจ้าหน้าที่</div>
           </div>
         </div>
 

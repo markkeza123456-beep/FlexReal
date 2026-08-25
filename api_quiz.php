@@ -49,6 +49,25 @@ function resolveAnswerIndex(string $rawCorrect, array $options): int
     return 0;
 }
 
+function inferQuestionType(array $options, string $correctAnswer): string
+{
+    $normalizedOptions = array_values(array_filter(array_map(static function ($value) {
+        return trim((string) $value);
+    }, $options), static function ($value) {
+        return $value !== '' && $value !== '-';
+    }));
+
+    if (empty($normalizedOptions)) {
+        return 'essay';
+    }
+
+    if (count($normalizedOptions) === 2) {
+        return 'truefalse';
+    }
+
+    return 'choice';
+}
+
 function loadLessons(PDO $conn, string $subjectId): array
 {
     $stmt = $conn->prepare("SELECT lessons_id, lessons_name, study_hours, subjects_id FROM public.lessons WHERE subjects_id = ? ORDER BY lessons_id ASC");
@@ -137,12 +156,16 @@ try {
         $d = $fromQuizQuestions ? (string) ($q['option_d'] ?? '') : (string) ($q['choice_d'] ?? '');
 
         $options = [$a, $b, $c, $d];
-        $answerIndex = resolveAnswerIndex((string) ($q['correct_answer'] ?? ''), $options);
+        $correctAnswer = (string) ($q['correct_answer'] ?? '');
+        $questionType = inferQuestionType($options, $correctAnswer);
+        $answerIndex = $questionType === 'essay' ? -1 : resolveAnswerIndex($correctAnswer, $options);
 
         $formatted[] = [
             'question' => $questionText,
             'options' => $options,
-            'answer' => $answerIndex
+            'answer' => $answerIndex,
+            'type' => $questionType,
+            'answer_text' => $questionType === 'essay' ? $correctAnswer : '',
         ];
     }
 
