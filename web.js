@@ -266,7 +266,7 @@ function renderLessonAccordion(containerId) {
                 <div class="curriculum-list">
                     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 10px;">
                         <span style="padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;color:${status.color};background:${status.bg};">สถานะ: ${status.label}</span>
-                        <span style="font-size:12px;color:#2c3e50;">คะแนน: ${status.scoreText}</span>
+                        <span style="font-size:12px;color:#2c3e50;">คะแนนบทนี้: ${status.scoreText}</span>
                     </div>
                     ${!canAccessLesson(lesson.index) ? `<p style="margin:0 0 8px;color:#d35400;font-size:13px;">${getLessonLockMessage(lesson.index)}</p>` : ''}
                     <div class="curriculum-item">
@@ -792,13 +792,7 @@ function getCompletedLessonSet() {
 }
 
 function syncProgressDisplay() {
-    const progressText = `${getAutoQuizProgressPercent().toFixed(1)}%`;
-    const scoreText = `${Number(currentProgressSummary?.best_score_percent || 0).toFixed(1)}%`;
     currentPassedLessons = getCompletedLessonSet();
-    setText('detail-progress', progressText);
-    setText('detail-score', scoreText);
-    setText('learning-progress', progressText);
-    setText('learning-score', scoreText);
 }
 
 function applyCourseProgressSummary(summary) {
@@ -1085,7 +1079,8 @@ async function showCourse(subjectId) {
         setEnrollmentButtonLoading();
         setCurriculumAccess(false);
     }
-    checkCourseEnrollment(subjectId);
+    // รอผลการตรวจการลงทะเบียนก่อนตัดสินใจว่าจะเปิดหน้าเรียนทันทีหรือไม่
+    const enrollmentCheck = checkCourseEnrollment(subjectId);
     
     try {
         const response = await fetchJsonWithTimeout(`api_courses.php?action=get_detail&id=${subjectId}`);
@@ -1116,6 +1111,12 @@ async function showCourse(subjectId) {
             const url = new URL(window.location.href);
             url.searchParams.set('subject_id', subjectId);
             window.history.replaceState({}, '', url);
+
+            // ผู้ที่ลงทะเบียนแล้วไม่ต้องกดปุ่ม “เข้าเรียน” ซ้ำ
+            const isEnrolled = await enrollmentCheck;
+            if (requestedSubjectId === currentSubjectId && isEnrolled) {
+                goToCourseLearning();
+            }
         } else {
             alert('ไม่พบข้อมูลรายวิชา: ' + result.message);
         }

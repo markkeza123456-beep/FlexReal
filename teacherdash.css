@@ -567,6 +567,9 @@ html, body {
     font-weight: 600 !important;
 }
 
+.essay-filter-btn { border:1px solid var(--border); background:var(--bg3); color:var(--text-dim); border-radius:999px; padding:7px 12px; font:500 12px 'Kanit',sans-serif; cursor:pointer; }
+.essay-filter-btn.active { background:var(--orange-dim); color:var(--orange); border-color:var(--orange); }
+
 #backToLessonsBtn:hover {
     background: var(--bg3) !important;
     border-color: #444 !important;

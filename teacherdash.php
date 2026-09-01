@@ -244,7 +244,7 @@ $quizzes = [];
 $defaultSubjectId = $selectedSubjectId;
 if ($defaultSubjectId) {
     $quizStmt = $conn->prepare("
-        SELECT tq.questions_id, tq.questions_text, tq.choice_a, tq.choice_b, tq.choice_c, tq.choice_d, tq.correct_answer, l.lessons_name 
+        SELECT tq.questions_id, tq.questions_text, tq.choice_a, tq.choice_b, tq.choice_c, tq.choice_d, tq.correct_answer, tq.lessons_id, l.lessons_name 
         FROM public.test_questions tq
         INNER JOIN public.lessons l ON tq.lessons_id = l.lessons_id
         WHERE l.subjects_id = :subject_id
@@ -634,70 +634,41 @@ $stats = [
 
             <div class="lesson-tab-content card" id="lessonTab-quiz" style="display:none">
                 <div class="card-header">
-                    <h3 class="card-title" style="font-size:14px">คลังแบบทดสอบทั้งหมดในวิชานี้</h3>
+                    <h3 class="card-title" style="font-size:14px">คลังแบบทดสอบแยกตามบทเรียน</h3>
                 </div>
                 <div id="quizList" style="display:flex;flex-direction:column;gap:12px;">
-                    <?php if (empty($quizzes)): ?>
-                        <div id="quizEmpty" style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px; border: 1px dashed var(--border); border-radius: var(--radius-sm);">
-                            <div style="font-size:32px;margin-bottom:10px;">🧪</div>
-                            ยังไม่มีคำถามในระบบ — กรุณาไปที่แท็บ "ภาพรวม" แล้วกด "+ เพิ่มแบบทดสอบ" ในบทเรียนย่อยที่ต้องการ
-                        </div>
-                    <?php else: ?>
-                        <?php foreach($quizzes as $i => $q): 
-                            $qType = 'choice';
-                            $qLabel = 'ปรนัย (4 ตัวเลือก)';
-                            if ($q['correct_answer'] === '-') {
-                                $qType = 'essay';
-                                $qLabel = 'อัตนัย (ข้อเขียน)';
-                            } elseif ($q['choice_a'] === 'ถูก' || $q['choice_a'] === 'ถูก (True)') {
-                                $qType = 'truefalse';
-                                $qLabel = 'ถูก/ผิด';
-                            }
-                        ?>
-                        <div class="quiz-item" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
-                            <div style="display:flex; gap:12px; flex:1; min-width:0;">
-                                <div class="mono" style="font-size:12px;color:var(--orange);width:24px;flex-shrink:0;padding-top:2px;font-weight:600;">Q<?= $i+1 ?></div>
-                                <div>
-                                    <div style="font-size:14px;color:var(--text);line-height:1.5;margin-bottom:6px;"><?= h($q['questions_text']) ?></div>
-                                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                                        <span class="badge badge-draft" style="font-size:10.5px;"><?= $qLabel ?></span>
-                                        <span style="font-size:11.5px;color:var(--text-muted)">จาก: <?= h($q['lessons_name']) ?></span>
-                                        
-                                        <?php if($qType === 'choice' || $qType === 'truefalse'): ?>
-                                            <span style="font-size:11.5px;color:var(--text-dim); background:rgba(255,255,255,0.05); padding: 2px 8px; border-radius:4px;">
-                                                เฉลย: <span style="color:#10b981;font-weight:600;">
-                                                    <?php 
-                                                        $ans = $q['correct_answer'];
-                                                        if($ans === 'A') echo 'A. ' . h($q['choice_a']);
-                                                        elseif($ans === 'B') echo 'B. ' . h($q['choice_b']);
-                                                        elseif($ans === 'C') echo 'C. ' . h($q['choice_c']);
-                                                        elseif($ans === 'D') echo 'D. ' . h($q['choice_d']);
-                                                        else echo $ans;
-                                                    ?>
-                                                </span>
-                                            </span>
-                                        <?php elseif($qType === 'essay'): ?>
-                                            <span style="font-size:11.5px;color:#facc15; background:rgba(234,179,8,0.1); padding: 2px 8px; border-radius:4px;">รออาจารย์ตรวจ</span>
-                                        <?php endif; ?>
+                    <?php
+                    $quizzesByLesson = [];
+                    foreach ($quizzes as $quiz) $quizzesByLesson[(string) $quiz['lessons_id']][] = $quiz;
+                    $lessonGroups = $subLessonsBySubject[$defaultSubjectId] ?? [];
+                    ?>
+                    <?php if (empty($lessonGroups)): ?>
+                        <div id="quizEmpty" style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px; border:1px dashed var(--border);border-radius:var(--radius-sm);">ยังไม่มีบทเรียนย่อยสำหรับเพิ่มข้อสอบ</div>
+                    <?php else: foreach ($lessonGroups as $lessonIndex => $lessonGroup):
+                        $lessonId = (string) ($lessonGroup['id'] ?? '');
+                        $lessonQuizzes = $quizzesByLesson[$lessonId] ?? [];
+                    ?>
+                        <details class="quiz-lesson-group" <?= $lessonIndex === 0 ? 'open' : '' ?> style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
+                            <summary style="cursor:pointer;padding:15px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--text);font-weight:600;">
+                                <span>บทที่ <?= $lessonIndex + 1 ?>: <?= h($lessonGroup['title']) ?></span>
+                                <span class="badge badge-draft"><?= count($lessonQuizzes) ?> ข้อ</span>
+                            </summary>
+                            <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:10px;">
+                                <button class="btn-open-add-quiz" data-id="<?= h($lessonId) ?>" data-name="<?= h($lessonGroup['title']) ?>" style="align-self:flex-start;"><span style="font-size:16px;line-height:1;">+</span> เพิ่มข้อสอบบทนี้</button>
+                                <?php if (empty($lessonQuizzes)): ?>
+                                    <div style="padding:18px;color:var(--text-muted);font-size:13px;border:1px dashed var(--border);border-radius:8px;">ยังไม่มีข้อสอบในบทนี้</div>
+                                <?php else: foreach ($lessonQuizzes as $i => $q):
+                                    $qType = $q['correct_answer'] === '-' ? 'essay' : (($q['choice_a'] === 'ถูก' || $q['choice_a'] === 'ถูก (True)') ? 'truefalse' : 'choice');
+                                    $qLabel = $qType === 'essay' ? 'อัตนัย (ข้อเขียน)' : ($qType === 'truefalse' ? 'ถูก/ผิด' : 'ปรนัย (4 ตัวเลือก)');
+                                ?>
+                                    <div class="quiz-item" style="border:1px solid var(--border);border-radius:8px;padding:13px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+                                        <div style="display:flex;gap:10px;min-width:0;"><b class="mono" style="color:var(--orange);">Q<?= $i + 1 ?></b><div><div style="font-size:14px;color:var(--text);margin-bottom:5px;"><?= h($q['questions_text']) ?></div><span class="badge badge-draft" style="font-size:10.5px;"><?= $qLabel ?></span></div></div>
+                                        <div style="display:flex;gap:4px;flex-shrink:0;"><button class="action-icon-btn btn-edit-quiz" data-id="<?= h($q['questions_id']) ?>" data-type="<?= $qType ?>" data-question="<?= h($q['questions_text']) ?>" data-ca="<?= h($q['choice_a']) ?>" data-cb="<?= h($q['choice_b']) ?>" data-cc="<?= h($q['choice_c']) ?>" data-cd="<?= h($q['choice_d']) ?>" data-answer="<?= h($q['correct_answer']) ?>" title="แก้ไขคำถาม">📝</button><button class="action-icon-btn btn-del-quiz" data-id="<?= h($q['questions_id']) ?>" title="ลบคำถาม" style="color:#ef4444;">🗑</button></div>
                                     </div>
-                                </div>
+                                <?php endforeach; endif; ?>
                             </div>
-                            <div style="display:flex;gap:4px;flex-shrink:0;">
-                                <button class="action-icon-btn btn-edit-quiz" 
-                                    data-id="<?= h($q['questions_id']) ?>" 
-                                    data-type="<?= $qType ?>"
-                                    data-question="<?= h($q['questions_text']) ?>"
-                                    data-ca="<?= h($q['choice_a']) ?>"
-                                    data-cb="<?= h($q['choice_b']) ?>"
-                                    data-cc="<?= h($q['choice_c']) ?>"
-                                    data-cd="<?= h($q['choice_d']) ?>"
-                                    data-answer="<?= h($q['correct_answer']) ?>"
-                                    title="แก้ไขคำถาม">📝</button>
-                                <button class="action-icon-btn btn-del-quiz" data-id="<?= h($q['questions_id']) ?>" title="ลบคำถาม" style="color:#ef4444;">🗑</button>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                        </details>
+                    <?php endforeach; endif; ?>
                 </div>
             </div>
 
@@ -705,7 +676,12 @@ $stats = [
                 <div class="card-header">
                     <div><h3 class="card-title" style="font-size:14px">คำตอบข้อเขียนของนักเรียน</h3><p style="font-size:12px;color:var(--text-muted);margin-top:4px">ตรวจผ่านหรือไม่ผ่าน ระบบจะบันทึกผลแยกตามรายวิชาและบทเรียน</p></div>
                 </div>
-                <div id="essaySubmissionList" style="display:flex;flex-direction:column;gap:12px"><div style="padding:24px;color:var(--text-muted)">กำลังโหลดคำตอบข้อเขียน...</div></div>
+                <div style="display:flex;gap:8px;margin:16px 0;border-bottom:1px solid var(--border);padding-bottom:12px">
+                    <button type="button" class="essay-filter-btn active" data-essay-filter="pending">รอตรวจ <span id="essayPendingCount">0</span></button>
+                    <button type="button" class="essay-filter-btn" data-essay-filter="reviewed">ตรวจแล้ว <span id="essayReviewedCount">0</span></button>
+                </div>
+                <div id="essayPendingList" style="display:flex;flex-direction:column;gap:12px"><div style="padding:24px;color:var(--text-muted)">กำลังโหลดคำตอบข้อเขียน...</div></div>
+                <div id="essayReviewedList" style="display:none;flex-direction:column;gap:12px"></div>
             </div>
         </div>
 

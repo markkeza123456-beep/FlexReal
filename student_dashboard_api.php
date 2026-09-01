@@ -73,26 +73,24 @@ try {
             s.subjects_name,
             s.subjects_description,
             COALESCE(NULLIF(TRIM(cs.subject_type), \'\'), COALESCE(NULLIF(TRIM(s.subject_type), \'\'), \'elective\')) AS subject_type,
-            COUNT(DISTINCT l.lessons_id) AS lesson_count,
-            COALESCE(AVG(lp.progress_percent), 0) AS progress_percent,
-            COALESCE(MAX(
-                CASE
-                    WHEN lp.quiz_total_score > 0 THEN (lp.best_quiz_score::numeric / lp.quiz_total_score) * 100
-                    ELSE 0
-                END
-            ), 0) AS score_percent,
-            COALESCE(MAX(lp.last_activity_at), NULL) AS last_activity_at
+            (SELECT COUNT(*) FROM public.lessons l WHERE l.subjects_id = s.subjects_id) AS lesson_count,
+            (SELECT COUNT(*) FROM public.student_learning_progress lp
+             WHERE lp.student_id = ss.student_id
+               AND lp.subjects_id = ss.subjects_id
+               AND lp.quiz_attempts > 0) AS attempted_lessons,
+            COALESCE((SELECT SUM(lp.best_quiz_score) FROM public.student_learning_progress lp
+             WHERE lp.student_id = ss.student_id AND lp.subjects_id = ss.subjects_id), 0) AS score_earned,
+            COALESCE((SELECT SUM(lp.quiz_total_score) FROM public.student_learning_progress lp
+             WHERE lp.student_id = ss.student_id AND lp.subjects_id = ss.subjects_id), 0) AS score_total,
+            (SELECT MAX(lp.last_activity_at) FROM public.student_learning_progress lp
+             WHERE lp.student_id = ss.student_id AND lp.subjects_id = ss.subjects_id) AS last_activity_at
          FROM public.student_subject ss
          INNER JOIN public.subjects s ON s.subjects_id = ss.subjects_id
          LEFT JOIN public.curriculums_subject cs
             ON cs.subject_id = s.subjects_id
            AND cs.curriculums_id = :curriculum_id
-         LEFT JOIN public.lessons l ON l.subjects_id = s.subjects_id
-         LEFT JOIN public.student_learning_progress lp
-            ON lp.student_id = ss.student_id
-           AND lp.subjects_id = ss.subjects_id
          WHERE ss.student_id = :student_id
-         GROUP BY s.subjects_id, s.subjects_name, s.subjects_description, s.subject_type, cs.subject_type
+         GROUP BY ss.student_id, ss.subjects_id, s.subjects_id, s.subjects_name, s.subjects_description, s.subject_type, cs.subject_type
          ORDER BY s.subjects_name ASC'
     );
     $courseStmt->execute([
@@ -101,26 +99,37 @@ try {
     ]);
 
     $courses = [];
-    $totalProgress = 0.0;
-    $totalScore = 0.0;
+    $attemptedLessons = 0;
+    $totalLessons = 0;
+    $scoreEarned = 0;
+    $scoreTotal = 0;
     foreach ($courseStmt->fetchAll(PDO::FETCH_ASSOC) as $index => $row) {
-        $progress = round((float) ($row['progress_percent'] ?? 0), 1);
-        $score = round((float) ($row['score_percent'] ?? 0), 1);
+        $lessonCount = (int) ($row['lesson_count'] ?? 0);
+        $attempted = min((int) ($row['attempted_lessons'] ?? 0), $lessonCount);
+        $earned = (int) ($row['score_earned'] ?? 0);
+        $possible = (int) ($row['score_total'] ?? 0);
+        $progress = $lessonCount > 0 ? round(($attempted / $lessonCount) * 100, 1) : 0;
+        $score = $possible > 0 ? round(($earned / $possible) * 100, 1) : 0;
         $courses[] = [
             'id' => str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT),
             'subject_id' => (string) ($row['subjects_id'] ?? ''),
             'name' => (string) ($row['subjects_name'] ?? 'ไม่ระบุชื่อวิชา'),
             'description' => (string) ($row['subjects_description'] ?? ''),
             'subject_type' => (string) ($row['subject_type'] ?? 'elective'),
-            'lesson_count' => (int) ($row['lesson_count'] ?? 0),
+            'lesson_count' => $lessonCount,
+            'attempted_lessons' => $attempted,
+            'score_earned' => $earned,
+            'score_total' => $possible,
             'progress' => $progress,
             'score' => $score,
             'status' => dashboardScoreLabel($score),
             'class' => dashboardScoreClass($score),
             'last_activity_at' => $row['last_activity_at'] ?? null,
         ];
-        $totalProgress += $progress;
-        $totalScore += $score;
+        $attemptedLessons += $attempted;
+        $totalLessons += $lessonCount;
+        $scoreEarned += $earned;
+        $scoreTotal += $possible;
     }
 
     $courseCount = count($courses);
@@ -136,11 +145,12 @@ try {
         ],
         'stats' => [
             'course_count' => $courseCount,
-            'avg_progress' => $courseCount > 0 ? round($totalProgress / $courseCount, 1) : 0,
-            'avg_score' => $courseCount > 0 ? round($totalScore / $courseCount, 1) : 0,
+            'attempted_lessons' => $attemptedLessons,
+            'total_lessons' => $totalLessons,
+            'score_earned' => $scoreEarned,
+            'score_total' => $scoreTotal,
         ],
         'courses' => $courses,
-        'assignments' => [],
     ]);
 } catch (Throwable $e) {
     dashboardJson([

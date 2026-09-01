@@ -1,6 +1,7 @@
 ﻿<?php
 session_start();
 require_once 'db_connect.php';
+require_once __DIR__ . '/learning_progress_lib.php';
 header('Content-Type: application/json; charset=utf-8');
 
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'teacher') {
@@ -420,22 +421,34 @@ try {
         $decision = trim((string) ($_POST['decision'] ?? ''));
         if ($submissionId <= 0 || !in_array($decision, ['pass', 'fail'], true)) throw new Exception('ข้อมูลการตรวจไม่ถูกต้อง');
         ensureEssaySubmissionTable($conn);
-        $lookup = $conn->prepare('SELECT es.test_id, es.subjects_id FROM public.essay_submissions es INNER JOIN public.subjects s ON s.subjects_id = es.subjects_id WHERE es.submission_id = :id AND s.teachers_id = :teacher_id');
+        $conn->beginTransaction();
+        $lookup = $conn->prepare('SELECT es.test_id, es.subjects_id, es.review_status FROM public.essay_submissions es INNER JOIN public.subjects s ON s.subjects_id = es.subjects_id WHERE es.submission_id = :id AND s.teachers_id = :teacher_id FOR UPDATE');
         $lookup->execute([':id' => $submissionId, ':teacher_id' => $teacherId]);
         $row = $lookup->fetch(PDO::FETCH_ASSOC);
         if (!$row) throw new Exception('ไม่พบคำตอบข้อเขียนหรือคุณไม่มีสิทธิ์ตรวจ');
+        if ($row['review_status'] !== 'pending') throw new Exception('คำตอบข้อนี้ถูกตรวจแล้ว');
         $conn->prepare('UPDATE public.essay_submissions SET review_status = :decision, teacher_id = :teacher_id, teacher_comment = :comment, reviewed_at = CURRENT_TIMESTAMP WHERE submission_id = :id')->execute([':decision' => $decision, ':teacher_id' => $teacherId, ':comment' => trim((string) ($_POST['comment'] ?? '')), ':id' => $submissionId]);
         $testId = (int) $row['test_id'];
-        $statusStmt = $conn->prepare("SELECT CASE WHEN EXISTS (SELECT 1 FROM public.essay_submissions WHERE test_id = :test_id AND review_status = 'fail') THEN 'fail' WHEN EXISTS (SELECT 1 FROM public.essay_submissions WHERE test_id = :test_id AND review_status = 'pending') THEN 'pending_review' ELSE 'pass' END");
-        $statusStmt->execute([':test_id' => $testId]);
+        if ($decision === 'pass') {
+            $conn->prepare('UPDATE public.test SET score = LEAST(total_score, score + 1) WHERE test_id = :test_id')->execute([':test_id' => $testId]);
+        }
+        $testStmt = $conn->prepare('SELECT student_id, subjects_id, lesson_no, score, total_score FROM public.test WHERE test_id = :test_id FOR UPDATE');
+        $testStmt->execute([':test_id' => $testId]);
+        $test = $testStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$test) throw new Exception('ไม่พบผลการทดสอบ');
+        $statusStmt = $conn->prepare("SELECT CASE WHEN EXISTS (SELECT 1 FROM public.essay_submissions WHERE test_id = :test_id AND review_status = 'pending') THEN 'pending_review' WHEN :score >= CEIL(:total_score) THEN 'pass' ELSE 'fail' END");
+        $statusStmt->execute([':test_id' => $testId, ':score' => (int) $test['score'], ':total_score' => max(1, (int) $test['total_score'])]);
         $testStatus = (string) $statusStmt->fetchColumn();
         $conn->prepare('UPDATE public.test SET status = :status WHERE test_id = :test_id')->execute([':status' => $testStatus, ':test_id' => $testId]);
+        syncReviewedQuizScore($conn, (string) $test['student_id'], (string) $test['subjects_id'], (int) $test['lesson_no'], (int) $test['score'], (int) $test['total_score']);
+        $conn->commit();
         echo json_encode(['success' => true, 'message' => $testStatus === 'pending_review' ? 'บันทึกผลแล้ว ยังมีข้อเขียนรอตรวจ' : 'บันทึกผลการตรวจแล้ว']);
         exit;
     }
 
     throw new Exception('ไม่พบคำสั่งที่ต้องการ');
 } catch (Exception $e) {
+    if ($conn->inTransaction()) $conn->rollBack();
     echo json_encode(['success' => false, 'message' => 'DB Error: ' . $e->getMessage()]);
 }
 ?>

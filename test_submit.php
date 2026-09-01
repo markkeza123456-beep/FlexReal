@@ -196,7 +196,8 @@ try {
     $questionPayload = loadQuestionsForScoring($conn, $subjectId, $lessonIndex, $lessonId);
     $questions       = $questionPayload['rows'];
     $questionSource  = $questionPayload['source'];
-    $totalScore      = 0;
+    // คะแนนเต็มอ้างอิงข้อสอบทั้งหมด รวมข้อเขียนที่รอครูตรวจ
+    $totalScore      = count($questions);
     $score           = 0;
     $essayResponses  = [];
     $choiceMap       = [0 => 'A', 1 => 'B', 2 => 'C', 3 => 'D'];
@@ -218,11 +219,12 @@ try {
                 $essayResponses[] = ['question_id' => (int) $q['qid'], 'answer_text' => $essayText];
             }
         }
-        $rawCorrect = trim((string) ($q['correct_answer'] ?? ''));
-        $isScoreable = $questionType !== 'essay' || ($rawCorrect !== '' && $rawCorrect !== '-');
-        if ($isScoreable) {
-            $totalScore++;
+        // ข้อเขียนให้ครูเป็นผู้ให้คะแนนเสมอ แม้ฐานข้อมูลจะมีข้อความเฉลยประกอบไว้
+        if ($questionType === 'essay') {
+            continue;
         }
+        $rawCorrect = trim((string) ($q['correct_answer'] ?? ''));
+        $isScoreable = true;
         if (array_key_exists($index, $answers) && $answers[$index] !== null) {
             if (is_numeric($answers[$index])) {
                 $selectedIndex = (int) $answers[$index];

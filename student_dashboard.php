@@ -23,9 +23,6 @@
                 <div class="menu-item" id="btn-lessons">
                     <span class="icon">📘</span> บทเรียน
                 </div>
-                <div class="menu-item" id="btn-assignments">
-                    <span class="icon">📝</span> งานที่มอบหมาย
-                </div>
                 <div class="menu-item">
                     <span class="icon">📊</span> รายงานผล
                 </div>
@@ -63,14 +60,14 @@
                         <span class="sub-value">จำนวนบทเรียนที่ลงทะเบียน</span>
                     </div>
                     <div class="stat-card blue">
-                        <p class="label">ความคืบหน้าเฉลี่ย</p>
-                        <p class="value" id="statAvgProgress">0%</p>
-                        <span class="sub-value">อัปเดตจากการเข้าเรียนล่าสุด</span>
+                        <p class="label">แบบทดสอบที่ทำแล้ว</p>
+                        <p class="value" id="statAvgProgress">0/0</p>
+                        <span class="sub-value">จำนวนบทที่ส่งแบบทดสอบแล้ว</span>
                     </div>
                     <div class="stat-card green">
-                        <p class="label">คะแนนเฉลี่ย</p>
-                        <p class="value" id="statAvgScore">0%</p>
-                        <span class="sub-value">ดึงจากแบบทดสอบที่ทำแล้ว</span>
+                        <p class="label">คะแนนสะสม</p>
+                        <p class="value" id="statAvgScore">0/0</p>
+                        <span class="sub-value">ข้อเขียนจะเพิ่มเมื่อครูตรวจผ่าน</span>
                     </div>
                     <div class="stat-card purple">
                         <p class="label">สถานะการเรียน</p>
@@ -90,7 +87,7 @@
                                 <tr>
                                     <th>ลำดับ</th>
                                     <th>วิชาเรียน</th>
-                                    <th>ความคืบหน้า</th>
+                                    <th>แบบทดสอบ</th>
                                     <th>คะแนนสะสม</th>
                                     <th>สถานะ</th>
                                 </tr>
@@ -110,17 +107,6 @@
                     </div>
                 </header>
                 <div class="lessons-container" id="lessons-list"></div>
-            </section>
-
-            <!-- SECTION: Assignments -->
-            <section id="assignment-page" class="content-section" style="display: none;">
-                <header class="header">
-                    <div class="welcome">
-                        <h1>งานที่มอบหมาย</h1>
-                        <p>รายการงานและแบบฝึกหัดที่ต้องส่ง</p>
-                    </div>
-                </header>
-                <div class="assignment-list" id="assignment-container"></div>
             </section>
 
             <!-- SECTION: Settings / Profile -->

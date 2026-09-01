@@ -1,20 +1,17 @@
 ﻿let dashboardState = {
     student: null,
-    courses: [],
-    assignments: []
+    courses: []
 };
 
 const navBtns = {
     dashboard: document.getElementById('btn-dashboard'),
     lessons: document.getElementById('btn-lessons'),
-    assignments: document.getElementById('btn-assignments'),
     settings: document.getElementById('btn-settings')
 };
 
 const pages = {
     dashboard: document.getElementById('dashboard-page'),
     lessons: document.getElementById('lesson-page'),
-    assignments: document.getElementById('assignment-page'),
     settings: document.getElementById('settings-page')
 };
 
@@ -31,11 +28,7 @@ function showPage(pageKey) {
         }
     });
 
-    if (pageKey === 'lessons') {
-        renderLessons(dashboardState.courses);
-    } else if (pageKey === 'assignments') {
-        renderAssignments(dashboardState.assignments);
-    }
+    if (pageKey === 'lessons') renderLessons(dashboardState.courses);
 }
 
 function statusClass(score) {
@@ -76,8 +69,8 @@ function renderTable(courses) {
         <tr>
             <td style="color: #888;">${item.id}</td>
             <td>${item.name} ${subjectTypeBadge(item.subject_type)}</td>
-            <td>${Number(item.progress).toFixed(1)}%</td>
-            <td>${Number(item.score).toFixed(1)}%</td>
+            <td>ทำแล้ว ${item.attempted_lessons}/${item.lesson_count} บท</td>
+            <td>${item.score_total > 0 ? `${item.score_earned}/${item.score_total} คะแนน` : 'ยังไม่มีคะแนน'}</td>
             <td><span class="status-label ${item.class}">${item.status}</span></td>
         </tr>
     `).join('');
@@ -96,37 +89,9 @@ function renderLessons(courses) {
             <div class="progress-bar-bg">
                 <div class="progress-bar-fill" style="width: ${course.progress}%"></div>
             </div>
-            <p style="font-size: 0.8rem; color: #888;">ความคืบหน้า: ${Number(course.progress).toFixed(1)}%</p>
-            <p style="font-size: 0.8rem; color: #888;">คะแนนสูงสุด: ${Number(course.score).toFixed(1)}%</p>
+            <p style="font-size: 0.8rem; color: #888;">ทำแบบทดสอบแล้ว: ${course.attempted_lessons}/${course.lesson_count} บท</p>
+            <p style="font-size: 0.8rem; color: #888;">คะแนนสะสม: ${course.score_total > 0 ? `${course.score_earned}/${course.score_total} คะแนน` : 'ยังไม่มีคะแนน'}</p>
             <a class="btn-submit" style="display:inline-block;text-decoration:none;margin-top:10px;" href="web.html?subject_id=${encodeURIComponent(course.subject_id)}">เข้าเรียนต่อ</a>
-        </div>
-    `).join('');
-}
-
-function renderAssignments(assignments) {
-    const container = document.getElementById('assignment-container');
-    if (!assignments.length) {
-        container.innerHTML = `
-            <div class="assignment-item">
-                <div class="assign-info">
-                    <h3>ยังไม่มีงานที่มอบหมายจากระบบ</h3>
-                    <p>เมื่อมีงานหรือแบบฝึกหัดใหม่ รายการจะแสดงที่หน้านี้</p>
-                </div>
-            </div>
-        `;
-        return;
-    }
-
-    container.innerHTML = assignments.map((task) => `
-        <div class="assignment-item">
-            <div class="assign-info">
-                <h3>${task.title}</h3>
-                <p>วิชา: ${task.subject} | สถานะ: ${task.status}</p>
-            </div>
-            <div style="text-align: right;">
-                <p class="due-date">กำหนดส่ง: ${task.due}</p>
-                <button class="btn-submit" style="margin-top: 8px;">ส่งงาน</button>
-            </div>
         </div>
     `).join('');
 }
@@ -192,21 +157,23 @@ function updateProfile(student) {
 
 function updateStats(stats, courses) {
     const courseCount = Number(stats?.course_count || 0);
-    const avgProgress = Number(stats?.avg_progress || 0).toFixed(1);
-    const avgScore = Number(stats?.avg_score || 0).toFixed(1);
+    const attemptedLessons = Number(stats?.attempted_lessons || 0);
+    const totalLessons = Number(stats?.total_lessons || 0);
+    const scoreEarned = Number(stats?.score_earned || 0);
+    const scoreTotal = Number(stats?.score_total || 0);
 
     const setText = (id, value) => {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
     };
     setText('statCourseCount', String(courseCount));
-    setText('statAvgProgress', avgProgress + '%');
-    setText('statAvgScore', avgScore + '%');
+    setText('statAvgProgress', `${attemptedLessons}/${totalLessons}`);
+    setText('statAvgScore', `${scoreEarned}/${scoreTotal}`);
 
     let stateText = 'เริ่มต้น';
-    if (courseCount > 0 && Number(avgProgress) >= 80) {
-        stateText = 'ก้าวหน้า';
-    } else if (courseCount > 0 && Number(avgProgress) > 0) {
+    if (courseCount > 0 && attemptedLessons >= totalLessons && totalLessons > 0) {
+        stateText = 'ทำครบแล้ว';
+    } else if (courseCount > 0 && attemptedLessons > 0) {
         stateText = 'กำลังเรียน';
     }
     setText('statLearningState', stateText);
@@ -225,14 +192,12 @@ async function loadDashboardData() {
 
     dashboardState = {
         student: result.student || null,
-        courses: Array.isArray(result.courses) ? result.courses : [],
-        assignments: Array.isArray(result.assignments) ? result.assignments : []
+        courses: Array.isArray(result.courses) ? result.courses : []
     };
 
     updateProfile(dashboardState.student);
     updateStats(result.stats || {}, dashboardState.courses);
     renderLessons(dashboardState.courses);
-    renderAssignments(dashboardState.assignments);
 }
 
 Object.entries(navBtns).forEach(([key, button]) => {
@@ -250,7 +215,6 @@ showPage('dashboard');
 loadDashboardData().catch(() => {
     renderTable([]);
     renderLessons([]);
-    renderAssignments([]);
 });
 
 /* ─────────────────────────────────────────────────

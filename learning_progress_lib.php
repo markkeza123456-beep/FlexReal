@@ -66,6 +66,37 @@ function lessonProgressFromQuiz(int $score, int $totalScore): float
     return min(100.0, 60.0 + (($score / $totalScore) * 40.0));
 }
 
+function syncReviewedQuizScore(
+    PDO $conn,
+    string $studentId,
+    string $subjectId,
+    int $lessonIndex,
+    int $score,
+    int $totalScore
+): void {
+    ensureLearningProgressTables($conn);
+    upsertLearningProgressRow($conn, $studentId, $subjectId, $lessonIndex);
+
+    $stmt = $conn->prepare(
+        'UPDATE public.student_learning_progress
+         SET best_quiz_score = :score,
+             quiz_total_score = :total_score,
+             progress_percent = GREATEST(progress_percent, :progress_percent),
+             last_activity_at = NOW()
+         WHERE student_id = :student_id
+           AND subjects_id = :subject_id
+           AND lesson_index = :lesson_index'
+    );
+    $stmt->execute([
+        ':score' => $score,
+        ':total_score' => $totalScore,
+        ':progress_percent' => round(lessonProgressFromQuiz($score, $totalScore), 2),
+        ':student_id' => $studentId,
+        ':subject_id' => $subjectId,
+        ':lesson_index' => $lessonIndex,
+    ]);
+}
+
 function recordLearningActivity(
     PDO $conn,
     string $studentId,

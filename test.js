@@ -147,8 +147,8 @@ function renderAnswerKey() {
     `;
 }
 
-function renderResultActionButton(isPassed) {
-    if (isPassed) return '';
+function renderResultActionButton(isPassed, isPendingReview = false) {
+    if (isPassed || isPendingReview) return '';
     return `
         <div class="result-action-wrap">
             <button type="button" id="resultActionBtn" class="primary-btn">ทำแบบทดสอบใหม่</button>
@@ -166,29 +166,26 @@ function bindResultAction(isPassed) {
 
 async function showResult() {
     saveCurrentAnswer();
-    const scorableQuestions = quiz.questions.filter((item) => isScoreableQuestion(item));
-    const essayCount = quiz.questions.filter((item) => isEssayQuestion(item) && !isScoreableQuestion(item)).length;
-    const score = scorableQuestions.reduce((total, item, index) => {
-        const answer = answers[quiz.questions.indexOf(item)];
-        return total + (
-            answer === item.answer || String(answer || '').trim() === String(item.answer_text || '').trim()
-                ? 1
-                : 0
-        );
+    const totalQuestions = quiz.questions.length;
+    const essayCount = quiz.questions.filter((item) => isEssayQuestion(item)).length;
+    const hasPendingEssay = quiz.questions.some((item, index) => isEssayQuestion(item) && String(answers[index] || '').trim() !== '');
+    const score = quiz.questions.reduce((total, item, index) => {
+        if (isEssayQuestion(item)) return total;
+        return total + (answers[index] === item.answer ? 1 : 0);
     }, 0);
-    const requiredScore = Math.max(1, Math.ceil(scorableQuestions.length * QUIZ_PASS_RATIO));
+    const requiredScore = Math.max(1, Math.ceil(totalQuestions * QUIZ_PASS_RATIO));
     const isPassed = score >= requiredScore;
 
     resultBox.hidden = false;
     resultBox.innerHTML = `
         <h2>ผลคะแนน</h2>
-        <p>คุณได้ <span class="score">${score}/${scorableQuestions.length}</span> คะแนน</p>
-        <p>${isPassed ? 'ผ่านเกณฑ์แล้ว สามารถกลับไปหน้ารายวิชาได้' : 'ยังไม่ผ่านเกณฑ์ กรุณาทำซ้ำบทเดิมอีกครั้ง'}</p>
+        <p>คุณได้ <span class="score">${score}/${totalQuestions}</span> คะแนน</p>
+        <p>${isPassed ? 'ผ่านเกณฑ์แล้ว สามารถกลับไปหน้ารายวิชาได้' : hasPendingEssay ? 'ส่งข้อเขียนแล้ว รออาจารย์ตรวจผลก่อน' : 'ยังไม่ผ่านเกณฑ์ กรุณาทำซ้ำบทเดิมอีกครั้ง'}</p>
         <p>เกณฑ์ผ่าน: ${requiredScore} คะแนน</p>
         ${essayCount > 0 ? `<p>มีข้อเขียน ${essayCount} ข้อ รอครูตรวจ</p>` : ''}
         ${isPassed ? renderAnswerKey() : ''}
         <p id="saveStatus">กำลังบันทึกผลแบบทดสอบ...</p>
-        ${renderResultActionButton(isPassed)}
+        ${renderResultActionButton(isPassed, hasPendingEssay)}
     `;
     bindResultAction(isPassed);
 
@@ -199,11 +196,11 @@ async function showResult() {
     if (quizActions) quizActions.hidden = true;
 
     const saveStatus = document.getElementById('saveStatus');
-    window.__lastQuizSaveResult = { ok: false, status: 'pending', score, totalScore: scorableQuestions.length };
+    window.__lastQuizSaveResult = { ok: false, status: 'pending', score, totalScore: totalQuestions };
     try {
-        const result = await saveTestResult(score, scorableQuestions.length);
+        const result = await saveTestResult(score, totalQuestions);
         if (result.status === 'unauthorized') {
-            window.__lastQuizSaveResult = { ok: false, status: 'unauthorized', error: result.message || 'unauthorized', score, totalScore: scorableQuestions.length };
+            window.__lastQuizSaveResult = { ok: false, status: 'unauthorized', error: result.message || 'unauthorized', score, totalScore: totalQuestions };
             saveStatus.innerText = '';
             console.warn('[quiz-save] unauthorized', result.message || '');
             return;
@@ -214,7 +211,7 @@ async function showResult() {
                 ok: true,
                 status: result.quiz_status || 'success',
                 score,
-                totalScore: scorableQuestions.length,
+                totalScore: totalQuestions,
                 requiredScore,
             };
             saveStatus.innerText = 'บันทึกผลแล้ว';
@@ -228,7 +225,7 @@ async function showResult() {
             console.info('[quiz-save] success', window.__lastQuizSaveResult);
             const actionWrap = resultBox.querySelector('.result-action-wrap');
             if (actionWrap) {
-                actionWrap.outerHTML = renderResultActionButton(lastResultPassed);
+                actionWrap.outerHTML = renderResultActionButton(lastResultPassed, Boolean(result.pending_review));
                 bindResultAction(lastResultPassed);
             }
         } else {
@@ -237,7 +234,7 @@ async function showResult() {
                 status: result.status || 'error',
                 error: result.message || 'save_failed',
                 score,
-                totalScore: scorableQuestions.length,
+                totalScore: totalQuestions,
             };
             saveStatus.innerText = '';
             console.warn('[quiz-save] failed', window.__lastQuizSaveResult);
@@ -248,7 +245,7 @@ async function showResult() {
             status: 'exception',
             error: error?.message || String(error),
             score,
-            totalScore: scorableQuestions.length,
+            totalScore: totalQuestions,
         };
         saveStatus.innerText = '';
         console.error('[quiz-save] exception', error);
