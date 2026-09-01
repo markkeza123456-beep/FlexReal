@@ -143,6 +143,7 @@ function buildLessonsFromDB(lessons) {
             index: index + 1,
             id: lsnId,
             title: lsnName,
+            content: pick(lsn, 'lesson_content', 'Lesson_Content', 'content', 'Content') || '',
             documentPath: pick(lsn, 'document_path', 'Document_Path') || '',
             documentName: pick(lsn, 'document_name', 'Document_Name') || '',
             videoPath: pick(lsn, 'video_path', 'Video_Path') || '',
@@ -249,7 +250,7 @@ function renderLessonAccordion(containerId) {
                     <div class="curriculum-list">
                         <div class="assignment-empty-state" style="margin-top: 6px;">
                             <strong>บทเรียนนี้ยังไม่มีเนื้อหา</strong>
-                            <div>ระบบสร้างไว้ครบ 3 บทเพื่อให้โครงสร้างรายวิชาเหมือนกันทุกวิชา</div>
+                    <div>บทเรียนนี้ยังไม่มีข้อมูลจากผู้สอน</div>
                         </div>
                     </div>
                 </div>
@@ -269,6 +270,7 @@ function renderLessonAccordion(containerId) {
                         <span style="font-size:12px;color:#2c3e50;">คะแนนบทนี้: ${status.scoreText}</span>
                     </div>
                     ${!canAccessLesson(lesson.index) ? `<p style="margin:0 0 8px;color:#d35400;font-size:13px;">${getLessonLockMessage(lesson.index)}</p>` : ''}
+                    ${lesson.content ? `<div style="margin:0 0 12px;padding:12px 14px;border:1px solid #f0d6c5;border-radius:10px;background:#fffaf7;white-space:pre-wrap;"><b>รายละเอียดบทเรียน</b><p style="margin:6px 0 0;">${escapeHtml(lesson.content)}</p></div>` : ''}
                     <div class="curriculum-item">
                         <div class="curr-left">
                             <span class="curr-icon">📄</span>

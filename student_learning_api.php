@@ -39,7 +39,7 @@ function fetchCourseSummary(PDO $conn, string $studentId, string $subjectId): ar
         'SELECT COUNT(*) FROM public.lessons WHERE subjects_id = :subject_id'
     );
     $lessonCountStmt->execute([':subject_id' => $subjectId]);
-    $lessonCount = 3;
+    $lessonCount = (int) $lessonCountStmt->fetchColumn();
 
     $summaryStmt = $conn->prepare(
         'SELECT

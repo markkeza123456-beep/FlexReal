@@ -19,6 +19,7 @@ function postValue(string $key, $default = '') {
 
 function ensureLessonDocumentColumns(PDO $conn): void
 {
+    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS lesson_content TEXT");
     $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS document_path VARCHAR(255)");
     $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS document_name VARCHAR(255)");
 }
@@ -293,8 +294,7 @@ try {
                 SELECT
                     lessons_id AS id,
                     lessons_name AS title,
-                    image_path,
-                    study_hours AS content,
+                    lesson_content AS content,
                     COALESCE(document_path, '') AS document_path,
                     COALESCE(document_name, '') AS document_name
                 FROM public.lessons
@@ -331,8 +331,7 @@ try {
                 SELECT
                     lessons_id AS id,
                     lessons_name AS title,
-                    study_hours AS content,
-                    image_path,
+                    lesson_content AS content,
                     COALESCE(document_path, '') AS document_path,
                     COALESCE(document_name, '') AS document_name
                 FROM public.lessons
@@ -372,32 +371,27 @@ try {
             $teacherId = trim((string) ($subjectRow['teachers_id'] ?? ''));
 
             $currentLesson = [
+                'lesson_content' => '',
                 'document_path' => '',
                 'document_name' => '',
             ];
             if (!empty($lessonId)) {
                 $currentStmt = $conn->prepare("
                     SELECT
+                        COALESCE(lesson_content, '') AS lesson_content,
                         COALESCE(document_path, '') AS document_path,
                         COALESCE(document_name, '') AS document_name
                     FROM public.lessons
                     WHERE lessons_id = :id
+                      AND subjects_id = :subject_id
                     LIMIT 1
                 ");
-                $currentStmt->execute([':id' => $lessonId]);
+                $currentStmt->execute([':id' => $lessonId, ':subject_id' => $subjectId]);
                 $currentLesson = $currentStmt->fetch(PDO::FETCH_ASSOC) ?: $currentLesson;
             }
 
             if ($isNewLesson) {
                 $lessonId = generateLessonId($conn);
-            }
-
-            $imagePath = '';
-            if (isset($_FILES['image']) && (int) $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-                $uploadDir = __DIR__ . '/uploads';
-                if (!is_dir($uploadDir)) { mkdir($uploadDir, 0777, true); }
-                $fileName = time() . '_' . preg_replace('/[^A-Za-z0-9._-]/', '_', basename($_FILES['image']['name']));
-                if (move_uploaded_file($_FILES['image']['tmp_name'], $uploadDir . '/' . $fileName)) { $imagePath = 'uploads/' . $fileName; }
             }
 
             $documentUpload = uploadLessonFile('document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc');
@@ -407,51 +401,40 @@ try {
             $baseParams = [
                 ':subject_id' => $subjectId,
                 ':title' => postValue('title'),
-                ':content' => postValue('content'),
+                ':content' => array_key_exists('content', $_POST)
+                    ? postValue('content')
+                    : (string) ($currentLesson['lesson_content'] ?? ''),
                 ':document_path' => $documentPath,
                 ':document_name' => $documentName,
             ];
             if (!$isNewLesson) {
                 $baseParams[':id'] = $lessonId;
-                if ($imagePath !== '') {
-                    $statement = $conn->prepare("
-                        UPDATE public.lessons
-                        SET lessons_name = :title,
-                            study_hours = :content,
-                            image_path = :image_path,
-                            document_path = :document_path,
-                            document_name = :document_name
-                        WHERE lessons_id = :id
-                    ");
-                    $baseParams[':image_path'] = $imagePath;
-                } else {
-                    $statement = $conn->prepare("
-                        UPDATE public.lessons
-                        SET lessons_name = :title,
-                            study_hours = :content,
-                            document_path = :document_path,
-                            document_name = :document_name
-                        WHERE lessons_id = :id
-                    ");
-                }
+                $statement = $conn->prepare("
+                    UPDATE public.lessons
+                    SET lessons_name = :title,
+                        lesson_content = :content,
+                        document_path = :document_path,
+                        document_name = :document_name
+                    WHERE lessons_id = :id
+                      AND subjects_id = :subject_id
+                ");
             } else {
                 $baseParams[':id'] = $lessonId;
-                $baseParams[':image_path'] = $imagePath;
                 $statement = $conn->prepare("
                     INSERT INTO public.lessons (
                         lessons_id,
                         subjects_id,
                         lessons_name,
                         study_hours,
-                        image_path,
+                        lesson_content,
                         document_path,
                         document_name
                     ) VALUES (
                         :id,
                         :subject_id,
                         :title,
+                        1,
                         :content,
-                        :image_path,
                         :document_path,
                         :document_name
                     )
@@ -463,8 +446,9 @@ try {
 
         case 'deleteLesson':
             $lessonId = $_POST['id'] ?? '';
-            $statement = $conn->prepare("DELETE FROM public.lessons WHERE lessons_id = :id");
-            $statement->execute([':id' => $lessonId]);
+            $subjectId = $_POST['subject_id'] ?? '';
+            $statement = $conn->prepare("DELETE FROM public.lessons WHERE lessons_id = :id AND subjects_id = :subject_id");
+            $statement->execute([':id' => $lessonId, ':subject_id' => $subjectId]);
             jsonResponse(['status' => 'success']);
             break;
 

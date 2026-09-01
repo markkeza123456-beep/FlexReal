@@ -90,31 +90,6 @@
         </form>
       </div>
 
-      <aside class="panel tips-panel">
-        <div class="panel-head">
-          <div>
-            <p class="panel-label">Overview</p>
-            <h3>สรุปการจัดการ</h3>
-          </div>
-        </div>
-        <div class="tip-list">
-          <div class="tip-card">
-            <span class="tip-title">รายวิชา</span>
-            <strong id="statSubjectName">-</strong>
-            <p>แก้ไขชื่อ รหัส หน่วยกิต และประเภทวิชาได้จากฟอร์มด้านซ้าย</p>
-          </div>
-          <div class="tip-card">
-            <span class="tip-title">บทเรียน</span>
-            <strong id="statLessonCount">0 รายการ</strong>
-            <p>เพิ่ม แก้ไข และลบบทเรียนของวิชานี้ได้จากตารางด้านล่าง</p>
-          </div>
-          <div class="tip-card">
-            <span class="tip-title">การกลับไปหน้าเดิม</span>
-            <strong>Staff Dashboard</strong>
-            <p>เมื่อกดกลับ ระบบจะพาไปหน้ารายวิชาใน `staffdash` โดยตรง</p>
-          </div>
-        </div>
-      </aside>
     </section>
 
     <section class="panel lessons-panel" id="lessonSection">
@@ -132,7 +107,6 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th style="width: 96px;">รูปภาพ</th>
               <th>ชื่อบทเรียน</th>
               <th>เอกสาร</th>
               <th style="width: 140px;">จัดการ</th>
@@ -140,7 +114,7 @@
           </thead>
           <tbody id="lessonTableBody">
             <tr>
-              <td colspan="4" class="empty-cell">กำลังโหลดบทเรียน...</td>
+              <td colspan="3" class="empty-cell">กำลังโหลดบทเรียน...</td>
             </tr>
           </tbody>
         </table>
@@ -161,13 +135,6 @@
           <div class="input-wrap">
             <span class="input-icon">L</span>
             <input type="text" id="lessonTitle" required />
-          </div>
-        </div>
-        <div class="form-field">
-          <label class="form-label" for="lessonContent">รายละเอียดเนื้อหา</label>
-          <div class="input-wrap">
-            <span class="input-icon">≣</span>
-            <textarea id="lessonContent" rows="5" placeholder="สรุปรายละเอียดของบทเรียนนี้"></textarea>
           </div>
         </div>
         <div class="lesson-resource-grid">
@@ -192,17 +159,6 @@
             </div>
           </div>
         </div>
-        <div class="form-field">
-          <label class="form-label" for="lessonImage">รูปภาพหน้าปก</label>
-          <div class="input-wrap file-wrap">
-            <span class="input-icon">🖼</span>
-            <input type="file" id="lessonImage" accept="image/*" />
-          </div>
-          <div class="image-preview" id="imagePreview" hidden>
-            <img id="previewImage" alt="ภาพตัวอย่างบทเรียน" />
-            <span id="previewLabel">รูปปัจจุบัน</span>
-          </div>
-        </div>
         <div class="form-actions">
           <button type="button" class="btn-ghost" id="cancelLessonBtn">ล้างฟอร์ม</button>
           <button type="submit" class="btn-primary"><span class="btn-text">บันทึกบทเรียน</span></button>
@@ -222,6 +178,6 @@
   </main>
 
   <div class="toast" id="toast"></div>
-  <script src="staff_subject_editor.js"></script>
+  <script src="staff_subject_editor.js?v=20260901"></script>
 </body>
 </html>

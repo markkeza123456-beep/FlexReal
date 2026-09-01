@@ -16,9 +16,6 @@
   const lessonEditor = document.getElementById('lessonEditor');
   const lessonTableBody = document.getElementById('lessonTableBody');
   const lessonFormTitle = document.getElementById('lessonFormTitle');
-  const imagePreview = document.getElementById('imagePreview');
-  const previewImage = document.getElementById('previewImage');
-  const previewLabel = document.getElementById('previewLabel');
   const documentPreview = document.getElementById('documentPreview');
   const documentPreviewLink = document.getElementById('documentPreviewLink');
 
@@ -59,18 +56,6 @@
     errorMessage.textContent = message;
   }
 
-  function setCurrentImage(path) {
-    if (path) {
-      previewImage.src = path;
-      previewLabel.textContent = 'รูปปัจจุบัน';
-      imagePreview.hidden = false;
-      return;
-    }
-
-    previewImage.removeAttribute('src');
-    imagePreview.hidden = true;
-  }
-
   function setResourcePreview(previewNode, linkNode, path, label) {
     if (!previewNode || !linkNode) return;
 
@@ -90,7 +75,6 @@
     document.getElementById('lessonForm').reset();
     document.getElementById('lessonId').value = '';
     lessonFormTitle.textContent = 'เพิ่มบทเรียนใหม่';
-    setCurrentImage('');
     setResourcePreview(documentPreview, documentPreviewLink, '', '');
   }
 
@@ -103,8 +87,6 @@
       <span class="meta-pill">บทเรียน ${lessons.length} รายการ</span>
     `;
 
-    document.getElementById('statSubjectName').textContent = subject.name;
-    document.getElementById('statLessonCount').textContent = `${lessons.length} รายการ`;
     document.getElementById('manageVideosLink').href = `staff_video_editor.php?subject_id=${encodeURIComponent(subject.id)}`;
   }
 
@@ -120,7 +102,7 @@
     if (!lessons.length) {
       lessonTableBody.innerHTML = `
         <tr>
-          <td colspan="4" class="empty-cell">ยังไม่มีบทเรียนในรายวิชานี้</td>
+          <td colspan="3" class="empty-cell">ยังไม่มีบทเรียนในรายวิชานี้</td>
         </tr>
       `;
       return;
@@ -129,14 +111,8 @@
     lessonTableBody.innerHTML = lessons.map((lesson) => `
       <tr>
         <td>
-          ${lesson.image_path
-            ? `<img src="${escapeHtml(lesson.image_path)}" alt="${escapeHtml(lesson.title)}" class="thumb" />`
-            : '<div class="thumb-empty">ไม่มีรูป</div>'}
-        </td>
-        <td>
           <div class="lesson-title-cell">
             <strong>${escapeHtml(lesson.title)}</strong>
-            <span>${escapeHtml(lesson.content || 'ยังไม่มีรายละเอียด')}</span>
           </div>
         </td>
         <td>
@@ -204,7 +180,8 @@
   }
 
   function findLesson(lessonId) {
-    return lessons.find((lesson) => Number(lesson.id) === Number(lessonId)) || null;
+    const targetId = String(lessonId ?? '').trim();
+    return lessons.find((lesson) => String(lesson.id ?? '').trim() === targetId) || null;
   }
 
   function editLesson(lessonId) {
@@ -216,9 +193,7 @@
 
     document.getElementById('lessonId').value = lesson.id;
     document.getElementById('lessonTitle').value = lesson.title || '';
-    document.getElementById('lessonContent').value = lesson.content || '';
     lessonFormTitle.textContent = `แก้ไขบทเรียน: ${lesson.title}`;
-    setCurrentImage(lesson.image_path || '');
     setResourcePreview(
       documentPreview,
       documentPreviewLink,
@@ -243,6 +218,7 @@
     const formData = new FormData();
     formData.append('action', 'deleteLesson');
     formData.append('id', lessonId);
+    formData.append('subject_id', subjectId);
 
     try {
       const response = await fetch('api_staff.php', {
@@ -303,13 +279,6 @@
     formData.append('id', document.getElementById('lessonId').value);
     formData.append('subject_id', subjectId);
     formData.append('title', document.getElementById('lessonTitle').value.trim());
-    formData.append('content', document.getElementById('lessonContent').value.trim());
-
-    const imageInput = document.getElementById('lessonImage');
-    if (imageInput.files[0]) {
-      formData.append('image', imageInput.files[0]);
-    }
-
     const documentInput = document.getElementById('lessonDocument');
     if (documentInput.files[0]) {
       formData.append('document', documentInput.files[0]);

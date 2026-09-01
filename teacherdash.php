@@ -16,21 +16,11 @@ function h(?string $value): string {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
-function normalizeLessonSlots(array $lessons, int $targetCount = 3, string $subjectId = ''): array {
+function normalizeLessonSlots(array $lessons): array {
     $normalized = [];
-    foreach (array_slice(array_values($lessons), 0, $targetCount) as $index => $lessonRow) {
+    foreach (array_values($lessons) as $index => $lessonRow) {
         $lessonRow['is_placeholder'] = false;
         $normalized[] = $lessonRow;
-    }
-
-    for ($i = count($normalized) + 1; $i <= $targetCount; $i++) {
-        $normalized[] = [
-            'id' => sprintf('PH-%s-%d', $subjectId ?: 'SUB', $i),
-            'title' => 'บทที่ ' . $i,
-            'duration' => 'ยังไม่มีเนื้อหา',
-            'status' => 'draft',
-            'is_placeholder' => true,
-        ];
     }
 
     return $normalized;
@@ -104,13 +94,13 @@ foreach ($subjectRows as $row) {
         'students' => $studentCount,
         'progress' => 0, 
         'status' => $lessonCount > 0 ? 'active' : 'draft',
-        'lesson_count' => 3,
+        'lesson_count' => $lessonCount,
         'avg_score' => 0,
     ];
 
     if ($subjectId) $subjectIds[] = $subjectId;
     if ($subjectName) $subjectNames[] = $subjectName;
-    $totalLessonCount += 3;
+    $totalLessonCount += $lessonCount;
 }
 
 $subjectMap = [];
@@ -145,7 +135,7 @@ if (!empty($subjectIds)) {
 }
 
 foreach ($subjectIds as $subjectId) {
-    $subLessonsBySubject[$subjectId] = normalizeLessonSlots($subLessonsBySubject[$subjectId] ?? [], 3, $subjectId);
+    $subLessonsBySubject[$subjectId] = normalizeLessonSlots($subLessonsBySubject[$subjectId] ?? []);
 }
 
 // 4. ดึงข้อมูลนักเรียนและคะแนน
@@ -1356,6 +1346,6 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-<script src="teacherdash.js"></script>
+<script src="teacherdash.js?v=20260901"></script>
 </body>
 </html>
