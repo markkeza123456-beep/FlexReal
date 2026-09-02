@@ -72,7 +72,8 @@ $subjectStmt = $conn->prepare('
         (SELECT COUNT(*) FROM public.lessons l WHERE l.Subjects_ID = s.Subjects_ID) AS lesson_count,
         (SELECT COUNT(DISTINCT ss.Student_ID) FROM public.student_subject ss WHERE ss.Subjects_ID = s.Subjects_ID) AS student_count
     FROM public.subjects s
-    WHERE s.Teachers_ID = :teacher_id
+    INNER JOIN public.subject_teachers st ON st.subjects_id = s.subjects_id
+    WHERE st.teachers_id = :teacher_id
     ORDER BY s.Subjects_Name ASC
 ');
 $subjectStmt->execute([':teacher_id' => $teacherId]);
@@ -121,8 +122,8 @@ if (!empty($subjectIds)) {
     $lessonStmt = $conn->prepare('
         SELECT l.Lessons_ID, l.Lessons_Name, l.Study_Hours, l.Subjects_ID 
         FROM public.lessons l
-        INNER JOIN public.subjects s ON s.Subjects_ID = l.Subjects_ID
-        WHERE s.Teachers_ID = :teacher_id
+        INNER JOIN public.subject_teachers st ON st.subjects_id = l.subjects_id
+        WHERE st.teachers_id = :teacher_id
         ORDER BY l.Lessons_ID ASC
     ');
     $lessonStmt->execute([':teacher_id' => $teacherId]);
@@ -150,8 +151,9 @@ $studentStmt = $conn->prepare("
             SELECT STRING_AGG(DISTINCT s3.Subjects_ID, ',')
             FROM public.student_subject ss3
             INNER JOIN public.subjects s3 ON s3.Subjects_ID = ss3.Subjects_ID
+            INNER JOIN public.subject_teachers st3 ON st3.subjects_id = s3.subjects_id
             WHERE ss3.Student_ID = st.Student_ID
-              AND s3.Teachers_ID = :teacher_id
+              AND st3.teachers_id = :teacher_id
         ) AS subject_ids,
         (
             SELECT COALESCE(AVG(
@@ -162,23 +164,26 @@ $studentStmt = $conn->prepare("
             ), 0)
             FROM public.student_learning_progress lp
             INNER JOIN public.subjects s ON s.subjects_id = lp.subjects_id
+            INNER JOIN public.subject_teachers st_progress ON st_progress.subjects_id = s.subjects_id
             WHERE lp.student_id = st.Student_ID
-              AND s.teachers_id = :teacher_id
+              AND st_progress.teachers_id = :teacher_id
         ) AS real_score,
         (
             SELECT COUNT(DISTINCT l.Lessons_ID)
             FROM public.lessons l
             INNER JOIN public.subjects s ON s.Subjects_ID = l.Subjects_ID
+            INNER JOIN public.subject_teachers st_total ON st_total.subjects_id = s.subjects_id
             INNER JOIN public.student_subject ss ON ss.Subjects_ID = s.Subjects_ID
-            WHERE s.Teachers_ID = :teacher_id
+            WHERE st_total.teachers_id = :teacher_id
               AND ss.Student_ID = st.Student_ID
         ) AS total_lessons,
         (
             SELECT COUNT(*)
             FROM public.student_learning_progress lp
             INNER JOIN public.subjects s ON s.subjects_id = lp.subjects_id
+            INNER JOIN public.subject_teachers st_completed ON st_completed.subjects_id = s.subjects_id
             WHERE lp.student_id = st.Student_ID
-              AND s.Teachers_ID = :teacher_id
+              AND st_completed.teachers_id = :teacher_id
               AND lp.quiz_total_score > 0
               AND (lp.best_quiz_score::numeric / NULLIF(lp.quiz_total_score, 0)) >= 0.6
         ) AS completed_lessons,
@@ -186,8 +191,9 @@ $studentStmt = $conn->prepare("
             SELECT STRING_AGG(DISTINCT COALESCE(NULLIF(TRIM(lp.lesson_title), ''), ('บทที่ ' || lp.lesson_index::text)), '||')
             FROM public.student_learning_progress lp
             INNER JOIN public.subjects s ON s.subjects_id = lp.subjects_id
+            INNER JOIN public.subject_teachers st_lesson_names ON st_lesson_names.subjects_id = s.subjects_id
             WHERE lp.student_id = st.Student_ID
-              AND s.Teachers_ID = :teacher_id
+              AND st_lesson_names.teachers_id = :teacher_id
               AND lp.quiz_total_score > 0
               AND (lp.best_quiz_score::numeric / NULLIF(lp.quiz_total_score, 0)) >= 0.6
         ) AS completed_lesson_names
@@ -196,8 +202,9 @@ $studentStmt = $conn->prepare("
         SELECT 1
         FROM public.student_subject ss
         INNER JOIN public.subjects s ON s.Subjects_ID = ss.Subjects_ID
+        INNER JOIN public.subject_teachers st_assigned ON st_assigned.subjects_id = s.subjects_id
         WHERE ss.Student_ID = st.Student_ID
-          AND s.Teachers_ID = :teacher_id
+          AND st_assigned.teachers_id = :teacher_id
     )
     ORDER BY st.Student_Name ASC
 ");

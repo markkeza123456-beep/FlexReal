@@ -237,18 +237,19 @@
   }
 
   // 💥 ฟังก์ชันโหลดอาจารย์ใส่ใน Select dropdown หน้าจัดการรายวิชา
-  function populateTeacherSelect(selectedTeacherId = '') {
+  function populateTeacherSelect(selectedTeacherIds = []) {
     if (!subjectTeacherSelect) {
       return;
     }
 
-    subjectTeacherSelect.innerHTML = `
-      <option value="">-- เลือกอาจารย์ผู้ดูแลรายวิชา --</option>
-      ${teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
-    `;
-    
-    // ตั้งค่าอาจารย์คนเดิมในกรณีที่เป็นการแก้ไขข้อมูล
-    subjectTeacherSelect.value = selectedTeacherId || '';
+    const selectedIds = new Set(
+      (Array.isArray(selectedTeacherIds) ? selectedTeacherIds : String(selectedTeacherIds || '').split(','))
+        .map(id => String(id).trim())
+        .filter(Boolean)
+    );
+    subjectTeacherSelect.innerHTML = teachers.map(t =>
+      `<option value="${t.id}"${selectedIds.has(String(t.id)) ? ' selected' : ''}>${t.name}</option>`
+    ).join('');
   }
 
   function renderMembers() {
@@ -470,8 +471,7 @@
     document.getElementById('sf-credit').value = subject.credit || 0;
     document.getElementById('sf-type').value = subject.type || 'required';
     
-    // ส่ง id ของอาจารย์คนเดิมไปค้างไว้ในฟังก์ชันเลือก Dropdown
-    populateTeacherSelect(subject.teachers_id || '');
+    populateTeacherSelect(subject.teacher_ids || '');
     goTo('subject-add');
   };
 
@@ -485,7 +485,8 @@
     formData.append('name', document.getElementById('sf-name').value);
     formData.append('credit', document.getElementById('sf-credit').value);
     formData.append('type', document.getElementById('sf-type').value);
-    formData.append('teacher_id', subjectTeacherSelect?.value || ''); // 💥 บันทึกรหัสอาจารย์ผู้ดูแลวิชาเข้าฐานข้อมูล
+    const teacherIds = [...(subjectTeacherSelect?.selectedOptions || [])].map(option => option.value);
+    formData.append('teacher_ids', JSON.stringify(teacherIds));
 
     try {
       await fetchJson('api_staff.php', { method: 'POST', body: formData });

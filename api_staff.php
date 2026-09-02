@@ -53,6 +53,21 @@ function countSubjectLessons(PDO $conn, string $subjectId): int
     return (int) $stmt->fetchColumn();
 }
 
+function ensureSubjectTeachersTable(PDO $conn): void
+{
+    $conn->exec('CREATE TABLE IF NOT EXISTS public.subject_teachers (
+        subjects_id VARCHAR(50) NOT NULL REFERENCES public.subjects(subjects_id) ON DELETE CASCADE,
+        teachers_id VARCHAR(50) NOT NULL REFERENCES public.teachers(teachers_id) ON DELETE CASCADE,
+        assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (subjects_id, teachers_id)
+    )');
+    // Keep teachers_id on subjects as the legacy primary teacher while migrating old data.
+    $conn->exec("INSERT INTO public.subject_teachers (subjects_id, teachers_id)
+        SELECT subjects_id, teachers_id FROM public.subjects
+        WHERE NULLIF(BTRIM(teachers_id), '') IS NOT NULL
+        ON CONFLICT (subjects_id, teachers_id) DO NOTHING");
+}
+
 function buildLessonMediaSegments(string $teacherId, string $subjectId, string $lessonId, string $mediaType): array
 {
     return [
@@ -120,6 +135,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 try {
+    ensureSubjectTeachersTable($conn);
     switch ($action) {
         case 'getAllData':
             // 1. ดึงข้อมูลสมาชิกทั้งหมด
@@ -127,7 +143,7 @@ try {
                 SELECT 
                     u.user_id as id,
                     u.status as role,
-                    \'active\' as status_account,
+                    COALESCE(u.account_status, \'active\') as status_account,
                     CASE 
                         WHEN u.status = \'Student\' THEN COALESCE(s.student_name, \'-\')
                         WHEN u.status = \'Teacher\' THEN COALESCE(t.teachers_name, \'-\')
@@ -169,10 +185,12 @@ try {
                     s.subjects_name AS name, 
                     COALESCE(s.credit, 0) AS credit,
                     'required' AS type,
-                    s.teachers_id,
-                    COALESCE(t.teachers_name, 'ยังไม่มีผู้ดูแล') AS teacher_name
+                    COALESCE(STRING_AGG(DISTINCT st.teachers_id, ','), '') AS teacher_ids,
+                    COALESCE(STRING_AGG(DISTINCT t.teachers_name, ', '), 'ยังไม่มีผู้ดูแล') AS teacher_name
                 FROM public.subjects s
-                LEFT JOIN public.teachers t ON s.teachers_id = t.teachers_id
+                LEFT JOIN public.subject_teachers st ON st.subjects_id = s.subjects_id
+                LEFT JOIN public.teachers t ON st.teachers_id = t.teachers_id
+                GROUP BY s.subjects_id, s.code, s.subjects_name, s.credit
                 ORDER BY s.subjects_id DESC
             ");
 
@@ -192,17 +210,118 @@ try {
             ]);
             break;
 
+        case 'saveMember':
+            $memberId = postValue('id');
+            $firstName = postValue('firstname');
+            $lastName = postValue('lastname');
+            $email = postValue('email');
+            $requestedRole = strtolower(postValue('role'));
+            $accountStatus = strtolower(postValue('status', 'active'));
+
+            $roles = [
+                'student' => 'Student',
+                'teacher' => 'Teacher',
+                'parent' => 'Parent',
+                'staff' => 'Staff',
+            ];
+
+            if ($memberId === '' || $firstName === '') {
+                jsonResponse(['status' => 'error', 'message' => 'กรุณาระบุรหัสสมาชิกและชื่อ'], 400);
+            }
+            if (!isset($roles[$requestedRole])) {
+                jsonResponse(['status' => 'error', 'message' => 'บทบาทสมาชิกไม่ถูกต้อง'], 400);
+            }
+            if (!in_array($accountStatus, ['active', 'inactive'], true)) {
+                jsonResponse(['status' => 'error', 'message' => 'สถานะบัญชีไม่ถูกต้อง'], 400);
+            }
+            if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                jsonResponse(['status' => 'error', 'message' => 'รูปแบบอีเมลไม่ถูกต้อง'], 400);
+            }
+
+            $userStmt = $conn->prepare('SELECT user_id FROM public."User" WHERE user_id = :id FOR UPDATE');
+            $conn->beginTransaction();
+            $userStmt->execute([':id' => $memberId]);
+            if (!$userStmt->fetchColumn()) {
+                $conn->rollBack();
+                jsonResponse(['status' => 'error', 'message' => 'ไม่พบสมาชิกที่ต้องการแก้ไข'], 404);
+            }
+
+            $fullName = trim($firstName . ' ' . $lastName);
+            switch ($requestedRole) {
+                case 'student':
+                    $profile = $conn->prepare('SELECT 1 FROM public.student WHERE student_id = :id');
+                    $profile->execute([':id' => $memberId]);
+                    if ($profile->fetchColumn()) {
+                        $statement = $conn->prepare('UPDATE public.student SET student_name = :name, email = :email WHERE student_id = :id');
+                    } else {
+                        $statement = $conn->prepare('INSERT INTO public.student (student_id, student_name, email) VALUES (:id, :name, :email)');
+                    }
+                    $statement->execute([':id' => $memberId, ':name' => $fullName, ':email' => $email !== '' ? $email : null]);
+                    break;
+
+                case 'teacher':
+                    $profile = $conn->prepare('SELECT 1 FROM public.teachers WHERE teachers_id = :id');
+                    $profile->execute([':id' => $memberId]);
+                    if ($profile->fetchColumn()) {
+                        $statement = $conn->prepare('UPDATE public.teachers SET teachers_name = :name, email = :email WHERE teachers_id = :id');
+                    } else {
+                        $statement = $conn->prepare('INSERT INTO public.teachers (teachers_id, teachers_name, email) VALUES (:id, :name, :email)');
+                    }
+                    $statement->execute([':id' => $memberId, ':name' => $fullName, ':email' => $email !== '' ? $email : null]);
+                    break;
+
+                case 'parent':
+                    $profile = $conn->prepare('SELECT 1 FROM public.parents WHERE parents_id = :id');
+                    $profile->execute([':id' => $memberId]);
+                    if ($profile->fetchColumn()) {
+                        $statement = $conn->prepare('UPDATE public.parents SET parents_name = :name, email = :email WHERE parents_id = :id');
+                    } else {
+                        $statement = $conn->prepare('INSERT INTO public.parents (parents_id, parents_name, email) VALUES (:id, :name, :email)');
+                    }
+                    $statement->execute([':id' => $memberId, ':name' => $fullName, ':email' => $email !== '' ? $email : null]);
+                    break;
+
+                case 'staff':
+                    $profile = $conn->prepare('SELECT 1 FROM public.staff WHERE user_id = :id');
+                    $profile->execute([':id' => $memberId]);
+                    if ($profile->fetchColumn()) {
+                        $statement = $conn->prepare('UPDATE public.staff SET firstname = :firstname, lastname = :lastname, updated_at = NOW() WHERE user_id = :id');
+                    } else {
+                        $statement = $conn->prepare('INSERT INTO public.staff (user_id, firstname, lastname) VALUES (:id, :firstname, :lastname)');
+                    }
+                    $statement->execute([':id' => $memberId, ':firstname' => $firstName, ':lastname' => $lastName]);
+                    break;
+            }
+
+            $statement = $conn->prepare('UPDATE public."User" SET status = :role, account_status = :account_status WHERE user_id = :id');
+            $statement->execute([':id' => $memberId, ':role' => $roles[$requestedRole], ':account_status' => $accountStatus]);
+            $conn->commit();
+            jsonResponse(['status' => 'success']);
+            break;
+
         case 'saveSubject':
             $subjectId = $_POST['id'] ?? '';
-            // รับค่าอาจารย์ผู้ดูแลรายวิชามาจากฟอร์มหน้าบ้าน
-            $teacherId = postValue('teacher_id', null);
-            if ($teacherId === '') { $teacherId = null; }
+            $teacherIds = json_decode((string) ($_POST['teacher_ids'] ?? '[]'), true);
+            if (!is_array($teacherIds)) { $teacherIds = []; }
+            // รองรับคำขอจากหน้าเว็บเวอร์ชันเดิมที่เลือกอาจารย์ได้คนเดียว
+            if (!$teacherIds && postValue('teacher_id') !== '') { $teacherIds = [postValue('teacher_id')]; }
+            $teacherIds = array_values(array_unique(array_filter(array_map(static fn($id) => trim((string) $id), $teacherIds))));
+            if ($teacherIds) {
+                $teacherCheck = $conn->prepare('SELECT 1 FROM public.teachers WHERE teachers_id = :id');
+                foreach ($teacherIds as $teacherId) {
+                    $teacherCheck->execute([':id' => $teacherId]);
+                    if (!$teacherCheck->fetchColumn()) {
+                        jsonResponse(['status' => 'error', 'message' => 'พบอาจารย์ที่เลือกไม่อยู่ในระบบ'], 400);
+                    }
+                }
+            }
+            $primaryTeacherId = $teacherIds[0] ?? null;
 
             $params = [
                 ':code' => postValue('code'),
                 ':name' => postValue('name'),
                 ':credit' => (int) postValue('credit', '0'),
-                ':teacher_id' => $teacherId
+                ':teacher_id' => $primaryTeacherId
             ];
 
             if (!empty($subjectId)) {
@@ -228,8 +347,17 @@ try {
                     VALUES (:id, :code, :name, :credit, :teacher_id)
                 ");
             }
-
+            $conn->beginTransaction();
             $statement->execute($params);
+            $savedSubjectId = !empty($subjectId) ? $subjectId : $newId;
+            $conn->prepare('DELETE FROM public.subject_teachers WHERE subjects_id = :subject_id')->execute([':subject_id' => $savedSubjectId]);
+            if ($teacherIds) {
+                $assignment = $conn->prepare('INSERT INTO public.subject_teachers (subjects_id, teachers_id) VALUES (:subject_id, :teacher_id)');
+                foreach ($teacherIds as $teacherId) {
+                    $assignment->execute([':subject_id' => $savedSubjectId, ':teacher_id' => $teacherId]);
+                }
+            }
+            $conn->commit();
             jsonResponse(['status' => 'success']);
             break;
 

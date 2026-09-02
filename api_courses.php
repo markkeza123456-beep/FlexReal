@@ -132,19 +132,17 @@ try {
         // ดึงบทเรียนของวิชานี้
         $lessons = loadLessons($conn, (string) $id);
 
-        // ดึงชื่ออาจารย์ (เขียนดัก Error ป้องกันเว็บพัง)
+        // ดึงชื่ออาจารย์ทุกคนที่รับผิดชอบรายวิชานี้
         $course['teachers_name'] = 'ไม่ระบุอาจารย์ผู้สอน';
-        if (!empty($course['teachers_id'])) {
-            try {
-                $stmtT = $conn->prepare("SELECT teachers_name FROM public.teachers WHERE teachers_id = ?");
-                $stmtT->execute([$course['teachers_id']]);
-                $teacher = $stmtT->fetch(PDO::FETCH_ASSOC);
-                if ($teacher && !empty($teacher['teachers_name'])) {
-                    $course['teachers_name'] = $teacher['teachers_name'];
-                }
-            } catch (Exception $ex) {
-                // ข้ามไปถ้าไม่มีตาราง
+        try {
+            $stmtT = $conn->prepare("SELECT STRING_AGG(t.teachers_name, ', ' ORDER BY t.teachers_name) FROM public.subject_teachers st INNER JOIN public.teachers t ON t.teachers_id = st.teachers_id WHERE st.subjects_id = ?");
+            $stmtT->execute([$course['subjects_id']]);
+            $teacherNames = trim((string) $stmtT->fetchColumn());
+            if ($teacherNames !== '') {
+                $course['teachers_name'] = $teacherNames;
             }
+        } catch (Exception $ex) {
+            // Keep the default text if a partially migrated database does not have the mapping table yet.
         }
 
         echo json_encode(['status' => 'success', 'course' => $course, 'lessons' => $lessons]);
