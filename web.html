@@ -73,14 +73,22 @@
                 <div class="section-head-row">
                     <h2 class="section-title">วิชาที่เรียน</h2>
                 </div>
-                <div class="grid" id="required-course-grid"></div>
+                <div class="course-carousel">
+                    <button class="carousel-control" type="button" aria-label="เลื่อนวิชาที่เรียนไปทางซ้าย" onclick="scrollCourseCarousel('required-course-grid', -1)">‹</button>
+                    <div class="grid" id="required-course-grid"></div>
+                    <button class="carousel-control" type="button" aria-label="เลื่อนวิชาที่เรียนไปทางขวา" onclick="scrollCourseCarousel('required-course-grid', 1)">›</button>
+                </div>
             </div>
 
             <div class="course-section-block">
                 <div class="section-head-row">
-                    <h2 class="section-title">วิชาเลือก</h2>
+                    <h2 class="section-title">วิชาที่ยังไม่เรียน</h2>
                 </div>
-                <div class="grid" id="elective-course-grid"></div>
+                <div class="course-carousel">
+                    <button class="carousel-control" type="button" aria-label="เลื่อนวิชาที่ยังไม่เรียนไปทางซ้าย" onclick="scrollCourseCarousel('elective-course-grid', -1)">‹</button>
+                    <div class="grid" id="elective-course-grid"></div>
+                    <button class="carousel-control" type="button" aria-label="เลื่อนวิชาที่ยังไม่เรียนไปทางขวา" onclick="scrollCourseCarousel('elective-course-grid', 1)">›</button>
+                </div>
             </div>
         </div>
     </div>

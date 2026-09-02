@@ -37,18 +37,6 @@ function findSubjectIdByCourseName(PDO $conn, string $courseName): ?string
     return $id === false ? null : (string) $id;
 }
 
-function ensureEnrollmentLogTable(PDO $conn): void
-{
-    $conn->exec(
-        'CREATE TABLE IF NOT EXISTS public.student_subject_enrollment_logs (
-            log_id BIGSERIAL PRIMARY KEY,
-            student_id VARCHAR(50) NOT NULL,
-            subjects_id VARCHAR(50) NOT NULL,
-            enrolled_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )'
-    );
-}
-
 function assignTeacherToStudentIfMissing(PDO $conn, string $studentId, string $subjectId): void
 {
     $teacherStmt = $conn->prepare(
@@ -90,6 +78,54 @@ function enrollmentExists(PDO $conn, string $studentId, string $subjectId): bool
     return (bool) $stmt->fetchColumn();
 }
 
+function ensureStudentRecord(PDO $conn, string $studentId): void
+{
+    $existsStmt = $conn->prepare(
+        'SELECT 1 FROM public.student WHERE student_id = :student_id LIMIT 1'
+    );
+    $existsStmt->execute([':student_id' => $studentId]);
+    if ($existsStmt->fetchColumn()) {
+        return;
+    }
+
+    $insertStmt = $conn->prepare(
+        'INSERT INTO public.student (student_id, student_name)
+         VALUES (:student_id, :student_name)'
+    );
+    $insertStmt->execute([
+        ':student_id' => $studentId,
+        ':student_name' => (string) ($_SESSION['name'] ?? 'ผู้ใช้งาน'),
+    ]);
+}
+
+function logEnrollmentIfAvailable(PDO $conn, string $studentId, string $subjectId): void
+{
+    try {
+        $tableStmt = $conn->prepare(
+            "SELECT 1
+             FROM information_schema.tables
+             WHERE table_schema = 'public'
+               AND table_name = 'student_subject_enrollment_logs'
+             LIMIT 1"
+        );
+        $tableStmt->execute();
+        if (!$tableStmt->fetchColumn()) {
+            return;
+        }
+
+        $stmtLog = $conn->prepare(
+            'INSERT INTO public.student_subject_enrollment_logs (student_id, subjects_id, enrolled_at)
+             VALUES (:student_id, :subjects_id, NOW())'
+        );
+        $stmtLog->execute([
+            ':student_id' => $studentId,
+            ':subjects_id' => $subjectId,
+        ]);
+    } catch (Throwable $e) {
+        // Enrollment is the primary operation; optional audit logging must not block it.
+    }
+}
+
 $subjectIdInput = trim((string) ($_POST['subject_id'] ?? $_GET['subject_id'] ?? ''));
 $courseName = trim((string) ($_POST['course_name'] ?? $_GET['course_name'] ?? ''));
 if ($subjectIdInput === '' && $courseName === '') {
@@ -108,8 +144,6 @@ if ($studentId === null) {
 }
 
 try {
-    ensureEnrollmentLogTable($conn);
-
     $subjectId = $subjectIdInput;
     if ($subjectId === '') {
         $subjectId = findSubjectIdByCourseName($conn, $courseName);
@@ -122,6 +156,7 @@ try {
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        ensureStudentRecord($conn, $studentId);
         $wasInserted = false;
         if (!enrollmentExists($conn, $studentId, $subjectId)) {
             $stmt = $conn->prepare(
@@ -137,14 +172,7 @@ try {
 
         if ($wasInserted) {
             assignTeacherToStudentIfMissing($conn, $studentId, $subjectId);
-            $stmtLog = $conn->prepare(
-                'INSERT INTO public.student_subject_enrollment_logs (student_id, subjects_id, enrolled_at)
-                 VALUES (:student_id, :subjects_id, NOW())'
-            );
-            $stmtLog->execute([
-                ':student_id' => $studentId,
-                ':subjects_id' => $subjectId,
-            ]);
+            logEnrollmentIfAvailable($conn, $studentId, $subjectId);
         }
 
         jsonResponse([

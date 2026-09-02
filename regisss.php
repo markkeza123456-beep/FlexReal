@@ -262,12 +262,13 @@
               <span class="input-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
               </span>
-              <input type="password" id="password" name="password" placeholder="อย่างน้อย 6 ตัวอักษร" autocomplete="new-password" />
+              <input type="password" id="password" name="password" minlength="8" maxlength="15" pattern="(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}" autocomplete="new-password" />
               <button type="button" class="toggle-pw" id="togglePw1">
                 <svg id="eye1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               </button>
               <span class="focus-bar"></span>
             </div>
+            <small class="password-hint">ใช้ตัวอักษรภาษาอังกฤษและตัวเลข 8-15 ตัว</small>
             <span class="error-msg" id="password-error"></span>
           </div>
 
@@ -277,12 +278,13 @@
               <span class="input-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
               </span>
-              <input type="password" id="confirm" name="confirm" placeholder="กรอกซ้ำอีกครั้ง" autocomplete="new-password" />
+              <input type="password" id="confirm" name="confirm" minlength="8" maxlength="15" pattern="(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}" autocomplete="new-password" />
               <button type="button" class="toggle-pw" id="togglePw2">
                 <svg id="eye2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               </button>
               <span class="focus-bar"></span>
             </div>
+            <small class="password-hint">กรอกรหัสผ่านเดิมอีกครั้ง</small>
             <span class="error-msg" id="confirm-error"></span>
           </div>
         </div>

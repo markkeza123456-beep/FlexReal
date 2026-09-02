@@ -13,7 +13,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $userid = str_replace('-', '', $_POST['userid']); 
     $phone = str_replace('-', '', $_POST['phone']);
     
-    $password = $_POST['password'];
+    $password = trim((string) ($_POST['password'] ?? ''));
+    $confirmPassword = trim((string) ($_POST['confirm'] ?? ''));
+    if (!preg_match('/^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}$/', $password)) {
+        throw new Exception('รหัสผ่านต้องมีตัวอักษรภาษาอังกฤษและตัวเลข 8-15 ตัว');
+    }
+    if ($password !== $confirmPassword) {
+        throw new Exception('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน');
+    }
     // หน้าเว็บรวมชื่อและนามสกุลไว้ใน fullname แล้ว จึงห้ามนำ lastname มาต่อซ้ำอีกครั้ง
     $fullname = trim((string) ($_POST['fullname'] ?? ''));
     if ($fullname === '') {

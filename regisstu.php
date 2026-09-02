@@ -197,8 +197,8 @@ try {
 
         <div class="section-label">ตั้งรหัสผ่าน</div>
         <div class="grid-2">
-          <div class="field"><label class="label">รหัสผ่าน</label><div class="input-wrap"><input type="password" name="password" id="password" required /><span class="focus-bar"></span></div></div>
-          <div class="field"><label class="label">ยืนยันรหัสผ่าน</label><div class="input-wrap"><input type="password" name="confirm" id="confirm" required /><span class="focus-bar"></span></div></div>
+          <div class="field"><label class="label">รหัสผ่าน</label><div class="input-wrap"><input type="password" name="password" id="password" minlength="8" maxlength="15" pattern="(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}" required /><span class="focus-bar"></span></div><small class="password-hint">ใช้ตัวอักษรภาษาอังกฤษและตัวเลข 8-15 ตัว</small></div>
+          <div class="field"><label class="label">ยืนยันรหัสผ่าน</label><div class="input-wrap"><input type="password" name="confirm" id="confirm" minlength="8" maxlength="15" pattern="(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}" required /><span class="focus-bar"></span></div><small class="password-hint">กรอกรหัสผ่านเดิมอีกครั้ง</small></div>
         </div>
 
         <div class="role-field student-field" id="pin-section">

@@ -340,8 +340,8 @@
     // ---- รหัสผ่าน ----
     const password = valueOf('password');
     const confirmPassword = valueOf('confirm');
-    if (!password || password.length < 6) {
-      valid = setError('field-password', 'password-error', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร') && valid;
+    if (!/^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}$/.test(password)) {
+      valid = setError('field-password', 'password-error', 'รหัสผ่านต้องมีตัวอักษรภาษาอังกฤษและตัวเลข 8-15 ตัว') && valid;
     }
     if (password !== confirmPassword) {
       valid = setError('field-confirm', 'confirm-error', 'รหัสผ่านไม่ตรงกัน') && valid;

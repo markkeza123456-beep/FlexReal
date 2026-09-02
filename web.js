@@ -985,6 +985,13 @@ function renderCourseCollection(container, courses, emptyMessage) {
     container.innerHTML = courses.map((course) => createCourseCardMarkup(course)).join('');
 }
 
+function scrollCourseCarousel(containerId, direction) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const distance = Math.max(container.clientWidth * 0.85, 300);
+    container.scrollBy({ left: distance * Number(direction || 1), behavior: 'smooth' });
+}
+
 function toggleCourseLayout(useStudentSections) {
     const publicSection = document.getElementById('public-course-section');
     const studentSections = document.getElementById('student-course-sections');
@@ -1000,14 +1007,13 @@ function renderCourseSections(courses) {
     if (isStudentLoggedIn()) {
         toggleCourseLayout(true);
         const studyCourses = courses.filter((course) => {
-            const isCurriculumRequired = pick(course, 'is_curriculum_required', 'Is_Curriculum_Required');
             const isEnrolled = pick(course, 'is_enrolled', 'Is_Enrolled');
-            return isTruthy(isCurriculumRequired) || isTruthy(isEnrolled);
+            return isTruthy(isEnrolled);
         });
         const electiveCourses = courses.filter((course) => !studyCourses.includes(course));
 
-        renderCourseCollection(requiredGrid, studyCourses, 'ยังไม่มีวิชาที่ต้องเรียนหรือวิชาที่ลงทะเบียน');
-        renderCourseCollection(electiveGrid, electiveCourses, 'ยังไม่มีวิชาเลือกให้ลงทะเบียน');
+        renderCourseCollection(requiredGrid, studyCourses, 'ยังไม่มีวิชาที่กำลังเรียน');
+        renderCourseCollection(electiveGrid, electiveCourses, 'ยังไม่มีวิชาที่ยังไม่เรียน');
         return;
     }
 

@@ -159,6 +159,57 @@ body {
 .course-section-block + .course-section-block {
     margin-top: 40px;
 }
+.course-carousel {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    align-items: center;
+    gap: 12px;
+}
+.course-carousel .grid {
+    display: flex;
+    min-width: 0;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    padding: 8px 2px 16px;
+}
+.course-carousel .grid::-webkit-scrollbar { display: none; }
+.course-carousel .grid > .card {
+    flex: 0 0 calc((100% - 60px) / 3);
+    min-width: 280px;
+}
+.carousel-control {
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--primary-orange);
+    color: #ffffff;
+    font-size: 34px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(255, 107, 26, .24);
+    transition: transform .2s ease, background .2s ease;
+}
+.carousel-control:hover {
+    background: var(--accent-dark);
+    transform: scale(1.06);
+}
+.carousel-control:focus-visible {
+    outline: 3px solid rgba(255, 107, 26, .28);
+    outline-offset: 3px;
+}
+@media (max-width: 1100px) {
+    .course-carousel .grid > .card { flex-basis: calc((100% - 30px) / 2); }
+}
+@media (max-width: 760px) {
+    .course-carousel { grid-template-columns: 34px minmax(0, 1fr) 34px; gap: 8px; }
+    .carousel-control { width: 34px; height: 34px; font-size: 27px; }
+    .course-carousel .grid > .card { flex-basis: calc((100% - 30px) / 2); min-width: 220px; }
+}
+@media (max-width: 480px) {
+    .course-carousel .grid > .card { flex-basis: 100%; min-width: 0; }
+}
 .section-head-row {
     display: flex;
     align-items: flex-end;

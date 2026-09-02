@@ -56,8 +56,14 @@ body {
   position: fixed;
   inset: 0;
   background-image:
+<<<<<<< Updated upstream
     radial-gradient(circle, rgba(255,107,26,.13) 1.3px, transparent 1.5px);
   background-size: 32px 32px;
+=======
+    linear-gradient(rgba(244,81,30,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(244,81,30,.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+>>>>>>> Stashed changes
   pointer-events: none;
   z-index: 0;
 }
@@ -101,7 +107,7 @@ body {
 }
 .orb-1 {
   width: 500px; height: 500px;
-  background: radial-gradient(circle, rgba(255,107,26,.18) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(244,81,30,.18) 0%, transparent 70%);
   top: -150px; right: -100px;
   animation-delay: 0s;
 }

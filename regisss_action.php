@@ -6,7 +6,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $role = $_POST['role'];
     $userid = $_POST['userid'];
     $fullname = trim($_POST['fullname']);
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    $rawPassword = trim((string) ($_POST['password'] ?? ''));
+    $confirmPassword = trim((string) ($_POST['confirm'] ?? ''));
+    if (!preg_match('/^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}$/', $rawPassword)) {
+        echo "<script>alert('รหัสผ่านต้องมีตัวอักษรภาษาอังกฤษและตัวเลข 8-15 ตัว'); window.history.back();</script>";
+        exit;
+    }
+    if ($rawPassword !== $confirmPassword) {
+        echo "<script>alert('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน'); window.history.back();</script>";
+        exit;
+    }
+    $password = password_hash($rawPassword, PASSWORD_DEFAULT);
 
     try {
         if ($role === 'student') {
