@@ -37,11 +37,7 @@ function loadLessons(PDO $conn, string $subjectId): array
     $lessons = $stmtL->fetchAll(PDO::FETCH_ASSOC);
 
     $normalized = [];
-<<<<<<< Updated upstream
-    foreach ($lessons as $index => $lessonRow) {
-=======
-    foreach (array_slice($lessons, 0, 3) as $lessonRow) {
->>>>>>> Stashed changes
+    foreach ($lessons as $lessonRow) {
         $lessonRow['is_placeholder'] = false;
         $normalized[] = $lessonRow;
     }

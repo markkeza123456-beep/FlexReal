@@ -286,20 +286,11 @@
   document.getElementById('lessonForm').addEventListener('submit', async (event) => {
     event.preventDefault();
 
-<<<<<<< Updated upstream
     const lessonId = document.getElementById('lessonId').value.trim();
     if (!lessonId && lessons.length >= MAX_LESSONS_PER_SUBJECT) {
       showToast('รายวิชานี้มีบทเรียนครบ 3 บทแล้ว', 'error');
       return;
     }
-=======
-    const formData = new FormData();
-    formData.append('action', 'saveLesson');
-    formData.append('id', document.getElementById('lessonId').value);
-    formData.append('subject_id', subjectId);
-    formData.append('title', document.getElementById('lessonTitle').value.trim());
->>>>>>> Stashed changes
-
     const formData = new FormData();
     formData.append('action', 'saveLesson');
     formData.append('id', lessonId);

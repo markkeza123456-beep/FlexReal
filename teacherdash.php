@@ -1348,7 +1348,6 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-<script src="arabic-numerals.js?v=20260902"></script>
 <script src="teacherdash.js?v=20260901"></script>
 </body>
 </html>

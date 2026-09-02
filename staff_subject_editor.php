@@ -185,7 +185,6 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
   </main>
 
   <div class="toast" id="toast"></div>
-  <script src="arabic-numerals.js?v=20260902"></script>
   <script src="staff_subject_editor.js?v=20260901"></script>
 </body>
 </html>

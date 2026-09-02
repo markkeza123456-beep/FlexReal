@@ -729,7 +729,6 @@ if (!empty($_SESSION['name'])) {
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
-  <script src="arabic-numerals.js?v=20260902"></script>
   <script src="staffdash.js"></script>
 </body>
 </html>

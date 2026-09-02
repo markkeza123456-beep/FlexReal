@@ -208,7 +208,6 @@ $summaryCards = [
     </main>
   </div>
 
-  <script src="arabic-numerals.js?v=20260902"></script>
   <script>
     (() => {
       const map = {

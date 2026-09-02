@@ -415,12 +415,9 @@ try {
             $baseParams = [
                 ':subject_id' => $subjectId,
                 ':title' => postValue('title'),
-<<<<<<< Updated upstream
                 ':content' => array_key_exists('content', $_POST)
                     ? postValue('content')
                     : (string) ($currentLesson['lesson_content'] ?? ''),
-=======
->>>>>>> Stashed changes
                 ':document_path' => $documentPath,
                 ':document_name' => $documentName,
             ];
@@ -429,7 +426,6 @@ try {
                 $statement = $conn->prepare("
                     UPDATE public.lessons
                     SET lessons_name = :title,
-<<<<<<< Updated upstream
                         lesson_content = :content,
                         document_path = :document_path,
                         document_name = :document_name
@@ -438,15 +434,6 @@ try {
                 ");
             } else {
                 $baseParams[':id'] = $lessonId;
-=======
-                        document_path = :document_path,
-                        document_name = :document_name
-                    WHERE lessons_id = :id
-                ");
-            } else {
-                $baseParams[':id'] = $lessonId;
-                $baseParams[':content'] = '';
->>>>>>> Stashed changes
                 $statement = $conn->prepare("
                     INSERT INTO public.lessons (
                         lessons_id,
