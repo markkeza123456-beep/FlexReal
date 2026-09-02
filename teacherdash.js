@@ -1,6 +1,7 @@
 ﻿/* ===== teacherdash.js ===== */
 
 document.addEventListener('DOMContentLoaded', () => {
+    const MAX_LESSONS_PER_SUBJECT = 3;
 
     // โ”€โ”€ Sidebar nav โ€“ page view switching โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
     const navItems = document.querySelectorAll('.nav-item[data-view]');
@@ -109,7 +110,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ• 1. เธฃเธฐเธเธเธเธฑเธ”เธเธฒเธฃ "เธเธ—เน€เธฃเธตเธขเธเธขเนเธญเธข" โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ• //
     const modalOverlay = document.getElementById('modalOverlay');
-    document.getElementById('openModalBtn')?.addEventListener('click', () => modalOverlay.classList.add('open'));
+    document.getElementById('openModalBtn')?.addEventListener('click', () => {
+        const currentLessonCount = document.querySelectorAll('.btn-edit-lsn').length;
+        if (currentLessonCount >= MAX_LESSONS_PER_SUBJECT) {
+            alert('รายวิชานี้มีบทเรียนครบ 3 บทแล้ว');
+            return;
+        }
+        modalOverlay.classList.add('open');
+    });
     document.getElementById('closeModalBtn')?.addEventListener('click', () => modalOverlay.classList.remove('open'));
     document.getElementById('closeModalBtn2')?.addEventListener('click', () => modalOverlay.classList.remove('open'));
     
@@ -118,8 +126,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const lessonName = document.getElementById('lessonNameInput').value.trim();
         const subjectId = document.getElementById('lessonSubjectId').value;
         const lessonDocument = document.getElementById('lessonDocument')?.files?.[0] || null;
+        const currentLessonCount = document.querySelectorAll('.btn-edit-lsn').length;
 
         if (!lessonName) { document.getElementById('lessonNameInput').style.borderColor = '#ef4444'; return; }
+        if (currentLessonCount >= MAX_LESSONS_PER_SUBJECT) {
+            alert('รายวิชานี้มีบทเรียนครบ 3 บทแล้ว');
+            return;
+        }
         btn.textContent = 'กำลังบันทึก...'; btn.disabled = true;
 
         const fd = new FormData();

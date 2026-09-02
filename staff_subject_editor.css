@@ -328,36 +328,45 @@ body {
 
 .table-wrap {
   overflow-x: auto;
+  border: 2px solid var(--orange-dark);
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(115, 71, 35, .10);
 }
 
 .data-table {
   width: 100%;
   min-width: 920px;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .data-table thead tr {
-  background: rgba(255, 255, 255, 0.02);
+  background: #fff0e6;
 }
 
 .data-table th,
 .data-table td {
   padding: 14px 18px;
-  border-bottom: 1px solid rgba(35, 35, 35, 0.85);
+  border-bottom: 1px solid rgba(216, 86, 21, 0.28);
   text-align: left;
   vertical-align: middle;
 }
 
 .data-table th {
-  color: var(--text-muted);
+  color: var(--orange-dark);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  border-bottom: 2px solid var(--orange-dark);
+}
+
+.data-table tbody tr:nth-child(even) td {
+  background: rgba(255, 240, 230, 0.42);
 }
 
 .data-table tbody tr:hover td {
-  background: rgba(244, 81, 30, 0.03);
+  background: rgba(255, 107, 26, 0.12);
 }
 
 .empty-cell {

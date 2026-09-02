@@ -1,3 +1,10 @@
+<?php
+session_start();
+if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?? ''))) !== 'staff') {
+    header('Location: login.php');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -33,7 +40,7 @@
       <div class="hero-meta" id="heroMeta">
         <span class="meta-pill">รหัสวิชา -</span>
         <span class="meta-pill">ประเภท -</span>
-        <span class="meta-pill">บทเรียน 0 รายการ</span>
+        <span class="meta-pill">บทเรียน 0/3 รายการ</span>
       </div>
     </section>
 
@@ -178,6 +185,7 @@
   </main>
 
   <div class="toast" id="toast"></div>
+  <script src="arabic-numerals.js?v=20260902"></script>
   <script src="staff_subject_editor.js?v=20260901"></script>
 </body>
 </html>

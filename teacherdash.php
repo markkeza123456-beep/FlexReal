@@ -11,6 +11,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
 
 require_once __DIR__ . '/db_connect.php';
 
+const MAX_LESSONS_PER_SUBJECT = 3;
+
 // ฟังก์ชันป้องกัน XSS
 function h(?string $value): string {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
@@ -18,7 +20,7 @@ function h(?string $value): string {
 
 function normalizeLessonSlots(array $lessons): array {
     $normalized = [];
-    foreach (array_values($lessons) as $index => $lessonRow) {
+    foreach (array_slice(array_values($lessons), 0, MAX_LESSONS_PER_SUBJECT) as $index => $lessonRow) {
         $lessonRow['is_placeholder'] = false;
         $normalized[] = $lessonRow;
     }
@@ -84,7 +86,7 @@ $totalLessonCount = 0;
 foreach ($subjectRows as $row) {
     $subjectId = (string) $row['subjects_id'];
     $subjectName = trim((string) $row['subjects_name']);
-    $lessonCount = (int) $row['lesson_count'];
+    $lessonCount = min((int) $row['lesson_count'], MAX_LESSONS_PER_SUBJECT);
     $studentCount = (int) $row['student_count'];
 
     $subjects[] = [
@@ -207,11 +209,11 @@ foreach ($studentStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     $realScore = round((float) $row['real_score'], 1); 
     $sumScore += $realScore;
     
-    $totalLessons = (int) $row['total_lessons'];
-    $completedLessons = (int) $row['completed_lessons'];
+    $totalLessons = min((int) $row['total_lessons'], MAX_LESSONS_PER_SUBJECT);
+    $completedLessons = min((int) $row['completed_lessons'], $totalLessons);
     $progressPct = $totalLessons > 0 ? round(($completedLessons / $totalLessons) * 100) : 0;
     
-    $completedNames = $row['completed_lesson_names'] ? explode('||', $row['completed_lesson_names']) : [];
+    $completedNames = $row['completed_lesson_names'] ? array_slice(explode('||', $row['completed_lesson_names']), 0, MAX_LESSONS_PER_SUBJECT) : [];
 
     $students[] = [
         'id' => $row['student_id'],
@@ -465,7 +467,7 @@ $stats = [
                 </div>
                 <div style="display:flex;gap:8px;align-items:center">
                     <a class="btn-add-lesson" style="font-size:13px;padding:8px 14px;text-decoration:none" href="teacher_video_editor.php?subject_id=<?= urlencode($defaultSubjectId) ?>" <?= $defaultSubjectId === '' ? 'aria-disabled="true"' : '' ?>>🎬 จัดการวิดีโอ</a>
-                    <button class="btn-add-lesson" id="openModalBtn" style="font-size:13px;padding:8px 14px" data-subject-id="<?= h($defaultSubjectId) ?>" <?= $defaultSubjectId === '' ? 'disabled' : '' ?>>
+                    <button class="btn-add-lesson" id="openModalBtn" style="font-size:13px;padding:8px 14px" data-subject-id="<?= h($defaultSubjectId) ?>" <?= $defaultSubjectId === '' || count($subLessonsBySubject[$defaultSubjectId] ?? []) >= MAX_LESSONS_PER_SUBJECT ? 'disabled' : '' ?>>
                         <span class="plus">+</span> เพิ่มบทเรียนย่อย
                     </button>
                 </div>
@@ -1346,6 +1348,7 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
+<script src="arabic-numerals.js?v=20260902"></script>
 <script src="teacherdash.js?v=20260901"></script>
 </body>
 </html>

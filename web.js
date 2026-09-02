@@ -23,6 +23,7 @@ const SUBJECT_IMAGE_ENDPOINT = 'subject_image.php';
 const QUIZ_PASS_RATIO = 0.8;
 const COURSE_CACHE_MAX_AGE_MS = 30 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 8000;
+const MAX_LESSONS_PER_SUBJECT = 3;
 
 // ตั้งค่ารูปวิชาเองได้ที่นี่ (ใส่ได้ทั้งรหัสวิชา เช่น SUB004 หรือชื่อวิชา เช่น ประวัติศาสตร์)
 // ตัวอย่าง:
@@ -135,7 +136,7 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEO
 
 // 💥 แปลงข้อมูลบทเรียนจากฐานข้อมูล
 function buildLessonsFromDB(lessons) {
-    const normalized = Array.isArray(lessons) ? lessons : [];
+    const normalized = Array.isArray(lessons) ? lessons.slice(0, MAX_LESSONS_PER_SUBJECT) : [];
     return normalized.map((lsn, index) => {
         const lsnId = pick(lsn, 'lessons_id', 'Lessons_ID') || `tmp_${index}`;
         const lsnName = pick(lsn, 'lessons_name', 'Lessons_Name') || `บทเรียนที่ ${index + 1}`;
@@ -761,7 +762,7 @@ function updateInstructorInfo(course) {
 }
 
 function updateCourseMeta(course, lessons) {
-    const lessonCount = currentLessonsData.length || 0;
+    const lessonCount = Math.min(currentLessonsData.length || 0, MAX_LESSONS_PER_SUBJECT);
     setText('detail-lesson-count', `${lessonCount} บทเรียน`);
     setText('detail-quiz-count', `${lessonCount} ชุด`);
     setText('learning-lesson-count', `${lessonCount} บทเรียน`);

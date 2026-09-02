@@ -1,6 +1,11 @@
-<!DOCTYPE html>
 <?php
 session_start();
+$staffRole = strtolower(trim((string) ($_SESSION['role'] ?? '')));
+if (empty($_SESSION['user_id']) || $staffRole !== 'staff') {
+    header('Location: login.php');
+    exit;
+}
+
 $displayName    = $_SESSION['name'] ?? 'บัญชีเจ้าหน้าที่';
 $displayRole    = 'เจ้าหน้าที่';
 $avatarInitials = 'ST';
@@ -16,6 +21,7 @@ if (!empty($_SESSION['name'])) {
     if ($initials) $avatarInitials = $initials;
 }
 ?>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
@@ -723,6 +729,7 @@ if (!empty($_SESSION['name'])) {
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
+  <script src="arabic-numerals.js?v=20260902"></script>
   <script src="staffdash.js"></script>
 </body>
 </html>

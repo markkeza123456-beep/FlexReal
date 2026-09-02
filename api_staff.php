@@ -3,6 +3,8 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/db_connect.php';
 
+const MAX_LESSONS_PER_SUBJECT = 3;
+
 function fetchAllRows(PDOStatement $statement): array {
     return $statement->fetchAll(PDO::FETCH_ASSOC) ?: [];
 }
@@ -42,6 +44,13 @@ function generateLessonId(PDO $conn): string
     $lastId = $stmtId->fetchColumn();
     $nextNum = $lastId ? intval(substr((string) $lastId, 1)) + 1 : 1;
     return 'L' . str_pad((string) $nextNum, 3, '0', STR_PAD_LEFT);
+}
+
+function countSubjectLessons(PDO $conn, string $subjectId): int
+{
+    $stmt = $conn->prepare('SELECT COUNT(*) FROM public.lessons WHERE subjects_id = :subject_id');
+    $stmt->execute([':subject_id' => $subjectId]);
+    return (int) $stmt->fetchColumn();
 }
 
 function buildLessonMediaSegments(string $teacherId, string $subjectId, string $lessonId, string $mediaType): array
@@ -300,6 +309,7 @@ try {
                 FROM public.lessons
                 WHERE subjects_id = :subject_id
                 ORDER BY lessons_id ASC
+                LIMIT 3
             ");
             $lessonStmt->execute([':subject_id' => $subjectId]);
             jsonResponse(['status' => 'success', 'lessons' => fetchAllRows($lessonStmt)]);
@@ -337,6 +347,7 @@ try {
                 FROM public.lessons
                 WHERE subjects_id = :subject_id
                 ORDER BY lessons_id ASC
+                LIMIT 3
             ");
             $lessonStmt->execute([':subject_id' => $subjectId]);
 
@@ -369,6 +380,9 @@ try {
             }
 
             $teacherId = trim((string) ($subjectRow['teachers_id'] ?? ''));
+            if ($isNewLesson && countSubjectLessons($conn, $subjectId) >= MAX_LESSONS_PER_SUBJECT) {
+                jsonResponse(['status' => 'error', 'message' => 'รายวิชานี้มีบทเรียนครบ 3 บทแล้ว'], 400);
+            }
 
             $currentLesson = [
                 'lesson_content' => '',
@@ -466,7 +480,7 @@ try {
             $subject = $subjectStmt->fetch(PDO::FETCH_ASSOC);
             if (!$subject) { jsonResponse(['status' => 'error', 'message' => 'ไม่พบรายวิชานี้'], 404); }
 
-            $lessonStmt = $conn->prepare("SELECT lessons_id AS id, lessons_name AS title FROM public.lessons WHERE subjects_id = :subject_id ORDER BY lessons_id ASC");
+            $lessonStmt = $conn->prepare("SELECT lessons_id AS id, lessons_name AS title FROM public.lessons WHERE subjects_id = :subject_id ORDER BY lessons_id ASC LIMIT 3");
             $lessonStmt->execute([':subject_id' => $subjectId]);
 
             $videoStmt = $conn->prepare("

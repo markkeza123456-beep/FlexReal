@@ -25,6 +25,7 @@ function loadLessons(PDO $conn, string $subjectId): array
         ) v ON TRUE
         WHERE l.subjects_id = ?
         ORDER BY l.lessons_id ASC
+        LIMIT 3
     ");
     $stmtL->execute([$subjectId]);
     $lessons = $stmtL->fetchAll(PDO::FETCH_ASSOC);

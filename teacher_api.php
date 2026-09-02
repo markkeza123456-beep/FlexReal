@@ -4,6 +4,8 @@ require_once 'db_connect.php';
 require_once __DIR__ . '/learning_progress_lib.php';
 header('Content-Type: application/json; charset=utf-8');
 
+const MAX_LESSONS_PER_SUBJECT = 3;
+
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'teacher') {
     echo json_encode(['success' => false, 'message' => 'กรุณาล็อกอินใหม่']);
     exit;
@@ -153,6 +155,13 @@ function teacherOwnsLesson(PDO $conn, string $teacherId, string $lessonId): bool
     return (bool) $stmt->fetchColumn();
 }
 
+function countSubjectLessons(PDO $conn, string $subjectId): int
+{
+    $stmt = $conn->prepare('SELECT COUNT(*) FROM public.lessons WHERE subjects_id = :subject_id');
+    $stmt->execute([':subject_id' => $subjectId]);
+    return (int) $stmt->fetchColumn();
+}
+
 function teacherOwnsQuiz(PDO $conn, string $teacherId, string $quizId): bool
 {
     $stmt = $conn->prepare(
@@ -181,6 +190,9 @@ try {
         }
         if (!teacherOwnsSubject($conn, $teacherId, $subjectId)) {
             throw new Exception('คุณไม่มีสิทธิ์จัดการรายวิชานี้');
+        }
+        if (countSubjectLessons($conn, $subjectId) >= MAX_LESSONS_PER_SUBJECT) {
+            throw new Exception('รายวิชานี้มีบทเรียนครบ 3 บทแล้ว');
         }
 
         ensureLessonMediaColumns($conn);
@@ -357,7 +369,7 @@ try {
         if ($subjectId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) {
             throw new Exception('คุณไม่มีสิทธิ์จัดการรายวิชานี้');
         }
-        $lessonStmt = $conn->prepare('SELECT lessons_id AS id, lessons_name AS title FROM public.lessons WHERE subjects_id = :subject_id ORDER BY lessons_id');
+        $lessonStmt = $conn->prepare('SELECT lessons_id AS id, lessons_name AS title FROM public.lessons WHERE subjects_id = :subject_id ORDER BY lessons_id LIMIT 3');
         $lessonStmt->execute([':subject_id' => $subjectId]);
         $videoStmt = $conn->prepare('SELECT v.videos_id AS id, v.videos_title AS title, v.videos_url AS url, COALESCE(v.videos_description, \'\') AS description, v.duration_seconds, v.display_order, v.lessons_id, COALESCE(l.lessons_name, \'\') AS lesson_title FROM public.videos v LEFT JOIN public.lessons l ON l.lessons_id = v.lessons_id WHERE v.subjects_id = :subject_id ORDER BY v.display_order, v.videos_id');
         $videoStmt->execute([':subject_id' => $subjectId]);

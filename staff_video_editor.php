@@ -1,3 +1,10 @@
+<?php
+session_start();
+if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?? ''))) !== 'staff') {
+    header('Location: login.php');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -43,6 +50,6 @@
       </form>
     </section>
     <section class="panel error-panel" id="errorPanel" hidden><div class="error-body" id="errorMessage"></div></section>
-  </main><div class="toast" id="toast"></div><script src="staff_video_editor.js"></script>
+  </main><div class="toast" id="toast"></div><script src="arabic-numerals.js?v=20260902"></script><script src="staff_video_editor.js"></script>
 </body>
 </html>

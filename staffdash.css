@@ -371,27 +371,29 @@ body {
 
 /* ---------- Data Table ---------- */
 .table-wrap {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--radius); overflow: hidden; overflow-x: auto;
+  background: var(--card); border: 2px solid var(--orange-dark);
+  border-radius: 14px; overflow: hidden; overflow-x: auto;
+  box-shadow: 0 10px 24px rgba(115, 71, 35, .10);
 }
-.data-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+.data-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 600px; }
 .data-table thead tr {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  background: #fff0e6;
 }
 .data-table th {
   font-size: .72rem; font-weight: 600; letter-spacing: .07em;
-  text-transform: uppercase; color: var(--text-muted);
-  padding: 14px 16px; text-align: left; white-space: nowrap;
+  text-transform: uppercase; color: var(--orange-dark);
+  padding: 15px 16px; text-align: left; white-space: nowrap;
+  border-bottom: 2px solid var(--orange-dark);
 }
 .data-table td {
-  padding: 14px 16px; font-size: .87rem;
-  border-bottom: 1px solid rgba(35,35,35,.6);
+  padding: 15px 16px; font-size: .87rem;
+  border-bottom: 1px solid rgba(216, 86, 21, .28);
   vertical-align: middle;
 }
 .data-table tbody tr:last-child td { border-bottom: none; }
 .data-table tbody tr { transition: background var(--transition); }
-.data-table tbody tr:hover td { background: rgba(244,81,30,.03); }
+.data-table tbody tr:nth-child(even) td { background: rgba(255, 240, 230, .42); }
+.data-table tbody tr:hover td { background: rgba(255, 107, 26, .12); }
 .data-table td.mono {
   font-family: 'Orbitron', sans-serif;
   font-size: .72rem; color: var(--orange);
