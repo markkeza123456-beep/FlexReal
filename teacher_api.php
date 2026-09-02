@@ -16,6 +16,7 @@ $teacherId = (string) $_SESSION['user_id'];
 
 function ensureLessonMediaColumns(PDO $conn): void
 {
+    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS lesson_content TEXT");
     $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS document_path VARCHAR(255)");
     $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS document_name VARCHAR(255)");
 }

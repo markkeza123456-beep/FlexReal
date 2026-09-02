@@ -7,8 +7,14 @@ $action = $_GET['action'] ?? '';
 // API นี้อ่าน session เท่านั้น ปลดล็อกเพื่อไม่ให้ขวางการออกจากระบบหรือคำขออื่น
 session_write_close();
 
+function ensureLessonContentColumn(PDO $conn): void
+{
+    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS lesson_content TEXT");
+}
+
 function loadLessons(PDO $conn, string $subjectId): array
 {
+    ensureLessonContentColumn($conn);
     $stmtL = $conn->prepare("
         SELECT
             l.*,
@@ -31,7 +37,11 @@ function loadLessons(PDO $conn, string $subjectId): array
     $lessons = $stmtL->fetchAll(PDO::FETCH_ASSOC);
 
     $normalized = [];
+<<<<<<< Updated upstream
     foreach ($lessons as $index => $lessonRow) {
+=======
+    foreach (array_slice($lessons, 0, 3) as $lessonRow) {
+>>>>>>> Stashed changes
         $lessonRow['is_placeholder'] = false;
         $normalized[] = $lessonRow;
     }

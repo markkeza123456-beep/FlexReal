@@ -132,11 +132,12 @@ body {
 .hero-card h2 {
   margin: 8px 0 10px;
   font-size: 1.6rem;
+  color: #ffffff !important;
 }
 
 .hero-sub {
   margin: 0;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.82) !important;
   max-width: 720px;
 }
 

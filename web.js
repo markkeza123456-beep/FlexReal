@@ -240,6 +240,7 @@ function renderLessonAccordion(containerId) {
 
     const html = currentLessonsData.map((lesson) => {
         const status = getLessonStatusInfo(lesson.index);
+<<<<<<< Updated upstream
         if (lesson.isPlaceholder) {
             return `
             <div class="lesson-accordion is-expanded lesson-placeholder">
@@ -258,6 +259,8 @@ function renderLessonAccordion(containerId) {
             </div>
         `;
         }
+=======
+>>>>>>> Stashed changes
         return `
         <div class="lesson-accordion ${lesson.expanded ? 'is-expanded' : 'is-collapsed'}">
             <button type="button" class="lesson-header" onclick="toggleLesson(${lesson.index})" aria-expanded="${lesson.expanded ? 'true' : 'false'}">
@@ -271,7 +274,16 @@ function renderLessonAccordion(containerId) {
                         <span style="font-size:12px;color:#2c3e50;">คะแนนบทนี้: ${status.scoreText}</span>
                     </div>
                     ${!canAccessLesson(lesson.index) ? `<p style="margin:0 0 8px;color:#d35400;font-size:13px;">${getLessonLockMessage(lesson.index)}</p>` : ''}
+<<<<<<< Updated upstream
                     ${lesson.content ? `<div style="margin:0 0 12px;padding:12px 14px;border:1px solid #f0d6c5;border-radius:10px;background:#fffaf7;white-space:pre-wrap;"><b>รายละเอียดบทเรียน</b><p style="margin:6px 0 0;">${escapeHtml(lesson.content)}</p></div>` : ''}
+=======
+                    <div class="curriculum-item lesson-content-item">
+                        <div class="curr-left">
+                            <span class="curr-icon">📖</span>
+                            <div class="curr-text"><b>เนื้อหาบทเรียน</b><p style="white-space:pre-wrap;">${escapeHtml(lesson.content || 'บทนี้ยังไม่มีเนื้อหา')}</p></div>
+                        </div>
+                    </div>
+>>>>>>> Stashed changes
                     <div class="curriculum-item">
                         <div class="curr-left">
                             <span class="curr-icon">📄</span>
@@ -847,11 +859,15 @@ async function recordLearningEvent(activityType, lessonIndex = 1) {
 }
 
 function toggleLesson(lessonIndex) {
+    const targetLesson = getLessonRecord(lessonIndex);
     currentLessonsData = currentLessonsData.map((lesson) => {
         if (lesson.index === lessonIndex) return { ...lesson, expanded: !lesson.expanded };
         return lesson;
     });
     renderAllLessonAccordions();
+    if (targetLesson && targetLesson.expanded === false && canAccessLesson(lessonIndex)) {
+        recordLearningEvent('lesson_open', lessonIndex);
+    }
 }
 
 function showPage(pageId) {

@@ -201,3 +201,8 @@ select:focus {
 .footer * {
   color: #ffffff !important;
 }
+
+#page-guide .content-header h1,
+#page-contact .content-header h1 {
+  color: #ffffff !important;
+}

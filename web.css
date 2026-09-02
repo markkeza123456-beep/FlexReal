@@ -202,10 +202,28 @@ body {
     max-width: 700px; /* จำกัดความกว้างตามภาพตัวอย่าง */
     margin: 0 auto;
     text-align: left;
+    color: #000000;
+    font-weight: 600;
+}
+
+#page-guide .info-card *,
+#page-contact .info-card * {
+    color: inherit;
 }
 
 .content-header {
     background: white; padding: 40px 8%; border-bottom: 1px solid #eee; text-align: center;
+}
+
+#page-guide .content-header,
+#page-contact .content-header {
+    background: linear-gradient(135deg, #ff6b00 0%, #ff9100 100%);
+    border-bottom: none;
+}
+
+#page-guide .content-header h1,
+#page-contact .content-header h1 {
+    color: #ffffff;
 }
 
 /* Course Detail Layout */

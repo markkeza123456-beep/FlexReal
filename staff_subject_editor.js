@@ -161,11 +161,16 @@
     }
 
     try {
-      const response = await fetch(`api_staff.php?action=getSubjectEditorData&subject_id=${encodeURIComponent(subjectId)}`);
+      const response = await fetch(`api_staff.php?action=getSubjectEditorData&subject_id=${encodeURIComponent(subjectId)}`, {
+        credentials: 'same-origin',
+      });
       const data = await response.json();
 
       if (data.status !== 'success') {
-        setErrorState(data.message || 'ไม่สามารถโหลดข้อมูลรายวิชาได้');
+        const message = response.status === 403
+          ? 'กรุณาเข้าสู่ระบบเจ้าหน้าที่ก่อนจัดการรายวิชา'
+          : (data.message || 'ไม่สามารถโหลดข้อมูลรายวิชาได้');
+        setErrorState(message);
         return;
       }
 
@@ -182,7 +187,7 @@
       resetLessonForm();
       applyInitialSection();
     } catch (error) {
-      setErrorState('เกิดข้อผิดพลาดระหว่างเชื่อมต่อข้อมูล');
+      setErrorState(error.message || 'เกิดข้อผิดพลาดระหว่างเชื่อมต่อข้อมูล');
     }
   }
 
@@ -281,11 +286,19 @@
   document.getElementById('lessonForm').addEventListener('submit', async (event) => {
     event.preventDefault();
 
+<<<<<<< Updated upstream
     const lessonId = document.getElementById('lessonId').value.trim();
     if (!lessonId && lessons.length >= MAX_LESSONS_PER_SUBJECT) {
       showToast('รายวิชานี้มีบทเรียนครบ 3 บทแล้ว', 'error');
       return;
     }
+=======
+    const formData = new FormData();
+    formData.append('action', 'saveLesson');
+    formData.append('id', document.getElementById('lessonId').value);
+    formData.append('subject_id', subjectId);
+    formData.append('title', document.getElementById('lessonTitle').value.trim());
+>>>>>>> Stashed changes
 
     const formData = new FormData();
     formData.append('action', 'saveLesson');
