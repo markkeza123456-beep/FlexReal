@@ -458,10 +458,13 @@ if (!empty($_SESSION['name'])) {
               <label class="form-label" for="sf-teacher">อาจารย์ผู้สอน</label>
               <div class="input-wrap select-wrap">
                 <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <select id="sf-teacher" multiple size="4" aria-describedby="sf-teacher-help">
+                <select id="sf-teacher">
+                  <option value="">-- เลือกอาจารย์ผู้สอน --</option>
                 </select>
+                <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
-              <small id="sf-teacher-help" style="color:var(--text-secondary);">เลือกได้มากกว่า 1 คน (กด ⌘ บน Mac หรือ Ctrl บน Windows เพื่อเลือกหลายคน)</small>
+              <div id="sf-selected-teachers" aria-live="polite" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
+           
             </div>
           </div>
           <div class="form-actions">

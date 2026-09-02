@@ -32,7 +32,9 @@
   const toast = document.getElementById('toast');
   const staffCreateForm = document.getElementById('staffCreateForm');
   const staffUserIdInput = document.getElementById('stf-user-id');
-  const subjectTeacherSelect = document.getElementById('sf-teacher'); // ตัวเลือกอาจารย์ผู้ดูแลวิชา
+  const subjectTeacherSelect = document.getElementById('sf-teacher');
+  const selectedSubjectTeachers = document.getElementById('sf-selected-teachers');
+  let selectedSubjectTeacherIds = [];
 
   document.getElementById('menuBtn')?.addEventListener('click', () => sidebar?.classList.toggle('open'));
   document.getElementById('sidebarClose')?.addEventListener('click', () => sidebar?.classList.remove('open'));
@@ -147,7 +149,7 @@
       renderMembers();
     }
     if (page === 'subject-add') {
-      populateTeacherSelect(); // อัปเดตรายชื่อครูใน Select ทุกครั้งที่เปิดหน้าเพิ่ม/แก้ไขวิชา
+      populateTeacherSelect(selectedSubjectTeacherIds);
     }
 
     sidebar?.classList.remove('open');
@@ -242,15 +244,45 @@
       return;
     }
 
-    const selectedIds = new Set(
+    selectedSubjectTeacherIds = [...new Set(
       (Array.isArray(selectedTeacherIds) ? selectedTeacherIds : String(selectedTeacherIds || '').split(','))
         .map(id => String(id).trim())
         .filter(Boolean)
-    );
-    subjectTeacherSelect.innerHTML = teachers.map(t =>
-      `<option value="${t.id}"${selectedIds.has(String(t.id)) ? ' selected' : ''}>${t.name}</option>`
-    ).join('');
+    )];
+    subjectTeacherSelect.innerHTML = `
+      <option value="">-- เลือกอาจารย์ผู้สอน --</option>
+      ${teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+    `;
+    renderSelectedSubjectTeachers();
   }
+
+  function renderSelectedSubjectTeachers() {
+    if (!selectedSubjectTeachers) return;
+    selectedSubjectTeachers.innerHTML = selectedSubjectTeacherIds.map(id => {
+      const teacher = teachers.find(item => String(item.id) === String(id));
+      if (!teacher) return '';
+      return `<span style="display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff7f2;color:var(--text);">${teacher.name}<button type="button" data-remove-teacher="${teacher.id}" aria-label="ลบ ${teacher.name}" style="border:0;background:transparent;color:var(--orange);font-size:18px;line-height:1;cursor:pointer;">×</button></span>`;
+    }).join('') || '<span style="color:var(--text-secondary);font-size:13px;">ยังไม่ได้เลือกอาจารย์ผู้สอน</span>';
+  }
+
+  function addSelectedSubjectTeacher() {
+    const teacherId = subjectTeacherSelect?.value || '';
+    if (!teacherId || selectedSubjectTeacherIds.includes(teacherId)) return false;
+    selectedSubjectTeacherIds.push(teacherId);
+    subjectTeacherSelect.value = '';
+    renderSelectedSubjectTeachers();
+    return true;
+  }
+
+  // เลือกจากดรอปดาวน์แล้วนับเป็นอาจารย์ผู้สอนทันที เหมือนการเลือกแบบเดิม
+  subjectTeacherSelect?.addEventListener('change', addSelectedSubjectTeacher);
+
+  selectedSubjectTeachers?.addEventListener('click', event => {
+    const button = event.target.closest('[data-remove-teacher]');
+    if (!button) return;
+    selectedSubjectTeacherIds = selectedSubjectTeacherIds.filter(id => String(id) !== String(button.dataset.removeTeacher));
+    renderSelectedSubjectTeachers();
+  });
 
   function renderMembers() {
     const memberBody = document.getElementById('memberBody');
@@ -485,8 +517,9 @@
     formData.append('name', document.getElementById('sf-name').value);
     formData.append('credit', document.getElementById('sf-credit').value);
     formData.append('type', document.getElementById('sf-type').value);
-    const teacherIds = [...(subjectTeacherSelect?.selectedOptions || [])].map(option => option.value);
-    formData.append('teacher_ids', JSON.stringify(teacherIds));
+    // กันกรณีผู้ใช้กดบันทึกทันทีหลังเลือกชื่อ ก่อน event ของหน้าเว็บทำงานครบ
+    addSelectedSubjectTeacher();
+    formData.append('teacher_ids', JSON.stringify(selectedSubjectTeacherIds));
 
     try {
       await fetchJson('api_staff.php', { method: 'POST', body: formData });
