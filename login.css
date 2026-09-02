@@ -5,7 +5,7 @@
 
 /* ---------- CSS Variables ---------- */
 :root {
-  --bg:          #f9ba87;
+  --bg:          #ffffff;
   --surface:     #ffffff;
   --card:        #fffaf6;
   --border:      #f3d2be;
@@ -51,26 +51,53 @@ body {
   position: relative;
 }
 
-/* ---------- Background Grid ---------- */
+/* ---------- White Background Pattern ---------- */
 .bg-grid {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255,107,26,.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,107,26,.04) 1px, transparent 1px);
-  background-size: 48px 48px;
+    radial-gradient(circle, rgba(255,107,26,.13) 1.3px, transparent 1.5px);
+  background-size: 32px 32px;
   pointer-events: none;
   z-index: 0;
 }
 
-/* ---------- Glow Orbs ---------- */
-.glow-orb {
+/* Learning-themed line illustrations, kept behind the login card. */
+.edu-pattern {
   position: fixed;
-  border-radius: 50%;
-  filter: blur(80px);
+  inset: 0;
+  overflow: hidden;
   pointer-events: none;
   z-index: 0;
-  animation: orbFloat 8s ease-in-out infinite alternate;
+}
+.edu-illustration {
+  position: absolute;
+  width: clamp(112px, 10vw, 180px);
+  height: auto;
+  color: #ff6b1a;
+  opacity: .16;
+  stroke: currentColor;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.book-one    { top: 10%; left: 7%; transform: rotate(-10deg); }
+.cap-one     { top: 13%; right: 8%; transform: rotate(9deg); }
+.bulb-one    { top: 48%; left: 5%; transform: rotate(-8deg); }
+.globe-one   { top: 46%; right: 6%; transform: rotate(8deg); }
+.network-one { bottom: 4%; left: 16%; transform: rotate(-5deg); }
+.pencil-one  { bottom: 6%; right: 16%; transform: rotate(12deg); }
+
+/* ---------- Glow Orbs ---------- */
+.glow-orb {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .edu-illustration { opacity: .1; }
+  .network-one, .pencil-one { display: none; }
+  .book-one { left: -8%; }
+  .cap-one { right: -8%; }
 }
 .orb-1 {
   width: 500px; height: 500px;
