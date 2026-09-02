@@ -93,7 +93,7 @@ function readCachedCourses() {
         return [];
     }
 }
-
+ 
 function saveCachedCourses(courses) {
     try {
         sessionStorage.setItem(getCourseCacheKey(), JSON.stringify({ savedAt: Date.now(), courses }));
