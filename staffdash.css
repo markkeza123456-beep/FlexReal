@@ -375,7 +375,10 @@ body {
   border-radius: 14px; overflow: hidden; overflow-x: auto;
   box-shadow: 0 10px 24px rgba(115, 71, 35, .10);
 }
-.data-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 600px; }
+.data-table {
+  width: 100%; border-collapse: separate; border-spacing: 0; min-width: 600px;
+  font-variant-numeric: lining-nums tabular-nums;
+}
 .data-table thead tr {
   background: #fff0e6;
 }
@@ -395,8 +398,10 @@ body {
 .data-table tbody tr:nth-child(even) td { background: rgba(255, 240, 230, .42); }
 .data-table tbody tr:hover td { background: rgba(255, 107, 26, .12); }
 .data-table td.mono {
-  font-family: 'Orbitron', sans-serif;
-  font-size: .72rem; color: var(--orange);
+  font-family: Arial, 'Segoe UI', sans-serif;
+  font-size: .82rem; font-weight: 700; color: var(--orange);
+  letter-spacing: .02em;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 /* Badges */

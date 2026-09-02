@@ -129,6 +129,12 @@ body {
   overflow: hidden;
 }
 
+.hero-card {
+  background: #ff6b1a !important;
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 18px 50px rgba(198, 79, 12, 0.28);
+}
+
 .hero-card h2 {
   margin: 8px 0 10px;
   font-size: 1.6rem;
@@ -139,6 +145,10 @@ body {
   margin: 0;
   color: rgba(255, 255, 255, 0.82) !important;
   max-width: 720px;
+}
+
+.hero-card .hero-label {
+  color: rgba(255, 255, 255, 0.88);
 }
 
 .hero-meta {
@@ -159,6 +169,12 @@ body {
   padding: 8px 14px;
   font-size: 0.84rem;
   white-space: nowrap;
+}
+
+.hero-card .meta-pill {
+  border-color: rgba(255, 255, 255, 0.34);
+  background: rgba(125, 48, 0, 0.18);
+  color: #ffffff;
 }
 
 .layout-grid {
@@ -329,45 +345,61 @@ body {
 
 .table-wrap {
   overflow-x: auto;
-  border: 2px solid var(--orange-dark);
-  border-radius: 14px;
-  box-shadow: 0 10px 24px rgba(115, 71, 35, .10);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .data-table {
   width: 100%;
   min-width: 920px;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.data-table th,
+.data-table td {
+  width: 33.333%;
+}
+
+.data-table th:last-child,
+.data-table td:last-child {
+  text-align: center;
+}
+
+.data-table .action-btns {
+  justify-content: center;
 }
 
 .data-table thead tr {
-  background: #fff0e6;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .data-table th,
 .data-table td {
   padding: 14px 18px;
-  border-bottom: 1px solid rgba(216, 86, 21, 0.28);
+  border-bottom: 1px solid rgba(216, 86, 21, 0.42);
   text-align: left;
   vertical-align: middle;
 }
 
 .data-table th {
-  color: var(--orange-dark);
+  color: var(--text-muted);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  border-bottom: 2px solid var(--orange-dark);
+  border-bottom: 1px solid rgba(216, 86, 21, 0.58);
 }
 
 .data-table tbody tr:nth-child(even) td {
-  background: rgba(255, 240, 230, 0.42);
+  background: transparent;
 }
 
 .data-table tbody tr:hover td {
-  background: rgba(255, 107, 26, 0.12);
+  background: rgba(255, 107, 26, 0.04);
 }
 
 .empty-cell {
@@ -650,6 +682,10 @@ body {
 
 .lessons-panel,
 .error-panel {
+  margin-top: 22px;
+}
+
+.lessons-panel + #lessonEditor {
   margin-top: 22px;
 }
 
