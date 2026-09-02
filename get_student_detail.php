@@ -34,8 +34,9 @@ try {
         FROM public.student_learning_progress lp
         INNER JOIN public.subjects s  ON s.Subjects_ID  = lp.subjects_id
         INNER JOIN public.lessons  l  ON l.Lessons_ID   = lp.lesson_id
+        INNER JOIN public.subject_teachers st ON st.subjects_id = s.subjects_id
         WHERE lp.student_id = :sid
-          AND s.teachers_id = :tid
+          AND st.teachers_id = :tid
         ORDER BY s.Subjects_Name ASC, lp.lesson_index ASC
     ");
     $stmt->execute([':sid' => $studentId, ':tid' => $teacherId]);
@@ -53,8 +54,9 @@ try {
             FROM public.student_subject ss
             INNER JOIN public.subjects s ON s.Subjects_ID = ss.Subjects_ID
             INNER JOIN public.lessons  l ON l.Subjects_ID = s.Subjects_ID
+            INNER JOIN public.subject_teachers st ON st.subjects_id = s.subjects_id
             WHERE ss.Student_ID = :sid
-              AND s.Teachers_ID = :tid
+              AND st.teachers_id = :tid
             ORDER BY s.Subjects_Name ASC, l.Lessons_ID ASC
         ");
         $stmt2->execute([':sid' => $studentId, ':tid' => $teacherId]);

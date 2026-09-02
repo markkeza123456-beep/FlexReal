@@ -125,7 +125,7 @@ function teacherOwnsSubject(PDO $conn, string $teacherId, string $subjectId): bo
 {
     $stmt = $conn->prepare(
         'SELECT 1
-         FROM public.subjects
+         FROM public.subject_teachers
          WHERE subjects_id = :subject_id
            AND teachers_id = :teacher_id
          LIMIT 1'
@@ -143,9 +143,9 @@ function teacherOwnsLesson(PDO $conn, string $teacherId, string $lessonId): bool
     $stmt = $conn->prepare(
         'SELECT 1
          FROM public.lessons l
-         INNER JOIN public.subjects s ON s.subjects_id = l.subjects_id
+         INNER JOIN public.subject_teachers st ON st.subjects_id = l.subjects_id
          WHERE l.lessons_id = :lesson_id
-           AND s.teachers_id = :teacher_id
+           AND st.teachers_id = :teacher_id
          LIMIT 1'
     );
     $stmt->execute([
@@ -169,9 +169,9 @@ function teacherOwnsQuiz(PDO $conn, string $teacherId, string $quizId): bool
         'SELECT 1
          FROM public.test_questions tq
          INNER JOIN public.lessons l ON l.lessons_id = tq.lessons_id
-         INNER JOIN public.subjects s ON s.subjects_id = l.subjects_id
+         INNER JOIN public.subject_teachers st ON st.subjects_id = l.subjects_id
          WHERE tq.questions_id = :quiz_id
-           AND s.teachers_id = :teacher_id
+           AND st.teachers_id = :teacher_id
          LIMIT 1'
     );
     $stmt->execute([
@@ -435,7 +435,7 @@ try {
         if ($submissionId <= 0 || !in_array($decision, ['pass', 'fail'], true)) throw new Exception('ข้อมูลการตรวจไม่ถูกต้อง');
         ensureEssaySubmissionTable($conn);
         $conn->beginTransaction();
-        $lookup = $conn->prepare('SELECT es.test_id, es.subjects_id, es.review_status FROM public.essay_submissions es INNER JOIN public.subjects s ON s.subjects_id = es.subjects_id WHERE es.submission_id = :id AND s.teachers_id = :teacher_id FOR UPDATE');
+        $lookup = $conn->prepare('SELECT es.test_id, es.subjects_id, es.review_status FROM public.essay_submissions es INNER JOIN public.subject_teachers st ON st.subjects_id = es.subjects_id WHERE es.submission_id = :id AND st.teachers_id = :teacher_id FOR UPDATE');
         $lookup->execute([':id' => $submissionId, ':teacher_id' => $teacherId]);
         $row = $lookup->fetch(PDO::FETCH_ASSOC);
         if (!$row) throw new Exception('ไม่พบคำตอบข้อเขียนหรือคุณไม่มีสิทธิ์ตรวจ');

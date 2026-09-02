@@ -15,7 +15,7 @@
 
   const roleFieldMap = {
     student: ['student-field', 'cert-field'],
-    teacher: ['teacher-field', 'cert-field'],
+    teacher: ['cert-field'],
     parent: ['parent-field'],
   };
 
@@ -217,7 +217,6 @@
     ['lastname', 'field-lastname', 'lastname-error'],
     ['idcard', 'field-idcard', 'idcard-error'],
     ['level', 'field-level', 'level-error'],
-    ['subject', 'field-subject', 'subject-error'],
     ['relation', 'field-relation', 'relation-error'],
     ['email', 'field-email', 'email-error'],
     ['phone', 'field-phone', 'phone-error'],
@@ -292,9 +291,6 @@
 
     if (currentRole === 'student' && !valueOf('level')) {
       valid = setError('field-level', 'level-error', 'กรุณาเลือกระดับชั้น') && valid;
-    }
-    if (currentRole === 'teacher' && !valueOf('subject')) {
-      valid = setError('field-subject', 'subject-error', 'กรุณากรอกวิชาที่สอน') && valid;
     }
     if (currentRole === 'parent' && !valueOf('relation')) {
       valid = setError('field-relation', 'relation-error', 'กรุณาเลือกความสัมพันธ์') && valid;

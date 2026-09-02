@@ -13,8 +13,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $userid = str_replace('-', '', $_POST['userid']); 
     $phone = str_replace('-', '', $_POST['phone']);
     
-    $password = $_POST['password']; 
-    $fullname = $_POST['fullname'] . ' ' . $_POST['lastname'];
+    $password = $_POST['password'];
+    // หน้าเว็บรวมชื่อและนามสกุลไว้ใน fullname แล้ว จึงห้ามนำ lastname มาต่อซ้ำอีกครั้ง
+    $fullname = trim((string) ($_POST['fullname'] ?? ''));
+    if ($fullname === '') {
+        $fullname = trim((string) ($_POST['firstname'] ?? '') . ' ' . (string) ($_POST['lastname'] ?? ''));
+    }
     $email = $_POST['email'] ?? '-';
 
     // รับค่าที่อยู่แยกส่วนเพื่อบันทึกลงตาราง addresses
