@@ -575,6 +575,16 @@ body {
   transition: border-color var(--transition), color var(--transition), background var(--transition);
 }
 .btn-ghost:hover { border-color: var(--text-secondary); color: var(--text-primary); background: rgba(255,255,255,.03); }
+.btn-ghost.btn-back {
+  background: #ffffff;
+  color: var(--text-primary);
+  border-color: #efcbb5;
+}
+.btn-ghost.btn-back:hover {
+  background: #fffaf6;
+  border-color: var(--orange);
+  color: var(--orange);
+}
 
 .btn-danger {
   display: inline-flex; align-items: center; gap: 8px;
