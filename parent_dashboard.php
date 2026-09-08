@@ -122,14 +122,6 @@
       <div class="menu-item" onclick="showPage('attendance', this)">
         <i class="ti ti-calendar-check"></i> การเข้าเรียน
       </div>
-      <div class="menu-item" onclick="showPage('messages', this)">
-        <i class="ti ti-message-2"></i> ข้อความ
-        <span class="notif-badge">3</span>
-      </div>
-      <div class="menu-item" onclick="showPage('notifications', this)">
-        <i class="ti ti-bell"></i> การแจ้งเตือน
-        <span class="notif-badge">2</span>
-      </div>
     </nav>
 
     <div class="sidebar-footer">
@@ -158,7 +150,7 @@
         <!-- render โดย JS จาก API -->
       </div>
 
-      <div class="stats-row" id="statsRow">
+      <div class="stats-row overview-stats" id="statsRow">
         <div class="stat-card">
           <div class="stat-label">เกรดเฉลี่ย</div>
           <div class="stat-value" id="stat-gpa" style="color: var(--accent);">3.75</div>
@@ -169,70 +161,15 @@
           <div class="stat-value" id="stat-attend" style="color: var(--blue);">96%</div>
           <div class="stat-sub" id="stat-attend-sub">48/50 วัน</div>
         </div>
-        <div class="stat-card green">
-          <div class="stat-label">งานที่ส่ง</div>
-          <div class="stat-value" id="stat-works" style="color: var(--green);">18/20</div>
-          <div class="stat-sub">ส่งครบ 90%</div>
-        </div>
-        <div class="stat-card purple">
-          <div class="stat-label">กิจกรรม</div>
-          <div class="stat-value" id="stat-activities" style="color: var(--purple);">5</div>
-          <div class="stat-sub">รายการที่เข้าร่วม</div>
-        </div>
       </div>
 
-      <div class="grid-3-1">
+      <div class="grid-3-1 overview-content">
         <div class="card">
           <div class="card-title"><i class="ti ti-book"></i> คะแนนรายวิชา</div>
           <div id="subjectList"></div>
         </div>
-
-        <div class="card">
-          <div class="card-title"><i class="ti ti-bell-ringing"></i> แจ้งเตือนล่าสุด</div>
-          <div class="notif-item">
-            <div class="notif-icon warn"><i class="ti ti-alert-triangle"></i></div>
-            <div class="notif-text"><p>งานส่งช้า: รายงานวิทย์ ม.4</p><span>2 ชั่วโมงที่แล้ว</span></div>
-          </div>
-          <div class="notif-item">
-            <div class="notif-icon info"><i class="ti ti-message-2"></i></div>
-            <div class="notif-text"><p>อาจารย์สมชายส่งข้อความถึงคุณ</p><span>เมื่อวาน</span></div>
-          </div>
-          <div class="notif-item">
-            <div class="notif-icon ok"><i class="ti ti-trophy"></i></div>
-            <div class="notif-text"><p>กานต์ได้คะแนนสูงสุดในชั้น วิชาวิทย์</p><span>3 วันที่แล้ว</span></div>
-          </div>
-        </div>
       </div>
 
-      <div style="margin-top: 1.2rem;">
-        <div class="card">
-          <div class="card-title"><i class="ti ti-inbox"></i> ข้อความจากอาจารย์</div>
-          <div class="msg-item" onclick="openMsg(0)">
-            <div class="msg-top">
-              <div class="msg-sender"><div class="unread-dot"></div> อ.สมชาย วิชาการ</div>
-              <div class="msg-time">เมื่อวาน 14:30</div>
-            </div>
-            <div class="msg-subject">วิทยาศาสตร์ ม.4/2</div>
-            <div class="msg-preview">กานต์ทำได้ดีมากในการทดสอบกลางภาค ขอแนะนำให้ฝึกเรื่องสมการเพิ่มเติมก่อนปลายภาคครับ</div>
-          </div>
-          <div class="msg-item" onclick="openMsg(1)">
-            <div class="msg-top">
-              <div class="msg-sender"><div class="unread-dot"></div> อ.วราภรณ์ ภาษาไทย</div>
-              <div class="msg-time">23 พ.ค.</div>
-            </div>
-            <div class="msg-subject">ภาษาไทย ม.4/2</div>
-            <div class="msg-preview">เรื่องการส่งงานเขียนเรียงความ กรุณาแจ้งให้กานต์ส่งงานภายในศุกร์นี้ด้วยนะคะ</div>
-          </div>
-          <div class="msg-item" onclick="openMsg(2)">
-            <div class="msg-top">
-              <div class="msg-sender" style="color: var(--text-muted);">อ.ประเสริฐ คณิตศาสตร์</div>
-              <div class="msg-time">20 พ.ค.</div>
-            </div>
-            <div class="msg-subject">คณิตศาสตร์ ม.4/2</div>
-            <div class="msg-preview">แจ้งผลสอบกลางภาค: กานต์ได้ 88 คะแนน อยู่ในเกณฑ์ดีมาก ยังมีจุดที่ควรพัฒนาเรื่องสถิติครับ</div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- GRADES PAGE -->

@@ -53,6 +53,8 @@ body { font-family: 'Kanit', sans-serif; background: var(--bg-dark); color: var(
 
 /* STATS ROW */
 .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.overview-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.overview-stats .stat-card { padding: 1.35rem 1.5rem; }
 .stat-card { background: var(--card-bg); padding: 1.2rem 1.3rem; border-radius: 14px; border-left: 4px solid var(--accent); }
 .stat-card.blue { border-color: var(--blue); }
 .stat-card.green { border-color: var(--green); }
@@ -64,6 +66,7 @@ body { font-family: 'Kanit', sans-serif; background: var(--bg-dark); color: var(
 /* GRID */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 1.2rem; }
 .grid-3-1 { display: grid; grid-template-columns: 1.8fr 1fr; gap: 1.2rem; }
+.overview-content { grid-template-columns: minmax(0, 1fr); }
 
 /* CARDS */
 .card { background: var(--card-bg); border-radius: 16px; padding: 1.4rem; border: 1px solid var(--border); }
