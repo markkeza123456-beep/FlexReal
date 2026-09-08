@@ -156,7 +156,13 @@ try {
                         WHEN u.status = \'Teacher\' THEN COALESCE(t.email, \'-\')
                         WHEN u.status = \'Parent\'  THEN COALESCE(p.email, \'-\')
                         ELSE \'-\'
-                    END as email
+                    END as email,
+                    CASE
+                        WHEN u.status = \'Student\' THEN COALESCE(s.tel, \'-\')
+                        WHEN u.status = \'Teacher\' THEN COALESCE(t.tel, \'-\')
+                        WHEN u.status = \'Parent\'  THEN COALESCE(p.tel, \'-\')
+                        ELSE \'-\'
+                    END as phone
                 FROM public."User" u
                 LEFT JOIN public.student s  ON u.user_id = s.student_id
                 LEFT JOIN public.teachers t ON u.user_id = t.teachers_id

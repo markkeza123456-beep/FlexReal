@@ -143,14 +143,6 @@ if (!empty($_SESSION['name'])) {
         </svg>
       </button>
       <span class="topbar-title" id="topbarTitle">แดชบอร์ด</span>
-      <div class="topbar-right">
-        <div class="search-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input type="text" placeholder="ค้นหา..." />
-        </div>
-      </div>
     </header>
 
     <!-- Content -->
@@ -269,7 +261,7 @@ if (!empty($_SESSION['name'])) {
               </tr>
             </thead>
             <tbody id="curriculumBody">
-              <tr><td colspan="5" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
+              <tr><td colspan="6" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
@@ -564,6 +556,12 @@ if (!empty($_SESSION['name'])) {
             <div class="page-title">จัดการผู้ใช้งาน</div>
             <div class="page-sub">รายชื่อสมาชิกทั้งหมดในระบบ</div>
           </div>
+          <label class="search-wrap member-search-wrap" for="memberSearch">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input id="memberSearch" type="search" placeholder="ค้นหาชื่อ อีเมล หรือเบอร์โทร..." autocomplete="off" />
+          </label>
         </div>
         <div class="table-wrap">
           <table class="data-table">
@@ -571,6 +569,7 @@ if (!empty($_SESSION['name'])) {
               <tr>
                 <th>ชื่อ-นามสกุล</th>
                 <th>อีเมล</th>
+                <th>เบอร์โทรศัพท์</th>
                 <th>บทบาท</th>
                 <th>สถานะ</th>
                 <th style="width:120px;">จัดการ</th>
