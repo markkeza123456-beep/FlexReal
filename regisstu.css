@@ -67,8 +67,8 @@ body {
   position: absolute;
   width: clamp(112px, 10vw, 180px);
   height: auto;
-  color: #ffb37b;
-  opacity: .1;
+  color: #ff6b1a;
+  opacity: .16;
   stroke: currentColor;
   stroke-width: 3.2;
   stroke-linecap: round;
@@ -82,7 +82,7 @@ body {
 .pencil-one { bottom: 6%; right: 16%; transform: rotate(12deg); }
 
 @media (max-width: 760px) {
-  .edu-illustration { opacity: .07; }
+  .edu-illustration { opacity: .1; }
   .network-one, .pencil-one { display: none; }
   .book-one { left: -8%; }
   .cap-one { right: -8%; }
