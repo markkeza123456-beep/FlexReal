@@ -8,6 +8,7 @@
   let members = [];
   let teachers = []; // สำหรับเก็บรายชื่ออาจารย์จากฐานข้อมูล
   let lessons = [];
+  let memberSearchTerm = '';
   const initialPage = new URLSearchParams(window.location.search).get('page') || 'dashboard';
   let currentPage = initialPage;
   let currentSubjectId = null;
@@ -35,6 +36,13 @@
   const subjectTeacherSelect = document.getElementById('sf-teacher');
   const selectedSubjectTeachers = document.getElementById('sf-selected-teachers');
   let selectedSubjectTeacherIds = [];
+
+  document.getElementById('memberSearch')?.addEventListener('input', event => {
+    memberSearchTerm = event.target.value.trim().toLocaleLowerCase();
+    if (currentPage === 'member-list') {
+      renderMembers();
+    }
+  });
 
   document.getElementById('menuBtn')?.addEventListener('click', () => sidebar?.classList.toggle('open'));
   document.getElementById('sidebarClose')?.addEventListener('click', () => sidebar?.classList.remove('open'));
@@ -105,6 +113,7 @@
       firstname: member.firstname ?? nameParts.firstname,
       lastname: member.lastname ?? nameParts.lastname,
       email: member.email && member.email !== '-' ? member.email : '',
+      phone: member.phone && member.phone !== '-' ? String(member.phone) : '',
       role: String(member.role || ''),
       roleValue: String(member.role || '').toLowerCase(),
       status: String(member.status || member.status_account || 'active').toLowerCase(),
@@ -295,11 +304,18 @@
       'Staff': 'เจ้าหน้าที่',
     };
 
-    memberBody.innerHTML = members.length
-      ? members.map(member => `
+    const filteredMembers = members.filter(member => {
+      if (!memberSearchTerm) return true;
+      const searchable = `${member.name} ${member.email} ${member.phone}`.toLocaleLowerCase();
+      return searchable.includes(memberSearchTerm);
+    });
+
+    memberBody.innerHTML = filteredMembers.length
+      ? filteredMembers.map(member => `
         <tr>
           <td>${member.name}</td>
           <td style="color:var(--text-secondary)">${member.email || '-'}</td>
+          <td style="color:var(--text-secondary)">${member.phone || '-'}</td>
           <td><span class="badge ${member.role === 'Staff' ? 'required' : 'draft'}">${roleName[member.role] || member.role}</span></td>
           <td><span class="badge ${member.status === 'active' ? 'active' : 'draft'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
           <td>
@@ -310,7 +326,7 @@
           </td>
         </tr>
       `).join('')
-      : '<tr><td colspan="5" style="text-align:center; padding:30px;">ไม่พบข้อมูล</td></tr>';
+      : '<tr><td colspan="6" style="text-align:center; padding:30px;">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>';
   }
 
   window.editMember = id => {

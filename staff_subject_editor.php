@@ -23,7 +23,7 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
   <div class="glow-orb orb-2"></div>
 
   <header class="topbar">
-    <a class="btn-ghost" href="staffdash.php?page=subject-list">← กลับไปหน้ารายวิชา</a>
+    <a class="btn-ghost btn-back" href="staffdash.php?page=subject-list">← กลับไปหน้ารายวิชา</a>
     <div class="topbar-copy">
       <span class="eyebrow">STAFF SUBJECT EDITOR</span>
       <h1>แก้ไขรายวิชาและบทเรียน</h1>

@@ -143,14 +143,6 @@ if (!empty($_SESSION['name'])) {
         </svg>
       </button>
       <span class="topbar-title" id="topbarTitle">แดชบอร์ด</span>
-      <div class="topbar-right">
-        <div class="search-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input type="text" placeholder="ค้นหา..." />
-        </div>
-      </div>
     </header>
 
     <!-- Content -->
@@ -269,7 +261,7 @@ if (!empty($_SESSION['name'])) {
               </tr>
             </thead>
             <tbody id="curriculumBody">
-              <tr><td colspan="5" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
+              <tr><td colspan="6" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
@@ -282,7 +274,7 @@ if (!empty($_SESSION['name'])) {
             <div class="page-title" id="curriculumFormTitle">เพิ่มหลักสูตรใหม่</div>
             <div class="page-sub">กรอกข้อมูลหลักสูตรให้ครบถ้วน</div>
           </div>
-          <button class="btn-ghost" data-goto="curriculum-list">← กลับรายการ</button>
+          <button class="btn-ghost btn-back" data-goto="curriculum-list">← กลับรายการ</button>
         </div>
         <form class="form-card" id="curriculumForm">
           <input type="hidden" id="cf-id" />
@@ -359,7 +351,7 @@ if (!empty($_SESSION['name'])) {
             <div class="page-title" id="csTitle">จัดการวิชาเข้าหลักสูตร</div>
             <div class="page-sub">เลือกรายวิชาที่ต้องการรวมไว้ในหลักสูตรนี้</div>
           </div>
-          <button class="btn-ghost" data-goto="curriculum-list">← กลับรายการ</button>
+          <button class="btn-ghost btn-back" data-goto="curriculum-list">← กลับรายการ</button>
         </div>
         <form class="form-card" id="csForm" style="max-width:100%;">
           <input type="hidden" id="cs-curriculum-id" />
@@ -414,7 +406,7 @@ if (!empty($_SESSION['name'])) {
             <div class="page-title" id="subjectFormTitle">เพิ่มรายวิชาใหม่</div>
             <div class="page-sub">กรอกข้อมูลรายวิชาให้ครบถ้วน</div>
           </div>
-          <button class="btn-ghost" data-goto="subject-list">← กลับรายการ</button>
+          <button class="btn-ghost btn-back" data-goto="subject-list">← กลับรายการ</button>
         </div>
         <form class="form-card" id="subjectForm">
           <input type="hidden" id="sf-id" />
@@ -482,7 +474,7 @@ if (!empty($_SESSION['name'])) {
             <div class="page-sub">รายการบทเรียนในวิชานี้</div>
           </div>
           <div style="display:flex;gap:10px;">
-            <button class="btn-ghost" data-goto="subject-list">← กลับรายการ</button>
+            <button class="btn-ghost btn-back" data-goto="subject-list">← กลับรายการ</button>
             <button class="btn-primary" onclick="openAddLesson()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="17" height="17">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -515,7 +507,7 @@ if (!empty($_SESSION['name'])) {
             <div class="page-title" id="lessonFormTitle">เพิ่มบทเรียนใหม่</div>
             <div class="page-sub">กรอกข้อมูลบทเรียนให้ครบถ้วน</div>
           </div>
-          <button class="btn-ghost" data-goto="subject-detail">← กลับรายการบทเรียน</button>
+          <button class="btn-ghost btn-back" data-goto="subject-detail">← กลับรายการบทเรียน</button>
         </div>
         <form class="form-card" id="lessonForm" enctype="multipart/form-data">
           <input type="hidden" id="lf-id" />
@@ -564,6 +556,12 @@ if (!empty($_SESSION['name'])) {
             <div class="page-title">จัดการผู้ใช้งาน</div>
             <div class="page-sub">รายชื่อสมาชิกทั้งหมดในระบบ</div>
           </div>
+          <label class="search-wrap member-search-wrap" for="memberSearch">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input id="memberSearch" type="search" placeholder="ค้นหาชื่อ อีเมล หรือเบอร์โทร..." autocomplete="off" />
+          </label>
         </div>
         <div class="table-wrap">
           <table class="data-table">
@@ -571,6 +569,7 @@ if (!empty($_SESSION['name'])) {
               <tr>
                 <th>ชื่อ-นามสกุล</th>
                 <th>อีเมล</th>
+                <th>เบอร์โทรศัพท์</th>
                 <th>บทบาท</th>
                 <th>สถานะ</th>
                 <th style="width:120px;">จัดการ</th>
@@ -590,7 +589,7 @@ if (!empty($_SESSION['name'])) {
             <div class="page-title">แก้ไขข้อมูลสมาชิก</div>
             <div class="page-sub">แก้ไขชื่อ อีเมล บทบาท และสถานะของสมาชิก</div>
           </div>
-          <button class="btn-ghost" data-goto="member-list">← กลับรายการ</button>
+          <button class="btn-ghost btn-back" data-goto="member-list">← กลับรายการ</button>
         </div>
         <form class="form-card" id="memberForm">
           <input type="hidden" id="mf-id" />
