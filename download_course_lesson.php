@@ -13,14 +13,14 @@ function deny(string $message, int $statusCode = 403): void
 
 function findSubjectIdByCourseName(PDO $conn, string $courseName): ?string
 {
-    $stmt = $conn->prepare('SELECT subjects_id FROM public.subjects WHERE subjects_name = :name LIMIT 1');
+    $stmt = $conn->prepare('SELECT course_id FROM public.courses WHERE name = :name LIMIT 1');
     $stmt->execute([':name' => $courseName]);
     $id = $stmt->fetchColumn();
     if ($id !== false) {
         return (string) $id;
     }
 
-    $stmt = $conn->prepare('SELECT subjects_id FROM public.subjects WHERE LOWER(subjects_name) = LOWER(:name) LIMIT 1');
+    $stmt = $conn->prepare('SELECT course_id FROM public.courses WHERE LOWER(name) = LOWER(:name) LIMIT 1');
     $stmt->execute([':name' => $courseName]);
     $id = $stmt->fetchColumn();
 
@@ -39,31 +39,17 @@ function subjectLegacySlug(string $courseName): string
     return $map[$courseName] ?? 'lesson1';
 }
 
-function ensureLessonMediaColumns(PDO $conn): void
-{
-    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS document_path VARCHAR(255)");
-    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS document_name VARCHAR(255)");
-    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS video_path VARCHAR(255)");
-    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS video_name VARCHAR(255)");
-}
-
 function resolveStoredLessonDocument(PDO $conn, string $subjectId, int $lessonNo): ?string
 {
-    ensureLessonMediaColumns($conn);
     $stmt = $conn->prepare(
-        "SELECT COALESCE(document_path, '') AS document_path
-         FROM public.lessons
-         WHERE subjects_id = :subject_id
-         ORDER BY lessons_id ASC"
+        "SELECT r.url
+         FROM public.lessons l
+         INNER JOIN public.lesson_resources r ON r.lesson_id = l.lesson_id AND r.resource_type = 'document'
+         WHERE l.course_id = :course_id AND l.position = :position
+         ORDER BY r.position LIMIT 1"
     );
-    $stmt->execute([':subject_id' => $subjectId]);
-    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $row = $rows[max(0, $lessonNo - 1)] ?? null;
-    if (!$row) {
-        return null;
-    }
-
-    $documentPath = trim((string) ($row['document_path'] ?? ''));
+    $stmt->execute([':course_id' => $subjectId, ':position' => max(1, $lessonNo)]);
+    $documentPath = trim((string) ($stmt->fetchColumn() ?: ''));
     if ($documentPath === '') {
         return null;
     }
@@ -112,18 +98,18 @@ try {
     if ($subjectId === '') {
         $subjectId = findSubjectIdByCourseName($conn, $courseName);
         if ($subjectId === null || $subjectId === '') {
-            deny('ไม่พบรายวิชานี้ในตาราง Subjects', 404);
+            deny('ไม่พบรายวิชานี้', 404);
         }
     }
 
     $stmt = $conn->prepare(
-        'SELECT 1 FROM public.student_subject
-         WHERE student_id = :student_id AND subjects_id = :subjects_id
+        'SELECT 1 FROM public.student_courses
+         WHERE student_id = :student_id AND course_id = :course_id AND status = \'active\'
          LIMIT 1'
     );
     $stmt->execute([
         ':student_id' => (string) $_SESSION['user_id'],
-        ':subjects_id' => $subjectId,
+        ':course_id' => $subjectId,
     ]);
 
     if (!$stmt->fetchColumn()) {
@@ -134,7 +120,7 @@ try {
 }
 
 if ($courseName === '') {
-    $stmtCourse = $conn->prepare('SELECT subjects_name FROM public.subjects WHERE subjects_id = :id LIMIT 1');
+    $stmtCourse = $conn->prepare('SELECT name FROM public.courses WHERE course_id = :id LIMIT 1');
     $stmtCourse->execute([':id' => $subjectId]);
     $courseName = (string) ($stmtCourse->fetchColumn() ?: '');
 }

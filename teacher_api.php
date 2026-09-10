@@ -16,9 +16,7 @@ $teacherId = (string) $_SESSION['user_id'];
 
 function ensureLessonMediaColumns(PDO $conn): void
 {
-    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS lesson_content TEXT");
-    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS document_path VARCHAR(255)");
-    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS document_name VARCHAR(255)");
+    // The supplied schema stores files in public.lesson_resources.
 }
 
 function sanitizePathSegment(string $value, string $fallback = 'unknown'): string
@@ -35,10 +33,7 @@ function sanitizePathSegment(string $value, string $fallback = 'unknown'): strin
 
 function generateLessonId(PDO $conn): string
 {
-    $stmtId = $conn->query("SELECT lessons_id FROM public.lessons WHERE lessons_id LIKE 'L%' ORDER BY LENGTH(lessons_id) DESC, lessons_id DESC LIMIT 1");
-    $lastId = $stmtId->fetchColumn();
-    $nextNum = $lastId ? intval(substr((string) $lastId, 1)) + 1 : 1;
-    return 'L' . str_pad((string) $nextNum, 3, '0', STR_PAD_LEFT);
+    throw new LogicException('public.lessons generates lesson_id automatically');
 }
 
 function buildLessonMediaSegments(string $teacherId, string $subjectId, string $lessonId, string $mediaType): array
@@ -125,9 +120,9 @@ function teacherOwnsSubject(PDO $conn, string $teacherId, string $subjectId): bo
 {
     $stmt = $conn->prepare(
         'SELECT 1
-         FROM public.subject_teachers
-         WHERE subjects_id = :subject_id
-           AND teachers_id = :teacher_id
+         FROM public.course_teachers
+         WHERE course_id = :subject_id
+           AND teacher_id = :teacher_id
          LIMIT 1'
     );
     $stmt->execute([
@@ -143,9 +138,9 @@ function teacherOwnsLesson(PDO $conn, string $teacherId, string $lessonId): bool
     $stmt = $conn->prepare(
         'SELECT 1
          FROM public.lessons l
-         INNER JOIN public.subject_teachers st ON st.subjects_id = l.subjects_id
-         WHERE l.lessons_id = :lesson_id
-           AND st.teachers_id = :teacher_id
+         INNER JOIN public.course_teachers ct ON ct.course_id = l.course_id
+         WHERE l.lesson_id = :lesson_id
+           AND ct.teacher_id = :teacher_id
          LIMIT 1'
     );
     $stmt->execute([
@@ -158,7 +153,7 @@ function teacherOwnsLesson(PDO $conn, string $teacherId, string $lessonId): bool
 
 function countSubjectLessons(PDO $conn, string $subjectId): int
 {
-    $stmt = $conn->prepare('SELECT COUNT(*) FROM public.lessons WHERE subjects_id = :subject_id');
+    $stmt = $conn->prepare('SELECT COUNT(*) FROM public.lessons WHERE course_id = :subject_id');
     $stmt->execute([':subject_id' => $subjectId]);
     return (int) $stmt->fetchColumn();
 }
@@ -167,11 +162,11 @@ function teacherOwnsQuiz(PDO $conn, string $teacherId, string $quizId): bool
 {
     $stmt = $conn->prepare(
         'SELECT 1
-         FROM public.test_questions tq
-         INNER JOIN public.lessons l ON l.lessons_id = tq.lessons_id
-         INNER JOIN public.subject_teachers st ON st.subjects_id = l.subjects_id
-         WHERE tq.questions_id = :quiz_id
-           AND st.teachers_id = :teacher_id
+         FROM public.questions q
+         INNER JOIN public.lessons l ON l.lesson_id = q.lesson_id
+         INNER JOIN public.course_teachers ct ON ct.course_id = l.course_id
+         WHERE q.question_id = :quiz_id
+           AND ct.teacher_id = :teacher_id
          LIMIT 1'
     );
     $stmt->execute([
@@ -196,36 +191,16 @@ try {
             throw new Exception('รายวิชานี้มีบทเรียนครบ 3 บทแล้ว');
         }
 
-        ensureLessonMediaColumns($conn);
-        $lessonId = generateLessonId($conn);
+        $conn->beginTransaction();
+        $stmt = $conn->prepare('INSERT INTO public.lessons (course_id, title, study_hours, position) VALUES (:course_id, :title, 1, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lessons WHERE course_id = :course_id)) RETURNING lesson_id');
+        $stmt->execute([':course_id' => $subjectId, ':title' => $lessonName]);
+        $lessonId = (string) $stmt->fetchColumn();
         $documentUpload = uploadLessonFile('lesson_document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc');
-
-        $stmt = $conn->prepare(
-            'INSERT INTO public.lessons (
-                lessons_id,
-                lessons_name,
-                study_hours,
-                subjects_id,
-                document_path,
-                document_name
-            )
-             VALUES (
-                :id,
-                :name,
-                :hours,
-                :subject_id,
-                :document_path,
-                :document_name
-            )'
-        );
-        $stmt->execute([
-            ':id' => $lessonId,
-            ':name' => $lessonName,
-            ':hours' => 1,
-            ':subject_id' => $subjectId,
-            ':document_path' => $documentUpload['path'],
-            ':document_name' => $documentUpload['name'],
-        ]);
+        if ($documentUpload['path'] !== '') {
+            $resource = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position) VALUES (:lesson_id, 'document', :title, :url, 1)");
+            $resource->execute([':lesson_id' => $lessonId, ':title' => $documentUpload['name'], ':url' => $documentUpload['path']]);
+        }
+        $conn->commit();
 
         echo json_encode(['success' => true, 'message' => 'เพิ่มบทเรียนสำเร็จ']);
         exit;
@@ -241,7 +216,7 @@ try {
             throw new Exception('คุณไม่มีสิทธิ์แก้ไขบทเรียนนี้');
         }
 
-        $stmt = $conn->prepare('UPDATE public.lessons SET lessons_name = :name WHERE lessons_id = :id');
+        $stmt = $conn->prepare('UPDATE public.lessons SET title = :name, updated_at = NOW() WHERE lesson_id = :id');
         $stmt->execute([
             ':name' => $lessonName,
             ':id' => $lessonId,
@@ -260,8 +235,7 @@ try {
             throw new Exception('คุณไม่มีสิทธิ์ลบบทเรียนนี้');
         }
 
-        $conn->prepare('DELETE FROM public.test_questions WHERE lessons_id = ?')->execute([$lessonId]);
-        $conn->prepare('DELETE FROM public.lessons WHERE lessons_id = ?')->execute([$lessonId]);
+        $conn->prepare('DELETE FROM public.lessons WHERE lesson_id = ?')->execute([$lessonId]);
         echo json_encode(['success' => true, 'message' => 'ลบบทเรียนสำเร็จ']);
         exit;
     }
@@ -283,6 +257,10 @@ try {
         $choiceD = (string) ($_POST['choice_d'] ?? '');
         $answer = (string) ($_POST['answer'] ?? '');
 
+        if (!in_array($type, ['choice', 'truefalse', 'essay'], true)) {
+            throw new Exception('รูปแบบข้อสอบไม่ถูกต้อง');
+        }
+
         if ($type === 'truefalse') {
             $choiceA = 'ถูก';
             $choiceB = 'ผิด';
@@ -296,15 +274,27 @@ try {
             $answer = '-';
         }
 
-        $stmtId = $conn->query("SELECT COALESCE(MAX(questions_id), 0) + 1 FROM public.test_questions");
-        $nextId = (int) $stmtId->fetchColumn();
+        if ($type !== 'essay') {
+            if ($choiceA === '' || $choiceB === '' || ($type === 'choice' && ($choiceC === '' || $choiceD === ''))) {
+                throw new Exception('กรุณากรอกตัวเลือกให้ครบ');
+            }
+            if (!in_array(strtoupper($answer), ['A', 'B', 'C', 'D'], true)) {
+                throw new Exception('กรุณาเลือกคำตอบที่ถูกต้อง');
+            }
+        }
 
         $stmt = $conn->prepare(
-            'INSERT INTO public.test_questions
-                (questions_id, questions_text, choice_a, choice_b, choice_c, choice_d, correct_answer, lessons_id)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO public.questions
+                (lesson_id, question_type, question_text, options, correct_choice)
+             VALUES (:lesson_id, :question_type, :question_text, CAST(:options AS jsonb), :correct_choice)'
         );
-        $stmt->execute([$nextId, $question, $choiceA, $choiceB, $choiceC, $choiceD, $answer, $lessonId]);
+        $stmt->execute([
+            ':lesson_id' => $lessonId,
+            ':question_type' => $type === 'essay' ? 'essay' : 'multiple_choice',
+            ':question_text' => $question,
+            ':options' => $type === 'essay' ? null : json_encode($type === 'truefalse' ? [$choiceA, $choiceB] : [$choiceA, $choiceB, $choiceC, $choiceD], JSON_UNESCAPED_UNICODE),
+            ':correct_choice' => $type === 'essay' ? null : strtoupper($answer),
+        ]);
 
         echo json_encode(['success' => true, 'message' => 'เพิ่มคำถามสำเร็จ']);
         exit;
@@ -327,6 +317,10 @@ try {
         $choiceD = (string) ($_POST['choice_d'] ?? '');
         $answer = (string) ($_POST['answer'] ?? '');
 
+        if (!in_array($type, ['choice', 'truefalse', 'essay'], true)) {
+            throw new Exception('รูปแบบข้อสอบไม่ถูกต้อง');
+        }
+
         if ($type === 'truefalse') {
             $choiceA = 'ถูก';
             $choiceB = 'ผิด';
@@ -340,12 +334,30 @@ try {
             $answer = '-';
         }
 
+        if ($type !== 'essay') {
+            if ($choiceA === '' || $choiceB === '' || ($type === 'choice' && ($choiceC === '' || $choiceD === ''))) {
+                throw new Exception('กรุณากรอกตัวเลือกให้ครบ');
+            }
+            if (!in_array(strtoupper($answer), ['A', 'B', 'C', 'D'], true)) {
+                throw new Exception('กรุณาเลือกคำตอบที่ถูกต้อง');
+            }
+        }
+
         $stmt = $conn->prepare(
-            'UPDATE public.test_questions
-             SET questions_text = ?, choice_a = ?, choice_b = ?, choice_c = ?, choice_d = ?, correct_answer = ?
-             WHERE questions_id = ?'
+            'UPDATE public.questions
+             SET question_type = :question_type,
+                 question_text = :question_text,
+                 options = CAST(:options AS jsonb),
+                 correct_choice = :correct_choice
+             WHERE question_id = :question_id'
         );
-        $stmt->execute([$question, $choiceA, $choiceB, $choiceC, $choiceD, $answer, $quizId]);
+        $stmt->execute([
+            ':question_type' => $type === 'essay' ? 'essay' : 'multiple_choice',
+            ':question_text' => $question,
+            ':options' => $type === 'essay' ? null : json_encode($type === 'truefalse' ? [$choiceA, $choiceB] : [$choiceA, $choiceB, $choiceC, $choiceD], JSON_UNESCAPED_UNICODE),
+            ':correct_choice' => $type === 'essay' ? null : strtoupper($answer),
+            ':question_id' => $quizId,
+        ]);
 
         echo json_encode(['success' => true, 'message' => 'แก้ไขคำถามสำเร็จ']);
         exit;
@@ -360,7 +372,7 @@ try {
             throw new Exception('คุณไม่มีสิทธิ์ลบข้อสอบนี้');
         }
 
-        $conn->prepare('DELETE FROM public.test_questions WHERE questions_id = ?')->execute([$quizId]);
+        $conn->prepare('DELETE FROM public.questions WHERE question_id = ?')->execute([$quizId]);
         echo json_encode(['success' => true, 'message' => 'ลบคำถามสำเร็จ']);
         exit;
     }
@@ -370,9 +382,9 @@ try {
         if ($subjectId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) {
             throw new Exception('คุณไม่มีสิทธิ์จัดการรายวิชานี้');
         }
-        $lessonStmt = $conn->prepare('SELECT lessons_id AS id, lessons_name AS title FROM public.lessons WHERE subjects_id = :subject_id ORDER BY lessons_id LIMIT 3');
+        $lessonStmt = $conn->prepare('SELECT lesson_id AS id, title FROM public.lessons WHERE course_id = :subject_id ORDER BY position LIMIT 3');
         $lessonStmt->execute([':subject_id' => $subjectId]);
-        $videoStmt = $conn->prepare('SELECT v.videos_id AS id, v.videos_title AS title, v.videos_url AS url, COALESCE(v.videos_description, \'\') AS description, v.duration_seconds, v.display_order, v.lessons_id, COALESCE(l.lessons_name, \'\') AS lesson_title FROM public.videos v LEFT JOIN public.lessons l ON l.lessons_id = v.lessons_id WHERE v.subjects_id = :subject_id ORDER BY v.display_order, v.videos_id');
+        $videoStmt = $conn->prepare("SELECT r.resource_id AS id, r.title, r.url, '' AS description, r.duration_seconds, r.position AS display_order, r.lesson_id AS lessons_id, l.title AS lesson_title FROM public.lesson_resources r INNER JOIN public.lessons l ON l.lesson_id = r.lesson_id WHERE l.course_id = :subject_id AND r.resource_type = 'video' ORDER BY r.position, r.resource_id");
         $videoStmt->execute([':subject_id' => $subjectId]);
         echo json_encode(['success' => true, 'lessons' => $lessonStmt->fetchAll(PDO::FETCH_ASSOC), 'videos' => $videoStmt->fetchAll(PDO::FETCH_ASSOC)]);
         exit;
@@ -388,13 +400,13 @@ try {
         $upload = uploadLessonFile('video_file', buildVideoMediaSegments($teacherId, $subjectId), 'video', true);
         $url = $upload['path'];
         $lessonId = trim((string) ($_POST['lesson_id'] ?? ''));
-        if ($lessonId !== '' && !teacherOwnsLesson($conn, $teacherId, $lessonId)) throw new Exception('บทเรียนที่เลือกไม่ถูกต้อง');
-        $params = [':title' => $title, ':url' => $url, ':description' => trim((string) ($_POST['description'] ?? '')), ':subject_id' => $subjectId, ':lesson_id' => $lessonId !== '' ? $lessonId : null];
+        if ($lessonId === '' || !teacherOwnsLesson($conn, $teacherId, $lessonId)) throw new Exception('บทเรียนที่เลือกไม่ถูกต้อง');
+        $params = [':title' => $title, ':url' => $url, ':lesson_id' => $lessonId];
         if ($videoId === '') {
-            $stmt = $conn->prepare('INSERT INTO public.videos (videos_title, videos_url, videos_description, subjects_id, lessons_id) VALUES (:title, :url, :description, :subject_id, :lesson_id)');
+            $stmt = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position) VALUES (:lesson_id, 'video', :title, :url, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lesson_resources WHERE lesson_id = :lesson_id))");
         } else {
             $params[':id'] = $videoId;
-            $stmt = $conn->prepare('UPDATE public.videos SET videos_title = :title, videos_url = :url, videos_description = :description, lessons_id = :lesson_id WHERE videos_id = :id AND subjects_id = :subject_id');
+            $stmt = $conn->prepare("UPDATE public.lesson_resources SET title = :title, url = :url, lesson_id = :lesson_id WHERE resource_id = :id AND resource_type = 'video'");
         }
         $stmt->execute($params);
         echo json_encode(['success' => true, 'message' => 'บันทึกวิดีโอสำเร็จ']);
@@ -405,7 +417,7 @@ try {
         $subjectId = trim((string) ($_POST['subject_id'] ?? ''));
         $videoId = trim((string) ($_POST['video_id'] ?? ''));
         if ($subjectId === '' || $videoId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) throw new Exception('คุณไม่มีสิทธิ์ลบวิดีโอนี้');
-        $conn->prepare('DELETE FROM public.videos WHERE videos_id = :id AND subjects_id = :subject_id')->execute([':id' => $videoId, ':subject_id' => $subjectId]);
+        $conn->prepare("DELETE FROM public.lesson_resources r USING public.lessons l WHERE r.lesson_id = l.lesson_id AND r.resource_id = :id AND l.course_id = :subject_id AND r.resource_type = 'video'")->execute([':id' => $videoId, ':subject_id' => $subjectId]);
         echo json_encode(['success' => true, 'message' => 'ลบวิดีโอสำเร็จ']);
         exit;
     }
@@ -413,16 +425,18 @@ try {
     if ($action === 'get_essay_submissions') {
         $subjectId = trim((string) ($_POST['subject_id'] ?? ''));
         if ($subjectId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) throw new Exception('คุณไม่มีสิทธิ์จัดการรายวิชานี้');
-        ensureEssaySubmissionTable($conn);
         $stmt = $conn->prepare(
-            'SELECT es.submission_id, es.test_id, es.answer_text, es.review_status, es.teacher_comment, es.submitted_at,
-                    st.student_name, l.lessons_name, tq.questions_text
-             FROM public.essay_submissions es
-             INNER JOIN public.student st ON st.student_id = es.student_id
-             INNER JOIN public.lessons l ON l.lessons_id = es.lessons_id
-             INNER JOIN public.test_questions tq ON tq.questions_id = es.questions_id
-             WHERE es.subjects_id = :subject_id
-             ORDER BY CASE WHEN es.review_status = \'pending\' THEN 0 ELSE 1 END, es.submitted_at DESC'
+            "SELECT aa.attempt_answer_id AS submission_id, a.attempt_id AS test_id, aa.answer_text,
+                    CASE WHEN aa.review_status = 'pending' THEN 'pending' WHEN COALESCE(aa.score, 0) > 0 THEN 'pass' ELSE 'fail' END AS review_status,
+                    aa.reviewer_comment AS teacher_comment, a.submitted_at,
+                    s.full_name AS student_name, l.title AS lessons_name, q.question_text AS questions_text
+             FROM public.quiz_attempt_answers aa
+             INNER JOIN public.quiz_attempts a ON a.attempt_id = aa.attempt_id
+             INNER JOIN public.questions q ON q.question_id = aa.question_id
+             INNER JOIN public.lessons l ON l.lesson_id = a.lesson_id
+             INNER JOIN public.students s ON s.user_id = a.student_id
+             WHERE l.course_id = :subject_id AND q.question_type = 'essay'
+             ORDER BY CASE WHEN aa.review_status = 'pending' THEN 0 ELSE 1 END, a.submitted_at DESC"
         );
         $stmt->execute([':subject_id' => $subjectId]);
         echo json_encode(['success' => true, 'submissions' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
@@ -433,27 +447,32 @@ try {
         $submissionId = (int) ($_POST['submission_id'] ?? 0);
         $decision = trim((string) ($_POST['decision'] ?? ''));
         if ($submissionId <= 0 || !in_array($decision, ['pass', 'fail'], true)) throw new Exception('ข้อมูลการตรวจไม่ถูกต้อง');
-        ensureEssaySubmissionTable($conn);
         $conn->beginTransaction();
-        $lookup = $conn->prepare('SELECT es.test_id, es.subjects_id, es.review_status FROM public.essay_submissions es INNER JOIN public.subject_teachers st ON st.subjects_id = es.subjects_id WHERE es.submission_id = :id AND st.teachers_id = :teacher_id FOR UPDATE');
+        $lookup = $conn->prepare(
+            'SELECT aa.attempt_id, aa.review_status, q.max_score
+             FROM public.quiz_attempt_answers aa
+             INNER JOIN public.questions q ON q.question_id = aa.question_id
+             INNER JOIN public.quiz_attempts a ON a.attempt_id = aa.attempt_id
+             INNER JOIN public.lessons l ON l.lesson_id = a.lesson_id
+             INNER JOIN public.course_teachers ct ON ct.course_id = l.course_id
+             WHERE aa.attempt_answer_id = :id AND ct.teacher_id = :teacher_id AND q.question_type = \'essay\'
+             FOR UPDATE'
+        );
         $lookup->execute([':id' => $submissionId, ':teacher_id' => $teacherId]);
         $row = $lookup->fetch(PDO::FETCH_ASSOC);
         if (!$row) throw new Exception('ไม่พบคำตอบข้อเขียนหรือคุณไม่มีสิทธิ์ตรวจ');
         if ($row['review_status'] !== 'pending') throw new Exception('คำตอบข้อนี้ถูกตรวจแล้ว');
-        $conn->prepare('UPDATE public.essay_submissions SET review_status = :decision, teacher_id = :teacher_id, teacher_comment = :comment, reviewed_at = CURRENT_TIMESTAMP WHERE submission_id = :id')->execute([':decision' => $decision, ':teacher_id' => $teacherId, ':comment' => trim((string) ($_POST['comment'] ?? '')), ':id' => $submissionId]);
-        $testId = (int) $row['test_id'];
-        if ($decision === 'pass') {
-            $conn->prepare('UPDATE public.test SET score = LEAST(total_score, score + 1) WHERE test_id = :test_id')->execute([':test_id' => $testId]);
-        }
-        $testStmt = $conn->prepare('SELECT student_id, subjects_id, lesson_no, score, total_score FROM public.test WHERE test_id = :test_id FOR UPDATE');
-        $testStmt->execute([':test_id' => $testId]);
-        $test = $testStmt->fetch(PDO::FETCH_ASSOC);
-        if (!$test) throw new Exception('ไม่พบผลการทดสอบ');
-        $statusStmt = $conn->prepare("SELECT CASE WHEN EXISTS (SELECT 1 FROM public.essay_submissions WHERE test_id = :test_id AND review_status = 'pending') THEN 'pending_review' WHEN :score >= CEIL(:total_score) THEN 'pass' ELSE 'fail' END");
-        $statusStmt->execute([':test_id' => $testId, ':score' => (int) $test['score'], ':total_score' => max(1, (int) $test['total_score'])]);
-        $testStatus = (string) $statusStmt->fetchColumn();
-        $conn->prepare('UPDATE public.test SET status = :status WHERE test_id = :test_id')->execute([':status' => $testStatus, ':test_id' => $testId]);
-        syncReviewedQuizScore($conn, (string) $test['student_id'], (string) $test['subjects_id'], (int) $test['lesson_no'], (int) $test['score'], (int) $test['total_score']);
+        $conn->prepare("UPDATE public.quiz_attempt_answers SET score = :score, review_status = 'reviewed', reviewer_id = :teacher_id, reviewer_comment = :comment, reviewed_at = CURRENT_TIMESTAMP WHERE attempt_answer_id = :id")
+            ->execute([':score' => $decision === 'pass' ? $row['max_score'] : 0, ':teacher_id' => $teacherId, ':comment' => trim((string) ($_POST['comment'] ?? '')), ':id' => $submissionId]);
+        $attemptId = (int) $row['attempt_id'];
+        $summary = $conn->prepare("SELECT COALESCE(SUM(score), 0) AS score, COUNT(*) FILTER (WHERE review_status = 'pending') AS pending FROM public.quiz_attempt_answers WHERE attempt_id = :attempt_id");
+        $summary->execute([':attempt_id' => $attemptId]);
+        $result = $summary->fetch(PDO::FETCH_ASSOC);
+        $attempt = $conn->prepare('SELECT total_score FROM public.quiz_attempts WHERE attempt_id = :attempt_id FOR UPDATE');
+        $attempt->execute([':attempt_id' => $attemptId]);
+        $totalScore = (float) $attempt->fetchColumn();
+        $testStatus = (int) $result['pending'] > 0 ? 'pending_review' : ((float) $result['score'] >= $totalScore ? 'passed' : 'failed');
+        $conn->prepare('UPDATE public.quiz_attempts SET score = :score, status = :status WHERE attempt_id = :attempt_id')->execute([':score' => $result['score'], ':status' => $testStatus, ':attempt_id' => $attemptId]);
         $conn->commit();
         echo json_encode(['success' => true, 'message' => $testStatus === 'pending_review' ? 'บันทึกผลแล้ว ยังมีข้อเขียนรอตรวจ' : 'บันทึกผลการตรวจแล้ว']);
         exit;

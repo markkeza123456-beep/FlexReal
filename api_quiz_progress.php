@@ -28,70 +28,30 @@ if ($subjectId === '') {
 }
 
 try {
-    $stmtSubject = $conn->prepare(
-        'SELECT subjects_name
-         FROM public.subjects
-         WHERE subjects_id = :subjects_id
-         LIMIT 1'
-    );
-    $stmtSubject->execute([':subjects_id' => $subjectId]);
-    $subjectName = (string) ($stmtSubject->fetchColumn() ?: '');
-
-    $stmt = $conn->prepare(
-        'SELECT DISTINCT lesson_no
-         FROM public.test
-         WHERE student_id = :student_id
-           AND (
-                subjects_id = :subjects_id
-                OR (:subject_name <> \'\' AND course_name = :subject_name)
-           )
-           AND lesson_no IS NOT NULL
-           AND (
-                status = :status
-                OR (
-                    status <> \'pending_review\'
-                    AND total_score > 0
-                    AND score >= CEIL(total_score * :pass_ratio)
-                )
-           )
-         ORDER BY lesson_no ASC'
-    );
-    $stmt->execute([
-        ':student_id' => $studentId,
-        ':subjects_id' => $subjectId,
-        ':subject_name' => $subjectName,
-        ':status' => 'pass',
-        ':pass_ratio' => QUIZ_PASS_RATIO,
-    ]);
-
-    $passedLessons = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
-
     $stmtResults = $conn->prepare(
-        'SELECT lesson_no, score, total_score, status
-         FROM (
-             SELECT
-                 lesson_no,
-                 score,
-                 total_score,
-                 status,
-                 ROW_NUMBER() OVER (PARTITION BY lesson_no ORDER BY COALESCE(test_attempt, 0) DESC, test_id DESC) AS rn
-             FROM public.test
-             WHERE student_id = :student_id
-               AND (
-                    subjects_id = :subjects_id
-                    OR (:subject_name <> \'\' AND course_name = :subject_name)
-               )
-               AND lesson_no IS NOT NULL
-         ) ranked
-         WHERE rn = 1
-         ORDER BY lesson_no ASC'
+        "SELECT l.position AS lesson_no, a.score, a.total_score, a.status
+         FROM public.lessons l
+         INNER JOIN LATERAL (
+             SELECT score, total_score, status
+             FROM public.quiz_attempts
+             WHERE student_id = :student_id AND lesson_id = l.lesson_id
+             ORDER BY submitted_at DESC LIMIT 1
+         ) a ON true
+         WHERE l.course_id = :course_id
+         ORDER BY l.position ASC"
     );
     $stmtResults->execute([
         ':student_id' => $studentId,
-        ':subjects_id' => $subjectId,
-        ':subject_name' => $subjectName,
+        ':course_id' => $subjectId,
     ]);
     $lessonResults = $stmtResults->fetchAll(PDO::FETCH_ASSOC);
+    $passedLessons = array_map(
+        static fn(array $row): int => (int) $row['lesson_no'],
+        array_filter($lessonResults, static fn(array $row): bool =>
+            $row['status'] === 'passed'
+            || ($row['status'] !== 'pending_review' && (float) $row['total_score'] > 0 && (float) $row['score'] >= ceil((float) $row['total_score'] * QUIZ_PASS_RATIO))
+        )
+    );
 
     jsonResponse([
         'status' => 'success',

@@ -55,48 +55,45 @@ session_write_close();
 
 try {
     ensureLearningProgressTables($conn);
-    ensureCurriculumSubjectTypeColumn($conn);
 
     $studentStmt = $conn->prepare(
-        'SELECT student_id, student_name, email, tel, studcurriculums_id, avatar_url,
+        'SELECT user_id, full_name, email, phone, avatar_url,
                 COALESCE(NULLIF(TRIM(student_level), \'\'), NULLIF(TRIM(education_level), \'\'), \'-\') AS class_name
-         FROM public.student
-         WHERE student_id = :student_id
+         FROM public.students
+         WHERE user_id = :student_id
          LIMIT 1'
     );
     $studentStmt->execute([':student_id' => $studentId]);
     $student = $studentStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
     $courseStmt = $conn->prepare(
-        'SELECT
-            s.subjects_id,
-            s.subjects_name,
-            s.subjects_description,
-            COALESCE(NULLIF(TRIM(cs.subject_type), \'\'), COALESCE(NULLIF(TRIM(s.subject_type), \'\'), \'elective\')) AS subject_type,
-            (SELECT COUNT(*) FROM public.lessons l WHERE l.subjects_id = s.subjects_id) AS lesson_count,
-            (SELECT COUNT(*) FROM public.student_learning_progress lp
-             WHERE lp.student_id = ss.student_id
-               AND lp.subjects_id = ss.subjects_id
-               AND lp.quiz_attempts > 0) AS attempted_lessons,
-            COALESCE((SELECT SUM(lp.best_quiz_score) FROM public.student_learning_progress lp
-             WHERE lp.student_id = ss.student_id AND lp.subjects_id = ss.subjects_id), 0) AS score_earned,
-            COALESCE((SELECT SUM(lp.quiz_total_score) FROM public.student_learning_progress lp
-             WHERE lp.student_id = ss.student_id AND lp.subjects_id = ss.subjects_id), 0) AS score_total,
-            (SELECT MAX(lp.last_activity_at) FROM public.student_learning_progress lp
-             WHERE lp.student_id = ss.student_id AND lp.subjects_id = ss.subjects_id) AS last_activity_at
-         FROM public.student_subject ss
-         INNER JOIN public.subjects s ON s.subjects_id = ss.subjects_id
-         LEFT JOIN public.curriculums_subject cs
-            ON cs.subject_id = s.subjects_id
-           AND cs.curriculums_id = :curriculum_id
-         WHERE ss.student_id = :student_id
-         GROUP BY ss.student_id, ss.subjects_id, s.subjects_id, s.subjects_name, s.subjects_description, s.subject_type, cs.subject_type
-         ORDER BY s.subjects_name ASC'
+        "SELECT c.course_id, c.name, COALESCE(c.description, '') AS description,
+                COALESCE(cc.requirement_type, 'elective') AS subject_type,
+                COUNT(l.lesson_id) AS lesson_count,
+                COUNT(qa.attempt_id) FILTER (WHERE qa.attempt_id IS NOT NULL) AS attempted_lessons,
+                COALESCE(SUM(qa.score), 0) AS score_earned,
+                COALESCE(SUM(qa.total_score), 0) AS score_total,
+                MAX(COALESCE(qa.submitted_at, lp.last_activity_at)) AS last_activity_at
+         FROM public.student_courses sc
+         INNER JOIN public.courses c ON c.course_id = sc.course_id
+         LEFT JOIN LATERAL (
+             SELECT curriculum_id FROM public.student_curricula
+             WHERE student_id = :student_id AND status = 'active'
+             ORDER BY enrolled_at DESC LIMIT 1
+         ) active_curriculum ON true
+         LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id
+         LEFT JOIN public.lessons l ON l.course_id = c.course_id
+         LEFT JOIN LATERAL (
+             SELECT attempt_id, score, total_score, submitted_at FROM public.quiz_attempts
+             WHERE student_id = :student_id AND lesson_id = l.lesson_id
+             ORDER BY submitted_at DESC LIMIT 1
+         ) qa ON true
+         LEFT JOIN public.lesson_progress lp ON lp.student_id = :student_id AND lp.lesson_id = l.lesson_id
+         WHERE sc.student_id = :student_id AND sc.status = 'active' AND c.status = 'active'
+         GROUP BY c.course_id, c.name, c.description, cc.requirement_type
+         ORDER BY c.name ASC"
     );
-    $courseStmt->execute([
-        ':student_id' => $studentId,
-        ':curriculum_id' => (string) ($student['studcurriculums_id'] ?? ''),
-    ]);
+    $courseStmt->execute([':student_id' => $studentId]);
 
     $courses = [];
     $attemptedLessons = 0;
@@ -112,9 +109,9 @@ try {
         $score = $possible > 0 ? round(($earned / $possible) * 100, 1) : 0;
         $courses[] = [
             'id' => str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT),
-            'subject_id' => (string) ($row['subjects_id'] ?? ''),
-            'name' => (string) ($row['subjects_name'] ?? 'ไม่ระบุชื่อวิชา'),
-            'description' => (string) ($row['subjects_description'] ?? ''),
+            'subject_id' => (string) ($row['course_id'] ?? ''),
+            'name' => (string) ($row['name'] ?? 'ไม่ระบุชื่อวิชา'),
+            'description' => (string) ($row['description'] ?? ''),
             'subject_type' => (string) ($row['subject_type'] ?? 'elective'),
             'lesson_count' => $lessonCount,
             'attempted_lessons' => $attempted,
@@ -137,9 +134,9 @@ try {
         'status' => 'success',
         'student' => [
             'id' => $studentId,
-            'name' => (string) ($student['student_name'] ?? ($_SESSION['name'] ?? $studentId)),
+            'name' => (string) ($student['full_name'] ?? ($_SESSION['name'] ?? $studentId)),
             'email' => (string) ($student['email'] ?? ''),
-            'phone' => (string) ($student['tel'] ?? ''),
+            'phone' => (string) ($student['phone'] ?? ''),
             'class_name' => (string) ($student['class_name'] ?? '-'),
             'avatar_url' => (string) ($student['avatar_url'] ?? ''),
         ],

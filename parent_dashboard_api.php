@@ -1,125 +1,84 @@
 <?php
-/**
- * parent_dashboard_api.php
- * ดึงข้อมูลผู้ปกครอง + ลูกทุกคน โดยใช้ student.parent_id = parents.parents_id
- */
-
-header('Content-Type: application/json; charset=utf-8');
-
-define('SB_URL', 'https://gwunrmptlmfpvidrxwdf.supabase.co');
-define('SB_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3dW5ybXB0bG1mcHZpZHJ4d2RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2NDY3ODUsImV4cCI6MjA5MjIyMjc4NX0.TvvgwaVxPIRzCguAH7x58vUEi2od31QeTXypRxaFMxA');  // ← ใส่ anon key ของคุณ
-
 session_start();
+header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/db_connect.php';
 
-// login_action.php บันทึก session เป็น 'user_id' และ role='parent'
+function gradeFromScore(float $score): string
+{
+    if ($score >= 80) return 'A';
+    if ($score >= 75) return 'B+';
+    if ($score >= 70) return 'B';
+    if ($score >= 65) return 'C+';
+    if ($score >= 60) return 'C';
+    if ($score >= 55) return 'D+';
+    if ($score >= 50) return 'D';
+    return 'F';
+}
+
+function gpaPoint(float $score): float
+{
+    return match (true) {
+        $score >= 80 => 4.0, $score >= 75 => 3.5, $score >= 70 => 3.0,
+        $score >= 65 => 2.5, $score >= 60 => 2.0, $score >= 55 => 1.5,
+        $score >= 50 => 1.0, default => 0.0,
+    };
+}
+
 if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'parent') {
     echo json_encode(['status' => 'error', 'message' => 'กรุณาเข้าสู่ระบบก่อน', 'redirect' => 'login.php']);
     exit;
 }
 
-$parentId = $_SESSION['user_id'];
+try {
+    $parentId = (string) $_SESSION['user_id'];
+    $parentStmt = $conn->prepare('SELECT user_id AS parents_id, full_name AS parents_name, email, phone AS tel FROM public.parents WHERE user_id = :id LIMIT 1');
+    $parentStmt->execute([':id' => $parentId]);
+    $parent = $parentStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$parent) throw new RuntimeException('ไม่พบข้อมูลผู้ปกครอง');
 
-/* ── Helper ── */
-function sbGet(string $table, array $params): array {
-    $url = SB_URL . '/rest/v1/' . $table . '?' . http_build_query($params);
-    $ctx = stream_context_create(['http' => [
-        'method'  => 'GET',
-        'header'  => "apikey: " . SB_KEY . "\r\nAuthorization: Bearer " . SB_KEY . "\r\nAccept: application/json",
-        'timeout' => 10,
-    ]]);
-    $raw = @file_get_contents($url, false, $ctx);
-    if ($raw === false) return [];
-    $data = json_decode($raw, true);
-    return is_array($data) ? $data : [];
-}
+    $studentStmt = $conn->prepare('SELECT user_id AS student_id, full_name AS student_name, student_level, avatar_url FROM public.students WHERE parent_user_id = :id ORDER BY full_name ASC');
+    $studentStmt->execute([':id' => $parentId]);
+    $children = [];
+    $courseStmt = $conn->prepare(
+        "SELECT c.name AS subject_name, COALESCE(SUM(a.score), 0) AS score_earned, COALESCE(SUM(a.total_score), 0) AS score_possible
+         FROM public.student_courses sc
+         INNER JOIN public.courses c ON c.course_id = sc.course_id
+         LEFT JOIN public.lessons l ON l.course_id = c.course_id
+         LEFT JOIN LATERAL (
+             SELECT score, total_score FROM public.quiz_attempts
+             WHERE student_id = :student_id AND lesson_id = l.lesson_id
+             ORDER BY submitted_at DESC LIMIT 1
+         ) a ON true
+         WHERE sc.student_id = :student_id AND sc.status = 'active'
+         GROUP BY c.course_id, c.name ORDER BY c.name"
+    );
 
-/* ── 1. ข้อมูลผู้ปกครอง ── */
-$parents = sbGet('parents', [
-    'parents_id' => 'eq.' . $parentId,
-    'select'     => 'parents_id,parents_name,email,tel',
-    'limit'      => 1,
-]);
-
-if (empty($parents)) {
-    echo json_encode(['status' => 'error', 'message' => 'ไม่พบข้อมูลผู้ปกครอง']);
-    exit;
-}
-$parent = $parents[0];
-
-/* ── 2. หาลูกทุกคนโดย student.parent_id = parents_id ── */
-$students = sbGet('student', [
-    'parent_id' => 'eq.' . $parentId,
-    'select'    => 'student_id,student_name,studcurriculums_id,avatar_url',
-]);
-
-$children = [];
-
-foreach ($students as $stu) {
-    $sid = $stu['student_id'];
-
-    /* ── 2a. คะแนนรายวิชา ── */
-    $subjectRows = sbGet('student_subject', [
-        'student_id' => 'eq.' . $sid,
-        'select'     => 'subject_id,score_mid,score_final,grade,total_score',
-    ]);
-
-    $subjects = [];
-    if (!empty($subjectRows)) {
-        $subjectIds  = array_column($subjectRows, 'subject_id');
-        $subjectList = sbGet('subjects', [
-            'subject_id' => 'in.(' . implode(',', $subjectIds) . ')',
-            'select'     => 'subject_id,subject_name',
-        ]);
-        $subjectMap = array_column($subjectList, 'subject_name', 'subject_id');
-
-        foreach ($subjectRows as $row) {
-            $total = $row['total_score'] ?? ($row['score_mid'] + $row['score_final']);
-            $subjects[] = [
-                'subject_name' => $subjectMap[$row['subject_id']] ?? 'วิชา ' . $row['subject_id'],
-                'score_mid'    => $row['score_mid']   ?? 0,
-                'score_final'  => $row['score_final'] ?? 0,
-                'total_score'  => $total,
-                'grade'        => $row['grade'] ?? gradeFromScore($total),
-            ];
+    foreach ($studentStmt->fetchAll(PDO::FETCH_ASSOC) as $student) {
+        $courseStmt->execute([':student_id' => $student['student_id']]);
+        $subjects = [];
+        foreach ($courseStmt->fetchAll(PDO::FETCH_ASSOC) as $course) {
+            $percent = (float) $course['score_possible'] > 0 ? round(((float) $course['score_earned'] / (float) $course['score_possible']) * 100, 1) : 0.0;
+            $subjects[] = ['subject_name' => $course['subject_name'], 'score_mid' => 0, 'score_final' => $percent, 'total_score' => $percent, 'grade' => gradeFromScore($percent)];
         }
+        $scores = array_column($subjects, 'total_score');
+        $topScore = $scores ? max($scores) : 0;
+        $topSubject = '';
+        foreach ($subjects as $subject) {
+            if ((float) $subject['total_score'] === (float) $topScore) { $topSubject = $subject['subject_name']; break; }
+        }
+        $children[] = [
+            'student_id' => $student['student_id'], 'student_name' => $student['student_name'],
+            'student_level' => $student['student_level'] ?? '', 'avatar_url' => $student['avatar_url'] ?? null,
+            'initial' => mb_substr((string) $student['student_name'], 0, 1), 'subjects' => $subjects,
+            'stats' => [
+                'gpa' => $scores ? round(array_sum(array_map('gpaPoint', $scores)) / count($scores), 2) : 0,
+                'grade_a' => count(array_filter($subjects, static fn(array $subject): bool => str_starts_with($subject['grade'], 'A'))),
+                'top_score' => $topScore, 'top_subject' => $topSubject,
+            ],
+        ];
     }
-
-    /* ── 2b. สถิติ ── */
-    $scores      = array_column($subjects, 'total_score');
-    $totalSub    = count($subjects);
-    $gpa         = $totalSub > 0 ? round(array_sum(array_map('gpaPoint', $scores)) / $totalSub, 2) : 0;
-    $gradeACount = count(array_filter($subjects, fn($s) => str_starts_with($s['grade'], 'A')));
-    $topScore    = $totalSub > 0 ? max($scores) : 0;
-    $topSubject  = '';
-    foreach ($subjects as $s) {
-        if ($s['total_score'] == $topScore) { $topSubject = $s['subject_name']; break; }
-    }
-
-    $children[] = [
-        'student_id'    => $sid,
-        'student_name'  => $stu['student_name'],
-        'student_level' => $stu['studcurriculums_id'] ?? '',
-        'avatar_url'    => $stu['avatar_url'] ?? null,
-        'initial'       => mb_substr($stu['student_name'], 0, 1),
-        'subjects'      => $subjects,
-        'stats' => [
-            'gpa'         => $gpa,
-            'grade_a'     => $gradeACount,
-            'top_score'   => $topScore,
-            'top_subject' => $topSubject,
-        ],
-    ];
+    echo json_encode(['status' => 'success', 'parent' => $parent, 'children' => $children], JSON_UNESCAPED_UNICODE);
+} catch (Throwable $e) {
+    error_log('Parent dashboard error: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'ไม่สามารถโหลดข้อมูลผู้ปกครองได้'], JSON_UNESCAPED_UNICODE);
 }
-
-function gradeFromScore(float $s): string {
-    if ($s >= 80) return 'A';  if ($s >= 75) return 'B+'; if ($s >= 70) return 'B';
-    if ($s >= 65) return 'C+'; if ($s >= 60) return 'C';  if ($s >= 55) return 'D+';
-    if ($s >= 50) return 'D';  return 'F';
-}
-function gpaPoint(float $s): float {
-    if ($s >= 80) return 4.0; if ($s >= 75) return 3.5; if ($s >= 70) return 3.0;
-    if ($s >= 65) return 2.5; if ($s >= 60) return 2.0; if ($s >= 55) return 1.5;
-    if ($s >= 50) return 1.0; return 0.0;
-}
-
-echo json_encode(['status' => 'success', 'parent' => $parent, 'children' => $children], JSON_UNESCAPED_UNICODE);

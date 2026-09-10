@@ -5,17 +5,6 @@ header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? '';
 
-function tableColumns(PDO $conn, string $schema, string $table): array
-{
-    $stmt = $conn->prepare(
-        "SELECT column_name
-         FROM information_schema.columns
-         WHERE table_schema = :schema AND table_name = :table"
-    );
-    $stmt->execute([':schema' => $schema, ':table' => $table]);
-    return array_map('strval', $stmt->fetchAll(PDO::FETCH_COLUMN));
-}
-
 function normalizeAnswerLetter(string $raw): string
 {
     $value = strtoupper(trim($raw));
@@ -70,45 +59,21 @@ function inferQuestionType(array $options, string $correctAnswer): string
 
 function loadLessons(PDO $conn, string $subjectId): array
 {
-    $stmt = $conn->prepare("SELECT lessons_id, lessons_name, study_hours, subjects_id FROM public.lessons WHERE subjects_id = ? ORDER BY lessons_id ASC");
+    $stmt = $conn->prepare("SELECT lesson_id AS lessons_id, title AS lessons_name, study_hours, course_id AS subjects_id FROM public.lessons WHERE course_id = ? ORDER BY position ASC");
     $stmt->execute([$subjectId]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-function loadFromQuizQuestions(PDO $conn, string $subjectId, int $lessonNo): array
-{
-    $cols = tableColumns($conn, 'public', 'quiz_questions');
-    $answerCol = 'correct_answer';
-    if (!in_array($answerCol, $cols, true)) {
-        if (in_array('correct_option', $cols, true)) {
-            $answerCol = 'correct_option';
-        } elseif (in_array('answer', $cols, true)) {
-            $answerCol = 'answer';
-        } else {
-            $answerCol = "''";
-        }
-    }
-
-    $stmt = $conn->prepare(
-        "SELECT quiz_id, question_text, option_a, option_b, option_c, option_d, {$answerCol} AS correct_answer
-         FROM public.quiz_questions
-         WHERE subjects_id = :subjects_id AND lesson_no = :lesson_no
-         ORDER BY quiz_id ASC"
-    );
-    $stmt->execute([
-        ':subjects_id' => $subjectId,
-        ':lesson_no' => $lessonNo,
-    ]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function loadFromTestQuestions(PDO $conn, string $lessonId): array
 {
     $stmt = $conn->prepare(
-        "SELECT questions_id, questions_text, choice_a, choice_b, choice_c, choice_d, correct_answer
-         FROM public.test_questions
-         WHERE lessons_id = ?
-         ORDER BY questions_id ASC"
+        "SELECT question_id AS questions_id, question_text AS questions_text,
+                COALESCE(options->>0, '') AS choice_a, COALESCE(options->>1, '') AS choice_b,
+                COALESCE(options->>2, '') AS choice_c, COALESCE(options->>3, '') AS choice_d,
+                COALESCE(correct_choice, '') AS correct_answer
+         FROM public.questions
+         WHERE lesson_id = ? AND is_active = true
+         ORDER BY question_id ASC"
     );
     $stmt->execute([$lessonId]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);

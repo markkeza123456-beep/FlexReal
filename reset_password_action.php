@@ -7,13 +7,13 @@ $new_password = trim((string)($_POST['new_password'] ?? ''));
 $confirm_password = trim((string)($_POST['confirm_password'] ?? ''));
 
 // เช็คความถูกต้องของ Session จาก Step 2
-if (!isset($_SESSION['reset_user_id'], $_SESSION['reset_pin'], $_SESSION['reset_pin_verified_at'])) {
+if (!isset($_SESSION['reset_user_id'], $_SESSION['reset_token_id'], $_SESSION['reset_pin_verified_at'])) {
     echo json_encode(['status' => 'error', 'message' => 'กรุณายืนยัน PIN ก่อนเปลี่ยนรหัสผ่าน']);
     exit;
 }
 
 if ((time() - (int)$_SESSION['reset_pin_verified_at']) > 900) {
-    unset($_SESSION['reset_user_id'], $_SESSION['reset_pin'], $_SESSION['reset_pin_verified_at']);
+    unset($_SESSION['password_reset_user_id'], $_SESSION['password_reset_requested_at'], $_SESSION['reset_user_id'], $_SESSION['reset_token_id'], $_SESSION['reset_pin_verified_at']);
     echo json_encode(['status' => 'error', 'message' => 'เซสชันยืนยัน PIN หมดอายุ กรุณายืนยันใหม่']);
     exit;
 }
@@ -23,8 +23,8 @@ if ($new_password === '' || $confirm_password === '') {
     exit;
 }
 
-if (strlen($new_password) < 6) {
-    echo json_encode(['status' => 'error', 'message' => 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร']);
+if (!preg_match('/^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}$/', $new_password)) {
+    echo json_encode(['status' => 'error', 'message' => 'รหัสผ่านต้องเป็นภาษาอังกฤษและตัวเลข 8-15 ตัว']);
     exit;
 }
 
@@ -35,18 +35,15 @@ if ($new_password !== $confirm_password) {
 
 try {
     $user_id = (string)$_SESSION['reset_user_id'];
-    $pin = (string)$_SESSION['reset_pin'];
+    $tokenId = (int) $_SESSION['reset_token_id'];
 
-    // เช็ค PIN จากฐานข้อมูลอีกรอบเพื่อความชัวร์
-    $stmtToken = $conn->prepare('SELECT token_id, token_hash FROM public.password_reset_tokens WHERE user_id = :uid AND used_at IS NULL AND expires_at > NOW() ORDER BY created_at DESC');
-    $stmtToken->execute(['uid' => $user_id]);
-    $tokenRow = null;
-    foreach ($stmtToken->fetchAll(PDO::FETCH_ASSOC) as $candidate) {
-        if (password_verify($pin, (string) $candidate['token_hash'])) { $tokenRow = $candidate; break; }
-    }
+    // ตรวจสอบคำขอเดิมซ้ำก่อนบันทึกรหัสใหม่
+    $stmtToken = $conn->prepare('SELECT token_id FROM public.password_reset_tokens WHERE token_id = :token_id AND user_id = :uid AND used_at IS NULL AND expires_at > NOW()');
+    $stmtToken->execute([':token_id' => $tokenId, ':uid' => $user_id]);
+    $tokenRow = $stmtToken->fetch(PDO::FETCH_ASSOC);
 
     if (!$tokenRow) {
-        unset($_SESSION['reset_user_id'], $_SESSION['reset_pin'], $_SESSION['reset_pin_verified_at']);
+        unset($_SESSION['password_reset_user_id'], $_SESSION['password_reset_requested_at'], $_SESSION['reset_user_id'], $_SESSION['reset_token_id'], $_SESSION['reset_pin_verified_at']);
         echo json_encode(['status' => 'error', 'message' => 'PIN ไม่ถูกต้อง หรือหมดอายุแล้ว']);
         exit;
     }
@@ -63,13 +60,14 @@ try {
     $conn->commit();
 
     // เคลียร์ Session ป้องกันการแบคกลับมาเปลี่ยนรหัสซ้ำ
-    unset($_SESSION['reset_user_id'], $_SESSION['reset_pin'], $_SESSION['reset_pin_verified_at']);
+    unset($_SESSION['password_reset_user_id'], $_SESSION['password_reset_requested_at'], $_SESSION['reset_user_id'], $_SESSION['reset_token_id'], $_SESSION['reset_pin_verified_at']);
 
     echo json_encode(['status' => 'success', 'message' => 'เปลี่ยนรหัสผ่านสำเร็จ']);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     if ($conn->inTransaction()) {
         $conn->rollBack();
     }
-    echo json_encode(['status' => 'error', 'message' => 'ระบบฐานข้อมูลผิดพลาด: ' . $e->getMessage()]);
+    error_log('Password reset failed: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'ไม่สามารถเปลี่ยนรหัสผ่านได้ กรุณาลองใหม่']);
 }
 ?>

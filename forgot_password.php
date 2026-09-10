@@ -24,7 +24,7 @@
 
       <div id="step1" class="step-1">
         <h1 class="title">ลืมรหัสผ่าน</h1>
-        <p class="subtitle">กรอกอีเมลเพื่อรับรหัส PIN 6 หลัก</p>
+        <p class="subtitle">กรอกอีเมลที่ใช้สมัครเพื่อรับรหัส PIN 6 หลัก</p>
         <form id="forgotForm" class="form">
           <div class="field">
             <label class="label">อีเมล</label>
@@ -57,7 +57,7 @@
           <div class="field">
             <label class="label">รหัสผ่านใหม่</label>
             <div class="input-wrap">
-              <input type="password" id="new_password" placeholder="อย่างน้อย 6 ตัวอักษร" required />
+              <input type="password" id="new_password" placeholder="อังกฤษและตัวเลข 8-15 ตัว" required />
             </div>
           </div>
           <div class="field">
@@ -155,6 +155,11 @@
       e.preventDefault();
       const newPassword = document.getElementById('new_password').value;
       const confirmPassword = document.getElementById('confirm_password').value;
+
+      if (!/^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}$/.test(newPassword)) {
+        showToast('รหัสผ่านต้องเป็นภาษาอังกฤษและตัวเลข 8-15 ตัว', 'error-toast');
+        return;
+      }
 
       try {
         const res = await fetch('reset_password_action.php', {

@@ -1,369 +1,102 @@
 <?php
 session_start();
-require_once 'db_connect.php';
-require_once __DIR__ . '/learning_progress_lib.php';
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/learning_progress_lib.php';
 
-function out(array $payload, int $status = 200): void
+function quizResponse(array $payload, int $status = 200): void
 {
     http_response_code($status);
     echo json_encode($payload, JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-function tableColumns(PDO $conn, string $schema, string $table): array
+function submittedChoice(mixed $value): ?string
 {
-    static $cache = [];
-    $key = "{$schema}.{$table}";
-    if (isset($cache[$key])) return $cache[$key];
-
-    $stmt = $conn->prepare(
-        "SELECT column_name FROM information_schema.columns
-         WHERE table_schema = :schema AND table_name = :table"
-    );
-    $stmt->execute([':schema' => $schema, ':table' => $table]);
-    return $cache[$key] = array_map('strval', $stmt->fetchAll(PDO::FETCH_COLUMN));
-}
-
-function nextTestId(PDO $conn): int
-{
-    $stmt = $conn->query("SELECT COALESCE(MAX(test_id), 0) + 1 FROM public.test");
-    return (int) $stmt->fetchColumn();
-}
-
-function ensureEssaySubmissionTable(PDO $conn): void
-{
-    $conn->exec(
-        "CREATE TABLE IF NOT EXISTS public.essay_submissions (
-            submission_id BIGSERIAL PRIMARY KEY,
-            test_id INTEGER NOT NULL,
-            student_id VARCHAR(50) NOT NULL,
-            subjects_id VARCHAR(50) NOT NULL,
-            lessons_id VARCHAR(50) NOT NULL,
-            questions_id INTEGER NOT NULL,
-            answer_text TEXT NOT NULL,
-            review_status VARCHAR(20) NOT NULL DEFAULT 'pending',
-            teacher_id VARCHAR(50),
-            teacher_comment TEXT,
-            reviewed_at TIMESTAMP,
-            submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )"
-    );
-    $conn->exec("CREATE INDEX IF NOT EXISTS idx_essay_submissions_teacher_queue ON public.essay_submissions (subjects_id, review_status, submitted_at)");
-}
-
-function insertTestAttempt(PDO $conn, array $columns, array $data): int
-{
-    $available = [];
-    $params    = [];
-    foreach ($data as $col => $val) {
-        if (in_array($col, $columns, true)) {
-            $available[] = $col;
-            $params[':' . $col] = $val;
-        }
+    if (is_int($value) || (is_string($value) && ctype_digit($value))) {
+        return ['A', 'B', 'C', 'D'][(int) $value] ?? null;
     }
-
-    if (empty($available)) {
-        throw new Exception('ตาราง test ไม่มีคอลัมน์รองรับการบันทึก');
-    }
-
-    $insertCols = implode(', ', $available);
-    $insertVals = implode(', ', array_map(fn($c) => ':' . $c, $available));
-    $hasReturning = in_array('test_id', $columns, true);
-    $sql = "INSERT INTO public.test ({$insertCols}) VALUES ({$insertVals})"
-         . ($hasReturning ? ' RETURNING test_id' : '');
-
-    $stmt = $conn->prepare($sql);
-    $stmt->execute($params);
-
-    if ($hasReturning) {
-        $id = $stmt->fetchColumn();
-        return $id !== false ? (int) $id : 0;
-    }
-    return 0;
+    $value = strtoupper(trim((string) $value));
+    return in_array($value, ['A', 'B', 'C', 'D'], true) ? $value : null;
 }
-
-function normalizeAnswerLetter(string $raw): string
-{
-    $value = strtoupper(trim($raw));
-    if ($value === '') return '';
-    if (preg_match('/[ABCD]/', $value, $m) === 1) return $m[0];
-    return '';
-}
-
-function normalizeAnswerText(string $raw): string
-{
-    return mb_strtolower(trim($raw));
-}
-
-function resolveCorrectLetter(string $rawCorrect, array $optionValues): string
-{
-    $raw = trim($rawCorrect);
-    $letter = normalizeAnswerLetter($raw);
-    if ($letter !== '') return $letter;
-
-    if (is_numeric($raw)) {
-        $n = (int) $raw;
-        if ($n >= 1 && $n <= 4) return ['A', 'B', 'C', 'D'][$n - 1];
-        if ($n >= 0 && $n <= 3) return ['A', 'B', 'C', 'D'][$n];
-    }
-
-    $rawNorm = normalizeAnswerText($raw);
-    foreach ($optionValues as $idx => $opt) {
-        if (normalizeAnswerText((string) $opt) === $rawNorm) {
-            return ['A', 'B', 'C', 'D'][(int) $idx];
-        }
-    }
-
-    return '';
-}
-
-function inferQuestionType(array $optionValues, string $correctAnswer): string
-{
-    $normalizedOptions = array_values(array_filter(array_map(static function ($value) {
-        return trim((string) $value);
-    }, $optionValues), static function ($value) {
-        return $value !== '' && $value !== '-';
-    }));
-
-    if (empty($normalizedOptions)) {
-        return 'essay';
-    }
-
-    if (count($normalizedOptions) === 2) {
-        return 'truefalse';
-    }
-
-    return 'choice';
-}
-
-function loadQuestionsForScoring(PDO $conn, string $subjectId, int $lessonIndex, string $lessonId): array
-{
-    // ตารางหลักเพียงตารางเดียวสำหรับข้อสอบทุกประเภท รวมข้อเขียน
-    $stmt2 = $conn->prepare(
-        "SELECT questions_id AS qid, correct_answer, choice_a AS option_a, choice_b AS option_b, choice_c AS option_c, choice_d AS option_d
-         FROM public.test_questions
-         WHERE lessons_id = ?
-         ORDER BY questions_id ASC"
-    );
-    $stmt2->execute([$lessonId]);
-    return ['source' => 'test_questions', 'rows' => $stmt2->fetchAll(PDO::FETCH_ASSOC)];
-}
-
-const QUIZ_PASS_RATIO = 1.0;
 
 $payload = json_decode((string) file_get_contents('php://input'), true);
-if (!is_array($payload)) {
-    out(['status' => 'error', 'message' => 'รูปแบบข้อมูลไม่ถูกต้อง'], 400);
+if (!is_array($payload)) quizResponse(['status' => 'error', 'message' => 'รูปแบบข้อมูลไม่ถูกต้อง'], 400);
+if (($_SESSION['role'] ?? '') !== 'student' || empty($_SESSION['user_id'])) {
+    quizResponse(['status' => 'unauthorized', 'message' => 'กรุณาเข้าสู่ระบบก่อนทำแบบทดสอบ'], 401);
 }
 
-$role = strtolower((string) ($_SESSION['role'] ?? ''));
-if (!isset($_SESSION['user_id']) || $role !== 'student') {
-    out(['status' => 'unauthorized', 'message' => 'กรุณาเข้าสู่ระบบก่อนทำแบบทดสอบ'], 401);
-}
-
-$studentId   = (string) $_SESSION['user_id'];
-$subjectId   = trim((string) ($payload['subject_id']  ?? ''));
+$studentId = (string) $_SESSION['user_id'];
+$courseId = trim((string) ($payload['subject_id'] ?? $payload['course_id'] ?? ''));
 $lessonIndex = max(1, (int) ($payload['lesson_index'] ?? $payload['lesson_no'] ?? 1));
-$courseName  = trim((string) ($payload['course_name'] ?? ''));
-$answers     = is_array($payload['answers'] ?? null) ? $payload['answers'] : [];
-
-if ($subjectId === '') {
-    out(['status' => 'error', 'message' => 'ไม่พบรหัสรายวิชา'], 400);
-}
+$answers = is_array($payload['answers'] ?? null) ? $payload['answers'] : [];
+if ($courseId === '') quizResponse(['status' => 'error', 'message' => 'ไม่พบรหัสรายวิชา'], 400);
 
 try {
     $conn->beginTransaction();
-    ensureLearningProgressTables($conn);
-    ensureEssaySubmissionTable($conn);
+    $enrollment = $conn->prepare("SELECT 1 FROM public.student_courses WHERE student_id = :student_id AND course_id = :course_id AND status = 'active'");
+    $enrollment->execute([':student_id' => $studentId, ':course_id' => $courseId]);
+    if (!$enrollment->fetchColumn()) throw new RuntimeException('กรุณาลงรายวิชาก่อนทำแบบทดสอบ');
 
-    $s = $conn->prepare('SELECT subjects_name FROM public.subjects WHERE subjects_id = ? LIMIT 1');
-    $s->execute([$subjectId]);
-    $subjectName = (string) ($s->fetchColumn() ?: $courseName);
+    $lesson = $conn->prepare('SELECT lesson_id, title FROM public.lessons WHERE course_id = :course_id AND position = :position LIMIT 1');
+    $lesson->execute([':course_id' => $courseId, ':position' => $lessonIndex]);
+    $lessonRow = $lesson->fetch(PDO::FETCH_ASSOC);
+    if (!$lessonRow) throw new RuntimeException('ไม่พบบทเรียนที่ต้องการทำแบบทดสอบ');
+    $lessonId = (int) $lessonRow['lesson_id'];
 
-    $s = $conn->prepare(
-        "SELECT lessons_id, lessons_name FROM public.lessons
-         WHERE subjects_id = ? ORDER BY lessons_id ASC LIMIT 1 OFFSET ?"
-    );
-    $s->execute([$subjectId, $lessonIndex - 1]);
-    $lessonRow = $s->fetch(PDO::FETCH_ASSOC);
-    if (!$lessonRow || empty($lessonRow['lessons_id'])) {
-        throw new Exception('ไม่พบบทเรียนที่ต้องการบันทึกผล');
-    }
-    $lessonId    = (string) $lessonRow['lessons_id'];
-    $lessonTitle = (string) ($lessonRow['lessons_name'] ?? "บทที่ {$lessonIndex}");
+    $questionStmt = $conn->prepare('SELECT question_id, question_type, correct_choice, max_score FROM public.questions WHERE lesson_id = :lesson_id AND is_active = true ORDER BY question_id');
+    $questionStmt->execute([':lesson_id' => $lessonId]);
+    $questions = $questionStmt->fetchAll(PDO::FETCH_ASSOC);
+    if (!$questions) throw new RuntimeException('บทเรียนนี้ยังไม่มีข้อสอบ');
 
-    $questionPayload = loadQuestionsForScoring($conn, $subjectId, $lessonIndex, $lessonId);
-    $questions       = $questionPayload['rows'];
-    $questionSource  = $questionPayload['source'];
-    // คะแนนเต็มอ้างอิงข้อสอบทั้งหมด รวมข้อเขียนที่รอครูตรวจ
-    $totalScore      = count($questions);
-    $score           = 0;
-    $essayResponses  = [];
-    $choiceMap       = [0 => 'A', 1 => 'B', 2 => 'C', 3 => 'D'];
-
-    // 💥 ระบบตรวจคะแนน Server-side
-    foreach ($questions as $index => $q) {
-        $selected = '';
-        $selectedText = '';
-        $optionValues = [
-            (string) ($q['option_a'] ?? ''),
-            (string) ($q['option_b'] ?? ''),
-            (string) ($q['option_c'] ?? ''),
-            (string) ($q['option_d'] ?? ''),
+    $totalScore = 0.0;
+    $score = 0.0;
+    $hasEssay = false;
+    $savedAnswers = [];
+    foreach ($questions as $index => $question) {
+        $maxScore = (float) $question['max_score'];
+        $totalScore += $maxScore;
+        if ($question['question_type'] === 'essay') {
+            $hasEssay = true;
+            $savedAnswers[] = [
+                'question_id' => (int) $question['question_id'],
+                'selected_choice' => null,
+                'answer_text' => trim((string) ($answers[$index] ?? '')) ?: null,
+                'score' => null,
+                'review_status' => 'pending',
+            ];
+            continue;
+        }
+        $choice = submittedChoice($answers[$index] ?? null);
+        $earned = $choice !== null && $choice === $question['correct_choice'] ? $maxScore : 0.0;
+        $score += $earned;
+        $savedAnswers[] = [
+            'question_id' => (int) $question['question_id'],
+            'selected_choice' => $choice,
+            'answer_text' => null,
+            'score' => $earned,
+            'review_status' => 'not_required',
         ];
-        $questionType = inferQuestionType($optionValues, (string) ($q['correct_answer'] ?? ''));
-        if ($questionType === 'essay' && array_key_exists($index, $answers)) {
-            $essayText = trim((string) ($answers[$index] ?? ''));
-            if ($essayText !== '') {
-                $essayResponses[] = ['question_id' => (int) $q['qid'], 'answer_text' => $essayText];
-            }
-        }
-        // ข้อเขียนให้ครูเป็นผู้ให้คะแนนเสมอ แม้ฐานข้อมูลจะมีข้อความเฉลยประกอบไว้
-        if ($questionType === 'essay') {
-            continue;
-        }
-        $rawCorrect = trim((string) ($q['correct_answer'] ?? ''));
-        $isScoreable = true;
-        if (array_key_exists($index, $answers) && $answers[$index] !== null) {
-            if (is_numeric($answers[$index])) {
-                $selectedIndex = (int) $answers[$index];
-                $selected = $choiceMap[$selectedIndex] ?? '';
-                $selectedText = trim((string) ($optionValues[$selectedIndex] ?? ''));
-            } else {
-                $selected = trim((string) $answers[$index]);
-                $selectedText = $selected;
-            }
-        }
-
-        if ($rawCorrect === '' || $rawCorrect === '-') {
-            if (!$isScoreable) {
-                continue;
-            }
-            if ($questionType === 'essay') {
-                continue;
-            }
-            continue;
-        }
-
-        $correctLetter = resolveCorrectLetter($rawCorrect, $optionValues);
-        if ($correctLetter !== '') {
-            if ($selected === $correctLetter) {
-                $score++;
-            }
-            continue;
-        }
-
-        if ($isScoreable && normalizeAnswerText($selectedText) === normalizeAnswerText($rawCorrect)) {
-            $score++;
-        }
     }
 
-    $requiredScore = max(1, (int) ceil(max(1, $totalScore) * QUIZ_PASS_RATIO));
-    $quizStatus    = !empty($essayResponses) ? 'pending_review' : ($score >= $requiredScore ? 'pass' : 'fail');
+    $attemptNoStmt = $conn->prepare('SELECT COALESCE(MAX(attempt_number), 0) + 1 FROM public.quiz_attempts WHERE student_id = :student_id AND lesson_id = :lesson_id');
+    $attemptNoStmt->execute([':student_id' => $studentId, ':lesson_id' => $lessonId]);
+    $attemptNo = (int) $attemptNoStmt->fetchColumn();
+    $requiredScore = $totalScore;
+    $status = $hasEssay ? 'pending_review' : ($score >= $requiredScore ? 'passed' : 'failed');
+    $attemptStmt = $conn->prepare('INSERT INTO public.quiz_attempts (student_id, lesson_id, attempt_number, score, total_score, status) VALUES (:student_id, :lesson_id, :attempt_number, :score, :total_score, :status) RETURNING attempt_id');
+    $attemptStmt->execute([':student_id' => $studentId, ':lesson_id' => $lessonId, ':attempt_number' => $attemptNo, ':score' => $score, ':total_score' => $totalScore, ':status' => $status]);
+    $attemptId = (int) $attemptStmt->fetchColumn();
 
-    $attemptNo = 1;
-    try {
-        $s = $conn->prepare(
-            "SELECT COUNT(*) FROM public.test
-             WHERE student_id = :sid
-               AND (subjects_id = :subid OR course_name = :cname)
-               AND lesson_no = :lno"
-        );
-        $s->execute([':sid' => $studentId, ':subid' => $subjectId, ':cname' => $subjectName, ':lno' => $lessonIndex]);
-        $attemptNo = ((int) $s->fetchColumn()) + 1;
-    } catch (Throwable $ignored) {}
-
-    $testColumns = tableColumns($conn, 'public', 'test');
-
-    $testData = [
-        'student_id'   => $studentId,
-        'subjects_id'  => $subjectId,
-        'course_name'  => $subjectName,
-        'lesson_no'    => $lessonIndex,
-        'score'        => $score,
-        'total_score'  => $totalScore,
-        'status'       => $quizStatus,
-        'test_attempt' => $attemptNo,
-    ];
-    if (in_array('test_id', $testColumns, true)) {
-        $testData['test_id'] = nextTestId($conn);
+    $answerStmt = $conn->prepare('INSERT INTO public.quiz_attempt_answers (attempt_id, question_id, selected_choice, answer_text, score, review_status) VALUES (:attempt_id, :question_id, :selected_choice, :answer_text, :score, :review_status)');
+    foreach ($savedAnswers as $answer) {
+        $answerStmt->execute([':attempt_id' => $attemptId] + $answer);
     }
-    $testId = insertTestAttempt($conn, $testColumns, $testData);
-
-    $answerCols   = tableColumns($conn, 'public', 'test_answers');
-    $canSaveAns   = !empty($answerCols)
-                  && in_array('questions_id',   $answerCols, true)
-                  && in_array('selected_choice', $answerCols, true)
-                  && in_array('test_id',         $answerCols, true)
-                  && $testId > 0
-                  && !empty($questions)
-                  && $questionSource === 'test_questions';
-
-    // 💥 บันทึกคำตอบข้อเขียนหรือปรนัยลง DB
-    if ($canSaveAns) {
-        $stmtAns = $conn->prepare(
-            "INSERT INTO public.test_answers (questions_id, test_id, selected_choice) VALUES (?, ?, ?)"
-        );
-        foreach ($questions as $index => $q) {
-            $options = [(string) ($q['option_a'] ?? ''), (string) ($q['option_b'] ?? ''), (string) ($q['option_c'] ?? ''), (string) ($q['option_d'] ?? '')];
-            if (inferQuestionType($options, (string) ($q['correct_answer'] ?? '')) === 'essay') {
-                continue; // ข้อเขียนเก็บใน essay_submissions ซึ่งรองรับข้อความยาว
-            }
-            $selected = '-';
-            if (array_key_exists($index, $answers) && $answers[$index] !== null) {
-                if (is_numeric($answers[$index])) {
-                    $selected = $choiceMap[(int) $answers[$index]] ?? '-';
-                } else {
-                    $selected = mb_substr(trim((string) $answers[$index]), 0, 500); // กันพิมข้อความยาวเกิน
-                }
-            }
-            $stmtAns->execute([(int) $q['qid'], $testId, $selected]);
-        }
-    }
-
-    if (!empty($essayResponses) && $testId > 0 && $questionSource === 'test_questions') {
-        $essayStmt = $conn->prepare(
-            'INSERT INTO public.essay_submissions (test_id, student_id, subjects_id, lessons_id, questions_id, answer_text)
-             VALUES (:test_id, :student_id, :subjects_id, :lessons_id, :questions_id, :answer_text)'
-        );
-        foreach ($essayResponses as $response) {
-            $essayStmt->execute([
-                ':test_id' => $testId,
-                ':student_id' => $studentId,
-                ':subjects_id' => $subjectId,
-                ':lessons_id' => $lessonId,
-                ':questions_id' => $response['question_id'],
-                ':answer_text' => $response['answer_text'],
-            ]);
-        }
-    }
-
-    recordLearningActivity(
-        $conn,
-        $studentId,
-        $subjectId,
-        $lessonIndex,
-        'quiz_submit',
-        $lessonTitle,
-        $score,
-        $totalScore
-    );
-
+    recordLearningActivity($conn, $studentId, $courseId, $lessonIndex, 'quiz_submit', (string) $lessonRow['title'], (int) $score, (int) $totalScore);
     $conn->commit();
-
-    out([
-        'status'         => 'success',
-        'quiz_status'    => $quizStatus,
-        'score'          => $score,
-        'total_score'    => $totalScore,
-        'required_score' => $requiredScore,
-        'message'        => 'บันทึกผลสอบเรียบร้อย',
-        'pending_review' => !empty($essayResponses),
-    ]);
-
+    quizResponse(['status' => 'success', 'quiz_status' => $status, 'score' => $score, 'total_score' => $totalScore, 'required_score' => $requiredScore, 'pending_review' => $hasEssay, 'message' => 'บันทึกผลสอบเรียบร้อย']);
 } catch (Throwable $e) {
     if ($conn->inTransaction()) $conn->rollBack();
-    error_log('[test_submit] ' . $e->getMessage());
-    out(['status' => 'error', 'message' => 'DB Error: ' . $e->getMessage()], 500);
+    error_log('Quiz submit failed: ' . $e->getMessage());
+    quizResponse(['status' => 'error', 'message' => $e->getMessage()], 400);
 }

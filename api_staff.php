@@ -127,44 +127,16 @@ try {
             $membersStmt = $conn->query('
                 SELECT 
                     u.user_id as id,
-<<<<<<< Updated upstream
-                    u.status as role,
-                    COALESCE(u.account_status, \'active\') as status_account,
-                    CASE 
-                        WHEN u.status = \'Student\' THEN COALESCE(s.student_name, \'-\')
-                        WHEN u.status = \'Teacher\' THEN COALESCE(t.teachers_name, \'-\')
-                        WHEN u.status = \'Parent\'  THEN COALESCE(p.parents_name, \'-\')
-                        WHEN u.status = \'Staff\'   THEN COALESCE(stf.firstname || \' \' || stf.lastname, \'-\')
-                        ELSE \'-\'
-                    END as name,
-                    CASE 
-                        WHEN u.status = \'Student\' THEN COALESCE(s.email, \'-\')
-                        WHEN u.status = \'Teacher\' THEN COALESCE(t.email, \'-\')
-                        WHEN u.status = \'Parent\'  THEN COALESCE(p.email, \'-\')
-                        ELSE \'-\'
-                    END as email,
-                    CASE
-                        WHEN u.status = \'Student\' THEN COALESCE(s.tel, \'-\')
-                        WHEN u.status = \'Teacher\' THEN COALESCE(t.tel, \'-\')
-                        WHEN u.status = \'Parent\'  THEN COALESCE(p.tel, \'-\')
-                        ELSE \'-\'
-                    END as phone
-                FROM public."User" u
-                LEFT JOIN public.student s  ON u.user_id = s.student_id
-                LEFT JOIN public.teachers t ON u.user_id = t.teachers_id
-                LEFT JOIN public.parents p  ON u.user_id = p.parents_id
-                LEFT JOIN public.staff stf   ON u.user_id = stf.user_id
-=======
                     u.role,
                     u.account_status as status_account,
                     COALESCE(s.full_name, t.full_name, p.full_name, NULLIF(TRIM(stf.first_name || \' \' || stf.last_name), \'\'), \'-\') as name,
-                    COALESCE(s.email, t.email, p.email, \'-\') as email
+                    COALESCE(s.email, t.email, p.email, \'-\') as email,
+                    COALESCE(s.phone, t.phone, p.phone, \'-\') as phone
                 FROM public.users u
                 LEFT JOIN public.students s ON s.user_id = u.user_id
                 LEFT JOIN public.teachers t ON t.user_id = u.user_id
                 LEFT JOIN public.parents p ON p.user_id = u.user_id
                 LEFT JOIN public.staff stf ON u.user_id = stf.user_id
->>>>>>> Stashed changes
                 ORDER BY u.user_id DESC
             ');
             $curriculaStmt = $conn->query("SELECT curriculum_id AS id, code, name, level, status FROM public.curricula ORDER BY curriculum_id ASC");
@@ -377,9 +349,16 @@ try {
 
         case 'saveCurriculum':
             $curriculumId = $_POST['id'] ?? '';
+            $code = strtoupper(postValue('code'));
+            $name = postValue('name');
             $status = postValue('status', 'active');
             if ($status === 'inactive') { $status = 'archived'; }
-            $params = [':code' => postValue('code'), ':name' => postValue('name'), ':level' => postValue('level', 'ม.ปลาย'), ':status' => $status];
+            if ($code === '' || $name === '') { jsonResponse(['status' => 'error', 'message' => 'กรุณากรอกรหัสและชื่อหลักสูตร'], 400); }
+            if (!in_array($status, ['draft', 'active', 'archived'], true)) { jsonResponse(['status' => 'error', 'message' => 'สถานะหลักสูตรไม่ถูกต้อง'], 400); }
+            $duplicate = $conn->prepare('SELECT 1 FROM public.curricula WHERE code = :code AND curriculum_id <> COALESCE(NULLIF(:id, \'\')::bigint, 0)');
+            $duplicate->execute([':code' => $code, ':id' => (string) $curriculumId]);
+            if ($duplicate->fetchColumn()) { jsonResponse(['status' => 'error', 'message' => 'รหัสหลักสูตรนี้มีอยู่แล้ว กรุณาใช้รหัสอื่น หรือเลือกแก้ไขหลักสูตรเดิม'], 409); }
+            $params = [':code' => $code, ':name' => $name, ':level' => postValue('level', 'ม.ปลาย'), ':status' => $status];
             if (!empty($curriculumId)) {
                 $params[':id'] = $curriculumId;
                 $statement = $conn->prepare("UPDATE public.curricula SET code = :code, name = :name, level = :level, status = :status, updated_at = NOW() WHERE curriculum_id = :id");

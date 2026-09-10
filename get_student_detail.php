@@ -23,45 +23,27 @@ if ($studentId === '') {
 }
 
 try {
-    // ดึงคะแนนแต่ละบทเรียนของนักเรียน เฉพาะวิชาที่อาจารย์คนนี้สอน
     $stmt = $conn->prepare("
         SELECT
-            l.Lessons_Name        AS lesson_name,
-            s.Subjects_Name       AS subject_name,
-            lp.best_quiz_score,
-            lp.quiz_total_score,
-            lp.lesson_index
-        FROM public.student_learning_progress lp
-        INNER JOIN public.subjects s  ON s.Subjects_ID  = lp.subjects_id
-        INNER JOIN public.lessons  l  ON l.Lessons_ID   = lp.lesson_id
-        INNER JOIN public.subject_teachers st ON st.subjects_id = s.subjects_id
-        WHERE lp.student_id = :sid
-          AND st.teachers_id = :tid
-        ORDER BY s.Subjects_Name ASC, lp.lesson_index ASC
+            l.title AS lesson_name,
+            c.name AS subject_name,
+            COALESCE(a.score, 0) AS best_quiz_score,
+            COALESCE(a.total_score, 0) AS quiz_total_score,
+            l.position AS lesson_index
+        FROM public.student_courses sc
+        INNER JOIN public.courses c ON c.course_id = sc.course_id
+        INNER JOIN public.course_teachers ct ON ct.course_id = c.course_id AND ct.teacher_id = :tid
+        INNER JOIN public.lessons l ON l.course_id = c.course_id
+        LEFT JOIN LATERAL (
+            SELECT score, total_score FROM public.quiz_attempts
+            WHERE student_id = :sid AND lesson_id = l.lesson_id
+            ORDER BY submitted_at DESC LIMIT 1
+        ) a ON true
+        WHERE sc.student_id = :sid AND sc.status = 'active'
+        ORDER BY c.name ASC, l.position ASC
     ");
     $stmt->execute([':sid' => $studentId, ':tid' => $teacherId]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // ถ้าไม่มีข้อมูลใน student_learning_progress ให้ดึงรายการบทเรียนที่นักเรียนลงทะเบียนแล้ว
-    if (empty($rows)) {
-        $stmt2 = $conn->prepare("
-            SELECT
-                l.Lessons_Name  AS lesson_name,
-                s.Subjects_Name AS subject_name,
-                0               AS best_quiz_score,
-                0               AS quiz_total_score,
-                l.Lessons_ID    AS lesson_index
-            FROM public.student_subject ss
-            INNER JOIN public.subjects s ON s.Subjects_ID = ss.Subjects_ID
-            INNER JOIN public.lessons  l ON l.Subjects_ID = s.Subjects_ID
-            INNER JOIN public.subject_teachers st ON st.subjects_id = s.subjects_id
-            WHERE ss.Student_ID = :sid
-              AND st.teachers_id = :tid
-            ORDER BY s.Subjects_Name ASC, l.Lessons_ID ASC
-        ");
-        $stmt2->execute([':sid' => $studentId, ':tid' => $teacherId]);
-        $rows = $stmt2->fetchAll(PDO::FETCH_ASSOC);
-    }
 
     $lessons = array_map(function($row) {
         return [
