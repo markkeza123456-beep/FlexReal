@@ -58,7 +58,7 @@ $publicUrl = "{$SUPABASE_URL}/storage/v1/object/public/{$BUCKET}/{$filePath}?t="
 
 // บันทึก URL ลงในตาราง teachers
 try {
-    $stmt = $conn->prepare("UPDATE public.teachers SET avatar_url = :url WHERE teachers_id = :uid");
+    $stmt = $conn->prepare("UPDATE public.teachers SET avatar_url = :url, updated_at = NOW() WHERE user_id = :uid");
     $stmt->execute(['url' => $publicUrl, 'uid' => $user_id]);
     echo json_encode(['success' => true, 'url' => $publicUrl]);
 } catch (Exception $e) {

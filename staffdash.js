@@ -298,10 +298,10 @@
     if (!memberBody) return;
 
     const roleName = {
-      'Student': 'นักเรียน',
-      'Teacher': 'อาจารย์',
-      'Parent': 'ผู้ปกครอง',
-      'Staff': 'เจ้าหน้าที่',
+      student: 'นักเรียน',
+      teacher: 'อาจารย์',
+      parent: 'ผู้ปกครอง',
+      staff: 'เจ้าหน้าที่',
     };
 
     const filteredMembers = members.filter(member => {
@@ -315,8 +315,12 @@
         <tr>
           <td>${member.name}</td>
           <td style="color:var(--text-secondary)">${member.email || '-'}</td>
+<<<<<<< Updated upstream
           <td style="color:var(--text-secondary)">${member.phone || '-'}</td>
           <td><span class="badge ${member.role === 'Staff' ? 'required' : 'draft'}">${roleName[member.role] || member.role}</span></td>
+=======
+          <td><span class="badge ${member.role === 'staff' ? 'required' : 'draft'}">${roleName[member.role] || member.role}</span></td>
+>>>>>>> Stashed changes
           <td><span class="badge ${member.status === 'active' ? 'active' : 'draft'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
           <td>
             <div class="action-btns">

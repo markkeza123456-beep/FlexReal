@@ -28,7 +28,7 @@ try {
         if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
 
         // ลบรูปเก่า
-        $stmtOld = $conn->prepare("SELECT avatar_url FROM public.teachers WHERE teachers_id = :id");
+        $stmtOld = $conn->prepare("SELECT avatar_url FROM public.teachers WHERE user_id = :id");
         $stmtOld->execute(['id' => $user_id]);
         $oldRow = $stmtOld->fetch(PDO::FETCH_ASSOC);
         if ($oldRow && !empty($oldRow['avatar_url'])) {
@@ -41,7 +41,7 @@ try {
         if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) throw new Exception('บันทึกไฟล์ไม่สำเร็จ');
 
         $avatarUrl = 'uploads/avatars/' . $filename;
-        $stmt = $conn->prepare("UPDATE public.teachers SET avatar_url = :url WHERE teachers_id = :id");
+        $stmt = $conn->prepare("UPDATE public.teachers SET avatar_url = :url, updated_at = NOW() WHERE user_id = :id");
         $stmt->execute(['url' => $avatarUrl, 'id' => $user_id]);
 
         echo json_encode(['success' => true, 'avatar_url' => $avatarUrl]);
@@ -50,26 +50,20 @@ try {
 
     // 1. อัปเดตชื่อ-นามสกุล (ถ้ามีการพิมพ์มา)
     if (!empty($name)) {
-        $stmt = $conn->prepare("UPDATE public.teachers SET teachers_name = :name WHERE teachers_id = :uid");
+        $stmt = $conn->prepare("UPDATE public.teachers SET full_name = :name, updated_at = NOW() WHERE user_id = :uid");
         $stmt->execute(['name' => $name, 'uid' => $user_id]);
         $_SESSION['name'] = $name; // อัปเดต session เพื่อให้ชื่อมุมขวาบนเปลี่ยนด้วย
     }
 
     // 2. อัปเดตรหัสผ่าน (ถ้ามีการกรอกรหัสใหม่มา)
     if (!empty($pwd_new)) {
-        // ดึงรหัสผ่านเก่าจากตาราง User มาเช็คก่อนว่าตรงกับที่พิมพ์มาไหม
-        $stmt = $conn->prepare('SELECT password FROM public."User" WHERE user_id = :uid');
+        $stmt = $conn->prepare('SELECT password_hash FROM public.users WHERE user_id = :uid');
         $stmt->execute(['uid' => $user_id]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($user && $user['password'] === $pwd_current) {
-            // อัปเดตรหัสผ่านใหม่ลงตารางหลัก "User"
-            $stmt_upd1 = $conn->prepare('UPDATE public."User" SET password = :pass WHERE user_id = :uid');
-            $stmt_upd1->execute(['pass' => $pwd_new, 'uid' => $user_id]);
-            
-            // อัปเดตรหัสผ่านใหม่ลงตารางย่อย "teachers" ด้วย
-            $stmt_upd2 = $conn->prepare('UPDATE public.teachers SET password = :pass WHERE teachers_id = :uid');
-            $stmt_upd2->execute(['pass' => $pwd_new, 'uid' => $user_id]);
+        if ($user && password_verify($pwd_current, (string) $user['password_hash'])) {
+            $stmt_upd1 = $conn->prepare('UPDATE public.users SET password_hash = :pass, updated_at = NOW() WHERE user_id = :uid');
+            $stmt_upd1->execute(['pass' => password_hash($pwd_new, PASSWORD_DEFAULT), 'uid' => $user_id]);
         } else {
             echo json_encode(['success' => false, 'message' => 'รหัสผ่านปัจจุบันไม่ถูกต้อง']);
             exit;

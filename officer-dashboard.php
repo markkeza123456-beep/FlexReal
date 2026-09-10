@@ -24,17 +24,17 @@ $officerRole = 'พร้อมใช้งาน';
 $avatarUrl = '';
 $uid = (string)($_SESSION['user_id'] ?? '');
 if ($uid !== '' && hasTable($conn, 'staff')) {
-  $st = $conn->prepare("SELECT firstname, lastname, user_id FROM public.staff WHERE user_id=:u LIMIT 1");
+  $st = $conn->prepare("SELECT first_name, last_name, user_id FROM public.staff WHERE user_id=:u LIMIT 1");
   $st->execute([':u' => $uid]);
   $s = $st->fetch(PDO::FETCH_ASSOC) ?: null;
   if ($s) {
-    $name = trim(((string)($s['firstname'] ?? '')) . ' ' . ((string)($s['lastname'] ?? '')));
+    $name = trim(((string)($s['first_name'] ?? '')) . ' ' . ((string)($s['last_name'] ?? '')));
     if ($name !== '') $officerName = $name;
     $officerRole = 'เจ้าหน้าที่ • ผู้ใช้ ' . $uid;
   }
 }
 
-$hasStudent = hasTable($conn, 'student');
+$hasStudent = hasTable($conn, 'students');
 $hasReg = hasTable($conn, 'registrations');
 $hasTransfer = hasTable($conn, 'credit_transfers');
 $hasCert = hasTable($conn, 'certificates');
@@ -42,14 +42,14 @@ $hasLearn = hasTable($conn, 'learning_records');
 $hasTest = hasTable($conn, 'test');
 $hasStudentSubject = hasTable($conn, 'student_subject');
 
-$studentCount = $hasStudent ? q1($conn, "SELECT COUNT(*) FROM public.student") : '0';
+$studentCount = $hasStudent ? q1($conn, "SELECT COUNT(*) FROM public.students") : '0';
 $regCount = $hasReg ? q1($conn, "SELECT COUNT(*) FROM public.registrations") : '0';
 $transferCount = $hasTransfer ? q1($conn, "SELECT COUNT(*) FROM public.credit_transfers") : '0';
 $certCount = $hasCert ? q1($conn, "SELECT COUNT(*) FROM public.certificates") : '0';
 $learnCount = $hasLearn ? q1($conn, "SELECT COUNT(*) FROM public.learning_records") : '0';
 $testCount = $hasTest ? q1($conn, "SELECT COUNT(*) FROM public.test") : '0';
 
-$students = $hasStudent ? rows($conn, "SELECT student_id, student_name, COALESCE(student_level,'-') AS student_level FROM public.student ORDER BY student_name ASC LIMIT 300") : [];
+$students = $hasStudent ? rows($conn, "SELECT user_id AS student_id, full_name AS student_name, COALESCE(student_level,'-') AS student_level FROM public.students ORDER BY full_name ASC LIMIT 300") : [];
 $regs = $hasStudentSubject ? rows($conn, "SELECT ss.student_id, COALESCE(st.student_name, ss.student_id) AS student_name, COALESCE(sb.subjects_name, ss.subjects_id) AS subject_name FROM public.student_subject ss LEFT JOIN public.student st ON st.student_id=ss.student_id LEFT JOIN public.subjects sb ON sb.subjects_id=ss.subjects_id ORDER BY ss.student_id DESC LIMIT 200") : [];
 $transfers = $hasTransfer ? rows($conn, "SELECT ct.transfer_id, COALESCE(st.student_name, ct.student_id) AS student_name, COALESCE(ct.status,'-') AS status, ct.transfer_date FROM public.credit_transfers ct LEFT JOIN public.student st ON st.student_id=ct.student_id ORDER BY ct.transfer_date DESC NULLS LAST, ct.transfer_id DESC LIMIT 200") : [];
 $certs = $hasCert ? rows($conn, "SELECT certificates_name, COALESCE(st.student_name, c.student_id) AS student_name, COALESCE(c.department,'-') AS department, c.receive_date FROM public.certificates c LEFT JOIN public.student st ON st.student_id=c.student_id ORDER BY c.receive_date DESC NULLS LAST LIMIT 200") : [];

@@ -14,7 +14,7 @@ function ensureUserAccountStatusColumn(PDO $conn): void
         "SELECT 1
          FROM information_schema.columns
          WHERE table_schema = 'public'
-           AND table_name = 'User'
+           AND table_name = 'users'
            AND column_name = 'account_status'
          LIMIT 1"
     );
@@ -22,7 +22,7 @@ function ensureUserAccountStatusColumn(PDO $conn): void
     $exists = (bool) $stmt->fetchColumn();
 
     if (!$exists) {
-        $conn->exec('ALTER TABLE public."User" ADD COLUMN account_status VARCHAR(20) NOT NULL DEFAULT \'active\'');
+        $conn->exec('ALTER TABLE public.users ADD COLUMN account_status VARCHAR(20) NOT NULL DEFAULT \'active\'');
     }
 
     $initialized = true;

@@ -19,15 +19,13 @@ if (empty($email)) {
 }
 
 try {
-    // 1. ค้นหาอีเมลจากทุกตารางที่มีคอลัมน์ Email
+    // Query the normalized profile tables defined by database-v2.sql.
     $sql = "
-        SELECT Student_ID AS user_id, Student_Name AS user_name FROM public.student WHERE email = :email
+        SELECT user_id, full_name AS user_name FROM public.students WHERE email = :email
         UNION
-        SELECT Teachers_ID AS user_id, Teachers_Name AS user_name FROM public.teachers WHERE email = :email
+        SELECT user_id, full_name AS user_name FROM public.teachers WHERE email = :email
         UNION
-        SELECT Parents_ID AS user_id, Parents_Name AS user_name FROM public.parents WHERE email = :email
-        UNION
-        SELECT Executive_ID AS user_id, Executive_Name AS user_name FROM public.executive WHERE email = :email
+        SELECT user_id, full_name AS user_name FROM public.parents WHERE email = :email
     ";
     $stmt = $conn->prepare($sql);
     $stmt->execute(['email' => $email]);
@@ -39,8 +37,8 @@ try {
         $expires_at = date('Y-m-d H:i:s', strtotime('+15 minutes'));
 
         // 3. บันทึก PIN ลงตาราง password_reset_tokens
-        $stmt_token = $conn->prepare("INSERT INTO public.password_reset_tokens (user_id, token, expires_at) VALUES (:uid, :tk, :exp)");
-        $stmt_token->execute(['uid' => $user['user_id'], 'tk' => $token, 'exp' => $expires_at]);
+        $stmt_token = $conn->prepare("INSERT INTO public.password_reset_tokens (user_id, token_hash, expires_at) VALUES (:uid, :token_hash, :exp)");
+        $stmt_token->execute(['uid' => $user['user_id'], 'token_hash' => password_hash($token, PASSWORD_DEFAULT), 'exp' => $expires_at]);
 
         // 4. ตั้งค่าระบบส่งอีเมล (PHPMailer)
         $mail = new PHPMailer(true);

@@ -19,11 +19,12 @@ try {
     // 1. อัปเดตชื่อ, อีเมล, เบอร์โทร ในตาราง student
     if (!empty($name) || !empty($email) || !empty($phone)) {
         $stmt = $conn->prepare("
-            UPDATE public.student 
-            SET student_name = :name,
+            UPDATE public.students
+            SET full_name = :name,
                 email        = :email,
-                tel          = :tel
-            WHERE student_id = :uid
+                phone        = :tel,
+                updated_at   = NOW()
+            WHERE user_id = :uid
         ");
         $stmt->execute([
             'name'  => $name,
@@ -36,13 +37,13 @@ try {
 
     // 2. อัปเดตรหัสผ่านในตาราง User (ตาราง student ไม่มี column password)
     if (!empty($pwd_new)) {
-        $stmt = $conn->prepare('SELECT password FROM public."User" WHERE user_id = :uid');
+        $stmt = $conn->prepare('SELECT password_hash FROM public.users WHERE user_id = :uid');
         $stmt->execute(['uid' => $user_id]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($user && $user['password'] === $pwd_current) {
-            $stmt_upd = $conn->prepare('UPDATE public."User" SET password = :pass WHERE user_id = :uid');
-            $stmt_upd->execute(['pass' => $pwd_new, 'uid' => $user_id]);
+        if ($user && password_verify($pwd_current, (string) $user['password_hash'])) {
+            $stmt_upd = $conn->prepare('UPDATE public.users SET password_hash = :pass, updated_at = NOW() WHERE user_id = :uid');
+            $stmt_upd->execute(['pass' => password_hash($pwd_new, PASSWORD_DEFAULT), 'uid' => $user_id]);
         } else {
             echo json_encode(['success' => false, 'message' => 'รหัสผ่านปัจจุบันไม่ถูกต้อง']);
             exit;

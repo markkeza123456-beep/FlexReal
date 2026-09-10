@@ -1,160 +1,22 @@
 <?php
-session_start();
-header('Content-Type: application/json; charset=utf-8');
-error_reporting(0);
-
+session_start(); header('Content-Type: application/json; charset=utf-8');
 try {
-    require_once __DIR__ . '/db_connect.php';
-    require_once __DIR__ . '/account_status_lib.php';
-    require_once __DIR__ . '/curriculum_subjects_lib.php';
-
-    ensureUserAccountStatusColumn($conn);
-
-    $role = trim((string) ($_POST['role'] ?? ''));
-    $rawLogin = trim((string) ($_POST['email'] ?? ''));
-    $loginId = preg_replace('/\D+/', '', $rawLogin);
-    $password = (string) ($_POST['password'] ?? '');
-
-    if ($role === '' || $loginId === '' || $password === '') {
-        echo json_encode([
-            'status' => 'error',
-            'message' => 'กรุณากรอกข้อมูลให้ครบถ้วน',
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    $redirectUrl = 'web.html';
-    $userData = null;
-
-    switch ($role) {
-        case 'student':
-            $stmt = $conn->prepare(
-                'SELECT u.user_id AS user_id,
-                        u.password,
-                        s.student_name AS name,
-                        s.student_level AS student_level,
-                        COALESCE(NULLIF(TRIM(u.account_status), \'\'), \'active\') AS account_status
-                 FROM public."User" u
-                 LEFT JOIN public.student s ON s.student_id = u.user_id
-                 WHERE u.user_id = :id
-                   AND LOWER(u.status) = \'student\''
-            );
-            $stmt->execute([':id' => $loginId]);
-            $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-            break;
-
-        case 'parent':
-            $redirectUrl = 'parent_dashboard.php';
-            $stmt = $conn->prepare(
-                'SELECT p.parents_id AS user_id,
-                        p.password,
-                        p.parents_name AS name,
-                        s.student_id,
-                        COALESCE(NULLIF(TRIM(u.account_status), \'\'), \'active\') AS account_status
-                 FROM public.parents p
-                 LEFT JOIN public."User" u ON u.user_id = p.parents_id
-                 LEFT JOIN public.student s ON p.parents_id = s.parent_id
-                 WHERE p.parents_id = :id'
-            );
-            $stmt->execute([':id' => $loginId]);
-            $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-            break;
-
-        case 'teacher':
-            $redirectUrl = 'teacherdash.php';
-            $stmt = $conn->prepare(
-                'SELECT t.teachers_id AS user_id,
-                        t.password,
-                        t.teachers_name AS name,
-                        COALESCE(NULLIF(TRIM(u.account_status), \'\'), \'active\') AS account_status
-                 FROM public.teachers t
-                 LEFT JOIN public."User" u ON u.user_id = t.teachers_id
-                 WHERE t.teachers_id = :id'
-            );
-            $stmt->execute([':id' => $loginId]);
-            $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-            break;
-
-        case 'staff':
-            $redirectUrl = 'staffdash.php';
-            $stmt = $conn->prepare(
-                'SELECT u.user_id AS user_id,
-                        u.password,
-                        COALESCE(NULLIF(TRIM(CONCAT(s.firstname, \' \', s.lastname)), \'\'), u.user_id) AS name,
-                        COALESCE(NULLIF(TRIM(u.account_status), \'\'), \'active\') AS account_status
-                 FROM public."User" u
-                 LEFT JOIN public.staff s ON s.user_id = u.user_id
-                 WHERE u.user_id = :id
-                   AND LOWER(u.status) = \'staff\''
-            );
-            $stmt->execute([':id' => $loginId]);
-            $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-            break;
-
-        default:
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'ไม่พบบทบาทผู้ใช้งาน',
-            ], JSON_UNESCAPED_UNICODE);
-            exit;
-    }
-
-    if (!$userData) {
-        echo json_encode([
-            'status' => 'error',
-            'message' => 'ข้อมูลไม่ถูกต้อง',
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    if ($password !== (string) ($userData['password'] ?? '')) {
-        echo json_encode([
-            'status' => 'error',
-            'message' => 'ข้อมูลไม่ถูกต้อง',
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    if (normalizeAccountStatus($userData['account_status'] ?? 'active') === 'inactive') {
-        echo json_encode([
-            'status' => 'error',
-            'message' => suspendedAccountMessage(),
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    $_SESSION['user_id'] = $userData['user_id'];
-    $_SESSION['role'] = $role;
-    $_SESSION['name'] = $userData['name'] ?? '';
-
-    if ($role === 'student') {
-        $studentLevel = trim((string) ($userData['student_level'] ?? ''));
-        if ($studentLevel !== '') {
-            assignCurriculumAndEnrollRequiredSubjects($conn, (string) $userData['user_id'], $studentLevel);
-        }
-    }
-
-    if ($role === 'parent') {
-        $_SESSION['current_student_id'] = $userData['student_id'] ?? null;
-    }
-
-    if ($role === 'student' && !empty($_SESSION['after_login_return'])) {
-        $returnUrl = (string) $_SESSION['after_login_return'];
-        unset($_SESSION['after_login_return']);
-
-        if (preg_match('/^web\.html(?:\?.*)?$/', $returnUrl)) {
-            $redirectUrl = $returnUrl;
-        }
-    }
-
-    echo json_encode([
-        'status' => 'success',
-        'redirect_url' => $redirectUrl,
-        'user_id' => (string) $userData['user_id'],
-    ], JSON_UNESCAPED_UNICODE);
-} catch (Throwable $e) {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'ระบบขัดข้อง: ' . $e->getMessage(),
-    ], JSON_UNESCAPED_UNICODE);
-}
+    require_once __DIR__ . '/db_connect.php'; require_once __DIR__ . '/curriculum_subjects_lib.php';
+    $role = strtolower(trim((string) ($_POST['role'] ?? ''))); $id = preg_replace('/\D+/', '', trim((string) ($_POST['email'] ?? ''))); $password = (string) ($_POST['password'] ?? '');
+    if (!in_array($role, ['student', 'parent', 'teacher', 'staff'], true) || $id === '' || $password === '') throw new RuntimeException('กรุณากรอกข้อมูลให้ครบถ้วน');
+    $profile = match ($role) {
+        'student' => 'SELECT full_name AS name, student_level, NULL::varchar AS student_id FROM public.students WHERE user_id = u.user_id',
+        'parent' => 'SELECT p.full_name AS name, NULL::varchar AS student_level, (SELECT s.user_id FROM public.students s WHERE s.parent_user_id = u.user_id LIMIT 1) AS student_id FROM public.parents p WHERE p.user_id = u.user_id',
+        'teacher' => 'SELECT full_name AS name, NULL::varchar AS student_level, NULL::varchar AS student_id FROM public.teachers WHERE user_id = u.user_id',
+        'staff' => "SELECT CONCAT(first_name, ' ', last_name) AS name, NULL::varchar AS student_level, NULL::varchar AS student_id FROM public.staff WHERE user_id = u.user_id",
+    };
+    $stmt = $conn->prepare("SELECT u.user_id, u.password_hash, u.account_status, p.name, p.student_level, p.student_id FROM public.users u CROSS JOIN LATERAL ({$profile}) p WHERE u.user_id = :id AND u.role = :role");
+    $stmt->execute([':id' => $id, ':role' => $role]); $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$user || !password_verify($password, (string) $user['password_hash'])) throw new RuntimeException('ข้อมูลไม่ถูกต้อง');
+    if (($user['account_status'] ?? 'active') !== 'active') throw new RuntimeException('บัญชีนี้ไม่พร้อมใช้งาน');
+    $_SESSION['user_id'] = $user['user_id']; $_SESSION['role'] = $role; $_SESSION['name'] = $user['name'] ?? '';
+    if ($role === 'student' && !empty($user['student_level'])) assignCurriculumAndEnrollRequiredSubjects($conn, (string) $user['user_id'], (string) $user['student_level']);
+    if ($role === 'parent') $_SESSION['current_student_id'] = $user['student_id'] ?? null;
+    $redirect = match ($role) { 'parent' => 'parent_dashboard.php', 'teacher' => 'teacherdash.php', 'staff' => 'staffdash.php', default => 'web.html' };
+    echo json_encode(['status' => 'success', 'redirect_url' => $redirect, 'user_id' => (string) $user['user_id']], JSON_UNESCAPED_UNICODE);
+} catch (Throwable $e) { echo json_encode(['status' => 'error', 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE); }

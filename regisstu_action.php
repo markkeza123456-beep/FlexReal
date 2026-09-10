@@ -1,136 +1,23 @@
 <?php
-session_start();
-// เรียกใช้ไฟล์เชื่อมต่อ Supabase PDO ของคุณ
-require_once 'db_connect.php'; 
-require_once 'curriculum_subjects_lib.php';
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    
-    // 1. รับค่าพื้นฐานที่ทุก Role ต้องมี
-    $role = $_POST['role'];
-    
-    // ตัดเครื่องหมาย - ออกจากรหัสบัตรและเบอร์โทร เพื่อให้บันทึกลง DB เป็นตัวเลขล้วน
-    $userid = str_replace('-', '', $_POST['userid']); 
-    $phone = str_replace('-', '', $_POST['phone']);
-    
-    $password = trim((string) ($_POST['password'] ?? ''));
-    $confirmPassword = trim((string) ($_POST['confirm'] ?? ''));
-    if (!preg_match('/^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}$/', $password)) {
-        throw new Exception('รหัสผ่านต้องมีตัวอักษรภาษาอังกฤษและตัวเลข 8-15 ตัว');
+session_start(); require_once __DIR__ . '/db_connect.php'; require_once __DIR__ . '/curriculum_subjects_lib.php';
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: regisstu.php'); exit; }
+try {
+    $role = strtolower(trim((string) ($_POST['role'] ?? ''))); $userId = preg_replace('/\D+/', '', (string) ($_POST['userid'] ?? '')); $phone = preg_replace('/\D+/', '', (string) ($_POST['phone'] ?? ''));
+    $password = (string) ($_POST['password'] ?? ''); $fullName = trim((string) ($_POST['fullname'] ?? trim((string) ($_POST['firstname'] ?? '') . ' ' . (string) ($_POST['lastname'] ?? '')))); $email = trim((string) ($_POST['email'] ?? '')) ?: null;
+    if (!in_array($role, ['student', 'teacher', 'parent'], true) || $userId === '' || $fullName === '' || !preg_match('/^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}$/', $password) || $password !== (string) ($_POST['confirm'] ?? '')) throw new RuntimeException('ข้อมูลสมัครสมาชิกไม่ถูกต้อง');
+    $conn->beginTransaction();
+    $conn->prepare('INSERT INTO public.users (user_id, password_hash, role) VALUES (:id, :password_hash, :role)')->execute([':id' => $userId, ':password_hash' => password_hash($password, PASSWORD_DEFAULT), ':role' => $role]);
+    if ($role === 'student') {
+        $level = trim((string) ($_POST['level'] ?? ''));
+        $conn->prepare('INSERT INTO public.students (user_id, full_name, email, phone, student_level) VALUES (:id, :name, :email, :phone, :level)')->execute([':id' => $userId, ':name' => $fullName, ':email' => $email, ':phone' => $phone ?: null, ':level' => $level ?: null]);
+        if ($level !== '') assignCurriculumAndEnrollRequiredSubjects($conn, $userId, $level);
+    } elseif ($role === 'teacher') {
+        $conn->prepare('INSERT INTO public.teachers (user_id, full_name, email, phone) VALUES (:id, :name, :email, :phone)')->execute([':id' => $userId, ':name' => $fullName, ':email' => $email, ':phone' => $phone ?: null]);
+    } else {
+        $studentId = preg_replace('/\D+/', '', (string) ($_POST['link_student_id'] ?? '')); $check = $conn->prepare('SELECT 1 FROM public.students WHERE user_id = :id'); $check->execute([':id' => $studentId]); if (!$check->fetchColumn()) throw new RuntimeException('ไม่พบนักเรียนที่ต้องการเชื่อมโยง');
+        $conn->prepare('INSERT INTO public.parents (user_id, full_name, email, phone) VALUES (:id, :name, :email, :phone)')->execute([':id' => $userId, ':name' => $fullName, ':email' => $email, ':phone' => $phone ?: null]);
+        $conn->prepare('UPDATE public.students SET parent_user_id = :parent, updated_at = now() WHERE user_id = :student')->execute([':parent' => $userId, ':student' => $studentId]);
     }
-    if ($password !== $confirmPassword) {
-        throw new Exception('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน');
-    }
-    // หน้าเว็บรวมชื่อและนามสกุลไว้ใน fullname แล้ว จึงห้ามนำ lastname มาต่อซ้ำอีกครั้ง
-    $fullname = trim((string) ($_POST['fullname'] ?? ''));
-    if ($fullname === '') {
-        $fullname = trim((string) ($_POST['firstname'] ?? '') . ' ' . (string) ($_POST['lastname'] ?? ''));
-    }
-    $email = $_POST['email'] ?? '-';
-
-    // รับค่าที่อยู่แยกส่วนเพื่อบันทึกลงตาราง addresses
-    $house    = $_POST['house'];
-    $tambon   = $_POST['tambon'];
-    $amphoe   = $_POST['amphoe'];
-    $province = $_POST['province'];
-    $zipcode  = $_POST['zipcode'];
-    
-    // รวมที่อยู่เป็นข้อความยาวสำหรับตาราง Role เดิม (ถ้ายังจำเป็นต้องใช้)[cite: 12]
-    $address_full = $house . ' ต.' . $tambon . ' อ.' . $amphoe . ' จ.' . $province . ' ' . $zipcode;
-
-    try {
-        // เริ่ม Transaction เพื่อความปลอดภัยของข้อมูล[cite: 12]
-        $conn->beginTransaction();
-
-        // 2. เช็คก่อนว่ามีรหัสบัตรประชาชนนี้ในระบบ (ตาราง User) หรือยัง?[cite: 12]
-        $check_user = $conn->prepare('SELECT User_ID FROM "User" WHERE User_ID = ?');
-        $check_user->execute([$userid]);
-        if ($check_user->rowCount() > 0) {
-            throw new Exception("รหัสบัตรประชาชนนี้ถูกลงทะเบียนในระบบแล้ว");
-        }
-
-        // ---------------------------------------------------------
-        // บันทึกข้อมูลที่อยู่ลงตาราง public.addresses (ตามภาพ image_a0bf3a.png)
-        // ---------------------------------------------------------
-        $stmt_addr = $conn->prepare("
-            INSERT INTO public.addresses (user_id, house_number, tambon, amphoe, province, zipcode) 
-            VALUES (?, ?, ?, ?, ?, ?)
-        ");
-        $stmt_addr->execute([$userid, $house, $tambon, $amphoe, $province, $zipcode]);
-
-        // ---------------------------------------------------------
-        // กรณี: สมัครเป็น "นักเรียน"[cite: 12]
-        // ---------------------------------------------------------
-        if ($role === 'student') {
-            $level = $_POST['level'];
-            $pin = $_POST['student_pin']; 
-
-            $stmt_user = $conn->prepare('INSERT INTO "User" (User_ID, Password, Status) VALUES (?, ?, ?)');
-            $stmt_user->execute([$userid, $password, 'Student']);
-
-            $stmt_stu = $conn->prepare("INSERT INTO Student (Student_ID, Student_Name, Email, Tel, Status_Address, Student_Level, PIN) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt_stu->execute([$userid, $fullname, $email, $phone, $address_full, $level, $pin]);
-            assignCurriculumAndEnrollRequiredSubjects($conn, $userid, $level);
-
-        } 
-        // ---------------------------------------------------------
-        // กรณี: สมัครเป็น "อาจารย์"[cite: 12]
-        // ---------------------------------------------------------
-        elseif ($role === 'teacher') {
-            $stmt_user = $conn->prepare('INSERT INTO "User" (User_ID, Password, Status) VALUES (?, ?, ?)');
-            $stmt_user->execute([$userid, $password, 'Teacher']);
-
-            $stmt_teacher = $conn->prepare("INSERT INTO Teachers (Teachers_ID, Password, Teachers_Name, Email, Tel, Teachers_Address) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt_teacher->execute([$userid, $password, $fullname, $email, $phone, $address_full]);
-        } 
-        // ---------------------------------------------------------
-        // กรณี: สมัครเป็น "ผู้ปกครอง"[cite: 12]
-        // ---------------------------------------------------------
-        elseif ($role === 'parent') {
-            $link_student_id = str_replace('-', '', $_POST['link_student_id']);
-            $link_student_pin = $_POST['link_student_pin'];
-
-            $check_stu = $conn->prepare("SELECT Student_ID FROM Student WHERE Student_ID = ? AND PIN = ?");
-            $check_stu->execute([$link_student_id, $link_student_pin]);
-            
-            if ($check_stu->rowCount() == 0) {
-                throw new Exception("ข้อมูลไม่ถูกต้อง! ไม่พบรหัสนักเรียน หรือ PIN ของบุตรไม่ตรงกัน");
-            }
-
-            $stmt_user = $conn->prepare('INSERT INTO "User" (User_ID, Password, Status) VALUES (?, ?, ?)');
-            $stmt_user->execute([$userid, $password, 'Parent']);
-
-            $stmt_parent = $conn->prepare("INSERT INTO Parents (Parents_ID, Password, Parents_Name, Email, Tel, Parents_Address, PIN) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt_parent->execute([$userid, $password, $fullname, $email, $phone, $address_full, $link_student_pin]);
-
-            $link_update = $conn->prepare("UPDATE Student SET Parent_ID = ? WHERE Student_ID = ?");
-            $link_update->execute([$userid, $link_student_id]);
-        }
-
-        // กดยืนยันการบันทึกข้อมูลทั้งหมดลงฐานข้อมูล[cite: 12]
-        $conn->commit();
-
-        echo "<script>
-                alert('ลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ');
-                window.location.href = 'login.php';
-              </script>";
-        exit();
-
-    } catch (Exception $e) {
-        // หากเกิด Error ให้ยกเลิกการบันทึกทั้งหมด[cite: 12]
-        if ($conn->inTransaction()) {
-            $conn->rollBack();
-        }
-        $error_msg = $e->getMessage();
-        
-        echo "<script>
-                alert('เกิดข้อผิดพลาด: {$error_msg}');
-                window.history.back();
-              </script>";
-        exit();
-    }
-} else {
-    header("Location: regisstu.php");
-    exit();
-}
-?>
+    $conn->prepare('INSERT INTO public.user_addresses (user_id, address_line, subdistrict, district, province, postal_code) VALUES (:id, :line, :subdistrict, :district, :province, :postal_code)')->execute([':id' => $userId, ':line' => trim((string) ($_POST['house'] ?? '')), ':subdistrict' => trim((string) ($_POST['tambon'] ?? '')) ?: null, ':district' => trim((string) ($_POST['amphoe'] ?? '')) ?: null, ':province' => trim((string) ($_POST['province'] ?? '')) ?: null, ':postal_code' => trim((string) ($_POST['zipcode'] ?? '')) ?: null]);
+    $conn->commit(); echo "<script>alert('ลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ'); location.href='login.php';</script>";
+} catch (Throwable $e) { if ($conn->inTransaction()) $conn->rollBack(); $message = json_encode($e->getMessage(), JSON_UNESCAPED_UNICODE); echo "<script>alert({$message}); history.back();</script>"; }

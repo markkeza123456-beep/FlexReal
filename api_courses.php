@@ -1,153 +1,23 @@
 <?php
-session_start();
-require_once 'db_connect.php';
-header('Content-Type: application/json; charset=utf-8');
-
-$action = $_GET['action'] ?? '';
-// API นี้อ่าน session เท่านั้น ปลดล็อกเพื่อไม่ให้ขวางการออกจากระบบหรือคำขออื่น
-session_write_close();
-
-function ensureLessonContentColumn(PDO $conn): void
-{
-    $conn->exec("ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS lesson_content TEXT");
+session_start(); require_once __DIR__ . '/db_connect.php'; header('Content-Type: application/json; charset=utf-8'); $action = $_GET['action'] ?? ''; session_write_close();
+function loadLessons(PDO $conn, string $courseId): array {
+    $stmt = $conn->prepare("SELECT l.lesson_id, l.course_id, l.title, l.content, l.position, l.study_hours, l.pass_percentage, COALESCE(r.url, '') AS video_url, COALESCE(r.url, '') AS video_path FROM public.lessons l LEFT JOIN LATERAL (SELECT url FROM public.lesson_resources WHERE lesson_id = l.lesson_id AND resource_type = 'video' ORDER BY position LIMIT 1) r ON true WHERE l.course_id = :course_id ORDER BY l.position");
+    $stmt->execute([':course_id' => $courseId]); return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
-function loadLessons(PDO $conn, string $subjectId): array
-{
-    ensureLessonContentColumn($conn);
-    $stmtL = $conn->prepare("
-        SELECT
-            l.*,
-            COALESCE(v.videos_url, '') AS video_path,
-            COALESCE(v.videos_url, '') AS video_url
-        FROM public.lessons l
-        LEFT JOIN LATERAL (
-            SELECT videos_url
-            FROM public.videos
-            WHERE subjects_id = l.subjects_id
-              AND lessons_id = l.lessons_id
-            ORDER BY display_order ASC, videos_id ASC
-            LIMIT 1
-        ) v ON TRUE
-        WHERE l.subjects_id = ?
-        ORDER BY l.lessons_id ASC
-        LIMIT 3
-    ");
-    $stmtL->execute([$subjectId]);
-    $lessons = $stmtL->fetchAll(PDO::FETCH_ASSOC);
-
-    $normalized = [];
-    foreach ($lessons as $lessonRow) {
-        $lessonRow['is_placeholder'] = false;
-        $normalized[] = $lessonRow;
-    }
-
-    return $normalized;
-}
-
 try {
-    // 1. ดึงรายวิชาทั้งหมด (หน้าแรก)
+    $studentId = (($_SESSION['role'] ?? '') === 'student') ? (string) ($_SESSION['user_id'] ?? '') : '';
     if ($action === 'get_all') {
-        $studentCurriculumId = null;
-        $studentId = isset($_SESSION['user_id']) ? trim((string) $_SESSION['user_id']) : '';
-        $sessionRole = strtolower(trim((string) ($_SESSION['role'] ?? '')));
-
-        if ($studentId !== '' && $sessionRole === 'student') {
-            $curriculumStmt = $conn->prepare(
-                "SELECT studcurriculums_id
-                 FROM public.student
-                 WHERE student_id = :student_id
-                 LIMIT 1"
-            );
-            $curriculumStmt->execute([':student_id' => $studentId]);
-            $studentCurriculumId = $curriculumStmt->fetchColumn() ?: null;
-        }
-
-        if ($studentCurriculumId) {
-            $stmt = $conn->prepare(
-                "SELECT
-                    s.subjects_id,
-                    s.subjects_name,
-                    s.subjects_description,
-                    COALESCE(NULLIF(TRIM(cs.subject_type), ''), COALESCE(NULLIF(TRIM(s.subject_type), ''), 'elective')) AS subject_type,
-                    CASE WHEN cs.subject_id IS NOT NULL THEN true ELSE false END AS in_curriculum,
-                    CASE
-                        WHEN cs.subject_id IS NOT NULL
-                         AND COALESCE(NULLIF(TRIM(cs.subject_type), ''), COALESCE(NULLIF(TRIM(s.subject_type), ''), 'elective')) = 'required'
-                        THEN true
-                        ELSE false
-                    END AS is_curriculum_required,
-                    CASE
-                        WHEN ss.subjects_id IS NOT NULL THEN true
-                        ELSE false
-                    END AS is_enrolled
-                 FROM public.subjects s
-                 LEFT JOIN public.curriculums_subject cs
-                    ON cs.subject_id = s.subjects_id
-                   AND cs.curriculums_id = :curriculum_id
-                 LEFT JOIN public.student_subject ss
-                    ON ss.subjects_id = s.subjects_id
-                   AND ss.student_id = :student_id
-                 WHERE s.deleted_at IS NULL
-                 ORDER BY
-                    CASE WHEN cs.subject_id IS NOT NULL THEN 0 ELSE 1 END,
-                    s.subjects_name ASC"
-            );
-            $stmt->execute([
-                ':curriculum_id' => $studentCurriculumId,
-                ':student_id' => $studentId,
-            ]);
-        } else {
-            $stmt = $conn->query(
-                "SELECT
-                    subjects_id,
-                    subjects_name,
-                    subjects_description,
-                    COALESCE(NULLIF(TRIM(subject_type), ''), 'elective') AS subject_type,
-                    false AS in_curriculum,
-                    false AS is_curriculum_required,
-                    false AS is_enrolled
-                 FROM public.subjects
-                 WHERE deleted_at IS NULL
-                 ORDER BY subjects_name ASC"
-            );
-        }
-
-        $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode(['status' => 'success', 'data' => $courses]);
+        $stmt = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, COALESCE(cc.requirement_type, 'elective') AS subject_type, (cc.course_id IS NOT NULL) AS in_curriculum, (cc.requirement_type = 'required') AS is_curriculum_required, (sc.course_id IS NOT NULL) AS is_enrolled FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id WHERE c.status = 'active' ORDER BY (cc.course_id IS NULL), c.name");
+        $stmt->execute([':student_id' => $studentId]); $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($courses as &$course) { $course['subjects_id'] = $course['course_id']; $course['subjects_name'] = $course['name']; $course['subjects_description'] = $course['description']; } unset($course);
+        echo json_encode(['status' => 'success', 'data' => $courses], JSON_UNESCAPED_UNICODE); exit;
     }
-    // 2. ดึงรายละเอียดวิชา และ บทเรียนย่อย
-    elseif ($action === 'get_detail') {
-        $id = $_GET['id'] ?? '';
-        
-        $stmt = $conn->prepare("SELECT * FROM public.subjects WHERE subjects_id = ?");
-        $stmt->execute([$id]);
-        $course = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$course) {
-            echo json_encode(['status' => 'error', 'message' => 'ไม่พบรายวิชานี้']);
-            exit;
-        }
-
-        // ดึงบทเรียนของวิชานี้
-        $lessons = loadLessons($conn, (string) $id);
-
-        // ดึงชื่ออาจารย์ทุกคนที่รับผิดชอบรายวิชานี้
-        $course['teachers_name'] = 'ไม่ระบุอาจารย์ผู้สอน';
-        try {
-            $stmtT = $conn->prepare("SELECT STRING_AGG(t.teachers_name, ', ' ORDER BY t.teachers_name) FROM public.subject_teachers st INNER JOIN public.teachers t ON t.teachers_id = st.teachers_id WHERE st.subjects_id = ?");
-            $stmtT->execute([$course['subjects_id']]);
-            $teacherNames = trim((string) $stmtT->fetchColumn());
-            if ($teacherNames !== '') {
-                $course['teachers_name'] = $teacherNames;
-            }
-        } catch (Exception $ex) {
-            // Keep the default text if a partially migrated database does not have the mapping table yet.
-        }
-
-        echo json_encode(['status' => 'success', 'course' => $course, 'lessons' => $lessons]);
+    if ($action === 'get_detail') {
+        $id = (string) ($_GET['id'] ?? ''); $stmt = $conn->prepare('SELECT course_id, code, name, description, credits FROM public.courses WHERE course_id = :id AND status = :status'); $stmt->execute([':id' => $id, ':status' => 'active']); $course = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$course) throw new RuntimeException('ไม่พบรายวิชานี้');
+        $teachers = $conn->prepare("SELECT COALESCE(string_agg(t.full_name, ', ' ORDER BY t.full_name), 'ไม่ระบุอาจารย์ผู้สอน') FROM public.course_teachers ct JOIN public.teachers t ON t.user_id = ct.teacher_id WHERE ct.course_id = :id"); $teachers->execute([':id' => $id]);
+        $course['subjects_id'] = $course['course_id']; $course['subjects_name'] = $course['name']; $course['subjects_description'] = $course['description']; $course['teachers_name'] = $teachers->fetchColumn();
+        echo json_encode(['status' => 'success', 'course' => $course, 'lessons' => loadLessons($conn, $id)], JSON_UNESCAPED_UNICODE); exit;
     }
-} catch(Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
-}
-?>
+    throw new RuntimeException('ไม่รองรับคำขอนี้');
+} catch (Throwable $e) { echo json_encode(['status' => 'error', 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE); }

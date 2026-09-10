@@ -11,9 +11,11 @@ if ($pin === '') {
 }
 
 try {
-    $stmt = $conn->prepare('SELECT user_id FROM public.password_reset_tokens WHERE token = :pin AND expires_at > NOW() ORDER BY expires_at DESC LIMIT 1');
-    $stmt->execute(['pin' => $pin]);
-    $tokenRow = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt = $conn->query('SELECT user_id, token_hash FROM public.password_reset_tokens WHERE used_at IS NULL AND expires_at > NOW() ORDER BY created_at DESC');
+    $tokenRow = null;
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $candidate) {
+        if (password_verify($pin, (string) $candidate['token_hash'])) { $tokenRow = $candidate; break; }
+    }
 
     if (!$tokenRow) {
         echo json_encode(['status' => 'error', 'message' => 'PIN ไม่ถูกต้อง หรือหมดอายุแล้ว']);

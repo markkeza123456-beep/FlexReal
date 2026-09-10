@@ -46,36 +46,29 @@ $requestedSubjectId = trim((string) ($_GET['subject_id'] ?? ''));
 // 0. ดึง avatar_url จากฐานข้อมูล
 $avatar_url = '';
 try {
-    $stmtAv = $conn->prepare("SELECT avatar_url FROM public.teachers WHERE teachers_id = :uid");
+    $stmtAv = $conn->prepare("SELECT avatar_url FROM public.teachers WHERE user_id = :uid");
     $stmtAv->execute(['uid' => $teacherId]);
     $rowAv = $stmtAv->fetch(PDO::FETCH_ASSOC);
     $avatar_url = $rowAv['avatar_url'] ?? '';
 } catch (Exception $e) { $avatar_url = ''; }
 
 // 1. ดึงข้อมูลอาจารย์
-$teacherStmt = $conn->prepare('
-    SELECT Teachers_ID, Teachers_Name, tel
-    FROM public.teachers 
-    WHERE Teachers_ID = :teacher_id LIMIT 1
-');
+$teacherStmt = $conn->prepare('SELECT user_id, full_name, phone FROM public.teachers WHERE user_id = :teacher_id LIMIT 1');
 $teacherStmt->execute([':teacher_id' => $teacherId]);
 $teacherRow = $teacherStmt->fetch(PDO::FETCH_ASSOC) ?: [];
-$teacherName = trim((string) ($teacherRow['teachers_name'] ?? $_SESSION['name'] ?? $teacherId));
+$teacherName = trim((string) ($teacherRow['full_name'] ?? $_SESSION['name'] ?? $teacherId));
 if ($teacherName === '') $teacherName = $teacherId;
 
 // 2. ดึงข้อมูลวิชาที่อาจารย์คนนี้สอน
-$subjectStmt = $conn->prepare('
-    SELECT 
-        s.Subjects_ID AS subjects_id, 
-        s.Subjects_Name AS subjects_name, 
-        s.Subjects_Description AS subjects_description,
-        (SELECT COUNT(*) FROM public.lessons l WHERE l.Subjects_ID = s.Subjects_ID) AS lesson_count,
-        (SELECT COUNT(DISTINCT ss.Student_ID) FROM public.student_subject ss WHERE ss.Subjects_ID = s.Subjects_ID) AS student_count
-    FROM public.subjects s
-    INNER JOIN public.subject_teachers st ON st.subjects_id = s.subjects_id
-    WHERE st.teachers_id = :teacher_id
-    ORDER BY s.Subjects_Name ASC
-');
+$subjectStmt = $conn->prepare("
+    SELECT c.course_id AS subjects_id, c.name AS subjects_name, c.description AS subjects_description,
+        (SELECT COUNT(*) FROM public.lessons l WHERE l.course_id = c.course_id) AS lesson_count,
+        (SELECT COUNT(DISTINCT sc.student_id) FROM public.student_courses sc WHERE sc.course_id = c.course_id AND sc.status = 'active') AS student_count
+    FROM public.courses c
+    INNER JOIN public.course_teachers ct ON ct.course_id = c.course_id
+    WHERE ct.teacher_id = :teacher_id
+    ORDER BY c.name ASC
+");
 $subjectStmt->execute([':teacher_id' => $teacherId]);
 $subjectRows = $subjectStmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -120,11 +113,11 @@ $selectedSubject = $selectedSubjectId !== '' ? ($subjectMap[$selectedSubjectId] 
 $subLessonsBySubject = [];
 if (!empty($subjectIds)) {
     $lessonStmt = $conn->prepare('
-        SELECT l.Lessons_ID, l.Lessons_Name, l.Study_Hours, l.Subjects_ID 
+        SELECT l.lesson_id AS lessons_id, l.title AS lessons_name, l.study_hours, l.course_id AS subjects_id
         FROM public.lessons l
-        INNER JOIN public.subject_teachers st ON st.subjects_id = l.subjects_id
-        WHERE st.teachers_id = :teacher_id
-        ORDER BY l.Lessons_ID ASC
+        INNER JOIN public.course_teachers ct ON ct.course_id = l.course_id
+        WHERE ct.teacher_id = :teacher_id
+        ORDER BY l.course_id ASC, l.position ASC
     ');
     $lessonStmt->execute([':teacher_id' => $teacherId]);
     foreach ($lessonStmt->fetchAll(PDO::FETCH_ASSOC) as $lessonRow) {
@@ -143,70 +136,20 @@ foreach ($subjectIds as $subjectId) {
 
 // 4. ดึงข้อมูลนักเรียนและคะแนน
 $studentStmt = $conn->prepare("
-    SELECT 
-        st.Student_ID,
-        st.Student_Name,
-        st.Student_Level AS class_name,
-        (
-            SELECT STRING_AGG(DISTINCT s3.Subjects_ID, ',')
-            FROM public.student_subject ss3
-            INNER JOIN public.subjects s3 ON s3.Subjects_ID = ss3.Subjects_ID
-            INNER JOIN public.subject_teachers st3 ON st3.subjects_id = s3.subjects_id
-            WHERE ss3.Student_ID = st.Student_ID
-              AND st3.teachers_id = :teacher_id
-        ) AS subject_ids,
-        (
-            SELECT COALESCE(AVG(
-                CASE
-                    WHEN lp.quiz_total_score > 0 THEN (lp.best_quiz_score::numeric / lp.quiz_total_score) * 100
-                    ELSE 0
-                END
-            ), 0)
-            FROM public.student_learning_progress lp
-            INNER JOIN public.subjects s ON s.subjects_id = lp.subjects_id
-            INNER JOIN public.subject_teachers st_progress ON st_progress.subjects_id = s.subjects_id
-            WHERE lp.student_id = st.Student_ID
-              AND st_progress.teachers_id = :teacher_id
-        ) AS real_score,
-        (
-            SELECT COUNT(DISTINCT l.Lessons_ID)
-            FROM public.lessons l
-            INNER JOIN public.subjects s ON s.Subjects_ID = l.Subjects_ID
-            INNER JOIN public.subject_teachers st_total ON st_total.subjects_id = s.subjects_id
-            INNER JOIN public.student_subject ss ON ss.Subjects_ID = s.Subjects_ID
-            WHERE st_total.teachers_id = :teacher_id
-              AND ss.Student_ID = st.Student_ID
-        ) AS total_lessons,
-        (
-            SELECT COUNT(*)
-            FROM public.student_learning_progress lp
-            INNER JOIN public.subjects s ON s.subjects_id = lp.subjects_id
-            INNER JOIN public.subject_teachers st_completed ON st_completed.subjects_id = s.subjects_id
-            WHERE lp.student_id = st.Student_ID
-              AND st_completed.teachers_id = :teacher_id
-              AND lp.quiz_total_score > 0
-              AND (lp.best_quiz_score::numeric / NULLIF(lp.quiz_total_score, 0)) >= 0.6
-        ) AS completed_lessons,
-        (
-            SELECT STRING_AGG(DISTINCT COALESCE(NULLIF(TRIM(lp.lesson_title), ''), ('บทที่ ' || lp.lesson_index::text)), '||')
-            FROM public.student_learning_progress lp
-            INNER JOIN public.subjects s ON s.subjects_id = lp.subjects_id
-            INNER JOIN public.subject_teachers st_lesson_names ON st_lesson_names.subjects_id = s.subjects_id
-            WHERE lp.student_id = st.Student_ID
-              AND st_lesson_names.teachers_id = :teacher_id
-              AND lp.quiz_total_score > 0
-              AND (lp.best_quiz_score::numeric / NULLIF(lp.quiz_total_score, 0)) >= 0.6
-        ) AS completed_lesson_names
-    FROM public.student st
-    WHERE EXISTS (
-        SELECT 1
-        FROM public.student_subject ss
-        INNER JOIN public.subjects s ON s.Subjects_ID = ss.Subjects_ID
-        INNER JOIN public.subject_teachers st_assigned ON st_assigned.subjects_id = s.subjects_id
-        WHERE ss.Student_ID = st.Student_ID
-          AND st_assigned.teachers_id = :teacher_id
-    )
-    ORDER BY st.Student_Name ASC
+    SELECT st.user_id AS student_id, st.full_name AS student_name, st.student_level AS class_name,
+           STRING_AGG(DISTINCT c.course_id::text, ',') AS subject_ids,
+           COALESCE(AVG(qa.score / NULLIF(qa.total_score, 0) * 100), 0) AS real_score,
+           COUNT(DISTINCT l.lesson_id) AS total_lessons,
+           COUNT(DISTINCT l.lesson_id) FILTER (WHERE qa.score / NULLIF(qa.total_score, 0) >= 0.6) AS completed_lessons,
+           STRING_AGG(DISTINCT l.title, '||') FILTER (WHERE qa.score / NULLIF(qa.total_score, 0) >= 0.6) AS completed_lesson_names
+    FROM public.students st
+    INNER JOIN public.student_courses sc ON sc.student_id = st.user_id AND sc.status = 'active'
+    INNER JOIN public.courses c ON c.course_id = sc.course_id
+    INNER JOIN public.course_teachers ct ON ct.course_id = c.course_id AND ct.teacher_id = :teacher_id
+    LEFT JOIN public.lessons l ON l.course_id = c.course_id
+    LEFT JOIN LATERAL (SELECT score, total_score FROM public.quiz_attempts a WHERE a.student_id = st.user_id AND a.lesson_id = l.lesson_id ORDER BY a.submitted_at DESC LIMIT 1) qa ON true
+    GROUP BY st.user_id, st.full_name, st.student_level
+    ORDER BY st.full_name ASC
 ");
 $studentStmt->execute([':teacher_id' => $teacherId]);
 
@@ -243,11 +186,14 @@ $quizzes = [];
 $defaultSubjectId = $selectedSubjectId;
 if ($defaultSubjectId) {
     $quizStmt = $conn->prepare("
-        SELECT tq.questions_id, tq.questions_text, tq.choice_a, tq.choice_b, tq.choice_c, tq.choice_d, tq.correct_answer, tq.lessons_id, l.lessons_name 
-        FROM public.test_questions tq
-        INNER JOIN public.lessons l ON tq.lessons_id = l.lessons_id
-        WHERE l.subjects_id = :subject_id
-        ORDER BY tq.questions_id ASC
+        SELECT q.question_id AS questions_id, q.question_text AS questions_text,
+               COALESCE(q.options->>0, '') AS choice_a, COALESCE(q.options->>1, '') AS choice_b,
+               COALESCE(q.options->>2, '') AS choice_c, COALESCE(q.options->>3, '') AS choice_d,
+               COALESCE(q.correct_choice, '-') AS correct_answer, q.lesson_id AS lessons_id, l.title AS lessons_name
+        FROM public.questions q
+        INNER JOIN public.lessons l ON q.lesson_id = l.lesson_id
+        WHERE l.course_id = :subject_id
+        ORDER BY q.question_id ASC
     ");
     $quizStmt->execute([':subject_id' => $defaultSubjectId]);
     $quizzes = $quizStmt->fetchAll(PDO::FETCH_ASSOC);
