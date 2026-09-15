@@ -1,4 +1,8 @@
 <?php
+// This seed targets the retired subject/quiz schema and is intentionally disabled.
+fwrite(STDERR, "Retired seed script: use the staff subject editor for the normalized schema.\n");
+exit(1);
+
 require_once __DIR__ . '/db_connect.php';
 
 function ensureScienceSubject(PDO $conn): array {

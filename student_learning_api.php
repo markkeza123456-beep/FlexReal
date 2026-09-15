@@ -7,7 +7,12 @@ function fetchCourseSummary(PDO $conn, string $studentId, string $courseId): arr
     $course = $conn->prepare('SELECT course_id, name FROM public.courses WHERE course_id = :id'); $course->execute([':id' => $courseId]); $courseRow = $course->fetch(PDO::FETCH_ASSOC); if (!$courseRow) throw new RuntimeException('ไม่พบรายวิชา');
     $lessons = $conn->prepare("SELECT l.lesson_id, l.position AS lesson_index, l.title AS lesson_title, COALESCE(p.opened_count, 0) AS opened_count, COALESCE(p.video_open_count, 0) AS video_open_count, COALESCE(q.best_score, 0) AS best_quiz_score, COALESCE(q.total_score, 0) AS quiz_total_score, COALESCE(p.last_activity_at, q.last_activity_at) AS last_activity_at FROM public.lessons l LEFT JOIN public.lesson_progress p ON p.lesson_id = l.lesson_id AND p.student_id = :student_id LEFT JOIN LATERAL (SELECT MAX(a.score) AS best_score, MAX(a.total_score) AS total_score, MAX(a.submitted_at) AS last_activity_at FROM public.quiz_attempts a WHERE a.student_id = :student_id AND a.lesson_id = l.lesson_id) q ON true WHERE l.course_id = :course_id ORDER BY l.position");
     $lessons->execute([':student_id' => $studentId, ':course_id' => $courseId]); $rows = $lessons->fetchAll(PDO::FETCH_ASSOC);
-    foreach ($rows as &$row) { $row['progress_percent'] = $row['quiz_total_score'] > 0 ? round(lessonProgressFromQuiz((int) $row['best_quiz_score'], (int) $row['quiz_total_score']), 1) : (($row['video_open_count'] > 0) ? 60 : (($row['opened_count'] > 0) ? 25 : 0)); }
+    foreach ($rows as &$row) {
+        $row['document_progress'] = (int) $row['opened_count'] > 0 ? 30 : 0;
+        $row['video_progress'] = (int) $row['video_open_count'] > 0 ? 30 : 0;
+        $row['quiz_progress'] = (int) $row['quiz_total_score'] > 0 ? round(min(40, ((float) $row['best_quiz_score'] / (float) $row['quiz_total_score']) * 40), 1) : 0;
+        $row['progress_percent'] = lessonProgressFromQuiz((int) $row['best_quiz_score'], (int) $row['quiz_total_score'], (int) $row['opened_count'] > 0, (int) $row['video_open_count'] > 0);
+    }
     unset($row); $started = array_filter($rows, fn($r) => (int) $r['opened_count'] > 0 || (int) $r['video_open_count'] > 0 || $r['last_activity_at']);
     return ['subject_id' => $courseId, 'course_id' => $courseId, 'course_name' => $courseRow['name'], 'lesson_count' => count($rows), 'started_lessons' => count($started), 'progress_percent' => count($rows) ? round(array_sum(array_column($rows, 'progress_percent')) / count($rows), 1) : 0, 'best_score_percent' => max(array_column($rows, 'progress_percent') ?: [0]), 'last_activity_at' => max(array_filter(array_column($rows, 'last_activity_at')) ?: [null]), 'lessons' => $rows];
 }

@@ -1,5 +1,11 @@
 <?php
 session_start();
+// This seed targets the retired subject/quiz schema and is intentionally disabled.
+http_response_code(410);
+header('Content-Type: application/json; charset=utf-8');
+echo json_encode(['error' => 'Retired seed script. Use the staff subject editor for the normalized schema.'], JSON_UNESCAPED_UNICODE);
+exit;
+
 require_once __DIR__ . '/db_connect.php';
 header('Content-Type: application/json; charset=utf-8');
 
