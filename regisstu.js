@@ -20,8 +20,7 @@
   };
 
   const roleSectionMap = {
-    // normalized schema has no student PIN column
-    student: [],
+    student: ['pin-section'],
     teacher: [],
     parent: ['parent-link-section'],
   };
@@ -273,8 +272,8 @@
   function setLoading(loading) {
     submitBtn.disabled = loading;
     btnText.hidden = loading;
-    btnArrow.style.display = loading ? 'none' : '';
-    btnLoader.style.display = loading ? 'flex' : 'none';
+    if (btnArrow) btnArrow.style.display = loading ? 'none' : '';
+    if (btnLoader) btnLoader.style.display = loading ? 'flex' : 'none';
   }
 
   form.addEventListener('submit', (event) => {
@@ -300,13 +299,9 @@
     if (currentRole === 'student' && !valueOf('level')) {
       valid = setError('field-level', 'level-error', 'กรุณาเลือกระดับชั้น') && valid;
     }
-    if (currentRole === 'parent' && !valueOf('relation')) {
-      valid = setError('field-relation', 'relation-error', 'กรุณาเลือกความสัมพันธ์') && valid;
-    }
-
     // ---- ข้อมูลติดต่อ ----
     const email = valueOf('email');
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       valid = setError('field-email', 'email-error', 'กรุณากรอกอีเมลให้ถูกต้อง') && valid;
     }
 
@@ -355,8 +350,9 @@
       valid = setError('field-confirm', 'confirm-error', 'รหัสผ่านไม่ตรงกัน') && valid;
     }
 
-    // ---- PIN นักเรียน (อ่านจาก 6 กล่อง) ----
-    if (currentRole === 'student') {
+    // รองรับ PIN แบบกล่อง 6 ช่องของฟอร์มรุ่นเดิมเท่านั้น
+    // ฟอร์มปัจจุบันใช้ input เดียวและให้ HTML required ตรวจสอบให้แล้ว
+    if (currentRole === 'student' && document.getElementById('pinWrap')) {
       const studentPin = collectPin('pinWrap');
       const studentPinConfirm = collectPin('pinConfirmWrap');
 
@@ -375,11 +371,12 @@
       }
 
       // ยัดค่ารวมเข้า hidden field ก่อน submit
-      document.getElementById('final_pin').value = studentPin;
+      const finalPin = document.getElementById('final_pin');
+      if (finalPin) finalPin.value = studentPin;
     }
 
     // ---- ข้อมูลผูกบัญชีผู้ปกครอง ----
-    if (currentRole === 'parent') {
+    if (currentRole === 'parent' && document.getElementById('parentPinWrap')) {
       const linkedStudentId = valueOf('link_student_id').replace(/\D/g, '');
       const linkedStudentPin = collectPin('parentPinWrap');
 
@@ -394,7 +391,8 @@
       }
 
       // ยัดค่ารวมเข้า hidden field ก่อน submit
-      document.getElementById('link_student_pin').value = linkedStudentPin;
+      const linkedPin = document.getElementById('link_student_pin');
+      if (linkedPin) linkedPin.value = linkedStudentPin;
     }
 
     if (!valid) {
