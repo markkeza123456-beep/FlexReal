@@ -43,6 +43,7 @@ if (!$root || !$file || !str_starts_with($file, $root . DIRECTORY_SEPARATOR) || 
 
 $title = (string) ($document['title'] ?: $document['lesson_title']);
 $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+$canRenderDocx = $extension === 'docx' && class_exists('ZipArchive');
 $resumePage = 0;
 try {
     ensureLearningProgressTables($conn);
@@ -72,10 +73,10 @@ header('Content-Type: text/html; charset=utf-8');
   </style>
 </head>
 <body>
-  <header><span><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span><button id="complete-reading" type="button" onclick="completeReading()" <?= $extension === 'docx' ? 'disabled' : '' ?>>อ่านจบแล้ว</button></header>
+  <header><span><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span><button id="complete-reading" type="button" onclick="completeReading()" <?= $canRenderDocx ? 'disabled' : '' ?>>อ่านจบแล้ว</button></header>
 <?php if ($extension === 'pdf'): ?>
   <iframe title="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" src="<?= htmlspecialchars($relativePath, ENT_QUOTES, 'UTF-8') ?>#view=FitH"></iframe>
-<?php elseif ($extension === 'docx'): ?>
+<?php elseif ($extension === 'docx' && $canRenderDocx): ?>
   <main class="docx">
 <?php
     $zip = new ZipArchive();
@@ -108,6 +109,8 @@ header('Content-Type: text/html; charset=utf-8');
     }
 ?>
   </main>
+<?php elseif ($extension === 'docx'): ?>
+  <main><div class="notice"><strong>เครื่องเซิร์ฟเวอร์ยังไม่เปิดส่วนขยาย ZIP สำหรับแสดง Word ในเว็บ</strong><br><br>คุณยังเปิดอ่านเอกสารได้โดยดาวน์โหลดไฟล์ แล้วกด “อ่านจบแล้ว” เมื่ออ่านเสร็จ <a href="<?= htmlspecialchars($relativePath, ENT_QUOTES, 'UTF-8') ?>" download style="display:inline-block;margin-left:8px;color:#9a3412;font-weight:700;">ดาวน์โหลดเอกสาร</a></div></main>
 <?php else: ?>
   <main><div class="notice">รองรับการอ่านในเว็บสำหรับไฟล์ PDF และ Word (.docx) เท่านั้น</div></main>
 <?php endif; ?>
