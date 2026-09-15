@@ -56,14 +56,8 @@ body {
   position: fixed;
   inset: 0;
   background-image:
-<<<<<<< Updated upstream
     radial-gradient(circle, rgba(255,107,26,.13) 1.3px, transparent 1.5px);
   background-size: 32px 32px;
-=======
-    linear-gradient(rgba(244,81,30,.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(244,81,30,.04) 1px, transparent 1px);
-  background-size: 48px 48px;
->>>>>>> Stashed changes
   pointer-events: none;
   z-index: 0;
 }
@@ -370,10 +364,22 @@ body {
   transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
 }
 .input-wrap input::placeholder { color: var(--text-muted); }
-.input-wrap input:focus {
+.input-wrap input:focus,
+.input-wrap input:focus-visible {
   border-color: var(--orange);
-  background: #ffffff;
-  box-shadow: 0 0 0 3px var(--orange-dim), 0 0 20px var(--orange-dim);
+  background: #fffdfb;
+  box-shadow: 0 0 0 4px rgba(255, 107, 26, .24), 0 0 20px var(--orange-dim);
+}
+
+/* Make the active text box unmistakable when it is clicked or reached by Tab. */
+.input-wrap:focus-within {
+  border-radius: var(--radius-sm);
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+.field:focus-within .label {
+  color: var(--orange);
+  font-weight: 600;
 }
 
 /* Icon inside input */
