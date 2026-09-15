@@ -397,10 +397,19 @@ try {
         if ($subjectId === '' || $title === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) {
             throw new Exception('ข้อมูลไม่ครบถ้วนหรือคุณไม่มีสิทธิ์จัดการรายวิชานี้');
         }
-        $upload = uploadLessonFile('video_file', buildVideoMediaSegments($teacherId, $subjectId), 'video', true);
-        $url = $upload['path'];
         $lessonId = trim((string) ($_POST['lesson_id'] ?? ''));
         if ($lessonId === '' || !teacherOwnsLesson($conn, $teacherId, $lessonId)) throw new Exception('บทเรียนที่เลือกไม่ถูกต้อง');
+        $hasNewFile = isset($_FILES['video_file']) && (int) ($_FILES['video_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+        if ($videoId === '' && !$hasNewFile) throw new Exception('กรุณาเลือกไฟล์วิดีโอ');
+        if ($hasNewFile) {
+            $upload = uploadLessonFile('video_file', buildVideoMediaSegments($teacherId, $subjectId), 'video', true);
+            $url = $upload['path'];
+        } else {
+            $current = $conn->prepare("SELECT r.url FROM public.lesson_resources r INNER JOIN public.lessons l ON l.lesson_id = r.lesson_id WHERE r.resource_id = :id AND l.course_id = :subject_id AND r.resource_type = 'video'");
+            $current->execute([':id' => $videoId, ':subject_id' => $subjectId]);
+            $url = (string) ($current->fetchColumn() ?: '');
+            if ($url === '') throw new Exception('ไม่พบไฟล์วิดีโอเดิม');
+        }
         $params = [':title' => $title, ':url' => $url, ':lesson_id' => $lessonId];
         if ($videoId === '') {
             $stmt = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position) VALUES (:lesson_id, 'video', :title, :url, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lesson_resources WHERE lesson_id = :lesson_id))");
