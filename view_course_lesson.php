@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/learning_progress_lib.php';
 
 function lessonViewerError(string $message, int $status = 400): never
 {
@@ -42,7 +43,14 @@ if (!$root || !$file || !str_starts_with($file, $root . DIRECTORY_SEPARATOR) || 
 
 $title = (string) ($document['title'] ?: $document['lesson_title']);
 $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-$documentCompletePayload = json_encode(['type' => 'lesson-document-complete', 'courseId' => $courseId, 'lessonIndex' => $position], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+$resumePage = 0;
+try {
+    ensureLearningProgressTables($conn);
+    $resume = $conn->prepare('SELECT COALESCE(lp.document_page_index, 0) FROM public.lesson_progress lp JOIN public.lessons l ON l.lesson_id = lp.lesson_id WHERE lp.student_id = :student_id AND l.course_id = :course_id AND l.position = :position');
+    $resume->execute([':student_id' => (string) $_SESSION['user_id'], ':course_id' => $courseId, ':position' => $position]);
+    $resumePage = max(0, (int) ($resume->fetchColumn() ?: 0));
+} catch (PDOException) { /* The viewer can still render if progress setup is unavailable. */ }
+$documentProgressPayload = json_encode(['type' => 'lesson-document-progress', 'courseId' => $courseId, 'lessonIndex' => $position, 'resumePage' => $resumePage], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 header('Content-Type: text/html; charset=utf-8');
 ?>
 <!doctype html>
@@ -105,11 +113,19 @@ header('Content-Type: text/html; charset=utf-8');
 <?php endif; ?>
 </body>
 <script>
-  const completionPayload = <?= $documentCompletePayload ?>;
+  const documentPayload = <?= $documentProgressPayload ?>;
   let page = 0;
   const pages = Array.from(document.querySelectorAll('.docx-page'));
+  async function saveReadingProgress(percent, resumePage) {
+    const form = new FormData();
+    form.append('action', 'record'); form.append('subject_id', documentPayload.courseId);
+    form.append('lesson_index', String(documentPayload.lessonIndex)); form.append('activity_type', 'document_progress');
+    form.append('progress_percent', String(Math.max(0, Math.min(100, percent)))); form.append('resume_position', String(resumePage));
+    try { await fetch('student_learning_api.php', { method: 'POST', body: form, credentials: 'same-origin' }); } catch (_) {}
+    window.parent.postMessage({ ...documentPayload, progressPercent: percent }, window.location.origin);
+  }
   function completeReading() {
-    window.parent.postMessage(completionPayload, window.location.origin);
+    saveReadingProgress(100, pages.length || 1);
     const button = document.getElementById('complete-reading');
     if (button) { button.textContent = 'บันทึกแล้ว ✓'; button.disabled = true; }
   }
@@ -122,8 +138,11 @@ header('Content-Type: text/html; charset=utf-8');
     next.textContent = page === pages.length - 1 ? 'หน้าสุดท้าย' : 'ถัดไป →';
     indicator.textContent = `หน้า ${page + 1} / ${pages.length}`;
     if (page === pages.length - 1) document.getElementById('complete-reading').disabled = false;
+    saveReadingProgress(((page + 1) / pages.length) * 100, page + 1);
   }
   function changePage(step) { page = Math.max(0, Math.min(pages.length - 1, page + step)); renderPage(); }
+  if (pages.length && documentPayload.resumePage > 0) page = Math.min(pages.length - 1, documentPayload.resumePage - 1);
+  if (!pages.length) saveReadingProgress(1, 0);
   renderPage();
 </script>
 </html>

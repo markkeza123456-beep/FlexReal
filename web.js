@@ -177,13 +177,13 @@ function canAccessLesson(lessonIndex) {
 function hasReadLessonDocument(lessonIndex) {
     const progressMap = getLessonProgressMap();
     const row = progressMap.get(Number(lessonIndex)) || {};
-    return Number(row.opened_count || 0) > 0;
+    return Number(row.document_progress_percent || 0) >= 100;
 }
 
 function hasCompletedLessonVideo(lessonIndex) {
     const progressMap = getLessonProgressMap();
     const row = progressMap.get(Number(lessonIndex)) || {};
-    return Number(row.video_open_count || 0) > 0;
+    return Number(row.video_progress_percent || 0) >= 100;
 }
 
 function isVideoUnlocked(lessonIndex) {
@@ -835,7 +835,7 @@ async function fetchCourseProgress(subjectId) {
     } catch (error) { applyCourseProgressSummary(null); }
 }
 
-async function recordLearningEvent(activityType, lessonIndex = 1) {
+async function recordLearningEvent(activityType, lessonIndex = 1, progressPercent = 0, resumePosition = 0) {
     if (!currentSubjectId || !enrolledCourses[currentSubjectId]) return;
     try {
         const lesson = currentLessonsData.find((item) => item.index === Number(lessonIndex));
@@ -844,6 +844,8 @@ async function recordLearningEvent(activityType, lessonIndex = 1) {
         formData.append('lesson_index', String(lessonIndex || 1));
         formData.append('lesson_title', lesson ? lesson.title : `${currentCourseName} บทที่ ${lessonIndex || 1}`);
         formData.append('activity_type', activityType);
+        formData.append('progress_percent', String(progressPercent));
+        formData.append('resume_position', String(resumePosition));
 
         const response = await fetch('student_learning_api.php', { method: 'POST', body: formData, credentials: 'same-origin' });
         const result = await response.json();
@@ -1294,10 +1296,9 @@ function openCourseDocument(lessonIndex) {
 }
 
 window.addEventListener('message', async (event) => {
-    if (event.origin !== window.location.origin || event.data?.type !== 'lesson-document-complete') return;
+    if (event.origin !== window.location.origin || event.data?.type !== 'lesson-document-progress') return;
     const lessonIndex = Number(event.data.lessonIndex || 1);
     if (String(event.data.courseId) !== String(currentSubjectId)) return;
-    await recordLearningEvent('document_complete', lessonIndex);
     await fetchCourseProgress(currentSubjectId);
     renderAllLessonAccordions();
 });
@@ -1363,6 +1364,24 @@ function renderVideoModalBody(lessonIndex) {
         const sourceElement = body.querySelector('#lesson-video-source');
         const fallbackStatus = body.querySelector('#video-fallback-status');
         let candidateIndex = 0;
+        const progressRow = getLessonProgressMap().get(safeIndex) || {};
+        const savedPosition = Math.max(0, Number(progressRow.video_position_seconds || 0));
+        let lastSavedSecond = -1;
+        const saveVideoProgress = (force = false) => {
+            if (!Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return;
+            const seconds = Math.max(0, videoElement.currentTime || 0);
+            if (!force && seconds - lastSavedSecond < 5) return;
+            lastSavedSecond = seconds;
+            const percent = Math.min(99.9, (seconds / videoElement.duration) * 100);
+            recordLearningEvent('video_progress', safeIndex, percent, seconds);
+        };
+        videoElement.addEventListener('loadedmetadata', () => {
+            if (savedPosition > 0 && savedPosition < videoElement.duration - 1) {
+                videoElement.currentTime = savedPosition;
+            }
+        }, { once: true });
+        videoElement.addEventListener('timeupdate', () => saveVideoProgress());
+        videoElement.addEventListener('pause', () => saveVideoProgress(true));
         videoElement.addEventListener('error', () => {
             if (!sourceElement) return;
             candidateIndex += 1;
@@ -1382,7 +1401,7 @@ function renderVideoModalBody(lessonIndex) {
             videoElement.play().catch(() => {});
         });
         videoElement.addEventListener('ended', () => {
-            recordLearningEvent('video_open', safeIndex);
+            recordLearningEvent('video_progress', safeIndex, 100, 0);
             fetchCourseProgress(currentSubjectId);
         }, { once: true });
     }

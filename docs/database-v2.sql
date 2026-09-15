@@ -102,6 +102,8 @@ CREATE TABLE app.quiz_attempt_answers (
 CREATE TABLE app.lesson_progress (
     student_id varchar(50) NOT NULL REFERENCES app.students(user_id), lesson_id bigint NOT NULL REFERENCES app.lessons(lesson_id) ON DELETE CASCADE,
     opened_count integer NOT NULL DEFAULT 0 CHECK (opened_count >= 0), video_open_count integer NOT NULL DEFAULT 0 CHECK (video_open_count >= 0),
+    document_progress_percent numeric(5,2) NOT NULL DEFAULT 0 CHECK (document_progress_percent BETWEEN 0 AND 100), document_page_index integer NOT NULL DEFAULT 0 CHECK (document_page_index >= 0),
+    video_progress_percent numeric(5,2) NOT NULL DEFAULT 0 CHECK (video_progress_percent BETWEEN 0 AND 100), video_position_seconds numeric(12,2) NOT NULL DEFAULT 0 CHECK (video_position_seconds >= 0),
     first_opened_at timestamptz, last_opened_at timestamptz, last_activity_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY (student_id, lesson_id)
 );
 CREATE TABLE app.learning_events (
