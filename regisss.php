@@ -1,3 +1,8 @@
+<?php
+// หน้าสมัครเวอร์ชันเดิมใช้ตารางที่เลิกใช้แล้ว จึงส่งต่อไปยังหน้าที่รองรับ schema ปัจจุบัน
+header('Location: regisstu.php', true, 302);
+exit;
+?>
 <!DOCTYPE html>
 <html lang="th">
 <head>

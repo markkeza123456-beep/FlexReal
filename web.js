@@ -22,7 +22,8 @@ const VIDEO_CACHE_BUST = Date.now();
 const SUBJECT_IMAGE_ENDPOINT = 'subject_image.php';
 const QUIZ_PASS_RATIO = 0.8;
 const COURSE_CACHE_MAX_AGE_MS = 30 * 60 * 1000;
-const REQUEST_TIMEOUT_MS = 8000;
+// Supabase pooler may take several seconds when multiple PHP requests start together.
+const REQUEST_TIMEOUT_MS = 25000;
 const MAX_LESSONS_PER_SUBJECT = 3;
 
 // ตั้งค่ารูปวิชาเองได้ที่นี่ (ใส่ได้ทั้งรหัสวิชา เช่น SUB004 หรือชื่อวิชา เช่น ประวัติศาสตร์)
@@ -138,10 +139,10 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEO
 function buildLessonsFromDB(lessons) {
     const normalized = Array.isArray(lessons) ? lessons.slice(0, MAX_LESSONS_PER_SUBJECT) : [];
     return normalized.map((lsn, index) => {
-        const lsnId = pick(lsn, 'lessons_id', 'Lessons_ID') || `tmp_${index}`;
-        const lsnName = pick(lsn, 'lessons_name', 'Lessons_Name') || `บทเรียนที่ ${index + 1}`;
+        const lsnId = pick(lsn, 'lesson_id', 'lessons_id', 'Lesson_ID', 'Lessons_ID') || `tmp_${index}`;
+        const lsnName = pick(lsn, 'title', 'lessons_name', 'Title', 'Lessons_Name') || `บทเรียนที่ ${index + 1}`;
         return {
-            index: index + 1,
+            index: Number(pick(lsn, 'position', 'lesson_index', 'Position')) || index + 1,
             id: lsnId,
             title: lsnName,
             content: pick(lsn, 'lesson_content', 'Lesson_Content', 'content', 'Content') || '',
@@ -215,9 +216,11 @@ function getLessonStatusInfo(lessonIndex) {
     const hasAttempt = total > 0;
     const passed = hasAttempt ? (score / Math.max(total, 1)) >= QUIZ_PASS_RATIO : isLessonPassed(lessonIndex);
 
-    if (passed) return { label: 'ผ่าน', color: '#1e8449', bg: '#eafaf1', scoreText: hasAttempt ? `${score}/${total}` : '-' };
-    if (hasAttempt) return { label: 'ไม่ผ่าน', color: '#c0392b', bg: '#fdecea', scoreText: `${score}/${total}` };
-    return { label: 'ยังไม่ทำ', color: '#7f8c8d', bg: '#f4f6f7', scoreText: '-' };
+    const progress = Number(row.progress_percent || 0);
+    const breakdown = `อ่าน ${Number(row.document_progress || 0)}% • วิดีโอ ${Number(row.video_progress || 0)}% • Quiz ${Number(row.quiz_progress || 0)}%`;
+    if (passed) return { label: 'ผ่าน', color: '#1e8449', bg: '#eafaf1', scoreText: hasAttempt ? `${score}/${total}` : '-', progress, breakdown };
+    if (hasAttempt) return { label: 'ไม่ผ่าน', color: '#c0392b', bg: '#fdecea', scoreText: `${score}/${total}`, progress, breakdown };
+    return { label: 'ยังไม่ทำ', color: '#7f8c8d', bg: '#f4f6f7', scoreText: '-', progress, breakdown };
 }
 
 // 💥 สร้างกล่องบทเรียนบนหน้าเว็บ
@@ -269,7 +272,9 @@ function renderLessonAccordion(containerId) {
                     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 10px;">
                         <span style="padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;color:${status.color};background:${status.bg};">สถานะ: ${status.label}</span>
                         <span style="font-size:12px;color:#2c3e50;">คะแนนบทนี้: ${status.scoreText}</span>
+                        <span style="font-size:12px;color:#2c3e50;">ความคืบหน้า: ${status.progress}%</span>
                     </div>
+                    <p style="margin:-4px 0 10px;font-size:12px;color:#6b7280;">${status.breakdown}</p>
                     ${!canAccessLesson(lesson.index) ? `<p style="margin:0 0 8px;color:#d35400;font-size:13px;">${getLessonLockMessage(lesson.index)}</p>` : ''}
                     ${lesson.content ? `<div style="margin:0 0 12px;padding:12px 14px;border:1px solid #f0d6c5;border-radius:10px;background:#fffaf7;white-space:pre-wrap;"><b>รายละเอียดบทเรียน</b><p style="margin:6px 0 0;">${escapeHtml(lesson.content)}</p></div>` : ''}
                     <div class="curriculum-item">
@@ -277,7 +282,7 @@ function renderLessonAccordion(containerId) {
                             <span class="curr-icon">📄</span>
                             <div class="curr-text"><b>เอกสารประกอบบทเรียน</b><p>${escapeHtml(lesson.documentName || 'เปิดอ่านเอกสาร')}</p></div>
                         </div>
-                        <button class="btn-orange" onclick="downloadCourseLesson(${lesson.index})" ${canAccessLesson(lesson.index) ? '' : 'disabled'}>เปิดอ่าน</button>
+                        <button class="btn-orange" onclick="openCourseDocument(${lesson.index})" ${canAccessLesson(lesson.index) ? '' : 'disabled'}>เปิดอ่าน</button>
                     </div>
                     <div class="curriculum-item">
                         <div class="curr-left">
@@ -1092,9 +1097,6 @@ async function showCourse(subjectId) {
         setEnrollmentButtonLoading();
         setCurriculumAccess(false);
     }
-    // รอผลการตรวจการลงทะเบียนก่อนตัดสินใจว่าจะเปิดหน้าเรียนทันทีหรือไม่
-    const enrollmentCheck = checkCourseEnrollment(subjectId);
-    
     try {
         const response = await fetchJsonWithTimeout(`api_courses.php?action=get_detail&id=${subjectId}`);
         const result = await response.json();
@@ -1126,7 +1128,8 @@ async function showCourse(subjectId) {
             window.history.replaceState({}, '', url);
 
             // ผู้ที่ลงทะเบียนแล้วไม่ต้องกดปุ่ม “เข้าเรียน” ซ้ำ
-            const isEnrolled = await enrollmentCheck;
+            // ลดการเปิด connection ไป Supabase พร้อมกัน ซึ่งทำให้บางครั้ง timeout
+            const isEnrolled = await checkCourseEnrollment(subjectId);
             if (requestedSubjectId === currentSubjectId && isEnrolled) {
                 goToCourseLearning();
             }
@@ -1277,20 +1280,27 @@ function getLessonVideoSource(lessonIndex) {
     return String(lesson.videoPath || lesson.videoUrl || '').trim();
 }
 
-function downloadCourseLesson(lessonIndex) {
+function openCourseDocument(lessonIndex) {
     if (!enrolledCourses[currentSubjectId]) { alert('กรุณาลงรายวิชาก่อนอ่านเอกสาร'); return; }
     if (!canAccessLesson(lessonIndex || 1)) { alert(`กรุณาผ่านแบบทดสอบบทที่ ${Number(lessonIndex || 1) - 1} ก่อน`); return; }
-    recordLearningEvent('lesson_open', lessonIndex || 1);
-    const documentSource = getLessonDocumentSource(lessonIndex || 1);
-    if (documentSource) {
-        window.open(documentSource, '_blank');
-        return;
-    }
     const params = new URLSearchParams();
     params.set('subject_id', currentSubjectId); params.set('lesson', String(lessonIndex || 1));
-    if (currentCourseName) params.set('course_name', currentCourseName);
-    window.open(`download_course_lesson.php?${params.toString()}`, '_blank');
+    const lesson = getLessonRecord(lessonIndex || 1);
+    const body = document.getElementById('modal-body');
+    const modal = document.getElementById('modal-overlay');
+    if (!body || !modal) return;
+    body.innerHTML = `<h3 style="margin:0 0 12px;color:#E67E22;">📄 ${escapeHtml(lesson?.documentName || lesson?.title || 'เอกสารประกอบบทเรียน')}</h3><iframe title="เอกสารประกอบบทเรียน" src="view_course_lesson.php?${params.toString()}" style="display:block;width:100%;height:min(72vh,780px);border:1px solid #e5e7eb;border-radius:8px;background:#fff;"></iframe>`;
+    modal.style.display = 'flex';
 }
+
+window.addEventListener('message', async (event) => {
+    if (event.origin !== window.location.origin || event.data?.type !== 'lesson-document-complete') return;
+    const lessonIndex = Number(event.data.lessonIndex || 1);
+    if (String(event.data.courseId) !== String(currentSubjectId)) return;
+    await recordLearningEvent('document_complete', lessonIndex);
+    await fetchCourseProgress(currentSubjectId);
+    renderAllLessonAccordions();
+});
 
 function getLessonVideoPath(lessonIndex) {
     const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 3, Number(lessonIndex) || 1));

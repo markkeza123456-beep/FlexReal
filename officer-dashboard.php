@@ -35,34 +35,33 @@ if ($uid !== '' && hasTable($conn, 'staff')) {
 }
 
 $hasStudent = hasTable($conn, 'students');
-$hasReg = hasTable($conn, 'registrations');
-$hasTransfer = hasTable($conn, 'credit_transfers');
-$hasCert = hasTable($conn, 'certificates');
-$hasLearn = hasTable($conn, 'learning_records');
-$hasTest = hasTable($conn, 'test');
-$hasStudentSubject = hasTable($conn, 'student_subject');
+$hasEnrollments = hasTable($conn, 'student_courses');
+$hasCurricula = hasTable($conn, 'student_curricula');
+$hasCourses = hasTable($conn, 'courses');
+$hasLearn = hasTable($conn, 'lesson_progress');
+$hasTest = hasTable($conn, 'quiz_attempts');
 
 $studentCount = $hasStudent ? q1($conn, "SELECT COUNT(*) FROM public.students") : '0';
-$regCount = $hasReg ? q1($conn, "SELECT COUNT(*) FROM public.registrations") : '0';
-$transferCount = $hasTransfer ? q1($conn, "SELECT COUNT(*) FROM public.credit_transfers") : '0';
-$certCount = $hasCert ? q1($conn, "SELECT COUNT(*) FROM public.certificates") : '0';
-$learnCount = $hasLearn ? q1($conn, "SELECT COUNT(*) FROM public.learning_records") : '0';
-$testCount = $hasTest ? q1($conn, "SELECT COUNT(*) FROM public.test") : '0';
+$regCount = $hasEnrollments ? q1($conn, "SELECT COUNT(*) FROM public.student_courses") : '0';
+$transferCount = $hasCurricula ? q1($conn, "SELECT COUNT(*) FROM public.student_curricula WHERE status = 'active'") : '0';
+$certCount = $hasCourses ? q1($conn, "SELECT COUNT(*) FROM public.courses WHERE status = 'active'") : '0';
+$learnCount = $hasLearn ? q1($conn, "SELECT COUNT(*) FROM public.lesson_progress") : '0';
+$testCount = $hasTest ? q1($conn, "SELECT COUNT(*) FROM public.quiz_attempts") : '0';
 
 $students = $hasStudent ? rows($conn, "SELECT user_id AS student_id, full_name AS student_name, COALESCE(student_level,'-') AS student_level FROM public.students ORDER BY full_name ASC LIMIT 300") : [];
-$regs = $hasStudentSubject ? rows($conn, "SELECT ss.student_id, COALESCE(st.student_name, ss.student_id) AS student_name, COALESCE(sb.subjects_name, ss.subjects_id) AS subject_name FROM public.student_subject ss LEFT JOIN public.student st ON st.student_id=ss.student_id LEFT JOIN public.subjects sb ON sb.subjects_id=ss.subjects_id ORDER BY ss.student_id DESC LIMIT 200") : [];
-$transfers = $hasTransfer ? rows($conn, "SELECT ct.transfer_id, COALESCE(st.student_name, ct.student_id) AS student_name, COALESCE(ct.status,'-') AS status, ct.transfer_date FROM public.credit_transfers ct LEFT JOIN public.student st ON st.student_id=ct.student_id ORDER BY ct.transfer_date DESC NULLS LAST, ct.transfer_id DESC LIMIT 200") : [];
-$certs = $hasCert ? rows($conn, "SELECT certificates_name, COALESCE(st.student_name, c.student_id) AS student_name, COALESCE(c.department,'-') AS department, c.receive_date FROM public.certificates c LEFT JOIN public.student st ON st.student_id=c.student_id ORDER BY c.receive_date DESC NULLS LAST LIMIT 200") : [];
-$learns = $hasLearn ? rows($conn, "SELECT lr.records_id, COALESCE(st.student_name, lr.student_id) AS student_name, lr.study_time FROM public.learning_records lr LEFT JOIN public.student st ON st.student_id=lr.student_id ORDER BY lr.study_time DESC NULLS LAST LIMIT 200") : [];
-$tests = $hasTest ? rows($conn, "SELECT test_id, student_id, COALESCE(course_name,'-') AS course_name, COALESCE(score,0) AS score, COALESCE(total_score,0) AS total_score, COALESCE(status,'-') AS status FROM public.test ORDER BY test_id DESC LIMIT 200") : [];
+$regs = $hasEnrollments ? rows($conn, "SELECT sc.student_id, s.full_name AS student_name, c.name AS subject_name, sc.status FROM public.student_courses sc JOIN public.students s ON s.user_id = sc.student_id JOIN public.courses c ON c.course_id = sc.course_id ORDER BY sc.enrolled_at DESC LIMIT 200") : [];
+$transfers = $hasCurricula ? rows($conn, "SELECT sc.student_id, s.full_name AS student_name, c.name AS curriculum_name, sc.status, sc.enrolled_at FROM public.student_curricula sc JOIN public.students s ON s.user_id = sc.student_id JOIN public.curricula c ON c.curriculum_id = sc.curriculum_id ORDER BY sc.enrolled_at DESC LIMIT 200") : [];
+$certs = $hasCourses ? rows($conn, "SELECT code, name, credits, status FROM public.courses ORDER BY created_at DESC LIMIT 200") : [];
+$learns = $hasLearn ? rows($conn, "SELECT lp.student_id, s.full_name AS student_name, l.title AS lesson_name, lp.opened_count, lp.video_open_count, lp.last_activity_at FROM public.lesson_progress lp JOIN public.students s ON s.user_id = lp.student_id JOIN public.lessons l ON l.lesson_id = lp.lesson_id ORDER BY lp.last_activity_at DESC LIMIT 200") : [];
+$tests = $hasTest ? rows($conn, "SELECT qa.attempt_id AS test_id, qa.student_id, c.name AS course_name, qa.score, qa.total_score, qa.status, qa.submitted_at FROM public.quiz_attempts qa JOIN public.lessons l ON l.lesson_id = qa.lesson_id JOIN public.courses c ON c.course_id = l.course_id ORDER BY qa.submitted_at DESC LIMIT 200") : [];
 
 $summaryCards = [
-  ['key' => 'students', 'label' => 'นักเรียนทั้งหมด', 'value' => $studentCount, 'sub' => 'จากตาราง student'],
-  ['key' => 'registrations', 'label' => 'การลงทะเบียน', 'value' => $regCount, 'sub' => 'จากตาราง registrations'],
-  ['key' => 'transfers', 'label' => 'คำขอเทียบโอน', 'value' => $transferCount, 'sub' => 'จากตาราง credit_transfers'],
-  ['key' => 'certificates', 'label' => 'เอกสารใบรับรอง', 'value' => $certCount, 'sub' => 'จากตาราง certificates'],
-  ['key' => 'learning', 'label' => 'บันทึกการเรียน', 'value' => $learnCount, 'sub' => 'จากตาราง learning_records'],
-  ['key' => 'tests', 'label' => 'ผลการทดสอบ', 'value' => $testCount, 'sub' => 'จากตาราง test'],
+  ['key' => 'students', 'label' => 'นักเรียนทั้งหมด', 'value' => $studentCount, 'sub' => 'จากตาราง students'],
+  ['key' => 'registrations', 'label' => 'การลงทะเบียนรายวิชา', 'value' => $regCount, 'sub' => 'จากตาราง student_courses'],
+  ['key' => 'transfers', 'label' => 'หลักสูตรที่กำลังเรียน', 'value' => $transferCount, 'sub' => 'จากตาราง student_curricula'],
+  ['key' => 'certificates', 'label' => 'รายวิชาที่เปิดสอน', 'value' => $certCount, 'sub' => 'จากตาราง courses'],
+  ['key' => 'learning', 'label' => 'บันทึกการเรียน', 'value' => $learnCount, 'sub' => 'จากตาราง lesson_progress'],
+  ['key' => 'tests', 'label' => 'ผลการทดสอบ', 'value' => $testCount, 'sub' => 'จากตาราง quiz_attempts'],
 ];
 ?>
 <!doctype html>
@@ -90,8 +89,8 @@ $summaryCards = [
       </div>
       <nav class="nav-list">
         <a class="nav-item active" href="#summary"><span>⋯</span>สรุปภาพรวม</a>
-        <a class="nav-item" href="#queues"><span>☰</span>คำขอเทียบโอน</a>
-        <a class="nav-item" href="#certs"><span>◫</span>ใบรับรองล่าสุด</a>
+        <a class="nav-item" href="#queues"><span>☰</span>หลักสูตรที่กำลังเรียน</a>
+        <a class="nav-item" href="#certs"><span>◫</span>รายวิชาล่าสุด</a>
         <a class="nav-item" href="#activities"><span>Ξ</span>กิจกรรมล่าสุด</a>
       </nav>
     </aside>
@@ -134,15 +133,15 @@ $summaryCards = [
           </div>
 
           <div class="detail-block" data-block="transfers" style="display:none">
-            <?php if ($transfers === []): ?><div class="empty-panel">ยังไม่มีข้อมูลเทียบโอน</div><?php else: ?><div class="list-block"><?php foreach ($transfers as $t): ?><article class="list-item"><div class="list-title">คำขอ #<?= h((string)$t['transfer_id']) ?> • <?= h((string)$t['student_name']) ?></div><div class="list-detail">วันที่ <?= h((string)($t['transfer_date'] ?? '-')) ?></div><div class="list-meta">สถานะ <?= h((string)$t['status']) ?></div></article><?php endforeach; ?></div><?php endif; ?>
+            <?php if ($transfers === []): ?><div class="empty-panel">ยังไม่มีข้อมูลหลักสูตรของนักเรียน</div><?php else: ?><div class="list-block"><?php foreach ($transfers as $t): ?><article class="list-item"><div class="list-title"><?= h((string)$t['student_name']) ?></div><div class="list-detail">หลักสูตร <?= h((string)$t['curriculum_name']) ?></div><div class="list-meta">สถานะ <?= h((string)$t['status']) ?> • ลงทะเบียน <?= h((string)($t['enrolled_at'] ?? '-')) ?></div></article><?php endforeach; ?></div><?php endif; ?>
           </div>
 
           <div class="detail-block" data-block="certificates" style="display:none">
-            <?php if ($certs === []): ?><div class="empty-panel">ยังไม่มีข้อมูลใบรับรอง</div><?php else: ?><div class="list-block"><?php foreach ($certs as $c): ?><article class="list-item"><div class="list-title"><?= h((string)$c['certificates_name']) ?></div><div class="list-detail">นักเรียน <?= h((string)$c['student_name']) ?></div><div class="list-meta">หน่วยงาน <?= h((string)$c['department']) ?> • วันที่ <?= h((string)($c['receive_date'] ?? '-')) ?></div></article><?php endforeach; ?></div><?php endif; ?>
+            <?php if ($certs === []): ?><div class="empty-panel">ยังไม่มีรายวิชา</div><?php else: ?><div class="list-block"><?php foreach ($certs as $c): ?><article class="list-item"><div class="list-title"><?= h((string)$c['name']) ?></div><div class="list-detail">รหัสวิชา <?= h((string)$c['code']) ?></div><div class="list-meta">หน่วยกิต <?= h((string)$c['credits']) ?> • สถานะ <?= h((string)$c['status']) ?></div></article><?php endforeach; ?></div><?php endif; ?>
           </div>
 
           <div class="detail-block" data-block="learning" style="display:none">
-            <?php if ($learns === []): ?><div class="empty-panel">ยังไม่มีบันทึกการเรียน</div><?php else: ?><div class="list-block"><?php foreach ($learns as $l): ?><article class="list-item"><div class="list-title"><?= h((string)$l['student_name']) ?></div><div class="list-detail">Record #<?= h((string)$l['records_id']) ?></div><div class="list-meta">เวลา <?= h((string)($l['study_time'] ?? '-')) ?></div></article><?php endforeach; ?></div><?php endif; ?>
+            <?php if ($learns === []): ?><div class="empty-panel">ยังไม่มีบันทึกการเรียน</div><?php else: ?><div class="list-block"><?php foreach ($learns as $l): ?><article class="list-item"><div class="list-title"><?= h((string)$l['student_name']) ?> • <?= h((string)$l['lesson_name']) ?></div><div class="list-detail">เปิดบทเรียน <?= h((string)$l['opened_count']) ?> ครั้ง • เปิดวิดีโอ <?= h((string)$l['video_open_count']) ?> ครั้ง</div><div class="list-meta">ล่าสุด <?= h((string)($l['last_activity_at'] ?? '-')) ?></div></article><?php endforeach; ?></div><?php endif; ?>
           </div>
 
           <div class="detail-block" data-block="tests" style="display:none">
@@ -153,15 +152,15 @@ $summaryCards = [
 
       <section class="content-grid content-grid-halves">
         <div class="panel" id="queues">
-          <div class="panel-header"><h2>คำขอเทียบโอนล่าสุด</h2></div>
+          <div class="panel-header"><h2>หลักสูตรที่ลงทะเบียนล่าสุด</h2></div>
           <?php if ($transfers === []): ?>
-            <div class="empty-panel">ยังไม่มีข้อมูลเทียบโอน</div>
+            <div class="empty-panel">ยังไม่มีข้อมูลหลักสูตรของนักเรียน</div>
           <?php else: ?>
             <div class="list-block">
               <?php foreach (array_slice($transfers, 0, 8) as $t): ?>
                 <article class="list-item">
-                  <div class="list-title">คำขอ #<?= h((string)$t['transfer_id']) ?> • <?= h((string)$t['student_name']) ?></div>
-                  <div class="list-detail">วันที่ <?= h((string)($t['transfer_date'] ?? '-')) ?></div>
+                  <div class="list-title"><?= h((string)$t['student_name']) ?> • <?= h((string)$t['curriculum_name']) ?></div>
+                  <div class="list-detail">ลงทะเบียน <?= h((string)($t['enrolled_at'] ?? '-')) ?></div>
                   <div class="list-meta">สถานะ <?= h((string)$t['status']) ?></div>
                 </article>
               <?php endforeach; ?>
@@ -170,16 +169,16 @@ $summaryCards = [
         </div>
 
         <div class="panel" id="certs">
-          <div class="panel-header"><h2>ใบรับรองล่าสุด</h2></div>
+          <div class="panel-header"><h2>รายวิชาล่าสุด</h2></div>
           <?php if ($certs === []): ?>
-            <div class="empty-panel">ยังไม่มีข้อมูลใบรับรอง</div>
+            <div class="empty-panel">ยังไม่มีรายวิชา</div>
           <?php else: ?>
             <div class="list-block">
               <?php foreach (array_slice($certs, 0, 8) as $c): ?>
                 <article class="list-item">
-                  <div class="list-title"><?= h((string)$c['certificates_name']) ?></div>
-                  <div class="list-detail">นักเรียน <?= h((string)$c['student_name']) ?></div>
-                  <div class="list-meta">หน่วยงาน <?= h((string)$c['department']) ?> • วันที่ <?= h((string)($c['receive_date'] ?? '-')) ?></div>
+                  <div class="list-title"><?= h((string)$c['name']) ?></div>
+                  <div class="list-detail">รหัสวิชา <?= h((string)$c['code']) ?></div>
+                  <div class="list-meta">หน่วยกิต <?= h((string)$c['credits']) ?> • <?= h((string)$c['status']) ?></div>
                 </article>
               <?php endforeach; ?>
             </div>

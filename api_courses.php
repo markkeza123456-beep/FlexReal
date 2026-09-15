@@ -1,7 +1,13 @@
 <?php
 session_start(); require_once __DIR__ . '/db_connect.php'; header('Content-Type: application/json; charset=utf-8'); $action = $_GET['action'] ?? ''; session_write_close();
 function loadLessons(PDO $conn, string $courseId): array {
-    $stmt = $conn->prepare("SELECT l.lesson_id, l.course_id, l.title, l.content, l.position, l.study_hours, l.pass_percentage, COALESCE(r.url, '') AS video_url, COALESCE(r.url, '') AS video_path FROM public.lessons l LEFT JOIN LATERAL (SELECT url FROM public.lesson_resources WHERE lesson_id = l.lesson_id AND resource_type = 'video' ORDER BY position LIMIT 1) r ON true WHERE l.course_id = :course_id ORDER BY l.position");
+    $stmt = $conn->prepare("SELECT l.lesson_id, l.course_id, l.title, l.content, l.position, l.study_hours, l.pass_percentage,
+        COALESCE(video.url, '') AS video_url, COALESCE(video.url, '') AS video_path, COALESCE(video.title, '') AS video_name,
+        COALESCE(document.url, '') AS document_path, COALESCE(document.title, '') AS document_name
+        FROM public.lessons l
+        LEFT JOIN LATERAL (SELECT url, title FROM public.lesson_resources WHERE lesson_id = l.lesson_id AND resource_type = 'video' ORDER BY position LIMIT 1) video ON true
+        LEFT JOIN LATERAL (SELECT url, title FROM public.lesson_resources WHERE lesson_id = l.lesson_id AND resource_type = 'document' ORDER BY position LIMIT 1) document ON true
+        WHERE l.course_id = :course_id ORDER BY l.position");
     $stmt->execute([':course_id' => $courseId]); return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 try {

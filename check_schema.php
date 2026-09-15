@@ -4,7 +4,7 @@
 header('Content-Type: text/html; charset=utf-8');
 require_once 'db_connect.php';
 
-$tables = ['student', 'parents', 'teacher'];
+$tables = ['users', 'students', 'teachers', 'parents', 'staff', 'courses', 'curricula', 'lessons', 'questions', 'student_courses', 'quiz_attempts'];
 
 echo '<pre style="font-family:monospace;font-size:14px;padding:20px;">';
 echo "=== SUPABASE SCHEMA CHECKER ===\n\n";

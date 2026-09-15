@@ -3,11 +3,11 @@ session_start();
 require_once 'db_connect.php'; 
 
 try {
-    // 1. ดึงข้อมูลระดับชั้นแบบแยกกลุ่มอัตโนมัติ (คงเดิมตามไฟล์ source)[cite: 11]
-    $sql = "SELECT level, curriculums_id, curriculums_name 
-            FROM public.curriculums 
-            WHERE status = 'active' AND level = 'ม.ปลาย' 
-            ORDER BY level DESC, curriculums_id ASC";
+    // ระดับชั้นมาจากหลักสูตรที่ใช้งานอยู่ใน schema ปัจจุบัน
+    $sql = "SELECT DISTINCT level
+            FROM public.curricula
+            WHERE status = 'active' AND level IS NOT NULL AND BTRIM(level) <> ''
+            ORDER BY level ASC";
     $stmt = $conn->prepare($sql);
     $stmt->execute();
     $levels = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -17,13 +17,18 @@ try {
         $groupedLevels[$row['level']][] = $row;
     }
 
-    // 2. 💥 ดึงข้อมูลจังหวัดจากฐานข้อมูลตามที่คุณต้องการ
-    $stmtProvince = $conn->prepare("SELECT name FROM public.provinces ORDER BY name ASC");
-    $stmtProvince->execute();
-    $provincesFromDb = $stmtProvince->fetchAll(PDO::FETCH_ASSOC);
+    // จังหวัดเป็นข้อมูลที่ผู้สมัครกรอก และเก็บใน public.user_addresses
+    // schema ปัจจุบันไม่มีตาราง provinces แยกต่างหาก
+    $provincesFromDb = [
+        ['name' => 'กรุงเทพมหานคร'], ['name' => 'กระบี่'], ['name' => 'ขอนแก่น'],
+        ['name' => 'เชียงใหม่'], ['name' => 'ชลบุรี'], ['name' => 'นครราชสีมา'],
+        ['name' => 'นครศรีธรรมราช'], ['name' => 'นนทบุรี'], ['name' => 'ปทุมธานี'],
+        ['name' => 'พระนครศรีอยุธยา'], ['name' => 'ภูเก็ต'], ['name' => 'สงขลา'],
+        ['name' => 'สุราษฎร์ธานี'], ['name' => 'อุดรธานี'], ['name' => 'อื่น ๆ'],
+    ];
 
 } catch (PDOException $e) {
-    die("Error: " . $e->getMessage() . " <br>กรุณาตรวจสอบว่ามีตาราง 'provinces' และคอลัมน์ที่จำเป็นในตาราง 'curriculums' แล้วหรือยังครับ");
+    die('ไม่สามารถโหลดข้อมูลหลักสูตรได้ กรุณาลองใหม่ภายหลัง');
 }
 ?>
 <!DOCTYPE html>
@@ -123,7 +128,26 @@ try {
           <span class="error-msg" id="level-error"></span>
         </div>
 
+        <div class="role-field parent-field" id="parent-link-section" style="display:none">
+          <div class="section-label">เชื่อมโยงบัญชีนักเรียน</div>
+          <div class="field" id="field-link-student-id">
+            <label class="label" for="link_student_id">เลขบัตรประชาชนนักเรียน<span class="required">*</span></label>
+            <div class="input-wrap">
+              <input type="text" id="link_student_id" name="link_student_id" placeholder="X-XXXX-XXXXX-XX-X" maxlength="17" autocomplete="off" required />
+              <span class="focus-bar"></span>
+            </div>
+            <span class="error-msg" id="link-student-id-error"></span>
+          </div>
+        </div>
+
         <div class="section-label">ข้อมูลติดต่อ</div>
+        <div class="field">
+          <label class="label" for="email">อีเมล</label>
+          <div class="input-wrap">
+            <input type="email" id="email" name="email" placeholder="example@email.com" autocomplete="email" />
+            <span class="focus-bar"></span>
+          </div>
+        </div>
         <div class="field">
           <label class="label">เบอร์โทรศัพท์<span class="required">*</span></label>
           <div class="input-wrap">

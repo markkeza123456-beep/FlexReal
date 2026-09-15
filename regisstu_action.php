@@ -3,7 +3,10 @@ session_start(); require_once __DIR__ . '/db_connect.php'; require_once __DIR__ 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: regisstu.php'); exit; }
 try {
     $role = strtolower(trim((string) ($_POST['role'] ?? ''))); $userId = preg_replace('/\D+/', '', (string) ($_POST['userid'] ?? '')); $phone = preg_replace('/\D+/', '', (string) ($_POST['phone'] ?? ''));
-    $password = (string) ($_POST['password'] ?? ''); $fullName = trim((string) ($_POST['fullname'] ?? trim((string) ($_POST['firstname'] ?? '') . ' ' . (string) ($_POST['lastname'] ?? '')))); $email = trim((string) ($_POST['email'] ?? '')) ?: null;
+    $password = (string) ($_POST['password'] ?? '');
+    $givenName = trim((string) ($_POST['fullname'] ?? $_POST['firstname'] ?? ''));
+    $fullName = trim($givenName . ' ' . trim((string) ($_POST['lastname'] ?? '')));
+    $email = trim((string) ($_POST['email'] ?? '')) ?: null;
     if (!in_array($role, ['student', 'teacher', 'parent'], true) || $userId === '' || $fullName === '' || !preg_match('/^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}$/', $password) || $password !== (string) ($_POST['confirm'] ?? '')) throw new RuntimeException('ข้อมูลสมัครสมาชิกไม่ถูกต้อง');
     $conn->beginTransaction();
     $conn->prepare('INSERT INTO public.users (user_id, password_hash, role) VALUES (:id, :password_hash, :role)')->execute([':id' => $userId, ':password_hash' => password_hash($password, PASSWORD_DEFAULT), ':role' => $role]);

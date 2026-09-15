@@ -20,7 +20,8 @@
   };
 
   const roleSectionMap = {
-    student: ['pin-section'],
+    // normalized schema has no student PIN column
+    student: [],
     teacher: [],
     parent: ['parent-link-section'],
   };
@@ -49,12 +50,19 @@
     document.querySelectorAll('.role-field').forEach((element) => {
       const visible = roleFieldMap[role]?.some((cls) => element.classList.contains(cls));
       element.style.display = visible ? '' : 'none';
+      element.querySelectorAll('input, select, textarea').forEach((input) => {
+        input.disabled = !visible;
+      });
     });
 
     allSections.forEach((id) => {
       const element = document.getElementById(id);
       if (element) {
-        element.style.display = roleSectionMap[role]?.includes(id) ? '' : 'none';
+        const visible = roleSectionMap[role]?.includes(id);
+        element.style.display = visible ? '' : 'none';
+        element.querySelectorAll('input, select, textarea').forEach((input) => {
+          input.disabled = !visible;
+        });
       }
     });
   }
