@@ -29,6 +29,7 @@ const REQUEST_TIMEOUT_MS = 25000;
 const MAX_LESSONS_PER_SUBJECT = 3;
 const LEARNING_PROGRESS_SAVE_INTERVAL_MS = 30000;
 const learningProgressRequests = new Map();
+let activeVideoProgressSaver = null;
 
 // ตั้งค่ารูปวิชาเองได้ที่นี่ (ใส่ได้ทั้งรหัสวิชา เช่น SUB004 หรือชื่อวิชา เช่น ประวัติศาสตร์)
 // ตัวอย่าง:
@@ -1368,6 +1369,10 @@ function formatVideoTimestamp(seconds) {
 function renderVideoModalBody(lessonIndex) {
     const body = document.getElementById('modal-body');
     if (!body) return;
+    // A lesson switch replaces the current <video> element without reliably
+    // firing pause, so persist its position before removing it.
+    if (activeVideoProgressSaver) activeVideoProgressSaver();
+    activeVideoProgressSaver = null;
     const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 3, Number(lessonIndex) || 1));
     const selectedLesson = getLessonRecord(safeIndex);
     const selectedTitle = selectedLesson ? selectedLesson.title : `Lesson ${safeIndex}`;
@@ -1400,6 +1405,7 @@ function renderVideoModalBody(lessonIndex) {
         const fallbackStatus = body.querySelector('#video-fallback-status');
         const progressStatus = body.querySelector('#video-progress-status');
         let candidateIndex = 0;
+        let lastExitSaveAt = 0;
         const progressRow = getLessonProgressMap().get(safeIndex) || {};
         const savedPosition = Math.max(0, Number(progressRow.video_position_seconds || 0));
         let lastSavedSecond = -1;
@@ -1411,13 +1417,41 @@ function renderVideoModalBody(lessonIndex) {
             progressStatus.textContent = `ดูแล้ว ${formatVideoTimestamp(watchedSeconds)} / ${formatVideoTimestamp(videoElement.duration)} · ${watchedPercent.toFixed(1)}% · คิดเป็น ${lessonPercent.toFixed(1)}% ของบทเรียน`;
         };
         const saveVideoProgress = (force = false) => {
-            if (!Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return;
+            if (!Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return Promise.resolve(false);
             const seconds = Math.max(0, videoElement.currentTime || 0);
-            if (!force && seconds - lastSavedSecond < 5) return;
+            if (!force && seconds - lastSavedSecond < 5) return Promise.resolve(false);
             lastSavedSecond = seconds;
             const percent = Math.min(99.9, (seconds / videoElement.duration) * 100);
-            recordLearningEvent('video_progress', safeIndex, percent, seconds);
+            return recordLearningEvent('video_progress', safeIndex, percent, seconds, force);
         };
+        const saveVideoProgressOnExit = () => {
+            if (!currentSubjectId || !enrolledCourses[currentSubjectId] ||
+                !Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return;
+            const now = Date.now();
+            if (now - lastExitSaveAt < 1000) return;
+            lastExitSaveAt = now;
+
+            const seconds = Math.max(0, videoElement.currentTime || 0);
+            const percent = Math.min(99.9, (seconds / videoElement.duration) * 100);
+            const lesson = currentLessonsData.find((item) => item.index === safeIndex);
+            const formData = new FormData();
+            formData.append('action', 'record');
+            formData.append('subject_id', currentSubjectId);
+            formData.append('lesson_index', String(safeIndex));
+            formData.append('lesson_title', lesson ? lesson.title : currentCourseName + ' บทที่ ' + safeIndex);
+            formData.append('activity_type', 'video_progress');
+            formData.append('progress_percent', String(percent));
+            formData.append('resume_position', String(seconds));
+
+            // sendBeacon is designed for page/modal exits, when regular fetch
+            // calls may be cancelled before reaching PHP.
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon('student_learning_api.php', formData);
+            } else {
+                recordLearningEvent('video_progress', safeIndex, percent, seconds, true);
+            }
+        };
+        activeVideoProgressSaver = saveVideoProgressOnExit;
         videoElement.addEventListener('loadedmetadata', () => {
             if (savedPosition > 0 && savedPosition < videoElement.duration - 1) {
                 videoElement.currentTime = savedPosition;
@@ -1428,7 +1462,11 @@ function renderVideoModalBody(lessonIndex) {
             updateVideoProgressStatus();
             saveVideoProgress();
         });
-        videoElement.addEventListener('pause', () => saveVideoProgress(true));
+        videoElement.addEventListener('pause', () => {
+            saveVideoProgress(true).then((saved) => {
+                if (saved) fetchCourseProgress(currentSubjectId);
+            });
+        });
         videoElement.addEventListener('error', () => {
             if (!sourceElement) return;
             candidateIndex += 1;
@@ -1449,8 +1487,9 @@ function renderVideoModalBody(lessonIndex) {
         });
         videoElement.addEventListener('ended', () => {
             updateVideoProgressStatus();
-            recordLearningEvent('video_progress', safeIndex, 100, 0);
-            fetchCourseProgress(currentSubjectId);
+            recordLearningEvent('video_progress', safeIndex, 100, 0, true).then(() => {
+                fetchCourseProgress(currentSubjectId);
+            });
         }, { once: true });
     }
 }
@@ -1492,10 +1531,21 @@ function startQuiz(lessonIndex) {
 }
 
 function closeModal() {
+    if (activeVideoProgressSaver) activeVideoProgressSaver();
+    activeVideoProgressSaver = null;
     const modalBody = document.getElementById('modal-body');
     if(modalBody) modalBody.innerHTML = '';
     document.getElementById('modal-overlay').style.display = 'none';
 }
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && activeVideoProgressSaver) {
+        activeVideoProgressSaver();
+    }
+});
+window.addEventListener('pagehide', () => {
+    if (activeVideoProgressSaver) activeVideoProgressSaver();
+});
 
 function showGuide(type) {
     const title = document.getElementById('guide-title');

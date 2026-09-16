@@ -284,8 +284,43 @@ try {
             $subjectId = (string) $courseStmt->fetchColumn();
             $documentUpload = uploadLessonFile('lesson_document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc', false, ['pdf']);
             if ($documentUpload['path'] !== '') {
-                $resource = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position) VALUES (:lesson_id, 'document', :title, :url, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lesson_resources WHERE lesson_id = :lesson_id))");
-                $resource->execute([':lesson_id' => $lessonId, ':title' => $documentUpload['name'], ':url' => $documentUpload['path']]);
+                // Replacing a document must update the active record.  The old
+                // insert-only behavior left several documents per lesson and
+                // student pages continued to show the first (oldest) file.
+                $currentDocument = $conn->prepare(
+                    "SELECT resource_id
+                     FROM public.lesson_resources
+                     WHERE lesson_id = :lesson_id AND resource_type = 'document'
+                     ORDER BY position DESC, resource_id DESC
+                     LIMIT 1"
+                );
+                $currentDocument->execute([':lesson_id' => $lessonId]);
+                $resourceId = $currentDocument->fetchColumn();
+
+                if ($resourceId !== false) {
+                    $resource = $conn->prepare(
+                        "UPDATE public.lesson_resources
+                         SET title = :title, url = :url
+                         WHERE resource_id = :resource_id"
+                    );
+                    $resource->execute([
+                        ':resource_id' => $resourceId,
+                        ':title' => $documentUpload['name'],
+                        ':url' => $documentUpload['path'],
+                    ]);
+                } else {
+                    $resource = $conn->prepare(
+                        "INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position)
+                         VALUES (:lesson_id, 'document', :title, :url,
+                           (SELECT COALESCE(MAX(position), 0) + 1
+                            FROM public.lesson_resources WHERE lesson_id = :lesson_id))"
+                    );
+                    $resource->execute([
+                        ':lesson_id' => $lessonId,
+                        ':title' => $documentUpload['name'],
+                        ':url' => $documentUpload['path'],
+                    ]);
+                }
             }
         }
 
@@ -465,7 +500,7 @@ try {
         }
         $lessonStmt = $conn->prepare('SELECT lesson_id AS id, title FROM public.lessons WHERE course_id = :subject_id ORDER BY position LIMIT 3');
         $lessonStmt->execute([':subject_id' => $subjectId]);
-        $videoStmt = $conn->prepare("SELECT r.resource_id AS id, r.title, r.url, '' AS description, r.duration_seconds, r.position AS display_order, r.lesson_id AS lessons_id, l.title AS lesson_title FROM public.lesson_resources r INNER JOIN public.lessons l ON l.lesson_id = r.lesson_id WHERE l.course_id = :subject_id AND r.resource_type = 'video' ORDER BY r.position, r.resource_id");
+        $videoStmt = $conn->prepare("SELECT r.resource_id AS id, r.title, r.url, '' AS description, r.duration_seconds, r.position AS display_order, r.lesson_id AS lessons_id, l.title AS lesson_title FROM public.lesson_resources r INNER JOIN public.lessons l ON l.lesson_id = r.lesson_id WHERE l.course_id = :subject_id AND r.resource_type = 'video' ORDER BY r.lesson_id, r.position DESC, r.resource_id DESC");
         $videoStmt->execute([':subject_id' => $subjectId]);
         echo json_encode(['success' => true, 'lessons' => $lessonStmt->fetchAll(PDO::FETCH_ASSOC), 'videos' => $videoStmt->fetchAll(PDO::FETCH_ASSOC)]);
         exit;
@@ -475,12 +510,34 @@ try {
         $subjectId = trim((string) ($_POST['subject_id'] ?? ''));
         $videoId = trim((string) ($_POST['video_id'] ?? ''));
         $title = trim((string) ($_POST['title'] ?? ''));
-        if ($subjectId === '' || $title === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) {
+        if ($subjectId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) {
             throw new Exception('ข้อมูลไม่ครบถ้วนหรือคุณไม่มีสิทธิ์จัดการรายวิชานี้');
         }
         $lessonId = trim((string) ($_POST['lesson_id'] ?? ''));
         if ($lessonId === '' || !teacherOwnsLesson($conn, $teacherId, $lessonId)) throw new Exception('บทเรียนที่เลือกไม่ถูกต้อง');
         $hasNewFile = isset($_FILES['video_file']) && (int) ($_FILES['video_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+
+        // There is one active video per lesson. If the UI only supplies a new
+        // file, use that lesson's latest video record and keep its title.
+        $activeVideo = $conn->prepare(
+            "SELECT resource_id, title
+             FROM public.lesson_resources
+             WHERE lesson_id = :lesson_id AND resource_type = 'video'
+             ORDER BY position DESC, resource_id DESC
+             LIMIT 1"
+        );
+        $activeVideo->execute([':lesson_id' => $lessonId]);
+        $currentVideo = $activeVideo->fetch(PDO::FETCH_ASSOC) ?: null;
+        if ($videoId === '' && $currentVideo) {
+            $videoId = (string) $currentVideo['resource_id'];
+        }
+        if ($title === '' && $currentVideo) {
+            $title = (string) $currentVideo['title'];
+        }
+        if ($title === '' && $hasNewFile) {
+            $title = pathinfo((string) ($_FILES['video_file']['name'] ?? ''), PATHINFO_FILENAME);
+        }
+        if ($title === '') throw new Exception('กรุณาเลือกไฟล์วิดีโอหรือระบุชื่อวิดีโอ');
         if ($videoId === '' && !$hasNewFile) throw new Exception('กรุณาเลือกไฟล์วิดีโอ');
         if ($hasNewFile) {
             $upload = uploadLessonFile('video_file', buildVideoMediaSegments($teacherId, $subjectId), 'video', true);

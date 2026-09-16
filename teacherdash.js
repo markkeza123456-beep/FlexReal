@@ -384,21 +384,9 @@ document.addEventListener('DOMContentLoaded', () => {
         inlineVideoForm.reset();
         document.getElementById('inlineVideoId').value = '';
         const input = document.getElementById('inlineVideoFile');
-        input.required = true;
-        document.getElementById('inlineVideoFileRequired').textContent = '*';
-        document.getElementById('inlineVideoFileHint').textContent = 'เลือกไฟล์วิดีโอเพื่อบันทึก';
-    }
-
-    function editInlineVideo(video) {
-        if (!inlineVideoForm || !video) return;
-        document.getElementById('inlineVideoId').value = String(video.id || '');
-        document.getElementById('inlineVideoTitle').value = video.title || '';
-        const input = document.getElementById('inlineVideoFile');
-        input.value = '';
         input.required = false;
         document.getElementById('inlineVideoFileRequired').textContent = '';
-        document.getElementById('inlineVideoFileHint').textContent = 'เว้นว่างเพื่อใช้ไฟล์วิดีโอเดิม หรือเลือกไฟล์ใหม่เพื่อเปลี่ยน';
-        document.getElementById('inlineVideoTitle').focus();
+        document.getElementById('inlineVideoFileHint').textContent = 'เลือกไฟล์ใหม่เพื่อแทนที่วิดีโอเดิม; เว้นชื่อวิดีโอได้';
     }
 
     function renderInlineVideos(data) {
@@ -430,12 +418,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const documentFile = documentInput.files[0];
         const videoId = document.getElementById('inlineVideoId').value;
         const editingVideo = Boolean(videoId);
-        const hasVideoInput = Boolean(videoTitle.value.trim() || videoFile.files[0]);
         const completeNewVideo = Boolean(videoTitle.value.trim() && videoFile.files[0]);
         if (!lessonName.value.trim()) { lessonName.focus(); lessonName.reportValidity(); return; }
         if (!managedLessonId && !completeNewVideo) { videoTitle.focus(); alert('กรุณากรอกชื่อและเลือกไฟล์วิดีโอ'); return; }
         if (editingVideo && !videoTitle.value.trim()) { videoTitle.focus(); videoTitle.reportValidity(); return; }
-        const incompleteNewVideo = managedLessonId && !editingVideo && hasVideoInput && !completeNewVideo;
         const subjectId = teacherSubjectSelect?.value || '';
         saveButton.disabled = true; saveButton.textContent = 'กำลังบันทึก...';
         try {
@@ -453,15 +439,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (documentFile) lessonForm.append('lesson_document', documentFile);
             const lessonResult = await teacherRequest(lessonForm);
             const lessonId = managedLessonId || lessonResult.lesson_id;
-            if (incompleteNewVideo) {
-                alert('บันทึกบทเรียนและ PDF แล้ว แต่ยังไม่ได้บันทึกวิดีโอ เพราะต้องกรอกชื่อและเลือกไฟล์ให้ครบ');
-                window.location.reload();
-                return;
-            }
-            if (editingVideo || completeNewVideo) {
+            if (editingVideo || (!managedLessonId && completeNewVideo)) {
                 const videoForm = new FormData();
                 videoForm.append('action', 'save_video'); videoForm.append('subject_id', subjectId);
-                videoForm.append('video_id', videoId); videoForm.append('title', videoTitle.value.trim());
+                videoForm.append('video_id', editingVideo ? videoId : ''); videoForm.append('title', videoTitle.value.trim());
                 videoForm.append('lesson_id', lessonId);
                 if (videoFile.files[0]) videoForm.append('video_file', videoFile.files[0]);
                 await teacherRequest(videoForm);

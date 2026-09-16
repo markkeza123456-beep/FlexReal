@@ -76,7 +76,7 @@ try {
     $enrollment->execute([':student_id' => (string) $_SESSION['user_id'], ':course_id' => $courseId]);
     if (!$enrollment->fetchColumn()) lessonViewerError('กรุณาลงรายวิชาก่อนอ่านเอกสาร', 403);
 
-    $resource = $conn->prepare("SELECT l.title AS lesson_title, r.title, r.url FROM public.lessons l JOIN public.lesson_resources r ON r.lesson_id = l.lesson_id AND r.resource_type = 'document' WHERE l.course_id = :course_id AND l.position = :position ORDER BY r.position LIMIT 1");
+    $resource = $conn->prepare("SELECT l.title AS lesson_title, r.title, r.url FROM public.lessons l JOIN public.lesson_resources r ON r.lesson_id = l.lesson_id AND r.resource_type = 'document' WHERE l.course_id = :course_id AND l.position = :position ORDER BY r.position DESC, r.resource_id DESC LIMIT 1");
     $resource->execute([':course_id' => $courseId, ':position' => $position]);
     $document = $resource->fetch(PDO::FETCH_ASSOC);
     if (!$document) lessonViewerError('บทเรียนนี้ยังไม่มีเอกสาร');
