@@ -525,17 +525,29 @@ $stats = [
                                 <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;"><div><p style="font-size:11px;color:var(--orange);font-weight:700;letter-spacing:.08em;margin:0 0 4px;">LESSON CONTENT</p><h3 style="font-size:17px;margin:0;" id="inlineLessonHeading">เพิ่มบทเรียนย่อย</h3></div><span id="inlineLessonCount" style="font-size:12px;color:var(--text-muted);"><?= count($subLessonsBySubject[$defaultSubjectId] ?? []) ?>/<?= MAX_LESSONS_PER_SUBJECT ?> บท</span></div>
                                 <form id="inlineLessonForm" enctype="multipart/form-data">
                                     <div class="form-group"><label>ชื่อบทเรียน *</label><input type="text" class="form-input" id="inlineLessonName" required placeholder="เช่น 1.1 ตรรกศาสตร์เบื้องต้น"></div>
+<<<<<<< HEAD
                                     <div class="form-group"><label>เอกสารประกอบ</label><input type="file" class="form-input" id="inlineLessonDocument" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*"><div id="inlineExistingDocuments" style="display:none;margin:8px 0 0;font-size:13px;color:var(--text-muted);"></div><small id="inlineLessonDocumentHint" style="display:block;margin-top:5px;color:var(--text-muted);">เลือกไฟล์ใหม่เมื่อต้องการเพิ่มเอกสาร</small></div>
+=======
+                                    <div class="form-group"><label>เอกสารประกอบ</label><div id="inlineExistingDocuments" style="display:none;margin:0 0 8px;font-size:13px;color:var(--text-muted);"></div><input type="file" class="form-input" id="inlineLessonDocument" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*"><small id="inlineLessonDocumentHint" style="color:var(--text-muted);">เลือกไฟล์ใหม่เมื่อต้องการเพิ่มเอกสาร</small></div>
+>>>>>>> d3978c7f21aae792e1eaed54028dde8462bbad9b
                                 </form>
                             </section>
 
                             <section style="padding:20px;border:1px solid var(--border);border-radius:12px;background:var(--bg3);">
                                 <div style="margin-bottom:16px;"><p style="font-size:11px;color:var(--orange);font-weight:700;letter-spacing:.08em;margin:0 0 4px;">VIDEO CONTENT</p><h3 style="font-size:17px;margin:0;">เพิ่มและจัดการวิดีโอ</h3></div>
+<<<<<<< HEAD
+=======
+                                <div id="inlineVideoList" style="margin-bottom:16px;color:var(--text-muted);font-size:13px;">กำลังโหลดวิดีโอ...</div>
+>>>>>>> d3978c7f21aae792e1eaed54028dde8462bbad9b
                                 <form id="inlineVideoForm" enctype="multipart/form-data">
                                     <input type="hidden" id="inlineVideoId">
                                     <div class="form-group"><label>ชื่อวิดีโอ *</label><input type="text" class="form-input" id="inlineVideoTitle" required placeholder="เช่น วิดีโอสรุปบทที่ 1"></div>
                                     <p style="font-size:13px;color:var(--text-muted);margin:-2px 0 14px;">วิดีโอนี้จะถูกผูกกับบทเรียนที่กรอกด้านบนโดยอัตโนมัติ</p>
+<<<<<<< HEAD
                                     <div class="form-group"><label>ไฟล์วิดีโอ <span id="inlineVideoFileRequired">*</span></label><input type="file" class="form-input" id="inlineVideoFile" accept="video/*" required><div id="inlineVideoList" style="margin:8px 0 0;color:var(--text-muted);font-size:13px;">กำลังโหลดวิดีโอ...</div><small id="inlineVideoFileHint" style="display:block;margin-top:5px;color:var(--text-muted);">เลือกไฟล์วิดีโอเพื่อบันทึก</small></div>
+=======
+                                    <div class="form-group"><label>ไฟล์วิดีโอ <span id="inlineVideoFileRequired">*</span></label><input type="file" class="form-input" id="inlineVideoFile" accept="video/*" required><small id="inlineVideoFileHint" style="color:var(--text-muted);">เลือกไฟล์วิดีโอเพื่อบันทึก</small></div>
+>>>>>>> d3978c7f21aae792e1eaed54028dde8462bbad9b
                                     <button type="button" class="btn-cancel" id="inlineVideoClearBtn">ล้างฟอร์ม</button>
                                 </form>
                             </section>

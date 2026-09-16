@@ -13,6 +13,56 @@ function lessonViewerError(string $message, int $status = 400): never
     exit;
 }
 
+/**
+ * Converts Office files to a cached PDF. PDF is the browser-friendly format
+ * that preserves the original pages, images, tables, and typography.
+ */
+function officePreviewPdf(string $sourceFile): ?string
+{
+    $configured = trim((string) getenv('SOFFICE_BIN'));
+    $candidates = array_filter([
+        $configured,
+        '/Applications/LibreOffice.app/Contents/MacOS/soffice',
+        '/opt/homebrew/bin/soffice',
+        '/usr/local/bin/soffice',
+        '/usr/bin/soffice',
+        '/usr/bin/libreoffice',
+    ]);
+    $binary = null;
+    foreach ($candidates as $candidate) {
+        if (is_file($candidate) && is_executable($candidate)) { $binary = $candidate; break; }
+    }
+    if ($binary === null) return null;
+
+    $cacheDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'flexreal-document-previews';
+    if (!is_dir($cacheDir) && !mkdir($cacheDir, 0700, true) && !is_dir($cacheDir)) return null;
+    $cacheKey = hash('sha256', $sourceFile . '|' . (string) filemtime($sourceFile) . '|' . (string) filesize($sourceFile));
+    $target = $cacheDir . DIRECTORY_SEPARATOR . $cacheKey . '.pdf';
+    if (is_file($target) && filesize($target) > 0) return $target;
+
+    $lock = fopen($target . '.lock', 'c');
+    if ($lock === false) return null;
+    try {
+        if (!flock($lock, LOCK_EX)) return null;
+        if (is_file($target) && filesize($target) > 0) return $target;
+        $outputDir = $cacheDir . DIRECTORY_SEPARATOR . $cacheKey . '-' . bin2hex(random_bytes(6));
+        if (!mkdir($outputDir, 0700, true)) return null;
+        try {
+            exec(escapeshellarg($binary) . ' --headless --convert-to pdf --outdir ' . escapeshellarg($outputDir) . ' ' . escapeshellarg($sourceFile) . ' 2>&1', $output, $exitCode);
+            $generated = glob($outputDir . DIRECTORY_SEPARATOR . '*.pdf') ?: [];
+            if ($exitCode !== 0 || $generated === [] || !is_file($generated[0])) return null;
+            if (!rename($generated[0], $target)) return null;
+            return $target;
+        } finally {
+            foreach (glob($outputDir . DIRECTORY_SEPARATOR . '*') ?: [] as $temporaryFile) @unlink($temporaryFile);
+            @rmdir($outputDir);
+        }
+    } finally {
+        flock($lock, LOCK_UN);
+        fclose($lock);
+    }
+}
+
 if (($_SESSION['role'] ?? '') !== 'student' || empty($_SESSION['user_id'])) {
     lessonViewerError('กรุณาเข้าสู่ระบบนักเรียนก่อนอ่านเอกสาร', 401);
 }
@@ -43,7 +93,26 @@ if (!$root || !$file || !str_starts_with($file, $root . DIRECTORY_SEPARATOR) || 
 
 $title = (string) ($document['title'] ?: $document['lesson_title']);
 $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+<<<<<<< HEAD
 $canRenderDocx = $extension === 'docx' && class_exists('ZipArchive');
+=======
+$officeExtensions = ['doc', 'docx', 'odt', 'rtf', 'ppt', 'pptx', 'xls', 'xlsx'];
+$imageExtensions = ['avif', 'gif', 'jpeg', 'jpg', 'png', 'webp'];
+
+// The embedded frame requests this protected endpoint for the generated PDF.
+// The original document never becomes publicly exposed in a preview cache.
+if (($_GET['preview'] ?? '') === 'pdf') {
+    if (!in_array($extension, $officeExtensions, true)) lessonViewerError('ไฟล์นี้ไม่รองรับการแปลงเป็นหน้าหนังสือ', 415);
+    $preview = officePreviewPdf($file);
+    if ($preview === null) lessonViewerError('ยังไม่สามารถแปลงเอกสารเป็นหน้าหนังสือได้ กรุณาติดตั้ง LibreOffice บนเครื่องเซิร์ฟเวอร์', 503);
+    header('Content-Type: application/pdf');
+    header('Content-Length: ' . (string) filesize($preview));
+    header('Content-Disposition: inline; filename="document-preview.pdf"');
+    header('Cache-Control: private, max-age=3600');
+    readfile($preview);
+    exit;
+}
+>>>>>>> d3978c7f21aae792e1eaed54028dde8462bbad9b
 $resumePage = 0;
 $documentProgressPercent = 0.0;
 try {
@@ -67,18 +136,16 @@ header('Content-Type: text/html; charset=utf-8');
     body { margin: 0; color: #24303b; font-family: "IBM Plex Sans Thai", system-ui, sans-serif; background: #f7f8fa; }
     header { display:flex; gap:12px; align-items:center; justify-content:space-between; padding: 12px 20px; background: #fff; border-bottom: 1px solid #e8eaed; font-weight: 700; }
     .header-title { display:flex; flex-direction:column; gap:2px; min-width:0; }.header-title > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.reading-status { color:#64748b; font-size:.82rem; font-weight:500; }
-    main { max-width: 900px; min-height: calc(100vh - 59px); margin: auto; padding: 24px; box-sizing: border-box; background: #fff; }
-    .docx p { margin: 0 0 1em; line-height: 1.85; white-space: pre-wrap; }
-    .docx-page { display:none; } .docx-page.active { display:block; }
-    .page-nav { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:28px; padding-top:16px; border-top:1px solid #e8eaed; }
-    button { border:0; border-radius:8px; padding:9px 14px; font:inherit; font-weight:700; cursor:pointer; background:#e67e22; color:#fff; } button:disabled { opacity:.45; cursor:not-allowed; }
-    iframe { display: block; width: 100%; height: calc(100vh - 59px); border: 0; }
+    main { max-width: 980px; min-height: calc(100vh - 59px); margin: auto; padding: 20px; box-sizing: border-box; }
+    .book-frame { display:block; width:100%; height:calc(100vh - 99px); border:1px solid #d8dee9; border-radius:8px; background:#525a67; box-shadow:0 8px 26px rgba(15,23,42,.16); }
+    .book-image { display:block; max-width:100%; max-height:calc(100vh - 120px); margin:auto; box-shadow:0 8px 26px rgba(15,23,42,.16); background:#fff; }
     .notice { padding: 18px; border-radius: 10px; background: #fff7ed; color: #9a3412; }
   </style>
 </head>
 <body>
   <header><div class="header-title"><span><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span><span id="reading-status" class="reading-status"></span></div></header>
 <?php if ($extension === 'pdf'): ?>
+<<<<<<< HEAD
   <iframe title="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" src="<?= htmlspecialchars($relativePath, ENT_QUOTES, 'UTF-8') ?>#view=FitH"></iframe>
 <?php elseif ($extension === 'docx' && $canRenderDocx): ?>
   <main class="docx">
@@ -115,8 +182,15 @@ header('Content-Type: text/html; charset=utf-8');
   </main>
 <?php elseif ($extension === 'docx'): ?>
   <main><div class="notice"><strong>เครื่องเซิร์ฟเวอร์ยังไม่เปิดส่วนขยาย ZIP สำหรับแสดง Word ในเว็บ</strong><br><br>คุณยังเปิดอ่านเอกสารได้โดยดาวน์โหลดไฟล์ แล้วกด “อ่านจบแล้ว” เมื่ออ่านเสร็จ <a href="<?= htmlspecialchars($relativePath, ENT_QUOTES, 'UTF-8') ?>" download style="display:inline-block;margin-left:8px;color:#9a3412;font-weight:700;">ดาวน์โหลดเอกสาร</a></div></main>
+=======
+  <iframe class="book-frame" title="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" src="<?= htmlspecialchars($relativePath, ENT_QUOTES, 'UTF-8') ?>#view=FitH"></iframe>
+<?php elseif (in_array($extension, $officeExtensions, true)): ?>
+  <main><iframe class="book-frame" title="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" src="view_course_lesson.php?<?= htmlspecialchars(http_build_query(['subject_id' => $courseId, 'lesson' => $position, 'preview' => 'pdf']), ENT_QUOTES, 'UTF-8') ?>#view=FitH"></iframe></main>
+<?php elseif (in_array($extension, $imageExtensions, true)): ?>
+  <main><img class="book-image" src="<?= htmlspecialchars($relativePath, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>"></main>
+>>>>>>> d3978c7f21aae792e1eaed54028dde8462bbad9b
 <?php else: ?>
-  <main><div class="notice">รองรับการอ่านในเว็บสำหรับไฟล์ PDF และ Word (.docx) เท่านั้น</div></main>
+  <main><div class="notice">ไฟล์ชนิดนี้ยังไม่รองรับการแสดงเป็นหน้าหนังสือ กรุณาดาวน์โหลดเพื่อเปิดด้วยโปรแกรมที่รองรับ</div></main>
 <?php endif; ?>
 </body>
 <script>

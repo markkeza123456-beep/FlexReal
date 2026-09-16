@@ -840,13 +840,16 @@ async function fetchCourseProgress(subjectId) {
     } catch (error) { applyCourseProgressSummary(null); }
 }
 
-async function recordLearningEvent(activityType, lessonIndex = 1, progressPercent = 0, resumePosition = 0) {
-    if (!currentSubjectId || !enrolledCourses[currentSubjectId]) return;
+async function recordLearningEvent(activityType, lessonIndex = 1, progressPercent = 0, resumePosition = 0, force = false) {
+    if (!currentSubjectId || !enrolledCourses[currentSubjectId]) return false;
     const eventKey = `${currentSubjectId}:${lessonIndex}:${activityType}`;
     const now = Date.now();
     const previous = learningProgressRequests.get(eventKey);
     const isPeriodicVideoUpdate = activityType === 'video_progress' && Number(progressPercent) < 100;
-    if (previous?.inFlight || (isPeriodicVideoUpdate && now - (previous?.savedAt || 0) < LEARNING_PROGRESS_SAVE_INTERVAL_MS)) return;
+    // Completion must never be dropped just because the previous heartbeat is
+    // still saving. The server keeps the greatest percentage, so a concurrent
+    // final 100% write cannot move progress backwards.
+    if ((!force && previous?.inFlight) || (!force && isPeriodicVideoUpdate && now - (previous?.savedAt || 0) < LEARNING_PROGRESS_SAVE_INTERVAL_MS)) return false;
     learningProgressRequests.set(eventKey, { inFlight: true, savedAt: previous?.savedAt || 0 });
     try {
         const lesson = currentLessonsData.find((item) => item.index === Number(lessonIndex));
@@ -858,10 +861,19 @@ async function recordLearningEvent(activityType, lessonIndex = 1, progressPercen
         formData.append('progress_percent', String(progressPercent));
         formData.append('resume_position', String(resumePosition));
 
-        const response = await fetch('student_learning_api.php', { method: 'POST', body: formData, credentials: 'same-origin', keepalive: true });
+        // keepalive + FormData is inconsistently handled by browsers. Use a
+        // normal request while the video is open; pausing also forces a save.
+        const response = await fetchJsonWithTimeout('student_learning_api.php', { method: 'POST', body: formData, credentials: 'same-origin' }, 10000);
         const result = await response.json();
-        if (result.status === 'success') learningProgressRequests.set(eventKey, { inFlight: false, savedAt: Date.now() });
-    } catch (error) {}
+        if (result.status === 'success') {
+            learningProgressRequests.set(eventKey, { inFlight: false, savedAt: Date.now() });
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.warn('Unable to save learning progress:', error);
+        return false;
+    }
     finally {
         const state = learningProgressRequests.get(eventKey);
         if (state?.inFlight) learningProgressRequests.set(eventKey, { ...state, inFlight: false });
@@ -1346,6 +1358,13 @@ function getLessonVideoCandidates(lessonIndex) {
     return Array.from(new Set(list)).map((path) => appendCacheBust(path));
 }
 
+function formatVideoTimestamp(seconds) {
+    const safeSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
+    const minutes = Math.floor(safeSeconds / 60);
+    const remainingSeconds = safeSeconds % 60;
+    return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+}
+
 function renderVideoModalBody(lessonIndex) {
     const body = document.getElementById('modal-body');
     if (!body) return;
@@ -1371,6 +1390,7 @@ function renderVideoModalBody(lessonIndex) {
             <source id="lesson-video-source" src="${videoPath}" type="video/mp4">
             เบราว์เซอร์ไม่รองรับวิดีโอ
         </video>
+        <p id="video-progress-status" aria-live="polite" style="margin:10px 0 0;color:#64748b;font-size:13px;">กำลังเตรียมข้อมูลวิดีโอ...</p>
         <p id="video-fallback-status" style="display:none; margin-top:8px; color:#d35400; font-size:13px;"></p>
     `;
 
@@ -1378,10 +1398,18 @@ function renderVideoModalBody(lessonIndex) {
     if (videoElement) {
         const sourceElement = body.querySelector('#lesson-video-source');
         const fallbackStatus = body.querySelector('#video-fallback-status');
+        const progressStatus = body.querySelector('#video-progress-status');
         let candidateIndex = 0;
         const progressRow = getLessonProgressMap().get(safeIndex) || {};
         const savedPosition = Math.max(0, Number(progressRow.video_position_seconds || 0));
         let lastSavedSecond = -1;
+        const updateVideoProgressStatus = () => {
+            if (!progressStatus || !Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return;
+            const watchedSeconds = Math.min(videoElement.duration, Math.max(0, videoElement.currentTime || 0));
+            const watchedPercent = Math.min(100, (watchedSeconds / videoElement.duration) * 100);
+            const lessonPercent = watchedPercent * 0.30;
+            progressStatus.textContent = `ดูแล้ว ${formatVideoTimestamp(watchedSeconds)} / ${formatVideoTimestamp(videoElement.duration)} · ${watchedPercent.toFixed(1)}% · คิดเป็น ${lessonPercent.toFixed(1)}% ของบทเรียน`;
+        };
         const saveVideoProgress = (force = false) => {
             if (!Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return;
             const seconds = Math.max(0, videoElement.currentTime || 0);
@@ -1394,8 +1422,12 @@ function renderVideoModalBody(lessonIndex) {
             if (savedPosition > 0 && savedPosition < videoElement.duration - 1) {
                 videoElement.currentTime = savedPosition;
             }
+            updateVideoProgressStatus();
         }, { once: true });
-        videoElement.addEventListener('timeupdate', () => saveVideoProgress());
+        videoElement.addEventListener('timeupdate', () => {
+            updateVideoProgressStatus();
+            saveVideoProgress();
+        });
         videoElement.addEventListener('pause', () => saveVideoProgress(true));
         videoElement.addEventListener('error', () => {
             if (!sourceElement) return;
@@ -1416,6 +1448,7 @@ function renderVideoModalBody(lessonIndex) {
             videoElement.play().catch(() => {});
         });
         videoElement.addEventListener('ended', () => {
+            updateVideoProgressStatus();
             recordLearningEvent('video_progress', safeIndex, 100, 0);
             fetchCourseProgress(currentSubjectId);
         }, { once: true });
