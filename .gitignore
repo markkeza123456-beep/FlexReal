@@ -1,0 +1,4 @@
+# Never store live credentials in the repository.
+.env
+.env.*
+!.env.example

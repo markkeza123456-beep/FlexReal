@@ -269,7 +269,16 @@ try {
             ':id' => $lessonId,
         ]);
 
-        if (!empty($_FILES['lesson_document']) && ($_FILES['lesson_document']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+        $hasDocumentUpload = !empty($_FILES['lesson_document']) && ($_FILES['lesson_document']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+        if (!$hasDocumentUpload) {
+            $currentDocument = $conn->prepare("SELECT r.url FROM public.lesson_resources r WHERE r.lesson_id = :lesson_id AND r.resource_type = 'document' ORDER BY r.position, r.resource_id LIMIT 1");
+            $currentDocument->execute([':lesson_id' => $lessonId]);
+            $currentDocumentPath = (string) ($currentDocument->fetchColumn() ?: '');
+            if ($currentDocumentPath !== '' && strtolower(pathinfo($currentDocumentPath, PATHINFO_EXTENSION)) !== 'pdf') {
+                throw new Exception('เอกสารเดิมไม่ใช่ PDF กรุณาเลือกไฟล์ PDF ใหม่ก่อนบันทึก');
+            }
+        }
+        if ($hasDocumentUpload) {
             $courseStmt = $conn->prepare('SELECT course_id FROM public.lessons WHERE lesson_id = :lesson_id');
             $courseStmt->execute([':lesson_id' => $lessonId]);
             $subjectId = (string) $courseStmt->fetchColumn();

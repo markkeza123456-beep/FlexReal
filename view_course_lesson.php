@@ -143,7 +143,7 @@ header('Content-Type: text/html; charset=utf-8');
 <?php if ($extension === 'pdf'): ?>
   <iframe class="book-frame" title="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" src="<?= htmlspecialchars($relativePath, ENT_QUOTES, 'UTF-8') ?>#view=FitH"></iframe>
 <?php elseif (in_array($extension, $officeExtensions, true)): ?>
-  <main><iframe class="book-frame" title="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" src="view_course_lesson.php?<?= htmlspecialchars(http_build_query(['subject_id' => $courseId, 'lesson' => $position, 'preview' => 'pdf']), ENT_QUOTES, 'UTF-8') ?>#view=FitH"></iframe></main>
+  <main><div class="notice"><strong>เอกสารนี้ยังไม่ใช่ PDF</strong><br><br>กรุณากลับไปแก้ไขบทเรียนและอัปโหลดไฟล์ PDF เพื่อเปิดอ่านแบบเลื่อนทีละหน้า</div></main>
 <?php elseif (in_array($extension, $imageExtensions, true)): ?>
   <main><img class="book-image" src="<?= htmlspecialchars($relativePath, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>"></main>
 <?php else: ?>

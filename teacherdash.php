@@ -500,8 +500,8 @@ $stats = [
                                                 <span style="font-size:16px;line-height:1;">+</span> เพิ่มแบบทดสอบ
                                             </button>
                                             
-                                            <button class="action-icon-btn btn-edit-lsn" data-id="<?= h($subLesson['id']) ?>" data-name="<?= h($subLesson['title']) ?>" title="แก้ไขบทเรียน"></button>
-                                            <button class="action-icon-btn btn-del-lsn" data-id="<?= h($subLesson['id']) ?>" title="ลบบทเรียน" style="color:#ef4444;"></button>
+                                            <button class="action-icon-btn btn-edit-lsn" data-id="<?= h($subLesson['id']) ?>" data-name="<?= h($subLesson['title']) ?>" title="แก้ไขบทเรียน">แก้ไข</button>
+                                            <button class="action-icon-btn btn-del-lsn" data-id="<?= h($subLesson['id']) ?>" title="ลบบทเรียน" style="color:#ef4444;">ลบ</button>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -519,8 +519,8 @@ $stats = [
 
                         <div class="modal-overlay content-manager-overlay" id="contentManagerModal">
                           <div class="modal content-manager-modal">
-                            <div class="modal-header content-manager-header"><h3 class="modal-title"> จัดการเนื้อหาวิชา</h3><button type="button" class="modal-close" id="closeContentManagerBtn"></button></div>
-                            <div class="course-content-editor modal-body" style="display:flex;flex-direction:column;gap:20px;max-width:860px;margin:0 auto;">
+                            <div class="modal-header content-manager-header"><h3 class="modal-title">จัดการเนื้อหาวิชา</h3><button type="button" class="modal-close" id="closeContentManagerBtn">ปิด</button></div>
+                            <div class="course-content-editor modal-body">
                             <section style="padding:20px;border:1px solid var(--border);border-radius:12px;background:var(--bg3);">
                                 <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;"><div><p style="font-size:11px;color:var(--orange);font-weight:700;letter-spacing:.08em;margin:0 0 4px;">LESSON CONTENT</p><h3 style="font-size:17px;margin:0;" id="inlineLessonHeading">เพิ่มบทเรียนย่อย</h3></div><span id="inlineLessonCount" style="font-size:12px;color:var(--text-muted);"><?= count($subLessonsBySubject[$defaultSubjectId] ?? []) ?>/<?= MAX_LESSONS_PER_SUBJECT ?> บท</span></div>
                                 <form id="inlineLessonForm" enctype="multipart/form-data">
@@ -637,7 +637,7 @@ $stats = [
                                 ?>
                                     <div class="quiz-item" style="border:1px solid var(--border);border-radius:8px;padding:13px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
                                         <div style="display:flex;gap:10px;min-width:0;"><b class="mono" style="color:var(--orange);">Q<?= $i + 1 ?></b><div><div style="font-size:14px;color:var(--text);margin-bottom:5px;"><?= h($q['questions_text']) ?></div><span class="badge badge-draft" style="font-size:10.5px;"><?= $qLabel ?></span></div></div>
-                                        <div style="display:flex;gap:4px;flex-shrink:0;"><button class="action-icon-btn btn-edit-quiz" data-id="<?= h($q['questions_id']) ?>" data-type="<?= $qType ?>" data-question="<?= h($q['questions_text']) ?>" data-ca="<?= h($q['choice_a']) ?>" data-cb="<?= h($q['choice_b']) ?>" data-cc="<?= h($q['choice_c']) ?>" data-cd="<?= h($q['choice_d']) ?>" data-answer="<?= h($q['correct_answer']) ?>" title="แก้ไขคำถาม"></button><button class="action-icon-btn btn-del-quiz" data-id="<?= h($q['questions_id']) ?>" title="ลบคำถาม" style="color:#ef4444;"></button></div>
+                                        <div style="display:flex;gap:4px;flex-shrink:0;"><button class="action-icon-btn btn-edit-quiz" data-id="<?= h($q['questions_id']) ?>" data-type="<?= $qType ?>" data-question="<?= h($q['questions_text']) ?>" data-ca="<?= h($q['choice_a']) ?>" data-cb="<?= h($q['choice_b']) ?>" data-cc="<?= h($q['choice_c']) ?>" data-cd="<?= h($q['choice_d']) ?>" data-answer="<?= h($q['correct_answer']) ?>" title="แก้ไขคำถาม">แก้ไข</button><button class="action-icon-btn btn-del-quiz" data-id="<?= h($q['questions_id']) ?>" title="ลบคำถาม" style="color:#ef4444;">ลบ</button></div>
                                     </div>
                                 <?php endforeach; endif; ?>
                             </div>
