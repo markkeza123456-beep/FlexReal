@@ -35,9 +35,8 @@ if ($picked === null) {
 
 $mime = mime_content_type($picked) ?: 'application/octet-stream';
 header('Content-Type: ' . $mime);
-header('Cache-Control: no-cache, no-store, must-revalidate');
-header('Pragma: no-cache');
-header('Expires: 0');
+header('Cache-Control: public, max-age=86400, stale-while-revalidate=604800');
+header('ETag: "' . md5_file($picked) . '"');
 readfile($picked);
 exit;
 

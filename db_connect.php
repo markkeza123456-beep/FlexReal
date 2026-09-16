@@ -40,13 +40,15 @@ $port = requiredEnv($env, 'SUPABASE_DB_PORT');
 $supabaseUrl = requiredEnv($env, 'SUPABASE_URL');
 $supabaseKey = requiredEnv($env, 'SUPABASE_ANON_KEY');
 
-$dsn = "pgsql:host={$host};port={$port};dbname={$db};";
+$dsn = "pgsql:host={$host};port={$port};dbname={$db};connect_timeout=8;";
 
 try {
     $conn = new PDO($dsn, $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_TIMEOUT => 8,
     ]);
     $conn->exec('SET client_encoding TO \'UTF8\'');
+    $conn->exec('SET statement_timeout TO 8000');
 } catch (PDOException $e) {
     http_response_code(500);
     error_log('Supabase database connection failed: ' . $e->getMessage());

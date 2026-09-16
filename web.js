@@ -25,10 +25,11 @@ const SUBJECT_IMAGE_ENDPOINT = 'subject_image.php';
 const QUIZ_PASS_RATIO = 0.8;
 const COURSE_CACHE_MAX_AGE_MS = 30 * 60 * 1000;
 // Supabase pooler may take several seconds when multiple PHP requests start together.
-const REQUEST_TIMEOUT_MS = 25000;
+const REQUEST_TIMEOUT_MS = 10000;
 const MAX_LESSONS_PER_SUBJECT = 3;
 const LEARNING_PROGRESS_SAVE_INTERVAL_MS = 30000;
 const learningProgressRequests = new Map();
+const courseProgressRequests = new Map();
 let activeVideoProgressSaver = null;
 
 // ตั้งค่ารูปวิชาเองได้ที่นี่ (ใส่ได้ทั้งรหัสวิชา เช่น SUB004 หรือชื่อวิชา เช่น ประวัติศาสตร์)
@@ -833,16 +834,28 @@ async function fetchQuizProgress(subjectId) {
 }
 
 async function fetchCourseProgress(subjectId) {
-    if (!subjectId || !enrolledCourses[subjectId]) { applyCourseProgressSummary(null); return; }
-    try {
-        const response = await fetchJsonWithTimeout(`student_learning_api.php?action=summary&subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin' });
-        const result = await response.json();
-        if (result.status === 'success') applyCourseProgressSummary(result.summary || null); 
-    } catch (error) { applyCourseProgressSummary(null); }
+    if (!subjectId) { applyCourseProgressSummary(null); return; }
+    const existingRequest = courseProgressRequests.get(subjectId);
+    if (existingRequest) return existingRequest;
+    const request = (async () => {
+        try {
+            const response = await fetchJsonWithTimeout(`student_learning_api.php?action=summary&subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin' });
+            const result = await response.json();
+            if (result.status === 'success') applyCourseProgressSummary(result.summary || null);
+        } catch (error) { applyCourseProgressSummary(null); }
+        finally { courseProgressRequests.delete(subjectId); }
+    })();
+    courseProgressRequests.set(subjectId, request);
+    return request;
+}
+
+function refreshCourseProgress(subjectId) {
+    courseProgressRequests.delete(subjectId);
+    return fetchCourseProgress(subjectId);
 }
 
 async function recordLearningEvent(activityType, lessonIndex = 1, progressPercent = 0, resumePosition = 0, force = false) {
-    if (!currentSubjectId || !enrolledCourses[currentSubjectId]) return false;
+    if (!currentSubjectId) return false;
     const eventKey = `${currentSubjectId}:${lessonIndex}:${activityType}`;
     const now = Date.now();
     const previous = learningProgressRequests.get(eventKey);
@@ -1409,6 +1422,7 @@ function renderVideoModalBody(lessonIndex) {
         const progressRow = getLessonProgressMap().get(safeIndex) || {};
         const savedPosition = Math.max(0, Number(progressRow.video_position_seconds || 0));
         let lastSavedSecond = -1;
+        let completionSaved = false;
         const updateVideoProgressStatus = () => {
             if (!progressStatus || !Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return;
             const watchedSeconds = Math.min(videoElement.duration, Math.max(0, videoElement.currentTime || 0));
@@ -1425,31 +1439,11 @@ function renderVideoModalBody(lessonIndex) {
             return recordLearningEvent('video_progress', safeIndex, percent, seconds, force);
         };
         const saveVideoProgressOnExit = () => {
-            if (!currentSubjectId || !enrolledCourses[currentSubjectId] ||
-                !Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return;
-            const now = Date.now();
-            if (now - lastExitSaveAt < 1000) return;
-            lastExitSaveAt = now;
-
+            if (!currentSubjectId || !Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return;
             const seconds = Math.max(0, videoElement.currentTime || 0);
             const percent = Math.min(99.9, (seconds / videoElement.duration) * 100);
-            const lesson = currentLessonsData.find((item) => item.index === safeIndex);
-            const formData = new FormData();
-            formData.append('action', 'record');
-            formData.append('subject_id', currentSubjectId);
-            formData.append('lesson_index', String(safeIndex));
-            formData.append('lesson_title', lesson ? lesson.title : currentCourseName + ' บทที่ ' + safeIndex);
-            formData.append('activity_type', 'video_progress');
-            formData.append('progress_percent', String(percent));
-            formData.append('resume_position', String(seconds));
-
-            // sendBeacon is designed for page/modal exits, when regular fetch
-            // calls may be cancelled before reaching PHP.
-            if (navigator.sendBeacon) {
-                navigator.sendBeacon('student_learning_api.php', formData);
-            } else {
-                recordLearningEvent('video_progress', safeIndex, percent, seconds, true);
-            }
+            return recordLearningEvent('video_progress', safeIndex, percent, seconds, true)
+                .then((saved) => { if (saved) return refreshCourseProgress(currentSubjectId); return false; });
         };
         activeVideoProgressSaver = saveVideoProgressOnExit;
         videoElement.addEventListener('loadedmetadata', () => {
@@ -1461,10 +1455,15 @@ function renderVideoModalBody(lessonIndex) {
         videoElement.addEventListener('timeupdate', () => {
             updateVideoProgressStatus();
             saveVideoProgress();
+            if (!completionSaved && Number.isFinite(videoElement.duration) && videoElement.duration > 0 && videoElement.currentTime / videoElement.duration >= 0.995) {
+                completionSaved = true;
+                recordLearningEvent('video_progress', safeIndex, 100, videoElement.duration, true)
+                    .then((saved) => { if (saved) refreshCourseProgress(currentSubjectId); });
+            }
         });
         videoElement.addEventListener('pause', () => {
             saveVideoProgress(true).then((saved) => {
-                if (saved) fetchCourseProgress(currentSubjectId);
+                if (saved) refreshCourseProgress(currentSubjectId);
             });
         });
         videoElement.addEventListener('error', () => {
@@ -1487,8 +1486,8 @@ function renderVideoModalBody(lessonIndex) {
         });
         videoElement.addEventListener('ended', () => {
             updateVideoProgressStatus();
-            recordLearningEvent('video_progress', safeIndex, 100, 0, true).then(() => {
-                fetchCourseProgress(currentSubjectId);
+            recordLearningEvent('video_progress', safeIndex, 100, videoElement.duration, true).then(() => {
+                refreshCourseProgress(currentSubjectId);
             });
         }, { once: true });
     }
@@ -1573,6 +1572,13 @@ function showContact(type) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Paint cached course data before waiting for session/database requests.
+    // A slow Supabase connection should not leave the whole landing page blank.
+    const cachedCoursesBeforeSession = readCachedCourses();
+    if (cachedCoursesBeforeSession.length > 0) {
+        primeCourseCache(cachedCoursesBeforeSession);
+        renderCourseSections(cachedCoursesBeforeSession);
+    }
     try {
         const sessionResponse = await fetchJsonWithTimeout('student_session.php', { credentials: 'same-origin' });
         const user = await sessionResponse.json();
@@ -1612,11 +1618,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         syncAssignmentComposerVisibility();
 
-        const cachedCourses = readCachedCourses();
-        if (cachedCourses.length > 0) {
-            primeCourseCache(cachedCourses);
-            renderCourseSections(cachedCourses);
-        }
     } catch (error) {
         currentUser = { logged_in: false, role: '' };
     }
