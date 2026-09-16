@@ -44,13 +44,16 @@ if (!$root || !$file || !str_starts_with($file, $root . DIRECTORY_SEPARATOR) || 
 $title = (string) ($document['title'] ?: $document['lesson_title']);
 $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 $resumePage = 0;
+$documentProgressPercent = 0.0;
 try {
     ensureLearningProgressTables($conn);
-    $resume = $conn->prepare('SELECT COALESCE(lp.document_page_index, 0) FROM public.lesson_progress lp JOIN public.lessons l ON l.lesson_id = lp.lesson_id WHERE lp.student_id = :student_id AND l.course_id = :course_id AND l.position = :position');
+    $resume = $conn->prepare('SELECT COALESCE(lp.document_page_index, 0) AS page_index, COALESCE(lp.document_progress_percent, 0) AS progress_percent FROM public.lesson_progress lp JOIN public.lessons l ON l.lesson_id = lp.lesson_id WHERE lp.student_id = :student_id AND l.course_id = :course_id AND l.position = :position');
     $resume->execute([':student_id' => (string) $_SESSION['user_id'], ':course_id' => $courseId, ':position' => $position]);
-    $resumePage = max(0, (int) ($resume->fetchColumn() ?: 0));
+    $savedProgress = $resume->fetch(PDO::FETCH_ASSOC) ?: [];
+    $resumePage = max(0, (int) ($savedProgress['page_index'] ?? 0));
+    $documentProgressPercent = min(100, max(0, (float) ($savedProgress['progress_percent'] ?? 0)));
 } catch (PDOException) { /* The viewer can still render if progress setup is unavailable. */ }
-$documentProgressPayload = json_encode(['type' => 'lesson-document-progress', 'courseId' => $courseId, 'lessonIndex' => $position, 'resumePage' => $resumePage], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+$documentProgressPayload = json_encode(['type' => 'lesson-document-progress', 'courseId' => $courseId, 'lessonIndex' => $position, 'resumePage' => $resumePage, 'documentProgressPercent' => $documentProgressPercent], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 header('Content-Type: text/html; charset=utf-8');
 ?>
 <!doctype html>
@@ -62,6 +65,7 @@ header('Content-Type: text/html; charset=utf-8');
   <style>
     body { margin: 0; color: #24303b; font-family: "IBM Plex Sans Thai", system-ui, sans-serif; background: #f7f8fa; }
     header { display:flex; gap:12px; align-items:center; justify-content:space-between; padding: 12px 20px; background: #fff; border-bottom: 1px solid #e8eaed; font-weight: 700; }
+    .header-title { display:flex; flex-direction:column; gap:2px; min-width:0; }.header-title > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.reading-status { color:#64748b; font-size:.82rem; font-weight:500; }
     main { max-width: 900px; min-height: calc(100vh - 59px); margin: auto; padding: 24px; box-sizing: border-box; background: #fff; }
     .docx p { margin: 0 0 1em; line-height: 1.85; white-space: pre-wrap; }
     .docx-page { display:none; } .docx-page.active { display:block; }
@@ -72,7 +76,7 @@ header('Content-Type: text/html; charset=utf-8');
   </style>
 </head>
 <body>
-  <header><span><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span><button id="complete-reading" type="button" onclick="completeReading()" <?= $extension === 'docx' ? 'disabled' : '' ?>>อ่านจบแล้ว</button></header>
+  <header><div class="header-title"><span><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span><span id="reading-status" class="reading-status"></span></div></header>
 <?php if ($extension === 'pdf'): ?>
   <iframe title="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" src="<?= htmlspecialchars($relativePath, ENT_QUOTES, 'UTF-8') ?>#view=FitH"></iframe>
 <?php elseif ($extension === 'docx'): ?>
@@ -124,10 +128,12 @@ header('Content-Type: text/html; charset=utf-8');
     try { await fetch('student_learning_api.php', { method: 'POST', body: form, credentials: 'same-origin' }); } catch (_) {}
     window.parent.postMessage({ ...documentPayload, progressPercent: percent }, window.location.origin);
   }
-  function completeReading() {
-    saveReadingProgress(100, pages.length || 1);
-    const button = document.getElementById('complete-reading');
-    if (button) { button.textContent = 'บันทึกแล้ว ✓'; button.disabled = true; }
+  function updateReadingStatus(percent) {
+    const status = document.getElementById('reading-status');
+    if (!status) return;
+    const documentPercent = Math.round(Math.max(0, Math.min(100, percent)));
+    const lessonPercent = Math.round(documentPercent * 0.30 * 10) / 10;
+    status.textContent = `อ่านแล้ว ${documentPercent}% · คิดเป็น ${lessonPercent}% ของบทเรียน`;
   }
   function renderPage() {
     pages.forEach((node, index) => node.classList.toggle('active', index === page));
@@ -137,12 +143,24 @@ header('Content-Type: text/html; charset=utf-8');
     next.disabled = page === pages.length - 1;
     next.textContent = page === pages.length - 1 ? 'หน้าสุดท้าย' : 'ถัดไป →';
     indicator.textContent = `หน้า ${page + 1} / ${pages.length}`;
-    if (page === pages.length - 1) document.getElementById('complete-reading').disabled = false;
-    saveReadingProgress(((page + 1) / pages.length) * 100, page + 1);
+    const progressPercent = ((page + 1) / pages.length) * 100;
+    updateReadingStatus(progressPercent);
+    saveReadingProgress(progressPercent, page + 1);
   }
   function changePage(step) { page = Math.max(0, Math.min(pages.length - 1, page + step)); renderPage(); }
   if (pages.length && documentPayload.resumePage > 0) page = Math.min(pages.length - 1, documentPayload.resumePage - 1);
-  if (!pages.length) saveReadingProgress(1, 0);
+  if (!pages.length) {
+    updateReadingStatus(documentPayload.documentProgressPercent);
+    saveReadingProgress(Math.max(1, documentPayload.documentProgressPercent), 0);
+  }
   renderPage();
+  window.addEventListener('pagehide', () => {
+    if (!pages.length) return;
+    const form = new FormData();
+    form.append('action', 'record'); form.append('subject_id', documentPayload.courseId);
+    form.append('lesson_index', String(documentPayload.lessonIndex)); form.append('activity_type', 'document_progress');
+    form.append('progress_percent', String(((page + 1) / pages.length) * 100)); form.append('resume_position', String(page + 1));
+    navigator.sendBeacon?.('student_learning_api.php', form);
+  });
 </script>
 </html>
