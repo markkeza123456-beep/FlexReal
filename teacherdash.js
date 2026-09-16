@@ -108,6 +108,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Search students on the dashboard as the teacher types.
+    const studentSearch = document.getElementById('studentSearch');
+    const studentSearchEmpty = document.getElementById('studentSearchEmpty');
+    studentSearch?.addEventListener('input', () => {
+        const query = studentSearch.value.trim().toLocaleLowerCase('th-TH');
+        let matched = 0;
+        document.querySelectorAll('.dashboard-student-row').forEach(row => {
+            const name = row.querySelector('.student-progress-link')?.textContent?.trim().toLocaleLowerCase('th-TH') || '';
+            const visible = !query || name.includes(query);
+            row.style.display = visible ? '' : 'none';
+            if (visible) matched += 1;
+        });
+        if (studentSearchEmpty) studentSearchEmpty.style.display = matched ? 'none' : '';
+    });
+
     // โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ• 1. เธฃเธฐเธเธเธเธฑเธ”เธเธฒเธฃ "เธเธ—เน€เธฃเธตเธขเธเธขเนเธญเธข" โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ• //
     const modalOverlay = document.getElementById('modalOverlay');
     const contentManagerModal = document.getElementById('contentManagerModal');
@@ -141,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const documents = data.documents || [];
                 if (documents.length) {
                     existingDocuments.style.display = 'block';
-                    existingDocuments.innerHTML = `ไฟล์เดิม: ${documents.map(doc => `<a href="${escapeHtml(doc.url)}" target="_blank" rel="noopener">📎 ${escapeHtml(doc.title)}</a>`).join(' · ')}`;
+                    existingDocuments.innerHTML = `ไฟล์เดิมที่ยังเก็บไว้: ${documents.map(doc => `<a href="${escapeHtml(doc.url)}" target="_blank" rel="noopener">📎 ${escapeHtml(doc.title)}</a>`).join(' · ')}`;
                 }
             } catch (error) { alert(error.message || 'โหลดข้อมูลบทเรียนไม่สำเร็จ'); }
         }
@@ -377,11 +392,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!inlineVideoList) return;
         inlineVideos = data.videos || [];
         const videosForLesson = managedLessonId ? inlineVideos.filter(video => String(video.lessons_id) === managedLessonId) : [];
-        inlineVideoList.innerHTML = videosForLesson.length ? videosForLesson.map((video) => `
+        inlineVideoList.innerHTML = videosForLesson.length ? `<div style="font-size:12px;margin-bottom:4px;color:var(--text-muted)">วิดีโอเดิมที่ยังเก็บไว้</div>${videosForLesson.map((video) => `
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
                 <div style="min-width:0"><strong style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🎬 ${escapeHtml(video.title)}</strong><span style="font-size:12px;color:var(--text-muted)">${escapeHtml(video.lesson_title || '-')}</span></div>
                 <div style="display:flex;gap:5px;flex-shrink:0"><button type="button" class="action-icon-btn" data-inline-video-delete="${escapeHtml(video.id)}" title="ลบวิดีโอ" style="color:#ef4444">🗑</button></div>
-            </div>`).join('') : `<div style="padding:12px 0;color:var(--text-muted);font-size:13px">${managedLessonId ? 'ยังไม่มีวิดีโอในบทเรียนนี้' : 'บันทึกบทเรียนก่อน แล้วจึงเพิ่มวิดีโอได้'}</div>`;
+            </div>`).join('')}` : `<div style="padding:8px 0 0;color:var(--text-muted);font-size:13px">${managedLessonId ? 'ยังไม่มีวิดีโอเดิมในบทเรียนนี้' : 'บันทึกบทเรียนก่อน แล้วจึงเพิ่มวิดีโอได้'}</div>`;
     }
 
     async function loadInlineVideos() {
