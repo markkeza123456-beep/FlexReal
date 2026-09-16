@@ -150,14 +150,14 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
               <div class="resource-icon document">📄</div>
               <div>
                 <h4>เอกสารประกอบการเรียน</h4>
-                <p>อัปโหลดไฟล์ PDF หรือเอกสารสำหรับผู้เรียน</p>
+                <p>อัปโหลดไฟล์ PDF สำหรับผู้เรียน</p>
               </div>
             </div>
             <div class="form-field compact">
               <label class="form-label" for="lessonDocument">ไฟล์เอกสาร</label>
               <div class="input-wrap file-wrap">
                 <span class="input-icon">↥</span>
-                <input type="file" id="lessonDocument" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*" />
+                <input type="file" id="lessonDocument" accept="application/pdf,.pdf" />
               </div>
             </div>
             <div class="resource-preview" id="documentPreview" hidden>

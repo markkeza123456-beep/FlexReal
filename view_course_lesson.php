@@ -93,9 +93,6 @@ if (!$root || !$file || !str_starts_with($file, $root . DIRECTORY_SEPARATOR) || 
 
 $title = (string) ($document['title'] ?: $document['lesson_title']);
 $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-<<<<<<< HEAD
-$canRenderDocx = $extension === 'docx' && class_exists('ZipArchive');
-=======
 $officeExtensions = ['doc', 'docx', 'odt', 'rtf', 'ppt', 'pptx', 'xls', 'xlsx'];
 $imageExtensions = ['avif', 'gif', 'jpeg', 'jpg', 'png', 'webp'];
 
@@ -112,7 +109,6 @@ if (($_GET['preview'] ?? '') === 'pdf') {
     readfile($preview);
     exit;
 }
->>>>>>> d3978c7f21aae792e1eaed54028dde8462bbad9b
 $resumePage = 0;
 $documentProgressPercent = 0.0;
 try {
@@ -145,50 +141,11 @@ header('Content-Type: text/html; charset=utf-8');
 <body>
   <header><div class="header-title"><span><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span><span id="reading-status" class="reading-status"></span></div></header>
 <?php if ($extension === 'pdf'): ?>
-<<<<<<< HEAD
-  <iframe title="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" src="<?= htmlspecialchars($relativePath, ENT_QUOTES, 'UTF-8') ?>#view=FitH"></iframe>
-<?php elseif ($extension === 'docx' && $canRenderDocx): ?>
-  <main class="docx">
-<?php
-    $zip = new ZipArchive();
-    if ($zip->open($file) !== true || ($xml = $zip->getFromName('word/document.xml')) === false) {
-        echo '<div class="notice">ไม่สามารถแสดงเนื้อหาไฟล์ Word นี้ได้</div>';
-    } else {
-        $dom = new DOMDocument();
-        $dom->loadXML($xml, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
-        $xpath = new DOMXPath($dom);
-        $paragraphs = $xpath->query('//*[local-name()="p"]');
-        $paragraphTexts = [];
-        foreach ($paragraphs as $paragraph) {
-            $parts = $xpath->query('.//*[local-name()="t"]', $paragraph);
-            $text = '';
-            foreach ($parts as $part) $text .= $part->textContent;
-            if (trim($text) !== '') $paragraphTexts[] = $text;
-        }
-        if ($paragraphTexts === []) {
-            echo '<div class="notice">เอกสารนี้ไม่มีข้อความที่สามารถแสดงในเว็บได้</div>';
-        } else {
-            $pages = array_chunk($paragraphTexts, 8);
-            foreach ($pages as $pageIndex => $page) {
-                echo '<section class="docx-page' . ($pageIndex === 0 ? ' active' : '') . '" data-page="' . ($pageIndex + 1) . '">';
-                foreach ($page as $text) echo '<p>' . htmlspecialchars($text, ENT_QUOTES, 'UTF-8') . '</p>';
-                echo '</section>';
-            }
-            echo '<div class="page-nav"><button type="button" id="previous-page" onclick="changePage(-1)" disabled>← ก่อนหน้า</button><span id="page-indicator"></span><button type="button" id="next-page" onclick="changePage(1)">ถัดไป →</button></div>';
-        }
-        $zip->close();
-    }
-?>
-  </main>
-<?php elseif ($extension === 'docx'): ?>
-  <main><div class="notice"><strong>เครื่องเซิร์ฟเวอร์ยังไม่เปิดส่วนขยาย ZIP สำหรับแสดง Word ในเว็บ</strong><br><br>คุณยังเปิดอ่านเอกสารได้โดยดาวน์โหลดไฟล์ แล้วกด “อ่านจบแล้ว” เมื่ออ่านเสร็จ <a href="<?= htmlspecialchars($relativePath, ENT_QUOTES, 'UTF-8') ?>" download style="display:inline-block;margin-left:8px;color:#9a3412;font-weight:700;">ดาวน์โหลดเอกสาร</a></div></main>
-=======
   <iframe class="book-frame" title="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" src="<?= htmlspecialchars($relativePath, ENT_QUOTES, 'UTF-8') ?>#view=FitH"></iframe>
 <?php elseif (in_array($extension, $officeExtensions, true)): ?>
   <main><iframe class="book-frame" title="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" src="view_course_lesson.php?<?= htmlspecialchars(http_build_query(['subject_id' => $courseId, 'lesson' => $position, 'preview' => 'pdf']), ENT_QUOTES, 'UTF-8') ?>#view=FitH"></iframe></main>
 <?php elseif (in_array($extension, $imageExtensions, true)): ?>
   <main><img class="book-image" src="<?= htmlspecialchars($relativePath, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>"></main>
->>>>>>> d3978c7f21aae792e1eaed54028dde8462bbad9b
 <?php else: ?>
   <main><div class="notice">ไฟล์ชนิดนี้ยังไม่รองรับการแสดงเป็นหน้าหนังสือ กรุณาดาวน์โหลดเพื่อเปิดด้วยโปรแกรมที่รองรับ</div></main>
 <?php endif; ?>

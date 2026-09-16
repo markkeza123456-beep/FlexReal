@@ -90,7 +90,7 @@ function ensureCourseWorkTables(PDO $conn): void
     )");
 }
 
-function uploadLessonFile(string $fieldName, array $segments, string $prefix, bool $required = false): array
+function uploadLessonFile(string $fieldName, array $segments, string $prefix, bool $required = false, ?array $allowedExtensions = null): array
 {
     if (!isset($_FILES[$fieldName]) || !is_array($_FILES[$fieldName])) {
         if ($required) throw new Exception('กรุณาเลือกไฟล์วิดีโอ');
@@ -119,6 +119,10 @@ function uploadLessonFile(string $fieldName, array $segments, string $prefix, bo
     }
 
     $originalName = trim((string) ($file['name'] ?? ''));
+    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    if ($allowedExtensions !== null && !in_array($extension, $allowedExtensions, true)) {
+        throw new Exception('เอกสารบทเรียนต้องเป็นไฟล์ PDF เท่านั้น');
+    }
     $safeName = preg_replace('/[^A-Za-z0-9._-]/', '_', basename($originalName));
     $safeName = $safeName !== '' ? $safeName : ($prefix . '_' . time());
     $targetName = $prefix . '_' . time() . '_' . $safeName;
@@ -238,7 +242,7 @@ try {
         $stmt = $conn->prepare('INSERT INTO public.lessons (course_id, title, content, study_hours, position) VALUES (:course_id, :title, :content, 1, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lessons WHERE course_id = :course_id)) RETURNING lesson_id');
         $stmt->execute([':course_id' => $subjectId, ':title' => $lessonName, ':content' => $lessonContent]);
         $lessonId = (string) $stmt->fetchColumn();
-        $documentUpload = uploadLessonFile('lesson_document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc');
+        $documentUpload = uploadLessonFile('lesson_document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc', false, ['pdf']);
         if ($documentUpload['path'] !== '') {
             $resource = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position) VALUES (:lesson_id, 'document', :title, :url, 1)");
             $resource->execute([':lesson_id' => $lessonId, ':title' => $documentUpload['name'], ':url' => $documentUpload['path']]);
@@ -269,7 +273,7 @@ try {
             $courseStmt = $conn->prepare('SELECT course_id FROM public.lessons WHERE lesson_id = :lesson_id');
             $courseStmt->execute([':lesson_id' => $lessonId]);
             $subjectId = (string) $courseStmt->fetchColumn();
-            $documentUpload = uploadLessonFile('lesson_document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc');
+            $documentUpload = uploadLessonFile('lesson_document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc', false, ['pdf']);
             if ($documentUpload['path'] !== '') {
                 $resource = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position) VALUES (:lesson_id, 'document', :title, :url, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lesson_resources WHERE lesson_id = :lesson_id))");
                 $resource->execute([':lesson_id' => $lessonId, ':title' => $documentUpload['name'], ':url' => $documentUpload['path']]);
