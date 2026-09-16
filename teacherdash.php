@@ -252,6 +252,7 @@ $stats = [
             width: 18px; height: 18px; cursor: pointer;
         }
         .choice-label { font-weight: 600; color: var(--text-dim); font-size: 14px; width: 16px; text-align: center; }
+        @media (max-width: 760px) { .course-content-editor { grid-template-columns: 1fr !important; } }
     </style>
     <link rel="stylesheet" href="theme.css">
 </head>
@@ -419,10 +420,7 @@ $stats = [
                     </select>
                 </div>
                 <div style="display:flex;gap:8px;align-items:center">
-                    <a class="btn-add-lesson" style="font-size:13px;padding:8px 14px;text-decoration:none" href="teacher_video_editor.php?subject_id=<?= urlencode($defaultSubjectId) ?>" <?= $defaultSubjectId === '' ? 'aria-disabled="true"' : '' ?>>🎬 จัดการวิดีโอ</a>
-                    <button class="btn-add-lesson" id="openModalBtn" style="font-size:13px;padding:8px 14px" data-subject-id="<?= h($defaultSubjectId) ?>" <?= $defaultSubjectId === '' || count($subLessonsBySubject[$defaultSubjectId] ?? []) >= MAX_LESSONS_PER_SUBJECT ? 'disabled' : '' ?>>
-                        <span class="plus">+</span> เพิ่มบทเรียนย่อย
-                    </button>
+                    <button type="button" class="btn-add-lesson" id="openContentManagerBtn" style="font-size:13px;padding:8px 14px" <?= $defaultSubjectId === '' ? 'disabled' : '' ?>>📚 จัดการเนื้อหา</button>
                 </div>
             </div>
 
@@ -514,6 +512,34 @@ $stats = [
                                 </div>
                                 <?php endif; ?>
                             </div>
+                        </div>
+
+                        <div class="modal-overlay content-manager-overlay" id="contentManagerModal">
+                          <div class="modal content-manager-modal">
+                            <div class="modal-header content-manager-header"><h3 class="modal-title">📚 จัดการเนื้อหาวิชา</h3><button type="button" class="modal-close" id="closeContentManagerBtn">✕</button></div>
+                            <div class="course-content-editor modal-body" style="display:flex;flex-direction:column;gap:20px;max-width:860px;margin:0 auto;">
+                            <section style="padding:20px;border:1px solid var(--border);border-radius:12px;background:var(--bg3);">
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;"><div><p style="font-size:11px;color:var(--orange);font-weight:700;letter-spacing:.08em;margin:0 0 4px;">LESSON CONTENT</p><h3 style="font-size:17px;margin:0;">เพิ่มบทเรียนย่อย</h3></div><span style="font-size:12px;color:var(--text-muted);"><?= count($subLessonsBySubject[$defaultSubjectId] ?? []) ?>/<?= MAX_LESSONS_PER_SUBJECT ?> บท</span></div>
+                                <form id="inlineLessonForm" enctype="multipart/form-data">
+                                    <div class="form-group"><label>ชื่อบทเรียน *</label><input type="text" class="form-input" id="inlineLessonName" required placeholder="เช่น 1.1 ตรรกศาสตร์เบื้องต้น"></div>
+                                    <div class="form-group"><label>เอกสารประกอบ</label><input type="file" class="form-input" id="inlineLessonDocument" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*"></div>
+                                </form>
+                            </section>
+
+                            <section style="padding:20px;border:1px solid var(--border);border-radius:12px;background:var(--bg3);">
+                                <div style="margin-bottom:16px;"><p style="font-size:11px;color:var(--orange);font-weight:700;letter-spacing:.08em;margin:0 0 4px;">VIDEO CONTENT</p><h3 style="font-size:17px;margin:0;">เพิ่มและจัดการวิดีโอ</h3></div>
+                                <div id="inlineVideoList" style="margin-bottom:16px;color:var(--text-muted);font-size:13px;">กำลังโหลดวิดีโอ...</div>
+                                <form id="inlineVideoForm" enctype="multipart/form-data">
+                                    <input type="hidden" id="inlineVideoId">
+                                    <div class="form-group"><label>ชื่อวิดีโอ *</label><input type="text" class="form-input" id="inlineVideoTitle" required placeholder="เช่น วิดีโอสรุปบทที่ 1"></div>
+                                    <p style="font-size:13px;color:var(--text-muted);margin:-2px 0 14px;">วิดีโอนี้จะถูกผูกกับบทเรียนที่กรอกด้านบนโดยอัตโนมัติ</p>
+                                    <div class="form-group"><label>ไฟล์วิดีโอ <span id="inlineVideoFileRequired">*</span></label><input type="file" class="form-input" id="inlineVideoFile" accept="video/*" required><small id="inlineVideoFileHint" style="color:var(--text-muted);">เลือกไฟล์วิดีโอเพื่อบันทึก</small></div>
+                                    <button type="button" class="btn-cancel" id="inlineVideoClearBtn">ล้างฟอร์ม</button>
+                                </form>
+                            </section>
+                            <div style="display:flex;justify-content:flex-end;border-top:1px solid var(--border);padding-top:20px;"><button type="button" class="btn-save" id="combinedContentSaveBtn" <?= count($subLessonsBySubject[$defaultSubjectId] ?? []) >= MAX_LESSONS_PER_SUBJECT ? 'disabled' : '' ?>>💾 บันทึกบทเรียนและวิดีโอ</button></div>
+                        </div>
+                          </div>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -628,6 +654,7 @@ $stats = [
                 <div id="essayPendingList" style="display:flex;flex-direction:column;gap:12px"><div style="padding:24px;color:var(--text-muted)">กำลังโหลดคำตอบข้อเขียน...</div></div>
                 <div id="essayReviewedList" style="display:none;flex-direction:column;gap:12px"></div>
             </div>
+
         </div>
 
         <div class="modal-overlay" id="modalOverlay">

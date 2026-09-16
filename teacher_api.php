@@ -72,6 +72,24 @@ function ensureEssaySubmissionTable(PDO $conn): void
     )");
 }
 
+function ensureCourseWorkTables(PDO $conn): void
+{
+    $conn->exec("CREATE TABLE IF NOT EXISTS public.course_assignments (
+        assignment_id BIGSERIAL PRIMARY KEY, course_id bigint NOT NULL REFERENCES public.courses(course_id) ON DELETE CASCADE,
+        teacher_id varchar(50) NOT NULL REFERENCES public.teachers(user_id), title varchar(255) NOT NULL, description text NOT NULL DEFAULT '',
+        due_at timestamptz NOT NULL, max_score numeric(7,2) NOT NULL DEFAULT 10, created_at timestamptz NOT NULL DEFAULT now()
+    )");
+    $conn->exec("CREATE TABLE IF NOT EXISTS public.assignment_submissions (
+        submission_id BIGSERIAL PRIMARY KEY, assignment_id bigint NOT NULL REFERENCES public.course_assignments(assignment_id) ON DELETE CASCADE,
+        student_id varchar(50) NOT NULL REFERENCES public.students(user_id), note text NOT NULL DEFAULT '', file_url text, status varchar(20) NOT NULL DEFAULT 'submitted',
+        submitted_at timestamptz NOT NULL DEFAULT now(), reviewed_at timestamptz, UNIQUE(assignment_id, student_id)
+    )");
+    $conn->exec("CREATE TABLE IF NOT EXISTS public.course_announcements (
+        announcement_id BIGSERIAL PRIMARY KEY, course_id bigint NOT NULL REFERENCES public.courses(course_id) ON DELETE CASCADE,
+        teacher_id varchar(50) NOT NULL REFERENCES public.teachers(user_id), title varchar(255) NOT NULL, body text NOT NULL DEFAULT '', created_at timestamptz NOT NULL DEFAULT now()
+    )");
+}
+
 function uploadLessonFile(string $fieldName, array $segments, string $prefix, bool $required = false): array
 {
     if (!isset($_FILES[$fieldName]) || !is_array($_FILES[$fieldName])) {
@@ -178,8 +196,33 @@ function teacherOwnsQuiz(PDO $conn, string $teacherId, string $quizId): bool
 }
 
 try {
+    ensureCourseWorkTables($conn);
+    if ($action === 'get_course_work') {
+        $subjectId = trim((string) ($_POST['subject_id'] ?? ''));
+        if ($subjectId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) throw new Exception('คุณไม่มีสิทธิ์จัดการรายวิชานี้');
+        $assignments = $conn->prepare("SELECT a.assignment_id, a.title, a.description, a.due_at, a.max_score, COUNT(s.submission_id) AS submission_count, COUNT(s.submission_id) FILTER (WHERE s.status = 'submitted') AS pending_count FROM public.course_assignments a LEFT JOIN public.assignment_submissions s ON s.assignment_id = a.assignment_id WHERE a.course_id = :course_id AND a.teacher_id = :teacher_id GROUP BY a.assignment_id ORDER BY a.due_at ASC");
+        $assignments->execute([':course_id' => $subjectId, ':teacher_id' => $teacherId]);
+        $announcements = $conn->prepare('SELECT announcement_id, title, body, created_at FROM public.course_announcements WHERE course_id = :course_id AND teacher_id = :teacher_id ORDER BY created_at DESC');
+        $announcements->execute([':course_id' => $subjectId, ':teacher_id' => $teacherId]);
+        echo json_encode(['success' => true, 'assignments' => $assignments->fetchAll(PDO::FETCH_ASSOC), 'announcements' => $announcements->fetchAll(PDO::FETCH_ASSOC)]); exit;
+    }
+    if ($action === 'save_assignment') {
+        $subjectId = trim((string) ($_POST['subject_id'] ?? '')); $title = trim((string) ($_POST['title'] ?? '')); $dueAt = trim((string) ($_POST['due_at'] ?? ''));
+        if ($subjectId === '' || $title === '' || $dueAt === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) throw new Exception('กรุณากรอกชื่องานและกำหนดส่งให้ครบถ้วน');
+        $stmt = $conn->prepare('INSERT INTO public.course_assignments (course_id, teacher_id, title, description, due_at, max_score) VALUES (:course_id, :teacher_id, :title, :description, :due_at, :max_score)');
+        $stmt->execute([':course_id' => $subjectId, ':teacher_id' => $teacherId, ':title' => $title, ':description' => trim((string) ($_POST['description'] ?? '')), ':due_at' => $dueAt, ':max_score' => max(0, (float) ($_POST['max_score'] ?? 10))]);
+        echo json_encode(['success' => true, 'message' => 'สร้างงานและแจ้งนักเรียนเรียบร้อยแล้ว']); exit;
+    }
+    if ($action === 'save_announcement') {
+        $subjectId = trim((string) ($_POST['subject_id'] ?? '')); $title = trim((string) ($_POST['title'] ?? ''));
+        if ($subjectId === '' || $title === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) throw new Exception('กรุณากรอกหัวข้อประกาศ');
+        $stmt = $conn->prepare('INSERT INTO public.course_announcements (course_id, teacher_id, title, body) VALUES (:course_id, :teacher_id, :title, :body)');
+        $stmt->execute([':course_id' => $subjectId, ':teacher_id' => $teacherId, ':title' => $title, ':body' => trim((string) ($_POST['body'] ?? ''))]);
+        echo json_encode(['success' => true, 'message' => 'เผยแพร่ประกาศเรียบร้อยแล้ว']); exit;
+    }
     if ($action === 'add_lesson') {
         $lessonName = trim((string) ($_POST['lesson_name'] ?? ''));
+        $lessonContent = trim((string) ($_POST['lesson_content'] ?? ''));
         $subjectId = trim((string) ($_POST['subject_id'] ?? ''));
         if ($lessonName === '' || $subjectId === '') {
             throw new Exception('ข้อมูลไม่ครบถ้วน');
@@ -192,8 +235,8 @@ try {
         }
 
         $conn->beginTransaction();
-        $stmt = $conn->prepare('INSERT INTO public.lessons (course_id, title, study_hours, position) VALUES (:course_id, :title, 1, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lessons WHERE course_id = :course_id)) RETURNING lesson_id');
-        $stmt->execute([':course_id' => $subjectId, ':title' => $lessonName]);
+        $stmt = $conn->prepare('INSERT INTO public.lessons (course_id, title, content, study_hours, position) VALUES (:course_id, :title, :content, 1, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lessons WHERE course_id = :course_id)) RETURNING lesson_id');
+        $stmt->execute([':course_id' => $subjectId, ':title' => $lessonName, ':content' => $lessonContent]);
         $lessonId = (string) $stmt->fetchColumn();
         $documentUpload = uploadLessonFile('lesson_document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc');
         if ($documentUpload['path'] !== '') {
@@ -202,7 +245,7 @@ try {
         }
         $conn->commit();
 
-        echo json_encode(['success' => true, 'message' => 'เพิ่มบทเรียนสำเร็จ']);
+        echo json_encode(['success' => true, 'message' => 'เพิ่มบทเรียนสำเร็จ', 'lesson_id' => $lessonId]);
         exit;
     }
 
