@@ -230,7 +230,7 @@ $stats = [
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="teacherdash.css?v=20260916-clean-form">
+    <link rel="stylesheet" href="teacherdash.css?v=20260916-hidden-video-list">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px; 
@@ -535,7 +535,7 @@ $stats = [
                                 <div id="inlineVideoList" style="margin-bottom:16px;color:var(--text-muted);font-size:13px;">กำลังโหลดวิดีโอ...</div>
                                 <form id="inlineVideoForm" enctype="multipart/form-data">
                                     <input type="hidden" id="inlineVideoId">
-                                    <div class="form-group"><label>ชื่อวิดีโอ *</label><input type="text" class="form-input" id="inlineVideoTitle" required placeholder="เช่น วิดีโอสรุปบทที่ 1"></div>
+                                    <input type="hidden" id="inlineVideoTitle" value="วิดีโอบทเรียน">
                                     <p style="font-size:13px;color:var(--text-muted);margin:-2px 0 14px;">วิดีโอนี้จะถูกผูกกับบทเรียนที่กรอกด้านบนโดยอัตโนมัติ</p>
                                     <div class="form-group"><label>ไฟล์วิดีโอ <span id="inlineVideoFileRequired">*</span></label><input type="file" class="form-input" id="inlineVideoFile" accept="video/*" required><small id="inlineVideoFileHint" style="color:var(--text-muted);">เลือกไฟล์วิดีโอเพื่อบันทึก</small></div>
                                     <button type="button" class="btn-save" id="saveInlineVideoBtn">บันทึกวิดีโอ</button>
@@ -1332,6 +1332,6 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-<script src="teacherdash.js?v=20260916-separated-save"></script>
+<script src="teacherdash.js?v=20260916-optional-video-name"></script>
 </body>
 </html>

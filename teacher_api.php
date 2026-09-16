@@ -540,7 +540,7 @@ try {
         if ($title === '' && $hasNewFile) {
             $title = pathinfo((string) ($_FILES['video_file']['name'] ?? ''), PATHINFO_FILENAME);
         }
-        if ($title === '') throw new Exception('กรุณาเลือกไฟล์วิดีโอหรือระบุชื่อวิดีโอ');
+        if ($title === '') $title = 'วิดีโอบทเรียน';
         if ($videoId === '' && !$hasNewFile) throw new Exception('กรุณาเลือกไฟล์วิดีโอ');
         if ($hasNewFile) {
             $upload = uploadLessonFile('video_file', buildVideoMediaSegments($teacherId, $subjectId), 'video', true);

@@ -465,6 +465,7 @@ html, body {
 .course-content-editor form { gap: 12px; }
 .course-content-editor form .btn-save { margin-top: 6px; align-self: flex-start; }
 #inlineLessonDocumentHint, #inlineVideoFileHint, #inlineVideoForm > p { display: none; }
+#inlineVideoList { display: none; }
 #inlineVideoForm .btn-cancel { margin-left: 6px; }
 
 @media (max-width: 820px) {
