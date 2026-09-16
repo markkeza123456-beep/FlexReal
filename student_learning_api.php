@@ -19,6 +19,13 @@ function fetchCourseSummary(PDO $conn, string $studentId, string $courseId): arr
 }
 $studentId = currentLearningStudentId(); if ($studentId === null) learningJson(['status' => 'unauthorized', 'message' => 'กรุณาเข้าสู่ระบบนักเรียนก่อนใช้งาน'], 401); session_write_close();
 try { $action = strtolower((string) ($_GET['action'] ?? $_POST['action'] ?? 'summary')); $courseId = trim((string) ($_POST['course_id'] ?? $_POST['subject_id'] ?? $_GET['course_id'] ?? $_GET['subject_id'] ?? '')); if ($courseId === '') learningJson(['status' => 'error', 'message' => 'ไม่พบรหัสรายวิชา'], 400);
-    if ($action === 'record') { $position = max(1, (int) ($_POST['lesson_index'] ?? $_POST['position'] ?? 1)); recordLearningActivity($conn, $studentId, $courseId, $position, trim((string) ($_POST['activity_type'] ?? 'lesson_open')), trim((string) ($_POST['lesson_title'] ?? '')), (float) ($_POST['progress_percent'] ?? 0), (float) ($_POST['resume_position'] ?? 0)); }
+    if ($action === 'record') {
+        $position = max(1, (int) ($_POST['lesson_index'] ?? $_POST['position'] ?? 1));
+        recordLearningActivity($conn, $studentId, $courseId, $position, trim((string) ($_POST['activity_type'] ?? 'lesson_open')), trim((string) ($_POST['lesson_title'] ?? '')), (float) ($_POST['progress_percent'] ?? 0), (float) ($_POST['resume_position'] ?? 0));
+        // Progress heartbeats are write-only.  Returning the full summary here
+        // repeated an expensive aggregate query and re-rendered the page for
+        // every heartbeat.
+        learningJson(['status' => 'success']);
+    }
     learningJson(['status' => 'success', 'summary' => fetchCourseSummary($conn, $studentId, $courseId)]);
 } catch (Throwable $e) { learningJson(['status' => 'error', 'message' => 'ระบบติดตามความคืบหน้าขัดข้อง: ' . $e->getMessage()], 500); }
