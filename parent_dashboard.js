@@ -139,7 +139,7 @@ function saveProfile() {
   if (mm) mm.textContent = '';
 
   setTimeout(() => {
-    showFeedback('success', 'บันทึกข้อมูลสำเร็จ ✅');
+    showFeedback('success', 'บันทึกข้อมูลสำเร็จ ');
     if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> บันทึกข้อมูล'; }
   }, 400);
 }
@@ -150,7 +150,7 @@ function togglePwd(id, btn) {
   if (!inp) return;
   const show = inp.type === 'password';
   inp.type = show ? 'text' : 'password';
-  btn.textContent = show ? '🙈' : '👁';
+  btn.textContent = show ? 'ซ่อน' : 'แสดง';
 }
 
 function checkPwdStrength(val) {
@@ -186,8 +186,8 @@ function checkPwdMatch() {
   const c   = document.getElementById('pwdConfirm')?.value || '';
   const msg = document.getElementById('pwdMatchMsg');
   if (!msg || !c) return;
-  if (n === c) { msg.style.color = '#10b981'; msg.textContent = '✅ รหัสผ่านตรงกัน'; }
-  else         { msg.style.color = '#ef4444'; msg.textContent = '❌ รหัสผ่านไม่ตรงกัน'; }
+  if (n === c) { msg.style.color = '#10b981'; msg.textContent = ' รหัสผ่านตรงกัน'; }
+  else         { msg.style.color = '#ef4444'; msg.textContent = ' รหัสผ่านไม่ตรงกัน'; }
 }
 
 /* ─────────────────────────────────────────────────
@@ -211,7 +211,7 @@ function _cropInjectModal() {
         background:#1a1a2e;border:1px solid rgba(255,255,255,0.1);
         border-radius:16px;padding:1.25rem;width:340px;max-width:100%;
         color:#fff;font-family:'Kanit',sans-serif">
-      <p style="margin:0 0 1rem;font-size:15px;font-weight:500">✂️ ครอปรูปโปรไฟล์</p>
+      <p style="margin:0 0 1rem;font-size:15px;font-weight:500">️ ครอปรูปโปรไฟล์</p>
       <div id="cropStage" style="
           position:relative;width:100%;height:280px;
           background:#0d0d1a;border-radius:10px;overflow:hidden;
@@ -223,7 +223,7 @@ function _cropInjectModal() {
             pointer-events:none"></div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
-        <span style="font-size:12px;color:#aaa;white-space:nowrap">🔍 ซูม</span>
+        <span style="font-size:12px;color:#aaa;white-space:nowrap"> ซูม</span>
         <input type="range" id="cropZoomSlider" min="100" max="300" value="100" step="1"
                oninput="_cropSetZoom(this.value)"
                style="flex:1;accent-color:#f97316">
@@ -244,7 +244,7 @@ function _cropInjectModal() {
             border:1px solid rgba(249,115,22,0.4);
             background:rgba(249,115,22,0.15);color:#f97316;
             cursor:pointer;font-family:'Kanit',sans-serif;font-weight:500">
-          ✓ ใช้รูปนี้
+           ใช้รูปนี้
         </button>
       </div>
     </div>
@@ -508,7 +508,7 @@ function switchChild(idx, el) {
   // อัปเดต greeting ให้แสดงชื่อลูกที่เลือก
   const h1 = document.querySelector('#page-overview .page-header h1');
   if (h1 && _parentData) {
-    h1.textContent = 'สวัสดี ผู้ปกครองของ' + child.student_name + ' 👋';
+    h1.textContent = 'สวัสดี ผู้ปกครองของ' + child.student_name + ' ';
   }
 
   renderChildStats(child);
@@ -531,7 +531,7 @@ function renderChildStats(child) {
 
   /* ── Greeting ── */
   const h1 = document.querySelector('#page-overview .page-header h1');
-  if (h1 && _parentData) h1.textContent = 'สวัสดี ผู้ปกครองของ' + child.student_name + ' 👋';
+  if (h1 && _parentData) h1.textContent = 'สวัสดี ผู้ปกครองของ' + child.student_name + ' ';
 
   /* ── Subject list (overview) ── */
   renderSubjects(child.subjects || []);

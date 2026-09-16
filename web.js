@@ -1,4 +1,4 @@
-﻿// --- ตัวแปรหลักของระบบ ---
+// --- ตัวแปรหลักของระบบ ---
 let currentSubjectId = '';
 let currentCourseName = '';
 let enrolledCourses = {};
@@ -140,7 +140,7 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEO
     }
 }
 
-// 💥 แปลงข้อมูลบทเรียนจากฐานข้อมูล
+//  แปลงข้อมูลบทเรียนจากฐานข้อมูล
 function buildLessonsFromDB(lessons) {
     const normalized = Array.isArray(lessons) ? lessons.slice(0, MAX_LESSONS_PER_SUBJECT) : [];
     return normalized.map((lsn, index) => {
@@ -228,7 +228,7 @@ function getLessonStatusInfo(lessonIndex) {
     return { label: 'ยังไม่ทำ', color: '#7f8c8d', bg: '#f4f6f7', scoreText: '-', progress, breakdown };
 }
 
-// 💥 สร้างกล่องบทเรียนบนหน้าเว็บ
+//  สร้างกล่องบทเรียนบนหน้าเว็บ
 function renderLessonAccordion(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -237,7 +237,7 @@ function renderLessonAccordion(containerId) {
     if (!currentLessonsData || currentLessonsData.length === 0) {
         container.innerHTML = `
             <div style="text-align:center; padding:40px 20px; color:#888; background:#fafafa; border:2px dashed #ddd; border-radius:12px; margin-top: 15px;">
-                <div style="font-size:32px; margin-bottom:10px;">📁</div>
+                <div style="font-size:32px; margin-bottom:10px;"></div>
                 <h3 style="color:#555; margin-bottom:5px;">วิชานี้ยังไม่มีบทเรียน</h3>
                 <p style="font-size:14px;">โปรดรออาจารย์ผู้สอนเพิ่มเนื้อหาเข้าสู่ระบบ</p>
             </div>
@@ -284,21 +284,21 @@ function renderLessonAccordion(containerId) {
                     ${lesson.content ? `<div style="margin:0 0 12px;padding:12px 14px;border:1px solid #f0d6c5;border-radius:10px;background:#fffaf7;white-space:pre-wrap;"><b>รายละเอียดบทเรียน</b><p style="margin:6px 0 0;">${escapeHtml(lesson.content)}</p></div>` : ''}
                     <div class="curriculum-item">
                         <div class="curr-left">
-                            <span class="curr-icon">📄</span>
+                            <span class="curr-icon"></span>
                             <div class="curr-text"><b>เอกสารประกอบบทเรียน</b><p>${escapeHtml(lesson.documentName || 'เปิดอ่านเอกสาร')}</p></div>
                         </div>
                         <button class="btn-orange" onclick="openCourseDocument(${lesson.index})" ${canAccessLesson(lesson.index) ? '' : 'disabled'}>เปิดอ่าน</button>
                     </div>
                     <div class="curriculum-item">
                         <div class="curr-left">
-                            <span class="curr-icon">🎬</span>
+                            <span class="curr-icon"></span>
                             <div class="curr-text"><b>วิดีโอสรุปบทเรียน</b><p>${escapeHtml(lesson.videoName || 'รับชมวิดีโอ')}</p></div>
                         </div>
                         <button class="btn-orange" onclick="openCourseVideo(${lesson.index})" ${isVideoUnlocked(lesson.index) ? '' : 'disabled'}>ชมวิดีโอ</button>
                     </div>
                     <div class="curriculum-item">
                         <div class="curr-left">
-                            <span class="curr-icon">📝</span>
+                            <span class="curr-icon"></span>
                             <div class="curr-text"><b>แบบทดสอบประจำบท</b><p>ทดสอบความเข้าใจ</p></div>
                         </div>
                         <button class="btn-outline-orange" onclick="startQuiz(${lesson.index})" ${isQuizUnlocked(lesson.index) ? '' : 'disabled'}>เริ่มทำ Quiz</button>
@@ -466,13 +466,13 @@ function renderAssignmentCards(assignments, containerId, scope) {
         const submissionStatus = submission.status === 'submitted' ? 'ส่งแล้ว' : 'ยังไม่ส่ง';
         const submissionPillClass = submission.status === 'submitted' ? '' : 'is-muted';
         const attachmentMarkup = assignment.attachmentUrl || assignment.attachmentName
-            ? `<div class="assignment-attachments">${assignment.attachmentUrl ? `<a class="assignment-file-chip" href="${escapeHtml(assignment.attachmentUrl)}" target="_blank" rel="noopener"><span>📎 ${escapeHtml(assignment.attachmentName || 'ไฟล์แนบ')}</span></a>` : `<div class="assignment-file-chip"><span>📎 ${escapeHtml(assignment.attachmentName)}</span></div>`}</div>`
+            ? `<div class="assignment-attachments">${assignment.attachmentUrl ? `<a class="assignment-file-chip" href="${escapeHtml(assignment.attachmentUrl)}" target="_blank" rel="noopener"><span> ${escapeHtml(assignment.attachmentName || 'ไฟล์แนบ')}</span></a>` : `<div class="assignment-file-chip"><span> ${escapeHtml(assignment.attachmentName)}</span></div>`}</div>`
             : '';
 
         return `
             <article class="assignment-card ${isActive ? 'is-active' : ''}" onclick="selectAssignment('${escapeHtml(assignment.id)}')">
                 <div class="assignment-card-main">
-                    <div class="assignment-icon">🗂️</div>
+                    <div class="assignment-icon">️</div>
                     <div class="assignment-copy">
                         <div class="assignment-topline">
                             <div>
@@ -610,7 +610,7 @@ function renderAssignmentComposer() {
     body.innerHTML = `
         <div class="assignment-composer">
             <div>
-                <h3 style="margin-bottom:8px; color:var(--primary-orange);">➕ เพิ่มงานแบบ Classroom</h3>
+                <h3 style="margin-bottom:8px; color:var(--primary-orange);"> เพิ่มงานแบบ Classroom</h3>
                 <p style="color:var(--text-gray); line-height:1.6;">สร้างงานใหม่พร้อมชื่อ, คำอธิบาย, วันกำหนดส่ง และไฟล์แนบได้ในรูปแบบเดียวกับ Google Classroom</p>
             </div>
             <div class="assignment-composer-grid">
@@ -939,27 +939,27 @@ function getSubjectFallbackImage(subjectId, subjectName) {
     if (customByName) return String(customByName);
 
     if (key.includes('SUB001') || key.includes('อังกฤษ')) {
-        return buildSubjectSvgImage('#4f46e5', '#2563eb', '🔤', 'ภาษาอังกฤษ');
+        return buildSubjectSvgImage('#4f46e5', '#2563eb', '', 'ภาษาอังกฤษ');
     }
     if (key.includes('SUB002') || key.includes('คณิต')) {
-        return buildSubjectSvgImage('#0f766e', '#14b8a6', '🧮', 'คณิตศาสตร์');
+        return buildSubjectSvgImage('#0f766e', '#14b8a6', '', 'คณิตศาสตร์');
     }
     if (key.includes('SUB003') || key.includes('วิทย')) {
-        return buildSubjectSvgImage('#0f766e', '#22c55e', '🔬', 'วิทยาศาสตร์');
+        return buildSubjectSvgImage('#0f766e', '#22c55e', '', 'วิทยาศาสตร์');
     }
     if (key.includes('SUB004') || key.includes('ประวัติ')) {
-        return buildSubjectSvgImage('#92400e', '#f59e0b', '🏛️', 'ประวัติศาสตร์');
+        return buildSubjectSvgImage('#92400e', '#f59e0b', '️', 'ประวัติศาสตร์');
     }
     if (key.includes('SUB005') || key.includes('ศิลปะ')) {
-        return buildSubjectSvgImage('#be123c', '#ec4899', '🎨', 'ศิลปะ');
+        return buildSubjectSvgImage('#be123c', '#ec4899', '', 'ศิลปะ');
     }
     if (key.includes('SUB006') || key.includes('ไทย')) {
-        return buildSubjectSvgImage('#b45309', '#f97316', '📚', 'ภาษาไทย');
+        return buildSubjectSvgImage('#b45309', '#f97316', '', 'ภาษาไทย');
     }
     if (key.includes('SUB007') || key.includes('สังคม')) {
-        return buildSubjectSvgImage('#1d4ed8', '#06b6d4', '🌍', 'สังคมศึกษา');
+        return buildSubjectSvgImage('#1d4ed8', '#06b6d4', '', 'สังคมศึกษา');
     }
-    return buildSubjectSvgImage('#475569', '#64748b', '📘', normalizedName || normalizedId || 'รายวิชา');
+    return buildSubjectSvgImage('#475569', '#64748b', '', normalizedName || normalizedId || 'รายวิชา');
 }
 
 function getSubjectImage(subjectId, subjectName) {
@@ -1055,7 +1055,7 @@ function renderCourseSections(courses) {
     renderCourseCollection(publicGrid, courses, 'ยังไม่มีรายวิชาในระบบ');
 }
 
-// 💥 โหลดวิชาทั้งหมด
+//  โหลดวิชาทั้งหมด
 async function loadAllCourses() {
     try {
         const response = await fetchJsonWithTimeout('api_courses.php?action=get_all');
@@ -1105,7 +1105,7 @@ async function loadAllCourses() {
     }
 }
 
-// 💥 โหลดข้อมูลตอนกดเข้าวิชา
+//  โหลดข้อมูลตอนกดเข้าวิชา
 async function showCourse(subjectId) {
     if (courseIdByName[subjectId]) subjectId = courseIdByName[subjectId];
     currentSubjectId = subjectId;
@@ -1276,7 +1276,7 @@ function openLearningTab(evt, tabName) {
     if (evt && evt.currentTarget) evt.currentTarget.classList.add("active");
 }
 
-// 💥 ควบคุมการโชว์/ซ่อน รายชื่อบทเรียน
+//  ควบคุมการโชว์/ซ่อน รายชื่อบทเรียน
 function setCurriculumAccess(isEnrolled) {
     const lockedMsg = document.getElementById('curriculum-locked-msg');
     const lessonList = document.getElementById('course-curriculum-lesson-list');
@@ -1318,7 +1318,7 @@ function openCourseDocument(lessonIndex) {
     const body = document.getElementById('modal-body');
     const modal = document.getElementById('modal-overlay');
     if (!body || !modal) return;
-    body.innerHTML = `<h3 style="margin:0 0 12px;color:#E67E22;">📄 ${escapeHtml(lesson?.documentName || lesson?.title || 'เอกสารประกอบบทเรียน')}</h3><iframe title="เอกสารประกอบบทเรียน" src="view_course_lesson.php?${params.toString()}" style="display:block;width:100%;height:min(72vh,780px);border:1px solid #e5e7eb;border-radius:8px;background:#fff;"></iframe>`;
+    body.innerHTML = `<h3 style="margin:0 0 12px;color:#E67E22;"> ${escapeHtml(lesson?.documentName || lesson?.title || 'เอกสารประกอบบทเรียน')}</h3><iframe title="เอกสารประกอบบทเรียน" src="view_course_lesson.php?${params.toString()}" style="display:block;width:100%;height:min(72vh,780px);border:1px solid #e5e7eb;border-radius:8px;background:#fff;"></iframe>`;
     modal.style.display = 'flex';
 }
 
@@ -1380,7 +1380,7 @@ function renderVideoModalBody(lessonIndex) {
     `).join('');
 
     body.innerHTML = `
-        <h3 style="margin-bottom:10px; color:#E67E22;">🎥 วิดีโอบทเรียน</h3>
+        <h3 style="margin-bottom:10px; color:#E67E22;"> วิดีโอบทเรียน</h3>
         <p style="margin-bottom:12px; color:#636e72;">กำลังดู: บทที่ ${safeIndex} - ${escapeHtml(selectedTitle)}</p>
         <label for="video-lesson-select" style="display:block; margin-bottom:8px; font-weight:600; color:#2d3436;">เปลี่ยนบทเรียน</label>
         <select id="video-lesson-select" onchange="changeModalLessonVideo(this.value)" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; margin-bottom:14px;">

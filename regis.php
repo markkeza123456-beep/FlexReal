@@ -423,11 +423,11 @@
         <div style="font-size:12px;color:var(--text3);margin-bottom:14px">คำร้องเทียบโอน: ภาษาอังกฤษ Grade 5 → ENG301 (2 หน่วยกิต)</div>
         <div class="transfer-steps">
           <div class="step-item done">
-            <div class="step-dot">✓</div>
+            <div class="step-dot"></div>
             <div class="step-label">ยื่นคำร้อง</div>
           </div>
           <div class="step-item done">
-            <div class="step-dot">✓</div>
+            <div class="step-dot"></div>
             <div class="step-label">ตรวจเอกสาร</div>
           </div>
           <div class="step-item current">

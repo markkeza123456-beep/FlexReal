@@ -197,7 +197,7 @@ try {
             <div class="input-wrap">
               <select id="province" name="province" required>
                 <option value="" disabled selected>เลือกจังหวัด</option>
-                <!-- 💥 วนลูปแสดงรายชื่อจังหวัดจากฐานข้อมูล -->
+                <!--  วนลูปแสดงรายชื่อจังหวัดจากฐานข้อมูล -->
                 <?php foreach ($provincesFromDb as $prov): ?>
                   <option value="<?= htmlspecialchars($prov['name']) ?>">
                     <?= htmlspecialchars($prov['name']) ?>

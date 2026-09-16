@@ -1,4 +1,4 @@
-﻿/* ============================================
+/* ============================================
    NEXORA STAFF PANEL — staffdash.js (ฉบับสมบูรณ์)
    ============================================ */
 
@@ -247,7 +247,7 @@
     }
   }
 
-  // 💥 ฟังก์ชันโหลดอาจารย์ใส่ใน Select dropdown หน้าจัดการรายวิชา
+  //  ฟังก์ชันโหลดอาจารย์ใส่ใน Select dropdown หน้าจัดการรายวิชา
   function populateTeacherSelect(selectedTeacherIds = []) {
     if (!subjectTeacherSelect) {
       return;
@@ -324,8 +324,8 @@
           <td><span class="badge ${member.status === 'active' ? 'active' : 'draft'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
           <td>
             <div class="action-btns">
-              <button type="button" class="btn-icon edit" onclick="editMember('${member.id}')">✎</button>
-              <button type="button" class="btn-icon del" onclick="deleteMember('${member.id}')">✕</button>
+              <button type="button" class="btn-icon edit" onclick="editMember('${member.id}')"></button>
+              <button type="button" class="btn-icon del" onclick="deleteMember('${member.id}')"></button>
             </div>
           </td>
         </tr>
@@ -403,9 +403,9 @@
           <td><span class="badge ${curriculum.status === 'active' ? 'active' : 'draft'}">${curriculum.status || 'active'}</span></td>
           <td>
             <div class="action-btns">
-              <button type="button" class="btn-icon" style="color:var(--blue); border-color:var(--border);" onclick="manageCurriculumSubjects('${curriculum.id}', '${curriculum.name}')" title="จัดการวิชาเข้าหลักสูตร">📚</button>
-              <button type="button" class="btn-icon edit" onclick="editCurriculum('${curriculum.id}')">✎</button>
-              <button type="button" class="btn-icon del" onclick="deleteCurriculum('${curriculum.id}')">✕</button>
+              <button type="button" class="btn-icon" style="color:var(--blue); border-color:var(--border);" onclick="manageCurriculumSubjects('${curriculum.id}', '${curriculum.name}')" title="จัดการวิชาเข้าหลักสูตร">จัดการ</button>
+              <button type="button" class="btn-icon edit" onclick="editCurriculum('${curriculum.id}')"></button>
+              <button type="button" class="btn-icon del" onclick="deleteCurriculum('${curriculum.id}')"></button>
             </div>
           </td>
         </tr>
@@ -481,7 +481,7 @@
       return;
     }
 
-    // 💥 อัปเดตตารางแสดงวิชาให้โชว์ "อาจารย์ผู้ดูแลรายวิชา" จากหลังบ้านจริง
+    //  อัปเดตตารางแสดงวิชาให้โชว์ "อาจารย์ผู้ดูแลรายวิชา" จากหลังบ้านจริง
     subjectBody.innerHTML = subjects.length
       ? subjects.map(subject => `
         <tr>
@@ -492,9 +492,9 @@
           <td style="color:var(--orange); font-weight:500;">${subject.teacher_name || 'ยังไม่มีผู้ดูแล'}</td>
           <td>
             <div class="action-btns">
-              <button type="button" class="btn-icon" style="color:var(--blue); border-color:var(--border);" onclick="manageLessons('${subject.id}')" title="จัดการบทเรียน">📚</button>
-              <button type="button" class="btn-icon edit" onclick="editSubject('${subject.id}')" title="แก้ไขรายวิชา">✎</button>
-              <button type="button" class="btn-icon del" onclick="deleteSubject('${subject.id}')">✕</button>
+              <button type="button" class="btn-icon" style="color:var(--blue); border-color:var(--border);" onclick="manageLessons('${subject.id}')" title="จัดการบทเรียน"></button>
+              <button type="button" class="btn-icon edit" onclick="editSubject('${subject.id}')" title="แก้ไขรายวิชา"></button>
+              <button type="button" class="btn-icon del" onclick="deleteSubject('${subject.id}')"></button>
             </div>
           </td>
         </tr>
@@ -599,8 +599,8 @@
           <td>${lesson.video_url ? `<a href="${lesson.video_url}" target="_blank" style="color:var(--blue);text-decoration:none;">ลิงก์วิดีโอ</a>` : '-'}</td>
           <td>
             <div class="action-btns">
-              <button type="button" class="btn-icon edit" onclick="editLesson('${lesson.id}')">✎</button>
-              <button type="button" class="btn-icon del" onclick="deleteLesson('${lesson.id}')">✕</button>
+              <button type="button" class="btn-icon edit" onclick="editLesson('${lesson.id}')"></button>
+              <button type="button" class="btn-icon del" onclick="deleteLesson('${lesson.id}')"></button>
             </div>
           </td>
         </tr>
@@ -812,7 +812,7 @@ function _staffCropInjectModal() {
        display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem;box-sizing:border-box">
     <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);border-radius:16px;
          padding:1.25rem;width:340px;max-width:100%;color:#fff;font-family:'IBM Plex Sans Thai',sans-serif">
-      <p style="margin:0 0 1rem;font-size:15px;font-weight:500">✂️ ครอปรูปโปรไฟล์</p>
+      <p style="margin:0 0 1rem;font-size:15px;font-weight:500">️ ครอปรูปโปรไฟล์</p>
       <div id="staffCropStage" style="position:relative;width:100%;height:280px;
            background:#0d0d0d;border-radius:10px;overflow:hidden;cursor:grab;user-select:none;touch-action:none">
         <canvas id="staffCropCanvas" style="display:block;width:100%;height:100%"></canvas>
@@ -820,7 +820,7 @@ function _staffCropInjectModal() {
              border-radius:50%;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);pointer-events:none"></div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
-        <span style="font-size:12px;color:#aaa;white-space:nowrap">🔍 ซูม</span>
+        <span style="font-size:12px;color:#aaa;white-space:nowrap"> ซูม</span>
         <input type="range" id="staffCropZoom" min="100" max="300" value="100" step="1"
                oninput="_staffCropSetZoom(this.value)"
                style="flex:1;accent-color:#ff6b1a">
@@ -833,7 +833,7 @@ function _staffCropInjectModal() {
             font-family:'IBM Plex Sans Thai',sans-serif">ยกเลิก</button>
         <button onclick="_staffCropConfirm()" style="flex:1;padding:9px 0;font-size:13px;border-radius:8px;
             border:1px solid rgba(255,107,26,0.4);background:rgba(255,107,26,0.15);color:#ff6b1a;
-            cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;font-weight:500">✓ ใช้รูปนี้</button>
+            cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;font-weight:500"> ใช้รูปนี้</button>
       </div>
     </div>
   </div>`);

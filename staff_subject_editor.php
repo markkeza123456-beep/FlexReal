@@ -147,7 +147,7 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
         <div class="lesson-resource-grid">
           <div class="resource-card">
             <div class="resource-head">
-              <div class="resource-icon document">📄</div>
+              <div class="resource-icon document"></div>
               <div>
                 <h4>เอกสารประกอบการเรียน</h4>
                 <p>อัปโหลดไฟล์ PDF สำหรับผู้เรียน</p>

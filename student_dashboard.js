@@ -1,4 +1,4 @@
-﻿let dashboardState = {
+let dashboardState = {
     student: null,
     courses: []
 };
@@ -127,7 +127,7 @@ function updateProfile(student) {
         if (el) el.textContent = value;
     };
 
-    setText('dashboardWelcome', `ยินดีต้อนรับกลับมา, ${name} 👋`);
+    setText('dashboardWelcome', `ยินดีต้อนรับกลับมา, ${name} `);
     setText('sidebarName', name);
     setText('displayName', name);
     setValue('profileName', name);
@@ -244,7 +244,7 @@ function _cropInjectModal() {
           background:#1a1a2e;border:1px solid rgba(255,255,255,0.1);
           border-radius:16px;padding:1.25rem;width:340px;max-width:100%;
           color:#fff;font-family:'Kanit',sans-serif">
-        <p style="margin:0 0 1rem;font-size:15px;font-weight:500">✂️ ครอปรูปโปรไฟล์</p>
+        <p style="margin:0 0 1rem;font-size:15px;font-weight:500">️ ครอปรูปโปรไฟล์</p>
         <div id="cropStage" style="
             position:relative;width:100%;height:280px;
             background:#0d0d1a;border-radius:10px;overflow:hidden;
@@ -256,7 +256,7 @@ function _cropInjectModal() {
               pointer-events:none"></div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
-          <span style="font-size:12px;color:#aaa;white-space:nowrap">🔍 ซูม</span>
+          <span style="font-size:12px;color:#aaa;white-space:nowrap"> ซูม</span>
           <input type="range" id="cropZoomSlider" min="100" max="300" value="100" step="1"
                  oninput="_cropSetZoom(this.value)"
                  style="flex:1;accent-color:#f97316">
@@ -277,7 +277,7 @@ function _cropInjectModal() {
               border:1px solid rgba(249,115,22,0.4);
               background:rgba(249,115,22,0.15);color:#f97316;
               cursor:pointer;font-family:'Kanit',sans-serif;font-weight:500">
-            ✓ ใช้รูปนี้
+             ใช้รูปนี้
           </button>
         </div>
       </div>
@@ -478,7 +478,7 @@ function togglePwd(id, btn) {
     if (!inp) return;
     const show = inp.type === 'password';
     inp.type = show ? 'text' : 'password';
-    btn.textContent = show ? '🙈' : '👁 ';
+    btn.textContent = show ? '' : ' ';
 }
 
 function checkPwdStrength(val) {
@@ -585,6 +585,6 @@ function saveProfile() {
         })
         .finally(() => {
             btn.disabled = false;
-            btn.textContent = '💾 บันทึกข้อมูล';
+            btn.textContent = ' บันทึกข้อมูล';
         });
 }

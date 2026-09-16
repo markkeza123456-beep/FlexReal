@@ -89,7 +89,7 @@ $summaryCards = [
       </div>
       <nav class="nav-list">
         <a class="nav-item active" href="#summary"><span>⋯</span>สรุปภาพรวม</a>
-        <a class="nav-item" href="#queues"><span>☰</span>หลักสูตรที่กำลังเรียน</a>
+        <a class="nav-item" href="#queues"><span></span>หลักสูตรที่กำลังเรียน</a>
         <a class="nav-item" href="#certs"><span>◫</span>รายวิชาล่าสุด</a>
         <a class="nav-item" href="#activities"><span>Ξ</span>กิจกรรมล่าสุด</a>
       </nav>

@@ -104,7 +104,7 @@ function showGuide(type) {
         title.innerText = 'ขั้นตอนการสมัครสมาชิก';
         content.innerHTML = `
             <div class="info-card">
-                <h4 style="color:var(--primary-orange); margin-bottom:15px;">📝 วิธีเริ่มใช้งาน</h4>
+                <h4 style="color:var(--primary-orange); margin-bottom:15px;"> วิธีเริ่มใช้งาน</h4>
                 <p>1. คลิกปุ่ม <b>Login</b> มุมขวาบนของหน้าจอ</p>
                 <p>2. กรอกรายละเอียดเพื่อสมัครสมาชิกด้วย Email หรือเลือกใช้งานผ่านระบบ Google</p>
                 <p>3. ยืนยันตัวตนแล้วเริ่มเรียนได้ทันที</p>
@@ -113,14 +113,14 @@ function showGuide(type) {
         title.innerText = 'วิธีค้นหาบทเรียน';
         content.innerHTML = `
             <div class="info-card">
-                <h4 style="color:var(--primary-orange); margin-bottom:15px;">🔍 การค้นหา</h4>
+                <h4 style="color:var(--primary-orange); margin-bottom:15px;"> การค้นหา</h4>
                 <p>ท่านสามารถค้นหาบทเรียนได้โดยพิมพ์ชื่อวิชาในช่อง Search หรือเลือกดูตามหมวดหมู่ที่เมนูด้านบน</p>
             </div>`;
     } else if (type === 'certificate') {
         title.innerText = 'การรับใบประกาศ';
         content.innerHTML = `
             <div class="info-card">
-                <h4 style="color:var(--primary-orange); margin-bottom:15px;">🎓 วุฒิบัตรดิจิทัล</h4>
+                <h4 style="color:var(--primary-orange); margin-bottom:15px;"> วุฒิบัตรดิจิทัล</h4>
                 <p>เมื่อเรียนจบครบ 100% และสอบผ่านเกณฑ์ ระบบจะให้ดาวน์โหลดใบประกาศทันทีในหน้าสรุปผล</p>
             </div>`;
     }
@@ -139,7 +139,7 @@ function showContact(type) {
         title.innerText = 'ช่องทางการติดต่อ';
         content.innerHTML = `
             <div class="info-card">
-                <h4 style="color:var(--primary-orange); margin-bottom:15px;">📞 ข้อมูลติดต่อ</h4>
+                <h4 style="color:var(--primary-orange); margin-bottom:15px;"> ข้อมูลติดต่อ</h4>
                 <p><b>อีเมล:</b> @flexiblehub.kbu</p>
                 <p><b>Line:</b> @flexiblehub</p>
             </div>`;
@@ -147,7 +147,7 @@ function showContact(type) {
         title.innerText = 'สถานที่ตั้ง';
         content.innerHTML = `
             <div class="info-card">
-                <h4 style="color:var(--primary-orange); margin-bottom:15px;">📍 ที่อยู่สำนักงาน</h4>
+                <h4 style="color:var(--primary-orange); margin-bottom:15px;"> ที่อยู่สำนักงาน</h4>
                 <p>อาคารflexblehub ชั้น 10 กรุงเทพมหานคร</p>
             </div>`;
     }
@@ -196,7 +196,7 @@ function openLocalVideo(fileName) {
     const videoPath = 'videos/' + fileName; 
 
     body.innerHTML = `
-        <h3 style="margin-bottom:15px; color:#E67E22;">🎬 วิดีโอบทเรียน</h3>
+        <h3 style="margin-bottom:15px; color:#E67E22;"> วิดีโอบทเรียน</h3>
         <div class="video-container">
             <video width="100%" controls autoplay style="border-radius:10px; background:#000;">
                 <source src="${videoPath}" type="video/mp4">
@@ -213,7 +213,7 @@ function startQuiz() {
     
     // สร้างเนื้อหาแบบทดสอบจำลอง
     body.innerHTML = `
-        <h3 style="margin-bottom:20px; color:var(--primary-orange);">📝 แบบทดสอบหลังเรียน</h3>
+        <h3 style="margin-bottom:20px; color:var(--primary-orange);"> แบบทดสอบหลังเรียน</h3>
         <div style="text-align:left; background:#f9f9f9; padding:20px; border-radius:10px;">
             <p style="margin-bottom:15px;"><b>ข้อที่ 1:</b> ข้อใดคือหลักการสำคัญในการเรียนรู้ผ่าน Flexible Hub?</p>
             <label class="quiz-option"><input type="radio" name="q1"> ก. เรียนที่ไหน เมื่อไหร่ก็ได้</label>

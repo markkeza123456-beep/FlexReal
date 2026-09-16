@@ -114,7 +114,7 @@
         throw new Error(result.message);
       }
     } catch (error) {
-      showToast('✕ ' + error.message, 'error-toast');
+      showToast(' ' + error.message, 'error-toast');
       submitBtn.disabled = false;
       btnText.style.display = 'inline';
       btnArrow.style.display = 'inline';

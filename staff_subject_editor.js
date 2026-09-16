@@ -129,8 +129,8 @@
         </td>
         <td>
           <div class="action-btns">
-            <button type="button" class="btn-icon" data-edit-lesson="${lesson.id}" title="แก้ไขบทเรียน">✎</button>
-            <button type="button" class="btn-icon danger" data-delete-lesson="${lesson.id}" title="ลบบทเรียน">✖</button>
+            <button type="button" class="btn-icon" data-edit-lesson="${lesson.id}" title="แก้ไขบทเรียน"></button>
+            <button type="button" class="btn-icon danger" data-delete-lesson="${lesson.id}" title="ลบบทเรียน"></button>
           </div>
         </td>
       </tr>

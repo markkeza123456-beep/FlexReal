@@ -22,7 +22,7 @@ foreach ($tables as $table) {
         ");
         $cols = $stmt->fetchAll(PDO::FETCH_ASSOC);
         if (empty($cols)) {
-            echo "  ⚠️  ไม่พบตารางนี้\n";
+            echo "  ️  ไม่พบตารางนี้\n";
         } else {
             printf("  %-25s %-20s %-10s %s\n", "COLUMN", "TYPE", "NULLABLE", "DEFAULT");
             echo str_repeat('-', 80) . "\n";

@@ -1,4 +1,4 @@
-﻿/* ===== teacherdash.js ===== */
+/* ===== teacherdash.js ===== */
 
 document.addEventListener('DOMContentLoaded', () => {
     const MAX_LESSONS_PER_SUBJECT = 3;
@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
         count.textContent = managedLessonId ? 'กำลังแก้ไขบทเรียน' : count.dataset.defaultCount;
         documentHint.textContent = managedLessonId ? 'ไม่เลือกไฟล์ใหม่ ระบบจะเก็บเอกสารเดิมไว้' : 'เลือกไฟล์ใหม่เมื่อต้องการเพิ่มเอกสาร';
         saveButton.disabled = false;
-        saveButton.textContent = managedLessonId ? '💾 บันทึกการแก้ไข' : '💾 บันทึกบทเรียนและวิดีโอ';
+        saveButton.textContent = managedLessonId ? ' บันทึกการแก้ไข' : ' บันทึกบทเรียนและวิดีโอ';
         contentManagerModal.classList.add('open');
         if (managedLessonId) {
             try {
@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const documents = data.documents || [];
                 if (documents.length) {
                     existingDocuments.style.display = 'block';
-                    existingDocuments.innerHTML = `ไฟล์เดิม: ${documents.map(doc => `<a href="${escapeHtml(doc.url)}" target="_blank" rel="noopener">📎 ${escapeHtml(doc.title)}</a>`).join(' · ')}`;
+                    existingDocuments.innerHTML = `ไฟล์เดิม: ${documents.map(doc => `<a href="${escapeHtml(doc.url)}" target="_blank" rel="noopener"> ${escapeHtml(doc.title)}</a>`).join(' · ')}`;
                 }
             } catch (error) { alert(error.message || 'โหลดข้อมูลบทเรียนไม่สำเร็จ'); }
         }
@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else { 
                 alert(d.message); 
                 if(d.message.includes('เธฅเนเธญเธเธญเธดเธ')) window.location.href = 'login.php';
-                else { btn.disabled = false; btn.textContent = '💾 บันทึกการแก้ไข'; }
+                else { btn.disabled = false; btn.textContent = ' บันทึกการแก้ไข'; }
             }
         });
     });
@@ -394,8 +394,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const videosForLesson = managedLessonId ? inlineVideos.filter(video => String(video.lessons_id) === managedLessonId) : [];
         inlineVideoList.innerHTML = videosForLesson.length ? videosForLesson.map((video) => `
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
-                <div style="min-width:0"><strong style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🎬 ${escapeHtml(video.title)}</strong><span style="font-size:12px;color:var(--text-muted)">${escapeHtml(video.lesson_title || '-')}</span></div>
-                <div style="display:flex;gap:5px;flex-shrink:0"><button type="button" class="action-icon-btn" data-inline-video-delete="${escapeHtml(video.id)}" title="ลบวิดีโอ" style="color:#ef4444">🗑</button></div>
+                <div style="min-width:0"><strong style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"> ${escapeHtml(video.title)}</strong><span style="font-size:12px;color:var(--text-muted)">${escapeHtml(video.lesson_title || '-')}</span></div>
+                <div style="display:flex;gap:5px;flex-shrink:0"><button type="button" class="action-icon-btn" data-inline-video-delete="${escapeHtml(video.id)}" title="ลบวิดีโอ" style="color:#ef4444"></button></div>
             </div>`).join('') : `<div style="padding:12px 0;color:var(--text-muted);font-size:13px">${managedLessonId ? 'ยังไม่มีวิดีโอในบทเรียนนี้' : 'บันทึกบทเรียนก่อน แล้วจึงเพิ่มวิดีโอได้'}</div>`;
     }
 
@@ -438,7 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await teacherRequest(videoForm);
             }
             window.location.reload();
-        } catch (error) { alert(error.message || 'บันทึกเนื้อหาไม่สำเร็จ'); saveButton.disabled = false; saveButton.textContent = '💾 บันทึกบทเรียนและวิดีโอ'; }
+        } catch (error) { alert(error.message || 'บันทึกเนื้อหาไม่สำเร็จ'); saveButton.disabled = false; saveButton.textContent = ' บันทึกบทเรียนและวิดีโอ'; }
     });
 
     document.getElementById('inlineVideoClearBtn')?.addEventListener('click', resetInlineVideoForm);
@@ -472,7 +472,7 @@ window.showStudentProgress = function(element) {
     if (lessons && lessons.length > 0) {
         listContainer.innerHTML = lessons.map(l => `
             <div style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: #10b981; font-size: 13.5px; display:flex; align-items:center; gap:10px;">
-                <span style="background:rgba(16,185,129,0.15); padding:4px 6px; border-radius:4px; font-size:11px;">✅</span> 
+                <span style="background:rgba(16,185,129,0.15); padding:4px 6px; border-radius:4px; font-size:11px;"></span>
                 <span>${l}</span>
             </div>
         `).join('');

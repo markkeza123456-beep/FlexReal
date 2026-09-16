@@ -142,7 +142,7 @@
     <!-- OVERVIEW PAGE -->
     <div id="page-overview" class="page active">
       <div class="page-header">
-        <h1>สวัสดี คุณสมหญิง 👋</h1>
+        <h1>สวัสดี คุณสมหญิง </h1>
         <p>ภาพรวมความคืบหน้าของบุตรหลาน · อัปเดตล่าสุด 26 พ.ค. 2569</p>
       </div>
 
@@ -389,14 +389,14 @@
                 <label class="settings-label">รหัสผ่านปัจจุบัน</label>
                 <div class="pwd-input-wrap">
                   <input type="password" class="settings-input" id="pwdCurrent" placeholder="ใส่รหัสผ่านปัจจุบัน">
-                  <button type="button" onclick="togglePwd('pwdCurrent',this)" class="pwd-toggle-btn">👁</button>
+                  <button type="button" onclick="togglePwd('pwdCurrent',this)" class="pwd-toggle-btn"></button>
                 </div>
               </div>
               <div class="settings-field">
                 <label class="settings-label">รหัสผ่านใหม่</label>
                 <div class="pwd-input-wrap">
                   <input type="password" class="settings-input" id="pwdNew" placeholder="อย่างน้อย 6 ตัวอักษร" oninput="checkPwdStrength(this.value)">
-                  <button type="button" onclick="togglePwd('pwdNew',this)" class="pwd-toggle-btn">👁</button>
+                  <button type="button" onclick="togglePwd('pwdNew',this)" class="pwd-toggle-btn"></button>
                 </div>
                 <div id="pwdStrengthWrap" style="display:none;margin-top:8px">
                   <div class="strength-bar-bg"><div id="pwdStrengthBar" class="strength-bar-fill"></div></div>
@@ -407,7 +407,7 @@
                 <label class="settings-label">ยืนยันรหัสผ่านใหม่</label>
                 <div class="pwd-input-wrap">
                   <input type="password" class="settings-input" id="pwdConfirm" placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง" oninput="checkPwdMatch()">
-                  <button type="button" onclick="togglePwd('pwdConfirm',this)" class="pwd-toggle-btn">👁</button>
+                  <button type="button" onclick="togglePwd('pwdConfirm',this)" class="pwd-toggle-btn"></button>
                 </div>
                 <div id="pwdMatchMsg" class="pwd-match-msg"></div>
               </div>

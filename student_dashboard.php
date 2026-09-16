@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
@@ -21,14 +21,14 @@
                     <span class="icon">⊞</span> แดชบอร์ด
                 </div>
                 <div class="menu-item" id="btn-lessons">
-                    <span class="icon">📘</span> บทเรียน
+                    <span class="icon"></span> บทเรียน
                 </div>
                 <div class="menu-item">
-                    <span class="icon">📊</span> รายงานผล
+                    <span class="icon"></span> รายงานผล
                 </div>
             </nav>
             <a href="logout.php" class="btn-logout" onclick="return confirm('ต้องการออกจากระบบหรือไม่?')">
-                <span>🚪</span> ออกจากระบบ
+                <span></span> ออกจากระบบ
             </a>
             <div class="user-profile" id="btn-settings" title="แก้ไขโปรไฟล์">
                 <div class="avatar" id="sidebarAvatar">-</div>
@@ -36,7 +36,7 @@
                     <p class="name" id="sidebarName">กำลังโหลด...</p>
                     <p class="role" id="sidebarRole">-</p>
                 </div>
-                <span style="margin-left:auto;font-size:0.8rem;color:var(--accent-orange);">⚙️</span>
+                <span style="margin-left:auto;font-size:0.8rem;color:var(--accent-orange);">️</span>
             </div>
         </aside>
 
@@ -50,7 +50,7 @@
                         <h1>แดชบอร์ด</h1>
                         <p id="dashboardWelcome">กำลังโหลดข้อมูลผู้ใช้...</p>
                     </div>
-                    <div class="notif-icon">🔔</div>
+                    <div class="notif-icon"></div>
                 </header>
 
                 <section class="stats-grid">
@@ -116,7 +116,7 @@
                         <h1>ตั้งค่าโปรไฟล์</h1>
                         <p>จัดการข้อมูลส่วนตัวและรหัสผ่านของคุณ</p>
                     </div>
-                    <div class="notif-icon">🔔</div>
+                    <div class="notif-icon"></div>
                 </header>
 
                 <div class="settings-wrapper">
