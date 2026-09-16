@@ -265,7 +265,32 @@ try {
             ':id' => $lessonId,
         ]);
 
+        if (!empty($_FILES['lesson_document']) && ($_FILES['lesson_document']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            $courseStmt = $conn->prepare('SELECT course_id FROM public.lessons WHERE lesson_id = :lesson_id');
+            $courseStmt->execute([':lesson_id' => $lessonId]);
+            $subjectId = (string) $courseStmt->fetchColumn();
+            $documentUpload = uploadLessonFile('lesson_document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc');
+            if ($documentUpload['path'] !== '') {
+                $resource = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position) VALUES (:lesson_id, 'document', :title, :url, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lesson_resources WHERE lesson_id = :lesson_id))");
+                $resource->execute([':lesson_id' => $lessonId, ':title' => $documentUpload['name'], ':url' => $documentUpload['path']]);
+            }
+        }
+
         echo json_encode(['success' => true, 'message' => 'แก้ไขบทเรียนสำเร็จ']);
+        exit;
+    }
+
+    if ($action === 'get_lesson_content') {
+        $lessonId = trim((string) ($_POST['lesson_id'] ?? ''));
+        if ($lessonId === '' || !teacherOwnsLesson($conn, $teacherId, $lessonId)) {
+            throw new Exception('คุณไม่มีสิทธิ์จัดการบทเรียนนี้');
+        }
+        $lessonStmt = $conn->prepare('SELECT lesson_id AS id, title FROM public.lessons WHERE lesson_id = :lesson_id');
+        $lessonStmt->execute([':lesson_id' => $lessonId]);
+        $lesson = $lessonStmt->fetch(PDO::FETCH_ASSOC);
+        $documentStmt = $conn->prepare("SELECT resource_id AS id, title, url FROM public.lesson_resources WHERE lesson_id = :lesson_id AND resource_type = 'document' ORDER BY position, resource_id");
+        $documentStmt->execute([':lesson_id' => $lessonId]);
+        echo json_encode(['success' => true, 'lesson' => $lesson, 'documents' => $documentStmt->fetchAll(PDO::FETCH_ASSOC)]);
         exit;
     }
 

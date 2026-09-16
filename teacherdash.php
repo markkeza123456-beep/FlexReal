@@ -519,10 +519,10 @@ $stats = [
                             <div class="modal-header content-manager-header"><h3 class="modal-title">📚 จัดการเนื้อหาวิชา</h3><button type="button" class="modal-close" id="closeContentManagerBtn">✕</button></div>
                             <div class="course-content-editor modal-body" style="display:flex;flex-direction:column;gap:20px;max-width:860px;margin:0 auto;">
                             <section style="padding:20px;border:1px solid var(--border);border-radius:12px;background:var(--bg3);">
-                                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;"><div><p style="font-size:11px;color:var(--orange);font-weight:700;letter-spacing:.08em;margin:0 0 4px;">LESSON CONTENT</p><h3 style="font-size:17px;margin:0;">เพิ่มบทเรียนย่อย</h3></div><span style="font-size:12px;color:var(--text-muted);"><?= count($subLessonsBySubject[$defaultSubjectId] ?? []) ?>/<?= MAX_LESSONS_PER_SUBJECT ?> บท</span></div>
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;"><div><p style="font-size:11px;color:var(--orange);font-weight:700;letter-spacing:.08em;margin:0 0 4px;">LESSON CONTENT</p><h3 style="font-size:17px;margin:0;" id="inlineLessonHeading">เพิ่มบทเรียนย่อย</h3></div><span id="inlineLessonCount" style="font-size:12px;color:var(--text-muted);"><?= count($subLessonsBySubject[$defaultSubjectId] ?? []) ?>/<?= MAX_LESSONS_PER_SUBJECT ?> บท</span></div>
                                 <form id="inlineLessonForm" enctype="multipart/form-data">
                                     <div class="form-group"><label>ชื่อบทเรียน *</label><input type="text" class="form-input" id="inlineLessonName" required placeholder="เช่น 1.1 ตรรกศาสตร์เบื้องต้น"></div>
-                                    <div class="form-group"><label>เอกสารประกอบ</label><input type="file" class="form-input" id="inlineLessonDocument" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*"></div>
+                                    <div class="form-group"><label>เอกสารประกอบ</label><div id="inlineExistingDocuments" style="display:none;margin:0 0 8px;font-size:13px;color:var(--text-muted);"></div><input type="file" class="form-input" id="inlineLessonDocument" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*"><small id="inlineLessonDocumentHint" style="color:var(--text-muted);">เลือกไฟล์ใหม่เมื่อต้องการเพิ่มเอกสาร</small></div>
                                 </form>
                             </section>
 
