@@ -284,14 +284,13 @@ try {
             $subjectId = (string) $courseStmt->fetchColumn();
             $documentUpload = uploadLessonFile('lesson_document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc', false, ['pdf']);
             if ($documentUpload['path'] !== '') {
-                // Replacing a document must update the active record.  The old
-                // insert-only behavior left several documents per lesson and
-                // student pages continued to show the first (oldest) file.
+                 // Replace the first resource because student pages select the
+                 // first document by position. Remove duplicate resource rows.
                 $currentDocument = $conn->prepare(
                     "SELECT resource_id
                      FROM public.lesson_resources
                      WHERE lesson_id = :lesson_id AND resource_type = 'document'
-                     ORDER BY position DESC, resource_id DESC
+                     ORDER BY position ASC, resource_id ASC
                      LIMIT 1"
                 );
                 $currentDocument->execute([':lesson_id' => $lessonId]);
@@ -308,6 +307,10 @@ try {
                         ':title' => $documentUpload['name'],
                         ':url' => $documentUpload['path'],
                     ]);
+                    $conn->prepare(
+                        "DELETE FROM public.lesson_resources
+                         WHERE lesson_id = :lesson_id AND resource_type = 'document' AND resource_id <> :resource_id"
+                    )->execute([':lesson_id' => $lessonId, ':resource_id' => $resourceId]);
                 } else {
                     $resource = $conn->prepare(
                         "INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position)

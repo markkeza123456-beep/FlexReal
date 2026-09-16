@@ -230,7 +230,7 @@ $stats = [
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="teacherdash.css">
+    <link rel="stylesheet" href="teacherdash.css?v=20260916-clean-form">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px; 
@@ -526,6 +526,7 @@ $stats = [
                                 <form id="inlineLessonForm" enctype="multipart/form-data">
                                     <div class="form-group"><label>ชื่อบทเรียน *</label><input type="text" class="form-input" id="inlineLessonName" required placeholder="เช่น 1.1 ตรรกศาสตร์เบื้องต้น"></div>
                                     <div class="form-group"><label>เอกสารประกอบ (PDF)</label><div id="inlineExistingDocuments" style="display:none;margin:0 0 8px;font-size:13px;color:var(--text-muted);"></div><input type="file" class="form-input" id="inlineLessonDocument" accept="application/pdf,.pdf"><small id="inlineLessonDocumentHint" style="color:var(--text-muted);">เลือกไฟล์ PDF ใหม่เมื่อต้องการเพิ่มเอกสาร</small></div>
+                                    <button type="button" class="btn-save" id="saveInlineLessonBtn">บันทึกบทเรียน</button>
                                 </form>
                             </section>
 
@@ -537,10 +538,10 @@ $stats = [
                                     <div class="form-group"><label>ชื่อวิดีโอ *</label><input type="text" class="form-input" id="inlineVideoTitle" required placeholder="เช่น วิดีโอสรุปบทที่ 1"></div>
                                     <p style="font-size:13px;color:var(--text-muted);margin:-2px 0 14px;">วิดีโอนี้จะถูกผูกกับบทเรียนที่กรอกด้านบนโดยอัตโนมัติ</p>
                                     <div class="form-group"><label>ไฟล์วิดีโอ <span id="inlineVideoFileRequired">*</span></label><input type="file" class="form-input" id="inlineVideoFile" accept="video/*" required><small id="inlineVideoFileHint" style="color:var(--text-muted);">เลือกไฟล์วิดีโอเพื่อบันทึก</small></div>
+                                    <button type="button" class="btn-save" id="saveInlineVideoBtn">บันทึกวิดีโอ</button>
                                     <button type="button" class="btn-cancel" id="inlineVideoClearBtn">ล้างฟอร์ม</button>
                                 </form>
                             </section>
-                            <div style="display:flex;justify-content:flex-end;border-top:1px solid var(--border);padding-top:20px;"><button type="button" class="btn-save" id="combinedContentSaveBtn" <?= count($subLessonsBySubject[$defaultSubjectId] ?? []) >= MAX_LESSONS_PER_SUBJECT ? 'disabled' : '' ?>> บันทึกบทเรียนและวิดีโอ</button></div>
                         </div>
                           </div>
                         </div>
@@ -1331,6 +1332,6 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-<script src="teacherdash.js?v=20260901"></script>
+<script src="teacherdash.js?v=20260916-separated-save"></script>
 </body>
 </html>
