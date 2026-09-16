@@ -840,13 +840,16 @@ async function fetchCourseProgress(subjectId) {
     } catch (error) { applyCourseProgressSummary(null); }
 }
 
-async function recordLearningEvent(activityType, lessonIndex = 1, progressPercent = 0, resumePosition = 0) {
-    if (!currentSubjectId || !enrolledCourses[currentSubjectId]) return;
+async function recordLearningEvent(activityType, lessonIndex = 1, progressPercent = 0, resumePosition = 0, force = false) {
+    if (!currentSubjectId || !enrolledCourses[currentSubjectId]) return false;
     const eventKey = `${currentSubjectId}:${lessonIndex}:${activityType}`;
     const now = Date.now();
     const previous = learningProgressRequests.get(eventKey);
     const isPeriodicVideoUpdate = activityType === 'video_progress' && Number(progressPercent) < 100;
-    if (previous?.inFlight || (isPeriodicVideoUpdate && now - (previous?.savedAt || 0) < LEARNING_PROGRESS_SAVE_INTERVAL_MS)) return;
+    // Completion must never be dropped just because the previous heartbeat is
+    // still saving. The server keeps the greatest percentage, so a concurrent
+    // final 100% write cannot move progress backwards.
+    if ((!force && previous?.inFlight) || (!force && isPeriodicVideoUpdate && now - (previous?.savedAt || 0) < LEARNING_PROGRESS_SAVE_INTERVAL_MS)) return false;
     learningProgressRequests.set(eventKey, { inFlight: true, savedAt: previous?.savedAt || 0 });
     try {
         const lesson = currentLessonsData.find((item) => item.index === Number(lessonIndex));
@@ -858,10 +861,19 @@ async function recordLearningEvent(activityType, lessonIndex = 1, progressPercen
         formData.append('progress_percent', String(progressPercent));
         formData.append('resume_position', String(resumePosition));
 
-        const response = await fetch('student_learning_api.php', { method: 'POST', body: formData, credentials: 'same-origin', keepalive: true });
+        // keepalive + FormData is inconsistently handled by browsers. Use a
+        // normal request while the video is open; pausing also forces a save.
+        const response = await fetchJsonWithTimeout('student_learning_api.php', { method: 'POST', body: formData, credentials: 'same-origin' }, 10000);
         const result = await response.json();
-        if (result.status === 'success') learningProgressRequests.set(eventKey, { inFlight: false, savedAt: Date.now() });
-    } catch (error) {}
+        if (result.status === 'success') {
+            learningProgressRequests.set(eventKey, { inFlight: false, savedAt: Date.now() });
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.warn('Unable to save learning progress:', error);
+        return false;
+    }
     finally {
         const state = learningProgressRequests.get(eventKey);
         if (state?.inFlight) learningProgressRequests.set(eventKey, { ...state, inFlight: false });
