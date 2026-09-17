@@ -1,9 +1,6 @@
-/* ============================================
-   NEXORA LOGIN — Orange & Black Theme
-   style.css
-   ============================================ */
 
-/* ---------- CSS Variables ---------- */
+
+
 :root {
   --bg:          #ffffff;
   --surface:     #ffffff;
@@ -28,7 +25,7 @@
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ---------- Reset ---------- */
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
   width: 100%;
@@ -51,7 +48,7 @@ body {
   position: relative;
 }
 
-/* ---------- White Background Pattern ---------- */
+
 .bg-grid {
   position: fixed;
   inset: 0;
@@ -62,7 +59,7 @@ body {
   z-index: 0;
 }
 
-/* Learning-themed line illustrations, kept behind the login card. */
+
 .edu-pattern {
   position: fixed;
   inset: 0;
@@ -88,7 +85,7 @@ body {
 .network-one { bottom: 4%; left: 16%; transform: rotate(-5deg); }
 .pencil-one  { bottom: 6%; right: 16%; transform: rotate(12deg); }
 
-/* ---------- Glow Orbs ---------- */
+
 .glow-orb {
   display: none;
 }
@@ -116,7 +113,7 @@ body {
   to   { transform: translate(20px, -20px) scale(1.05); }
 }
 
-/* ---------- Container ---------- */
+
 .container {
   position: relative;
   z-index: 1;
@@ -126,7 +123,7 @@ body {
   margin: 0 auto;
 }
 
-/* ---------- Card ---------- */
+
 .card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -145,7 +142,7 @@ body {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Card top accent bar */
+
 .card-accent {
   position: absolute;
   top: 0; left: 0; right: 0;
@@ -159,7 +156,7 @@ body {
   to   { background-position: -100% 0; }
 }
 
-/* ---------- Brand ---------- */
+
 .brand {
   display: flex;
   align-items: center;
@@ -194,7 +191,7 @@ body {
   opacity: .8;
 }
 
-/* ---------- Headings ---------- */
+
 .title {
   font-family: 'IBM Plex Sans Thai', sans-serif;
   font-weight: 700;
@@ -211,7 +208,7 @@ body {
   animation: fadeSlideUp .5s .2s both;
 }
 
-/* ---------- Role Tabs ---------- */
+
 .role-tabs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -270,7 +267,7 @@ body {
   transform: scale(1.1);
 }
 
-/* ---------- PIN Field ---------- */
+
 .field-pin {
   animation: fadeSlideUp .3s ease both;
 }
@@ -326,7 +323,7 @@ body {
 
 .form { display: flex; flex-direction: column; gap: 20px; }
 
-/* --- Field --- */
+
 .field {
   display: flex;
   flex-direction: column;
@@ -344,7 +341,7 @@ body {
   text-transform: uppercase;
 }
 
-/* --- Input wrapper --- */
+
 .input-wrap {
   position: relative;
   display: flex;
@@ -371,7 +368,7 @@ body {
   box-shadow: 0 0 0 4px rgba(255, 107, 26, .24), 0 0 20px var(--orange-dim);
 }
 
-/* Make the active text box unmistakable when it is clicked or reached by Tab. */
+
 .input-wrap:focus-within {
   border-radius: var(--radius-sm);
   outline: 2px solid var(--orange);
@@ -382,7 +379,7 @@ body {
   font-weight: 600;
 }
 
-/* Icon inside input */
+
 .input-icon {
   position: absolute;
   left: 14px;
@@ -395,7 +392,7 @@ body {
 .input-icon svg { width: 18px; height: 18px; }
 .input-wrap:focus-within .input-icon { color: var(--orange); }
 
-/* Focus bar underline */
+
 .focus-bar {
   position: absolute;
   bottom: 0; left: 50%; right: 50%;
@@ -407,7 +404,7 @@ body {
 }
 .input-wrap:focus-within .focus-bar { left: 0; right: 0; }
 
-/* Password toggle */
+
 .toggle-pw {
   position: absolute;
   right: 13px;
@@ -422,7 +419,7 @@ body {
 .toggle-pw:hover { color: var(--orange); }
 .toggle-pw svg { width: 18px; height: 18px; }
 
-/* Error state */
+
 .field.has-error .input-wrap input {
   border-color: var(--error);
   box-shadow: 0 0 0 3px rgba(255,68,68,.1);
@@ -434,7 +431,7 @@ body {
   padding-left: 2px;
 }
 
-/* ---------- Options Row ---------- */
+
 .options-row {
   display: flex;
   align-items: center;
@@ -442,7 +439,7 @@ body {
   animation: fadeSlideUp .5s .35s both;
 }
 
-/* Custom checkbox */
+
 .checkbox-wrap {
   display: flex;
   align-items: center;
@@ -479,7 +476,7 @@ body {
   color: var(--text-secondary);
 }
 
-/* Links */
+
 .link {
   color: var(--orange);
   text-decoration: none;
@@ -492,7 +489,7 @@ body {
   text-shadow: 0 0 10px var(--orange-glow);
 }
 
-/* ---------- Submit Button ---------- */
+
 .btn-submit {
   display: flex;
   align-items: center;
@@ -532,7 +529,7 @@ body {
 .btn-submit:hover .btn-arrow { transform: translateX(4px); }
 .btn-loader { display: flex; align-items: center; position: relative; z-index: 1; }
 
-/* Spinner */
+
 .spinner {
   width: 18px; height: 18px;
   border: 2px solid rgba(255,255,255,.3);
@@ -542,7 +539,7 @@ body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ---------- Divider ---------- */
+
 .divider {
   display: flex;
   align-items: center;
@@ -560,7 +557,7 @@ body {
   background: var(--border);
 }
 
-/* ---------- Social Button ---------- */
+
 .btn-social {
   display: flex;
   align-items: center;
@@ -586,7 +583,7 @@ body {
   box-shadow: 0 0 0 3px var(--orange-dim);
 }
 
-/* ---------- Register Row ---------- */
+
 .register-row {
   text-align: center;
   font-size: .84rem;
@@ -594,7 +591,7 @@ body {
   animation: fadeSlideUp .5s .55s both;
 }
 
-/* ---------- Toast ---------- */
+
 .toast {
   position: fixed;
   bottom: 28px;
@@ -620,13 +617,13 @@ body {
 .toast.success { border-color: var(--success); color: var(--success); }
 .toast.error-toast { border-color: var(--error); color: var(--error); }
 
-/* ---------- Animation util ---------- */
+
 @keyframes fadeSlideUp {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ---------- Responsive ---------- */
+
 @media (max-width: 480px) {
   .card { padding: 36px 24px 28px; }
   .title { font-size: 1.5rem; }

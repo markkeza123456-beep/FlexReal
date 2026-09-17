@@ -22,9 +22,9 @@ try { $action = strtolower((string) ($_GET['action'] ?? $_POST['action'] ?? 'sum
     if ($action === 'record') {
         $position = max(1, (int) ($_POST['lesson_index'] ?? $_POST['position'] ?? 1));
         recordLearningActivity($conn, $studentId, $courseId, $position, trim((string) ($_POST['activity_type'] ?? 'lesson_open')), trim((string) ($_POST['lesson_title'] ?? '')), (float) ($_POST['progress_percent'] ?? 0), (float) ($_POST['resume_position'] ?? 0));
-        // Progress heartbeats are write-only.  Returning the full summary here
-        // repeated an expensive aggregate query and re-rendered the page for
-        // every heartbeat.
+
+
+
         learningJson(['status' => 'success']);
     }
     learningJson(['status' => 'success', 'summary' => fetchCourseSummary($conn, $studentId, $courseId)]);

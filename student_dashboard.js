@@ -96,9 +96,7 @@ function renderLessons(courses) {
     `).join('');
 }
 
-/* ─────────────────────────────────────────────────
-   Avatar helper — apply URL หรือ dataURL ลง UI
-   ───────────────────────────────────────────────── */
+
 function _applyAvatarUI(src) {
     const avatarImg     = document.getElementById('avatarImg');
     const avatarInitial = document.getElementById('avatarInitial');
@@ -142,7 +140,7 @@ function updateProfile(student) {
         if (!el.id) el.textContent = 'นักเรียน - ' + className;
     });
 
-    // โหลด avatar_url จาก DB — ถ้ามีให้แสดงรูป ถ้าไม่มีให้แสดงตัวอักษรแรก
+
     if (student.avatar_url) {
         _applyAvatarUI(student.avatar_url);
     } else {
@@ -217,9 +215,7 @@ loadDashboardData().catch(() => {
     renderLessons([]);
 });
 
-/* ─────────────────────────────────────────────────
-   Avatar Crop System
-   ───────────────────────────────────────────────── */
+
 const _crop = {
     img: null,
     imgX: 0, imgY: 0,
@@ -416,17 +412,15 @@ function _cropConfirm() {
 
     const dataURL = offscreen.toDataURL('image/png');
 
-    // แสดงรูปทันทีใน UI
+
     _applyAvatarUI(dataURL);
     _cropClose();
 
-    // อัปโหลดไปยัง Supabase ผ่าน uploadavatar_student.php
+
     _uploadAvatarToServer(dataURL);
 }
 
-/* ─────────────────────────────────────────────────
-   อัปโหลด dataURL ขึ้น Supabase Storage
-   ───────────────────────────────────────────────── */
+
 function _uploadAvatarToServer(dataURL) {
     fetch('uploadavatar_student.php', {
         method: 'POST',
@@ -437,7 +431,7 @@ function _uploadAvatarToServer(dataURL) {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            // อัปเดต URL ใน state เพื่อให้รีเพจแล้วรูปยังอยู่
+
             if (dashboardState.student) {
                 dashboardState.student.avatar_url = data.url;
             }
@@ -448,10 +442,7 @@ function _uploadAvatarToServer(dataURL) {
     .catch(err => console.warn('Avatar upload error:', err));
 }
 
-/* ─────────────────────────────────────────────────
-   previewAvatar — เปิด crop modal เมื่อเลือกไฟล์
-   (แทนที่ของเดิมที่แสดงรูปชั่วคราวเท่านั้น)
-   ───────────────────────────────────────────────── */
+
 function previewAvatar(input) {
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];
@@ -469,7 +460,7 @@ function previewAvatar(input) {
         image.src = e.target.result;
     };
     reader.readAsDataURL(file);
-    // reset input เพื่อให้เลือกไฟล์เดิมซ้ำได้
+
     input.value = '';
 }
 

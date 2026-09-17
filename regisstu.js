@@ -1,6 +1,4 @@
-/* ============================================
-   FLEXIBLE LEARNING HUB - regisstu.js
-   ============================================ */
+
 
 (() => {
   const tabs = [...document.querySelectorAll('.role-tab')];
@@ -89,7 +87,7 @@
     }
   });
 
-  // ---- PIN box helpers ----
+
 
   function collectPin(wrapId) {
     const wrap = document.getElementById(wrapId);
@@ -103,7 +101,7 @@
     const digits = [...wrap.querySelectorAll('.pin-digit')];
 
     digits.forEach((input, idx) => {
-      // รับเฉพาะตัวเลข
+
       input.addEventListener('input', () => {
         input.value = input.value.replace(/\D/g, '').slice(-1);
         if (input.value && idx < digits.length - 1) {
@@ -120,7 +118,7 @@
         }
       });
 
-      // paste ทั้ง 6 หลักพร้อมกัน
+
       input.addEventListener('paste', (e) => {
         e.preventDefault();
         const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
@@ -137,7 +135,7 @@
   setupPinBoxes('pinConfirmWrap');
   setupPinBoxes('parentPinWrap');
 
-  // ---- ID Card / Phone / Zipcode format ----
+
 
   function bindDigitsOnly(input, maxLength) {
     input?.addEventListener('input', () => {
@@ -174,7 +172,7 @@
   bindIdCardFormat(document.getElementById('link_student_id'));
   bindDigitsOnly(document.getElementById('zipcode'), 5);
 
-  // ---- Password toggle ----
+
 
   const eyeOpen = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
   const eyeOff = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>`;
@@ -196,7 +194,7 @@
   makeToggle('togglePw1', 'password', 'eye1');
   makeToggle('togglePw2', 'confirm', 'eye2');
 
-  // ---- Error helpers ----
+
 
   function setError(fieldId, errorId, message) {
     const field = document.getElementById(fieldId);
@@ -237,7 +235,7 @@
     ['link_student_id', 'field-link-student-id', 'link-student-id-error'],
   ].forEach(([inputId, fieldId, errorId]) => clearOnFocus(inputId, fieldId, errorId));
 
-  // clear PIN error เมื่อกดช่องใดก็ได้
+
   document.getElementById('pinWrap')?.querySelectorAll('.pin-digit').forEach((input) => {
     input.addEventListener('focus', () => setError('field-pin', 'pin-error', ''));
   });
@@ -248,7 +246,7 @@
     input.addEventListener('focus', () => setError('field-link-student-pin', 'link-student-pin-error', ''));
   });
 
-  // ---- Toast ----
+
 
   const toast = document.getElementById('toast');
   let toastTimer;
@@ -262,7 +260,7 @@
     toastTimer = window.setTimeout(() => toast.classList.remove('show'), 3200);
   }
 
-  // ---- Submit ----
+
 
   const submitBtn = document.getElementById('submitBtn');
   const btnText = submitBtn.querySelector('.btn-text');
@@ -283,7 +281,7 @@
     const currentRole = roleInput.value;
     const valueOf = (id) => document.getElementById(id)?.value.trim() || '';
 
-    // ---- ข้อมูลส่วนตัว ----
+
     if (!valueOf('firstname')) {
       valid = setError('field-firstname', 'firstname-error', 'กรุณากรอกชื่อ') && valid;
     }
@@ -299,7 +297,7 @@
     if (currentRole === 'student' && !valueOf('level')) {
       valid = setError('field-level', 'level-error', 'กรุณาเลือกระดับชั้น') && valid;
     }
-    // ---- ข้อมูลติดต่อ ----
+
     const email = valueOf('email');
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       valid = setError('field-email', 'email-error', 'กรุณากรอกอีเมลให้ถูกต้อง') && valid;
@@ -310,7 +308,7 @@
       valid = setError('field-phone', 'phone-error', 'เบอร์โทรต้องมี 10 หลัก') && valid;
     }
 
-    // ---- ที่อยู่ ----
+
     if (!valueOf('house')) {
       valid = setError('field-house', 'house-error', 'กรุณากรอกบ้านเลขที่') && valid;
     }
@@ -329,7 +327,7 @@
       valid = setError('field-zipcode', 'zipcode-error', 'รหัสไปรษณีย์ต้องมี 5 หลัก') && valid;
     }
 
-    // ---- เอกสาร (เฉพาะ student และ teacher) ----
+
     if (currentRole === 'student' || currentRole === 'teacher') {
       if (fileInput) {
         if (!fileInput.files[0]) {
@@ -340,7 +338,7 @@
       }
     }
 
-    // ---- รหัสผ่าน ----
+
     const password = valueOf('password');
     const confirmPassword = valueOf('confirm');
     if (!/^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}$/.test(password)) {
@@ -350,8 +348,8 @@
       valid = setError('field-confirm', 'confirm-error', 'รหัสผ่านไม่ตรงกัน') && valid;
     }
 
-    // รองรับ PIN แบบกล่อง 6 ช่องของฟอร์มรุ่นเดิมเท่านั้น
-    // ฟอร์มปัจจุบันใช้ input เดียวและให้ HTML required ตรวจสอบให้แล้ว
+
+
     if (currentRole === 'student' && document.getElementById('pinWrap')) {
       const studentPin = collectPin('pinWrap');
       const studentPinConfirm = collectPin('pinConfirmWrap');
@@ -370,12 +368,12 @@
         setError('field-pin-confirm', 'pin-confirm-error', '');
       }
 
-      // ยัดค่ารวมเข้า hidden field ก่อน submit
+
       const finalPin = document.getElementById('final_pin');
       if (finalPin) finalPin.value = studentPin;
     }
 
-    // ---- ข้อมูลผูกบัญชีผู้ปกครอง ----
+
     if (currentRole === 'parent' && document.getElementById('parentPinWrap')) {
       const linkedStudentId = valueOf('link_student_id').replace(/\D/g, '');
       const linkedStudentPin = collectPin('parentPinWrap');
@@ -390,7 +388,7 @@
         setError('field-link-student-pin', 'link-student-pin-error', '');
       }
 
-      // ยัดค่ารวมเข้า hidden field ก่อน submit
+
       const linkedPin = document.getElementById('link_student_pin');
       if (linkedPin) linkedPin.value = linkedStudentPin;
     }
@@ -401,7 +399,7 @@
       return;
     }
 
-    // รวมชื่อ + นามสกุลก่อน submit
+
     const fullnameHidden = document.getElementById('fullnameHidden');
     if (fullnameHidden) {
       fullnameHidden.value = (valueOf('firstname') + ' ' + valueOf('lastname')).trim();

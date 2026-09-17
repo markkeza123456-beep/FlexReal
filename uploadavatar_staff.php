@@ -17,7 +17,7 @@ try {
         exit;
     }
 
-    // แปลง base64 → binary
+
     $base64 = preg_replace('/^data:image\/\w+;base64,/', '', $dataURL);
     $imageData = base64_decode($base64);
     if (!$imageData) {
@@ -27,16 +27,16 @@ try {
 
     require_once __DIR__ . '/db_connect.php';
 
-    // อ่าน Supabase config จาก db_connect.php (ต้องมี $supabaseUrl และ $supabaseKey)
-    // หรือกำหนดตรงนี้:
-    // $supabaseUrl = 'https://xxxx.supabase.co';
-    // $supabaseKey = 'your-service-role-key';
+
+
+
+
 
     $userId   = $_SESSION['user_id'];
     $fileName = 'staff_' . $userId . '_' . time() . '.png';
-    $bucket   = 'avatars'; // ชื่อ bucket ใน Supabase Storage
+    $bucket   = 'avatars';
 
-    // อัปโหลดไป Supabase Storage
+
     $uploadUrl = rtrim($supabaseUrl, '/') . '/storage/v1/object/' . $bucket . '/' . $fileName;
     $ch = curl_init($uploadUrl);
     curl_setopt_array($ch, [
@@ -58,10 +58,10 @@ try {
         exit;
     }
 
-    // Public URL ของรูป
+
     $publicUrl = rtrim($supabaseUrl, '/') . '/storage/v1/object/public/' . $bucket . '/' . $fileName;
 
-    // บันทึก URL ลงตาราง staff
+
     $stmt = $conn->prepare('UPDATE public.staff SET avatar_url = :url WHERE user_id = :id');
     $stmt->execute([':url' => $publicUrl, ':id' => $userId]);
 

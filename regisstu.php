@@ -1,9 +1,9 @@
 <?php
 session_start();
-require_once 'db_connect.php'; 
+require_once 'db_connect.php';
 
 try {
-    // ระดับชั้นมาจากหลักสูตรที่ใช้งานอยู่ใน schema ปัจจุบัน
+
     $sql = "SELECT DISTINCT level
             FROM public.curricula
             WHERE status = 'active' AND level IS NOT NULL AND BTRIM(level) <> ''
@@ -17,8 +17,8 @@ try {
         $groupedLevels[$row['level']][] = $row;
     }
 
-    // จังหวัดเป็นข้อมูลที่ผู้สมัครกรอก และเก็บใน public.user_addresses
-    // schema ปัจจุบันไม่มีตาราง provinces แยกต่างหาก
+
+
     $provincesFromDb = [
         ['name' => 'กรุงเทพมหานคร'], ['name' => 'กระบี่'], ['name' => 'ขอนแก่น'],
         ['name' => 'เชียงใหม่'], ['name' => 'ชลบุรี'], ['name' => 'นครราชสีมา'],
@@ -197,7 +197,7 @@ try {
             <div class="input-wrap">
               <select id="province" name="province" required>
                 <option value="" disabled selected>เลือกจังหวัด</option>
-                <!--  วนลูปแสดงรายชื่อจังหวัดจากฐานข้อมูล -->
+
                 <?php foreach ($provincesFromDb as $prov): ?>
                   <option value="<?= htmlspecialchars($prov['name']) ?>">
                     <?= htmlspecialchars($prov['name']) ?>

@@ -16,7 +16,7 @@ $pwd_current = $_POST['pwd_current'] ?? '';
 $pwd_new     = $_POST['pwd_new']     ?? '';
 
 try {
-    // 1. อัปเดตชื่อ, อีเมล, เบอร์โทร ในตาราง student
+
     if (!empty($name) || !empty($email) || !empty($phone)) {
         $stmt = $conn->prepare("
             UPDATE public.students
@@ -35,7 +35,7 @@ try {
         $_SESSION['name'] = $name;
     }
 
-    // 2. อัปเดตรหัสผ่านในตาราง User (ตาราง student ไม่มี column password)
+
     if (!empty($pwd_new)) {
         $stmt = $conn->prepare('SELECT password_hash FROM public.users WHERE user_id = :uid');
         $stmt->execute(['uid' => $user_id]);

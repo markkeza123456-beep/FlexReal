@@ -1,4 +1,4 @@
-/* Shared light theme for all Flexible Learning Hub screens. */
+
 :root {
   --bg: #f9ba87;
   --bg-dark: #f9ba87;
@@ -69,7 +69,7 @@ body {
   border-color: var(--border) !important;
 }
 
-/* Dashboard headings should sit directly on the page, not inside a white card. */
+
 .topbar,
 .page-header,
 .header {
@@ -190,7 +190,7 @@ select:focus {
   color: #ffffff;
 }
 
-/* Preserve high contrast for text placed on the orange hero and dark footer. */
+
 .hero > h1,
 .hero > h2,
 .hero > h3,

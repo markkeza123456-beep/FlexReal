@@ -30,10 +30,10 @@
     min-height: 100vh;
   }
 
-  /* ========== LAYOUT ========== */
+
   .layout { display: flex; min-height: 100vh; }
 
-  /* ========== SIDEBAR ========== */
+
   .sidebar {
     width: 240px;
     background: var(--surface);
@@ -133,7 +133,7 @@
   }
   .logout-btn:hover { color: #E24B4A; }
 
-  /* ========== MAIN ========== */
+
   .main { flex: 1; overflow-x: hidden; }
 
   .topbar {
@@ -169,10 +169,10 @@
     border: 1.5px solid var(--surface);
   }
 
-  /* ========== CONTENT ========== */
+
   .content { padding: 24px 28px; max-width: 1100px; }
 
-  /* ========== HERO CARD ========== */
+
   .hero-card {
     background: linear-gradient(135deg, var(--accent-dark) 0%, var(--accent) 60%, var(--accent-mid) 100%);
     border-radius: var(--radius);
@@ -218,7 +218,7 @@
     margin: 0 auto 8px;
   }
 
-  /* ========== STATS GRID ========== */
+
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -249,10 +249,10 @@
   .stat-value { font-size: 24px; font-weight: 600; color: var(--text); line-height: 1.1; }
   .stat-sub   { font-size: 11px; color: var(--text3); }
 
-  /* ========== TWO COL ========== */
+
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
 
-  /* ========== CARD ========== */
+
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -274,7 +274,7 @@
   }
   .card-body { padding: 14px 18px; }
 
-  /* ========== SUBJECT LIST ========== */
+
   .subject-item {
     display: flex;
     align-items: center;
@@ -294,7 +294,7 @@
   .prog-fill { height: 100%; border-radius: 3px; }
   .prog-val { font-size: 10px; color: var(--text3); text-align: right; margin-top: 2px; }
 
-  /* ========== ACTIVITY LIST ========== */
+
   .activity-item {
     display: flex;
     gap: 12px;
@@ -325,7 +325,7 @@
   .activity-name { font-size: 13px; font-weight: 500; color: var(--text); }
   .activity-sub  { font-size: 11px; color: var(--text3); margin-top: 1px; }
 
-  /* ========== SCHEDULE ========== */
+
   .schedule-item {
     display: flex;
     align-items: center;
@@ -346,7 +346,7 @@
   .schedule-name { font-size: 13px; font-weight: 500; color: var(--text); }
   .schedule-meta { font-size: 11px; color: var(--text3); }
 
-  /* ========== CHECKIN CARD ========== */
+
   .checkin-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -396,7 +396,7 @@
   }
   .btn-danger:hover { background: #F7C1C1; }
 
-  /* ========== PILL ========== */
+
   .pill {
     display: inline-block; padding: 2px 9px;
     border-radius: 20px; font-size: 11px; font-weight: 500;
@@ -407,7 +407,7 @@
   .pill-red    { background: #FCEBEB; color: #791F1F; }
   .pill-teal   { background: var(--accent-light); color: var(--accent-dark); }
 
-  /* ========== ASSESSMENT TABLE ========== */
+
   .table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
   th {
@@ -428,7 +428,7 @@
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: var(--surface2); }
 
-  /* ========== GRADE CIRCLE ========== */
+
   .grade-circle {
     width: 28px; height: 28px; border-radius: 50%;
     display: inline-flex; align-items: center; justify-content: center;
@@ -439,7 +439,7 @@
   .g-c { background: #FAEEDA; color: #633806; }
   .g-d { background: #FCEBEB; color: #791F1F; }
 
-  /* ========== PORTFOLIO SECTION ========== */
+
   .portfolio-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -465,7 +465,7 @@
   .portfolio-name { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
   .portfolio-date { font-size: 10px; color: var(--text3); }
 
-  /* ========== TRANSFER STATUS ========== */
+
   .transfer-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -510,7 +510,7 @@
   .step-item.done .step-label { color: var(--accent-dark); }
   .step-item.current .step-label { color: var(--accent); font-weight: 500; }
 
-  /* ========== RESPONSIVE ========== */
+
   @media (max-width: 900px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .two-col { grid-template-columns: 1fr; }
@@ -522,7 +522,7 @@
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
   }
 
-  /* ========== ANIMATION ========== */
+
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -537,7 +537,7 @@
   .content > *:nth-child(5) { animation-delay: 0.25s; }
   .content > *:nth-child(6) { animation-delay: 0.30s; }
 
-  /* ========== MODAL ========== */
+
   .modal-overlay {
     display: none; position: fixed; inset: 0;
     background: rgba(0,0,0,0.35); z-index: 100;
@@ -580,7 +580,7 @@
   }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-  /* ========== SVG PROGRESS RING ========== */
+
   .ring-container { position: relative; width: 72px; height: 72px; }
   .ring-container svg { transform: rotate(-90deg); }
   .ring-text {

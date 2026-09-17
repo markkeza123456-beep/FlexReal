@@ -1,9 +1,9 @@
-/* ===== parent_dashboard.js ===== */
 
-/* ─── Storage key ───────────────────────────────────────────── */
+
+
 const PARENT_KEY = 'parentProfile_v1';
 
-/* ─── Mock parent profile (แทน PHP session) ────────────────── */
+
 const mockParent = {
   name: 'คุณสมหญิง ใจดี',
   email: 'parent@flexhub.ac.th',
@@ -13,7 +13,7 @@ const mockParent = {
   photoDataUrl: null
 };
 
-/* ─── Profile load / save ───────────────────────────────────── */
+
 function loadParent() {
   try {
     const s = localStorage.getItem(PARENT_KEY);
@@ -26,23 +26,23 @@ function saveParent(profile) {
   catch (e) { console.warn('localStorage error', e); }
 }
 
-/* ─── Apply profile ทั่วหน้า ─────────────────────────────────── */
+
 function applyParentProfile(p) {
   const fn = id => document.getElementById(id);
 
-  // sidebar
+
   if (fn('sidebarName')) fn('sidebarName').textContent = p.name;
   if (fn('sidebarRole')) fn('sidebarRole').textContent = p.relation || 'ผู้ปกครอง';
   renderSidebarAvatar(p);
 
-  // settings form
+
   if (fn('displayName'))    fn('displayName').textContent  = p.name;
   if (fn('profileRole'))    fn('profileRole').textContent  = p.relation || 'ผู้ปกครอง';
   if (fn('profileName'))    fn('profileName').value        = p.name;
   if (fn('profileEmail'))   fn('profileEmail').value       = p.email || '';
   if (fn('profilePhone'))   fn('profilePhone').value       = p.phone || '';
 
-  // settings large avatar
+
   const avatarImg     = fn('avatarImg');
   const avatarInitial = fn('avatarInitial');
   if (p.photoDataUrl) {
@@ -70,7 +70,7 @@ function renderSidebarAvatar(p) {
   }
 }
 
-/* ─── Avatar preview → crop ─────────────────────────────────── */
+
 function previewAvatar(input) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
@@ -90,7 +90,7 @@ function previewAvatar(input) {
   input.value = '';
 }
 
-/* ─── Save profile ───────────────────────────────────────────── */
+
 function saveProfile() {
   const btn = document.getElementById('saveProfileBtn');
   const feedback = document.getElementById('profileFeedback');
@@ -119,7 +119,7 @@ function saveProfile() {
 
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> กำลังบันทึก...'; }
 
-  // บันทึกลง localStorage (ใช้ fetch ไปยัง API จริงได้ภายหลัง)
+
   const p = loadParent();
   p.name  = name;
   p.email = email;
@@ -128,7 +128,7 @@ function saveProfile() {
   saveParent(p);
   applyParentProfile(p);
 
-  // clear password fields
+
   ['pwdCurrent','pwdNew','pwdConfirm'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
@@ -144,7 +144,7 @@ function saveProfile() {
   }, 400);
 }
 
-/* ─── Password helpers ───────────────────────────────────────── */
+
 function togglePwd(id, btn) {
   const inp = document.getElementById(id);
   if (!inp) return;
@@ -190,9 +190,7 @@ function checkPwdMatch() {
   else         { msg.style.color = '#ef4444'; msg.textContent = ' รหัสผ่านไม่ตรงกัน'; }
 }
 
-/* ─────────────────────────────────────────────────
-   Avatar Crop System (เหมือน student_dashboard)
-   ───────────────────────────────────────────────── */
+
 const _crop = {
   img: null, imgX: 0, imgY: 0, imgW: 0, imgH: 0, zoom: 1,
   dragging: false, lastX: 0, lastY: 0,
@@ -340,21 +338,21 @@ function _cropConfirm() {
   oc.restore();
   const dataURL = offscreen.toDataURL('image/png');
 
-  // แสดงรูปทันที
+
   const avatarImg     = document.getElementById('avatarImg');
   const avatarInitial = document.getElementById('avatarInitial');
   if (avatarImg) { avatarImg.src = dataURL; avatarImg.style.display = 'block'; }
   if (avatarInitial) avatarInitial.style.display = 'none';
   renderSidebarAvatar({ photoDataUrl: dataURL });
 
-  // บันทึกลง localStorage
+
   const p = loadParent();
   p.photoDataUrl = dataURL;
   saveParent(p);
   _cropClose();
 }
 
-/* ─── Page navigation ────────────────────────────────────────── */
+
 const PAGE_IDS = ['overview', 'grades', 'attendance', 'messages', 'notifications', 'settings'];
 
 function showPage(name, menuEl) {
@@ -363,20 +361,20 @@ function showPage(name, menuEl) {
     if (el) el.classList.toggle('active', id === name);
   });
 
-  // sync active on sidebar menu items
+
   document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
   const btnSettings = document.getElementById('btn-settings');
   if (btnSettings) btnSettings.classList.remove('active');
 
   if (name === 'settings') {
     if (btnSettings) btnSettings.classList.add('active');
-    applyParentProfile(loadParent()); // refresh form
+    applyParentProfile(loadParent());
   } else if (menuEl) {
     menuEl.classList.add('active');
   }
 }
 
-/* ─── Messages overlay ───────────────────────────────────────── */
+
 const msgs = [
   { sender: 'อ.สมชาย วิชาการ', subject: 'วิทยาศาสตร์ ม.4/2', time: 'เมื่อวาน 14:30', body: 'กานต์ทำได้ดีมากในการทดสอบกลางภาค ขอแนะนำให้ฝึกเรื่องสมการเพิ่มเติมก่อนปลายภาคครับ เพื่อให้ผลสอบปลายภาคออกมาดียิ่งขึ้น' },
   { sender: 'อ.วราภรณ์ ภาษาไทย', subject: 'ภาษาไทย ม.4/2', time: '23 พ.ค. 10:15', body: 'เรื่องการส่งงานเขียนเรียงความ กรุณาแจ้งให้กานต์ส่งงานภายในศุกร์นี้ด้วยนะคะ มิฉะนั้นจะมีผลต่อคะแนนเก็บ' },
@@ -399,12 +397,12 @@ function closeMsg(e) {
   }
 }
 
-/* ─── State: เก็บข้อมูลที่ดึงจาก API ───────────────────────── */
-let _parentData  = null;   // ข้อมูลผู้ปกครอง
-let _children    = [];     // รายชื่อลูกทุกคน
-let _activeChild = 0;      // index ที่เลือกอยู่
 
-/* ─── ดึงข้อมูลจาก API ───────────────────────────────────────── */
+let _parentData  = null;
+let _children    = [];
+let _activeChild = 0;
+
+
 async function loadDashboardData() {
   try {
     const res    = await fetch('parent_dashboard_api.php', { credentials: 'same-origin' });
@@ -418,19 +416,19 @@ async function loadDashboardData() {
     _parentData = result.parent;
     _children   = result.children || [];
 
-    // อัปเดต profile sidebar/settings ด้วยข้อมูลจริง
+
     if (_parentData) {
-      const p = loadParent();                        // โหลด local overrides (ถ้ามี)
+      const p = loadParent();
       p.name  = _parentData.parents_name || p.name;
       p.email = _parentData.email        || p.email;
       p.tel   = _parentData.tel          || p.tel;
       applyParentProfile(p);
     }
 
-    // render child-tabs ใหม่
+
     renderChildTabs();
 
-    // แสดงข้อมูลลูกคนแรก (ถ้ามี)
+
     if (_children.length > 0) {
       switchChild(0, null);
     }
@@ -440,7 +438,7 @@ async function loadDashboardData() {
   }
 }
 
-/* ─── Render child-tabs จาก _children ───────────────────────── */
+
 const TAB_COLORS = [
   { bg: 'rgba(255,122,0,0.2)',  text: 'var(--accent)' },
   { bg: 'rgba(59,130,246,0.2)', text: 'var(--blue)' },
@@ -448,7 +446,7 @@ const TAB_COLORS = [
   { bg: 'rgba(168,85,247,0.2)', text: 'var(--purple)' },
 ];
 
-// container id ทุกจุดในหน้า
+
 const TAB_CONTAINERS = ['childTabsOverview', 'childTabsGrades', 'childTabsAttendance'];
 
 function renderChildTabs() {
@@ -461,7 +459,7 @@ function renderChildTabs() {
       return;
     }
 
-    // ถ้ามีลูกคนเดียว ไม่ต้องแสดง tab
+
     if (_children.length === 1) {
       container.innerHTML = '';
       return;
@@ -488,11 +486,11 @@ function renderChildTabs() {
 }
 
 
-/* ─── สลับดูลูก ──────────────────────────────────────────────── */
+
 function switchChild(idx, el) {
   _activeChild = idx;
 
-  // sync active class ใน container ทุกจุด
+
   TAB_CONTAINERS.forEach(containerId => {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -505,7 +503,7 @@ function switchChild(idx, el) {
   const child = _children[idx];
   if (!child) return;
 
-  // อัปเดต greeting ให้แสดงชื่อลูกที่เลือก
+
   const h1 = document.querySelector('#page-overview .page-header h1');
   if (h1 && _parentData) {
     h1.textContent = 'สวัสดี ผู้ปกครองของ' + child.student_name + ' ';
@@ -514,11 +512,11 @@ function switchChild(idx, el) {
   renderChildStats(child);
 }
 
-/* ─── Render ข้อมูลลูกที่เลือก ───────────────────────────────── */
+
 function renderChildStats(child) {
   const stats = child.stats || {};
 
-  /* ── Overview stat cards ── */
+
   const gpaEl = document.getElementById('stat-gpa');
   if (gpaEl) gpaEl.textContent = stats.gpa ?? '-';
 
@@ -529,14 +527,14 @@ function renderChildStats(child) {
   if (attendSubEl && stats.total_days > 0)
     attendSubEl.textContent = stats.present_days + '/' + stats.total_days + ' วัน';
 
-  /* ── Greeting ── */
+
   const h1 = document.querySelector('#page-overview .page-header h1');
   if (h1 && _parentData) h1.textContent = 'สวัสดี ผู้ปกครองของ' + child.student_name + ' ';
 
-  /* ── Subject list (overview) ── */
+
   renderSubjects(child.subjects || []);
 
-  /* ── Grade table ── */
+
   renderGradeTable(child.subjects || [], stats);
 }
 
@@ -589,7 +587,7 @@ function renderGradeTable(subjects, stats) {
     </tr>`;
   }).join('');
 
-  /* อัปเดต stat cards ใต้ตาราง */
+
   const gpaVal = document.getElementById('gpaVal');
   if (gpaVal) gpaVal.textContent = stats.gpa ?? '-';
 
@@ -603,9 +601,9 @@ function renderGradeTable(subjects, stats) {
   if (topSubEl) topSubEl.textContent = stats.top_subject ? 'วิชา' + stats.top_subject : '-';
 }
 
-/* ─── Init ───────────────────────────────────────────────────── */
+
 document.addEventListener('DOMContentLoaded', () => {
   applyParentProfile(loadParent());
-  renderSubjects([]);   // แสดง placeholder ก่อน รอข้อมูลจริงจาก API
-  loadDashboardData();  // ← ดึงข้อมูลจริงจาก API
+  renderSubjects([]);
+  loadDashboardData();
 });

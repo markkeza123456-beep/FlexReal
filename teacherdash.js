@@ -1,9 +1,9 @@
-/* ===== teacherdash.js ===== */
+
 
 document.addEventListener('DOMContentLoaded', () => {
     const MAX_LESSONS_PER_SUBJECT = 3;
 
-    // โ”€โ”€ Sidebar nav โ€“ page view switching โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+
     const navItems = document.querySelectorAll('.nav-item[data-view]');
     function switchView(viewName) {
         document.querySelectorAll('.page-view').forEach(v => v.style.display = 'none');
@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // โ”€โ”€ Student search inside detail โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+
     const detailStudentSearch = document.getElementById('detailStudentSearch');
     if (detailStudentSearch) {
         detailStudentSearch.addEventListener('input', () => {
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Search students on the dashboard as the teacher types.
+
     const studentSearch = document.getElementById('studentSearch');
     const studentSearchEmpty = document.getElementById('studentSearchEmpty');
     studentSearch?.addEventListener('input', () => {
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (studentSearchEmpty) studentSearchEmpty.style.display = matched ? 'none' : '';
     });
 
-    // โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ• 1. เธฃเธฐเธเธเธเธฑเธ”เธเธฒเธฃ "เธเธ—เน€เธฃเธตเธขเธเธขเนเธญเธข" โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ• //
+
     const modalOverlay = document.getElementById('modalOverlay');
     const contentManagerModal = document.getElementById('contentManagerModal');
     let managedLessonId = '';
@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('closeModalBtn')?.addEventListener('click', () => modalOverlay.classList.remove('open'));
     document.getElementById('closeModalBtn2')?.addEventListener('click', () => modalOverlay.classList.remove('open'));
-    
+
     document.getElementById('saveLessonBtn')?.addEventListener('click', (e) => {
         const btn = e.target;
         const lessonName = document.getElementById('lessonNameInput').value.trim();
@@ -201,10 +201,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lessonDocument) fd.append('lesson_document', lessonDocument);
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
             if(d.success) {
-                location.reload(); 
-            } else { 
+                location.reload();
+            } else {
                 console.error('saveLesson failed:', d);
-                alert('บันทึกบทเรียนไม่สำเร็จ กรุณาตรวจสอบข้อมูลแล้วลองใหม่อีกครั้ง'); 
+                alert('บันทึกบทเรียนไม่สำเร็จ กรุณาตรวจสอบข้อมูลแล้วลองใหม่อีกครั้ง');
                 if (String(d.message || '').includes('ล็อกอิน')) {
                     window.location.href = 'login.php';
                 } else {
@@ -232,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ• 2. เธฃเธฐเธเธเธเธฑเธ”เธเธฒเธฃ "เนเธเธเธ—เธ”เธชเธญเธ (Quiz) เนเธซเธกเน" โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ• //
+
 
     const quizTypeAdd = document.getElementById('quizTypeAdd');
     const grpChoiceAdd = document.getElementById('quizChoiceGroupAdd');
@@ -277,14 +277,14 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.textContent = '⏳ กำลังบันทึก...'; btn.disabled = true;
         const fd = new FormData();
         fd.append('action', 'add_quiz'); fd.append('lesson_id', lessonId); fd.append('type', type);
-        fd.append('question', question); fd.append('choice_a', chA); fd.append('choice_b', chB); 
+        fd.append('question', question); fd.append('choice_a', chA); fd.append('choice_b', chB);
         fd.append('choice_c', chC); fd.append('choice_d', chD); fd.append('answer', ans);
 
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
             if(d.success) {
-                location.reload(); 
-            } else { 
-                alert(d.message); 
+                location.reload();
+            } else {
+                alert(d.message);
                 if(d.message.includes('เธฅเนเธญเธเธญเธดเธ')) window.location.href = 'login.php';
                 else { btn.disabled = false; btn.textContent = '➕ เพิ่มคำถาม'; }
             }
@@ -318,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const r = document.querySelector(`input[name="tfEdit"][value="${ans}"]`);
                 if(r) r.checked = true;
             } else if (type === 'essay') {
-                // เธเนเธญเน€เธเธตเธขเธ
+
             }
             editQuizModal.classList.add('open');
         });
@@ -347,9 +347,9 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.textContent = '⏳ กำลังบันทึก...'; btn.disabled = true;
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
             if(d.success) {
-                location.reload(); 
-            } else { 
-                alert(d.message); 
+                location.reload();
+            } else {
+                alert(d.message);
                 if(d.message.includes('เธฅเนเธญเธเธญเธดเธ')) window.location.href = 'login.php';
                 else { btn.disabled = false; btn.textContent = ' บันทึกการแก้ไข'; }
             }
@@ -368,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Inline lesson + video editor: both forms live on the course page.
+
     const inlineLessonForm = document.getElementById('inlineLessonForm');
     const inlineVideoForm = document.getElementById('inlineVideoForm');
     const inlineVideoList = document.getElementById('inlineVideoList');
@@ -483,20 +483,20 @@ document.addEventListener('DOMContentLoaded', () => {
     loadInlineVideos();
 });
 
-// เธเธฑเธเธเนเธเธฑเธเนเธเธงเนเธเนเธญเธกเธนเธฅเธเธงเธฒเธกเธเธทเธเธซเธเนเธฒเธเธฑเธเน€เธฃเธตเธขเธเน€เธงเธฅเธฒเธเธฅเธดเธเธ—เธตเนเธเธทเนเธญ
+
 window.showStudentProgress = function(element) {
     const name = element.getAttribute('data-name');
     const completed = element.getAttribute('data-completed');
     const total = element.getAttribute('data-total');
     const jsonStr = element.getAttribute('data-json');
-    
+
     document.getElementById('spm-student-name').innerText = name;
     document.getElementById('spm-completed-count').innerText = completed;
     document.getElementById('spm-total-count').innerText = total;
-    
+
     let lessons = [];
     try { lessons = JSON.parse(jsonStr); } catch(e) {}
-    
+
     const listContainer = document.getElementById('spm-lesson-list');
     if (lessons && lessons.length > 0) {
         listContainer.innerHTML = lessons.map(l => `
@@ -508,6 +508,6 @@ window.showStudentProgress = function(element) {
     } else {
         listContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">เธขเธฑเธเนเธกเนเนเธ”เนเน€เธฃเธดเนเธกเน€เธฃเธตเธขเธเธเธ—เน€เธฃเธตเธขเธเนเธ”เน€เธฅเธข</div>`;
     }
-    
+
     document.getElementById('studentProgressModal').classList.add('open');
 }

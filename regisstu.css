@@ -1,6 +1,4 @@
-/* ============================================
-   FLEXIBLE LEARNING HUB — regisstu.css
-   ============================================ */
+
 
 :root {
   --bg:             #ffffff;
@@ -22,7 +20,7 @@
   --transition:     0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ---------- Reset ---------- */
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
@@ -46,7 +44,7 @@ body {
   padding: 40px 20px;
 }
 
-/* ---------- White Background ---------- */
+
 .bg-grid {
   position: fixed;
   inset: 0;
@@ -55,7 +53,7 @@ body {
   z-index: 0;
 }
 
-/* Learning-themed line illustrations, shared with the login page. */
+
 .edu-pattern {
   position: fixed;
   inset: 0;
@@ -88,7 +86,7 @@ body {
   .cap-one { right: -8%; }
 }
 
-/* ---------- Glow Orbs ---------- */
+
 .glow-orb {
   display: none;
 }
@@ -108,7 +106,7 @@ body {
   to   { transform: translate(20px, -20px) scale(1.05); }
 }
 
-/* ---------- Container ---------- */
+
 .container {
   position: relative;
   z-index: 1;
@@ -117,7 +115,7 @@ body {
   margin: 0 auto;
 }
 
-/* ---------- Card ---------- */
+
 .card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -136,7 +134,7 @@ body {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Card accent bar */
+
 .card-accent {
   position: absolute;
   top: 0; left: 0; right: 0;
@@ -150,7 +148,7 @@ body {
   to   { background-position: -100% 0; }
 }
 
-/* ---------- Brand ---------- */
+
 .brand {
   display: flex;
   align-items: center;
@@ -181,7 +179,7 @@ body {
   opacity: .8;
 }
 
-/* ---------- Headings ---------- */
+
 .title {
   font-weight: 700;
   font-size: 1.75rem;
@@ -197,12 +195,10 @@ body {
   animation: fadeSlideUp .5s .2s both;
 }
 
-/* ============================================
-   ROLE TAB BAR
-   ============================================ */
+
 .role-tabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /*  แก้จาก 4 → 3 */
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -244,7 +240,7 @@ body {
   font-weight: 600;
 }
 
-/* ---------- Section Label ---------- */
+
 .section-label {
   font-family: 'Orbitron', sans-serif;
   font-size: .65rem;
@@ -264,17 +260,17 @@ body {
   background: linear-gradient(90deg, var(--border), transparent);
 }
 
-/* ---------- Form ---------- */
+
 .form { display: flex; flex-direction: column; gap: 18px; }
 
-/* Grid 2 columns */
+
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 
-/* ---------- Field ---------- */
+
 .field {
   display: flex;
   flex-direction: column;
@@ -289,7 +285,7 @@ body {
 }
 .required { color: var(--orange); margin-left: 3px; }
 
-/* ---------- Input Wrap ---------- */
+
 .input-wrap {
   position: relative;
   display: flex;
@@ -319,7 +315,7 @@ body {
 .input-wrap input::placeholder,
 .input-wrap textarea::placeholder { color: var(--text-muted); }
 
-/* Keep the password guidance readable without colliding with the eye icon. */
+
 #password,
 #confirm {
   font-size: .64rem;
@@ -339,7 +335,7 @@ body {
   color: var(--text-primary);
 }
 
-/* Input icon */
+
 .input-icon {
   position: absolute;
   left: 14px;
@@ -353,7 +349,7 @@ body {
 .input-icon.icon-top { top: 14px; align-self: flex-start; height: auto; }
 .input-wrap:focus-within .input-icon { color: var(--orange); }
 
-/* Select arrow */
+
 .select-arrow {
   position: absolute;
   right: 14px;
@@ -363,7 +359,7 @@ body {
 }
 .input-wrap:focus-within .select-arrow { color: var(--orange); }
 
-/* Focus bar */
+
 .focus-bar {
   position: absolute;
   bottom: 0; left: 50%; right: 50%;
@@ -375,7 +371,7 @@ body {
 }
 .input-wrap:focus-within .focus-bar { left: 0; right: 0; }
 
-/* Error state */
+
 .field.has-error .input-wrap input,
 .field.has-error .input-wrap select,
 .field.has-error .input-wrap textarea {
@@ -396,7 +392,7 @@ body {
   line-height: 1.4;
 }
 
-/* ---------- Password Toggle ---------- */
+
 .toggle-pw {
   position: absolute;
   right: 13px;
@@ -412,7 +408,7 @@ body {
 .toggle-pw:hover { color: var(--orange); }
 .toggle-pw svg { width: 18px; height: 18px; }
 
-/* ---------- File Upload ---------- */
+
 .file-upload { position: relative; }
 .file-upload input[type="file"] {
   position: absolute;
@@ -471,7 +467,7 @@ body {
   white-space: nowrap;
 }
 
-/* ---------- PIN Input ---------- */
+
 .pin-wrap {
   display: flex;
   align-items: center;
@@ -506,7 +502,7 @@ body {
   box-shadow: 0 0 0 3px rgba(255,68,68,.12);
 }
 
-/* ---------- Submit Button ---------- */
+
 .btn-submit {
   display: flex;
   align-items: center;
@@ -545,7 +541,7 @@ body {
 .btn-arrow { transition: transform var(--transition); }
 .btn-submit:hover .btn-arrow { transform: translateX(4px); }
 
-/* Spinner */
+
 .spinner {
   width: 18px; height: 18px;
   border: 2px solid rgba(255,255,255,.3);
@@ -556,7 +552,7 @@ body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ---------- Back Row ---------- */
+
 .back-row {
   text-align: center;
   font-size: .84rem;
@@ -575,7 +571,7 @@ body {
   text-shadow: 0 0 10px var(--orange-glow);
 }
 
-/* ---------- Toast ---------- */
+
 .toast {
   position: fixed;
   bottom: 28px;
@@ -598,13 +594,13 @@ body {
 .toast.success { border-color: var(--success); color: var(--success); }
 .toast.error-toast { border-color: var(--error); color: var(--error); }
 
-/* ---------- Animation ---------- */
+
 @keyframes fadeSlideUp {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ---------- Role field transitions ---------- */
+
 .role-field {
   transition: opacity .25s ease, transform .25s ease;
 }
@@ -613,7 +609,7 @@ body {
   display: none !important;
 }
 
-/* ---------- Responsive ---------- */
+
 @media (max-width: 520px) {
   body { padding: 24px 16px; }
   .card { padding: 36px 20px 28px; }
@@ -624,7 +620,7 @@ body {
   .pin-digit { width: 42px; height: 48px; font-size: 1.1rem; }
 }
 
-/* Keep this registration screen consistent with the white login background. */
+
 body {
   background-color: #ffffff !important;
   background-image: none !important;

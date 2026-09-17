@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
   <link rel="stylesheet" href="parent_dashboard.css" />
   <style>
-    /* ── Settings page ── */
+
     .settings-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; align-items: start; }
     @media (max-width: 860px) { .settings-wrapper { grid-template-columns: 1fr; } }
 
@@ -86,7 +86,7 @@
     }
     .notif-toggle:hover { background: rgba(255,255,255,0.04); }
 
-    /* sidebar active state for settings */
+
     .parent-profile.active { background: rgba(255,122,0,0.1); border-radius: 10px; }
     .parent-profile { transition: background .2s; padding: 8px; margin: -8px; border-radius: 10px; }
     .parent-profile:hover { background: rgba(255,255,255,0.05); }
@@ -96,7 +96,7 @@
 <body>
 
 <div class="wrap">
-  <!-- SIDEBAR -->
+
   <aside class="sidebar">
     <a class="logo" href="web.html" title="กลับหน้าหลักและรายวิชา">
       <div class="logo-icon">
@@ -136,10 +136,10 @@
     </div>
   </aside>
 
-  <!-- MAIN CONTENT -->
+
   <main class="main">
 
-    <!-- OVERVIEW PAGE -->
+
     <div id="page-overview" class="page active">
       <div class="page-header">
         <h1>สวัสดี คุณสมหญิง </h1>
@@ -147,7 +147,7 @@
       </div>
 
       <div class="child-tabs" id="childTabsOverview">
-        <!-- render โดย JS จาก API -->
+
       </div>
 
       <div class="stats-row overview-stats" id="statsRow">
@@ -172,12 +172,12 @@
 
     </div>
 
-    <!-- GRADES PAGE -->
+
     <div id="page-grades" class="page">
       <div class="page-header"><h1>ผลการเรียน</h1><p>รายละเอียดเกรดทุกรายวิชา</p></div>
 
       <div class="child-tabs" id="childTabsGrades" style="margin-bottom: 1.5rem;">
-        <!-- render โดย JS จาก API -->
+
       </div>
 
       <div class="card">
@@ -221,12 +221,12 @@
       </div>
     </div>
 
-    <!-- ATTENDANCE PAGE -->
+
     <div id="page-attendance" class="page">
       <div class="page-header"><h1>การเข้าเรียน</h1><p>สถิติการเข้าเรียนรายวิชา</p></div>
 
       <div class="child-tabs" id="childTabsAttendance" style="margin-bottom: 1.5rem;">
-        <!-- render โดย JS จาก API -->
+
       </div>
 
       <div class="grid-2">
@@ -267,7 +267,7 @@
       </div>
     </div>
 
-    <!-- MESSAGES PAGE -->
+
     <div id="page-messages" class="page">
       <div class="page-header"><h1>ข้อความ</h1><p>การสื่อสารระหว่างผู้ปกครองและอาจารย์</p></div>
 
@@ -317,7 +317,7 @@
       </div>
     </div>
 
-    <!-- NOTIFICATIONS PAGE -->
+
     <div id="page-notifications" class="page">
       <div class="page-header"><h1>การแจ้งเตือน</h1><p>การแจ้งเตือนทั้งหมดจากระบบ</p></div>
       <div class="card">
@@ -331,7 +331,7 @@
       </div>
     </div>
 
-    <!-- SETTINGS PAGE -->
+
     <div id="page-settings" class="page">
       <div class="page-header">
         <h1>ตั้งค่าโปรไฟล์</h1>
@@ -340,11 +340,11 @@
 
       <div class="settings-wrapper">
 
-        <!-- Profile Card -->
+
         <div class="card settings-card">
           <div class="card-title"><i class="ti ti-user-circle"></i> โปรไฟล์ผู้ปกครอง</div>
 
-          <!-- Avatar section -->
+
           <div class="avatar-section">
             <div class="avatar-picker" onclick="document.getElementById('avatarInput').click()" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
               <div class="avatar-large" id="avatarDisplay">
@@ -361,7 +361,7 @@
             </div>
           </div>
 
-          <!-- Form fields -->
+
           <div class="settings-form">
             <div class="settings-field">
               <label class="settings-label">ชื่อ-นามสกุล</label>
@@ -381,7 +381,7 @@
             </div>
           </div>
 
-          <!-- Password section -->
+
           <div class="pwd-section">
             <div class="pwd-section-title"><i class="ti ti-lock"></i> เปลี่ยนรหัสผ่าน</div>
             <div class="settings-form">
@@ -420,7 +420,7 @@
           </button>
         </div>
 
-        <!-- Notification Card -->
+
         <div class="card settings-card">
           <div class="card-title"><i class="ti ti-bell"></i> การแจ้งเตือน</div>
           <div class="notif-list">
@@ -453,7 +453,7 @@
   </main>
 </div>
 
-<!-- MESSAGE DETAIL OVERLAY -->
+
 <div class="overlay" id="msgOverlay" onclick="closeMsg(event)">
   <div class="msg-detail" id="msgDetail">
     <div class="msg-detail-header">

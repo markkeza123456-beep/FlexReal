@@ -320,7 +320,7 @@ prevBtn.addEventListener('click', () => {
 
 submitBtn.addEventListener('click', () => {
     if (!quizForm.hidden) {
-        // บันทึกค่าจากฟอร์มปัจจุบันก่อนตรวจ โดยเฉพาะข้อเขียนข้อสุดท้าย
+
         saveCurrentAnswer();
         const item = quiz.questions[currentQuestion];
         if (isEssayQuestion(item)) {

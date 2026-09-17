@@ -10,7 +10,7 @@ $displayName    = $_SESSION['name'] ?? 'บัญชีเจ้าหน้า�
 $displayRole    = 'เจ้าหน้าที่';
 $avatarInitials = 'ST';
 
-// Avatar initials จากอักษรแรกของแต่ละคำในชื่อ
+
 if (!empty($_SESSION['name'])) {
     $parts    = preg_split('/\s+/u', trim($_SESSION['name']));
     $initials = '';
@@ -35,12 +35,12 @@ if (!empty($_SESSION['name'])) {
 </head>
 <body>
 
-  <!-- Background decorations -->
+
   <div class="bg-grid"></div>
   <div class="glow-orb orb-1"></div>
   <div class="glow-orb orb-2"></div>
 
-  <!-- ========== SIDEBAR ========== -->
+
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <a class="brand-home-link" href="web.html" title="กลับหน้าหลักและรายวิชา">
@@ -132,10 +132,10 @@ if (!empty($_SESSION['name'])) {
     </div>
   </nav>
 
-  <!-- ========== MAIN WRAP ========== -->
+
   <div class="main-wrap">
 
-    <!-- Topbar -->
+
     <header class="topbar">
       <button class="menu-btn" id="menuBtn" title="เปิดเมนู">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -145,10 +145,10 @@ if (!empty($_SESSION['name'])) {
       <span class="topbar-title" id="topbarTitle">แดชบอร์ด</span>
     </header>
 
-    <!-- Content -->
+
     <main class="content">
 
-      <!-- ========== PAGE: Dashboard ========== -->
+
       <section class="page active" id="page-dashboard">
         <div class="page-header">
           <div>
@@ -235,7 +235,7 @@ if (!empty($_SESSION['name'])) {
         </div>
       </section>
 
-      <!-- ========== PAGE: Curriculum List ========== -->
+
       <section class="page" id="page-curriculum-list">
         <div class="page-header">
           <div>
@@ -267,7 +267,7 @@ if (!empty($_SESSION['name'])) {
         </div>
       </section>
 
-      <!-- ========== PAGE: Curriculum Add/Edit ========== -->
+
       <section class="page" id="page-curriculum-add">
         <div class="page-header">
           <div>
@@ -344,7 +344,7 @@ if (!empty($_SESSION['name'])) {
         </form>
       </section>
 
-      <!-- ========== PAGE: Curriculum Subjects ========== -->
+
       <section class="page" id="page-curriculum-subjects">
         <div class="page-header">
           <div>
@@ -366,7 +366,7 @@ if (!empty($_SESSION['name'])) {
         </form>
       </section>
 
-      <!-- ========== PAGE: Subject List ========== -->
+
       <section class="page" id="page-subject-list">
         <div class="page-header">
           <div>
@@ -399,7 +399,7 @@ if (!empty($_SESSION['name'])) {
         </div>
       </section>
 
-      <!-- ========== PAGE: Subject Add/Edit ========== -->
+
       <section class="page" id="page-subject-add">
         <div class="page-header">
           <div>
@@ -456,7 +456,7 @@ if (!empty($_SESSION['name'])) {
                 <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
               <div id="sf-selected-teachers" aria-live="polite" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
-           
+
             </div>
           </div>
           <div class="form-actions">
@@ -466,7 +466,7 @@ if (!empty($_SESSION['name'])) {
         </form>
       </section>
 
-      <!-- ========== PAGE: Subject Detail (Lessons) ========== -->
+
       <section class="page" id="page-subject-detail">
         <div class="page-header">
           <div>
@@ -500,7 +500,7 @@ if (!empty($_SESSION['name'])) {
         </div>
       </section>
 
-      <!-- ========== PAGE: Lesson Add/Edit ========== -->
+
       <section class="page" id="page-lesson-add">
         <div class="page-header">
           <div>
@@ -549,7 +549,7 @@ if (!empty($_SESSION['name'])) {
         </form>
       </section>
 
-      <!-- ========== PAGE: Member List ========== -->
+
       <section class="page" id="page-member-list">
         <div class="page-header">
           <div>
@@ -582,7 +582,7 @@ if (!empty($_SESSION['name'])) {
         </div>
       </section>
 
-      <!-- ========== PAGE: Member Edit ========== -->
+
       <section class="page" id="page-member-edit">
         <div class="page-header">
           <div>
@@ -650,7 +650,7 @@ if (!empty($_SESSION['name'])) {
         </form>
       </section>
 
-      <!-- ========== PAGE: Staff Add ========== -->
+
       <section class="page" id="page-staff-add">
         <div class="page-header">
           <div>
@@ -706,10 +706,10 @@ if (!empty($_SESSION['name'])) {
         </form>
       </section>
 
-    </main><!-- /content -->
-  </div><!-- /main-wrap -->
+    </main>
+  </div>
 
-  <!-- ========== MODAL ========== -->
+
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
       <div class="modal-icon">
@@ -727,7 +727,7 @@ if (!empty($_SESSION['name'])) {
     </div>
   </div>
 
-  <!-- Toast -->
+
   <div class="toast" id="toast"></div>
 
   <script src="staffdash.js"></script>

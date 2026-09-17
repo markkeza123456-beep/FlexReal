@@ -13,10 +13,7 @@ function lessonViewerError(string $message, int $status = 400): never
     exit;
 }
 
-/**
- * Converts Office files to a cached PDF. PDF is the browser-friendly format
- * that preserves the original pages, images, tables, and typography.
- */
+
 function officePreviewPdf(string $sourceFile): ?string
 {
     $configured = trim((string) getenv('SOFFICE_BIN'));
@@ -96,8 +93,8 @@ $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 $officeExtensions = ['doc', 'docx', 'odt', 'rtf', 'ppt', 'pptx', 'xls', 'xlsx'];
 $imageExtensions = ['avif', 'gif', 'jpeg', 'jpg', 'png', 'webp'];
 
-// The embedded frame requests this protected endpoint for the generated PDF.
-// The original document never becomes publicly exposed in a preview cache.
+
+
 if (($_GET['preview'] ?? '') === 'pdf') {
     if (!in_array($extension, $officeExtensions, true)) lessonViewerError('ไฟล์นี้ไม่รองรับการแปลงเป็นหน้าหนังสือ', 415);
     $preview = officePreviewPdf($file);
@@ -118,7 +115,7 @@ try {
     $savedProgress = $resume->fetch(PDO::FETCH_ASSOC) ?: [];
     $resumePage = max(0, (int) ($savedProgress['page_index'] ?? 0));
     $documentProgressPercent = min(100, max(0, (float) ($savedProgress['progress_percent'] ?? 0)));
-} catch (PDOException) { /* The viewer can still render if progress setup is unavailable. */ }
+} catch (PDOException) {  }
 $documentProgressPayload = json_encode(['type' => 'lesson-document-progress', 'courseId' => $courseId, 'lessonIndex' => $position, 'resumePage' => $resumePage, 'documentProgressPercent' => $documentProgressPercent], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 header('Content-Type: text/html; charset=utf-8');
 ?>

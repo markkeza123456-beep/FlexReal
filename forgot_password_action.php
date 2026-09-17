@@ -6,7 +6,7 @@ require_once 'db_connect.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-// ตรวจสอบโครงสร้างโฟลเดอร์ PHPMailer ให้ตรงกับเครื่องของคุณ
+
 require 'PHPMailer/Exception.php';
 require 'PHPMailer/PHPMailer.php';
 require 'PHPMailer/SMTP.php';
@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !filter_var($email, FILTER_VALIDATE
 }
 
 try {
-    // Query the normalized profile tables defined by database-v2.sql.
+
     $sql = "
         SELECT p.user_id, p.full_name AS user_name
         FROM public.students p INNER JOIN public.users u ON u.user_id = p.user_id
@@ -38,18 +38,18 @@ try {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user) {
-        // PIN ใช้ได้ครั้งเดียวและหมดอายุใน 15 นาที
+
         $token = (string) random_int(100000, 999999);
         $expires_at = date('Y-m-d H:i:s', strtotime('+15 minutes'));
 
-        // คำขอก่อนหน้าของบัญชีเดียวกันใช้ไม่ได้ทันที
+
         $conn->prepare('UPDATE public.password_reset_tokens SET used_at = NOW() WHERE user_id = :uid AND used_at IS NULL')
             ->execute([':uid' => $user['user_id']]);
 
         $stmt_token = $conn->prepare("INSERT INTO public.password_reset_tokens (user_id, token_hash, expires_at) VALUES (:uid, :token_hash, :exp)");
         $stmt_token->execute(['uid' => $user['user_id'], 'token_hash' => password_hash($token, PASSWORD_DEFAULT), 'exp' => $expires_at]);
 
-        // 4. ตั้งค่าระบบส่งอีเมล (PHPMailer)
+
         $mail = new PHPMailer(true);
         $mail->isSMTP();
         $mail->Host       = 'smtp.gmail.com';
@@ -58,14 +58,14 @@ try {
         $mail->Port       = 465;
         $mail->CharSet    = 'UTF-8';
 
-        // ใส่อีเมลและรหัสผ่านแอปของคุณ
-        $mail->Username   = 'markkeza123456@gmail.com'; 
-        $mail->Password   = 'lprq ixqu ugye ayph';    
-        $mail->setFrom('markkeza123456@gmail.com', 'Flexible Support'); 
-        
+
+        $mail->Username   = 'markkeza123456@gmail.com';
+        $mail->Password   = 'lprq ixqu ugye ayph';
+        $mail->setFrom('markkeza123456@gmail.com', 'Flexible Support');
+
         $mail->addAddress($email);
 
-        // 5. เนื้อหาอีเมล
+
         $mail->isHTML(true);
         $mail->Subject = 'รีเซ็ตรหัสผ่าน - NEXORA Flexible Learning Hub';
         $mail->Body    = "สวัสดีคุณ {$user['user_name']},<br><br>รหัส PIN 6 หลักสำหรับการรีเซ็ตรหัสผ่านของคุณคือ: <h2 style='color:#ff6b1a;'>{$token}</h2><br>รหัสนี้จะหมดอายุภายใน 15 นาที<br><br>หากคุณไม่ได้ทำรายการนี้ กรุณาเพิกเฉยต่ออีเมลฉบับนี้";

@@ -1,4 +1,4 @@
-// --- ตัวแปรหลักของระบบ ---
+
 let currentSubjectId = '';
 let currentCourseName = '';
 let enrolledCourses = {};
@@ -18,13 +18,13 @@ const LESSON_VIDEO_FILES = [
     'videos/lesson-math.mp4',
     'videos/lesson-social.mp4'
 ];
-// Static media must remain cacheable. A Date.now() query string made every
-// revisit download the video again, even when it had not changed.
+
+
 const VIDEO_CACHE_BUST = '';
 const SUBJECT_IMAGE_ENDPOINT = 'subject_image.php';
 const QUIZ_PASS_RATIO = 0.8;
 const COURSE_CACHE_MAX_AGE_MS = 30 * 60 * 1000;
-// Supabase pooler may take several seconds when multiple PHP requests start together.
+
 const REQUEST_TIMEOUT_MS = 10000;
 const MAX_LESSONS_PER_SUBJECT = 3;
 const LEARNING_PROGRESS_SAVE_INTERVAL_MS = 30000;
@@ -32,16 +32,16 @@ const learningProgressRequests = new Map();
 const courseProgressRequests = new Map();
 let activeVideoProgressSaver = null;
 
-// ตั้งค่ารูปวิชาเองได้ที่นี่ (ใส่ได้ทั้งรหัสวิชา เช่น SUB004 หรือชื่อวิชา เช่น ประวัติศาสตร์)
-// ตัวอย่าง:
-// 'SUB004': 'images/subjects/history-custom.jpg',
-// 'ประวัติศาสตร์': 'images/subjects/history-custom.jpg'
+
+
+
+
 const SUBJECT_IMAGE_OVERRIDES = {
-    // 'SUB001': 'images/subjects/english.jpg',
-    // 'SUB002': 'images/subjects/math.jpg',
-    // 'SUB003': 'images/subjects/science.jpg',
-    // 'SUB004': 'images/subjects/history.jpg',
-    // 'SUB005': 'images/subjects/art.jpg'
+
+
+
+
+
 };
 
 function pick(obj, ...keys) {
@@ -100,7 +100,7 @@ function readCachedCourses() {
         return [];
     }
 }
- 
+
 function saveCachedCourses(courses) {
     try {
         sessionStorage.setItem(getCourseCacheKey(), JSON.stringify({ savedAt: Date.now(), courses }));
@@ -142,7 +142,7 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEO
     }
 }
 
-//  แปลงข้อมูลบทเรียนจากฐานข้อมูล
+
 function buildLessonsFromDB(lessons) {
     const normalized = Array.isArray(lessons) ? lessons.slice(0, MAX_LESSONS_PER_SUBJECT) : [];
     return normalized.map((lsn, index) => {
@@ -230,12 +230,12 @@ function getLessonStatusInfo(lessonIndex) {
     return { label: 'ยังไม่ทำ', color: '#7f8c8d', bg: '#f4f6f7', scoreText: '-', progress, breakdown };
 }
 
-//  สร้างกล่องบทเรียนบนหน้าเว็บ
+
 function renderLessonAccordion(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // ถ้าอาจารย์ยังไม่เพิ่มบทเรียน ให้โชว์หน้าต่างชัดๆ แทนกล่องขาวโล่งๆ
+
     if (!currentLessonsData || currentLessonsData.length === 0) {
         container.innerHTML = `
             <div style="text-align:center; padding:40px 20px; color:#888; background:#fafafa; border:2px dashed #ddd; border-radius:12px; margin-top: 15px;">
@@ -244,7 +244,7 @@ function renderLessonAccordion(containerId) {
                 <p style="font-size:14px;">โปรดรออาจารย์ผู้สอนเพิ่มเนื้อหาเข้าสู่ระบบ</p>
             </div>
         `;
-        container.style.display = 'block'; // บังคับโชว์
+        container.style.display = 'block';
         return;
     }
 
@@ -313,7 +313,7 @@ function renderLessonAccordion(containerId) {
     }).join('');
 
     container.innerHTML = html;
-    container.style.display = 'grid'; // บังคับโชว์
+    container.style.display = 'grid';
 }
 
 function renderAllLessonAccordions() {
@@ -860,9 +860,9 @@ async function recordLearningEvent(activityType, lessonIndex = 1, progressPercen
     const now = Date.now();
     const previous = learningProgressRequests.get(eventKey);
     const isPeriodicVideoUpdate = activityType === 'video_progress' && Number(progressPercent) < 100;
-    // Completion must never be dropped just because the previous heartbeat is
-    // still saving. The server keeps the greatest percentage, so a concurrent
-    // final 100% write cannot move progress backwards.
+
+
+
     if ((!force && previous?.inFlight) || (!force && isPeriodicVideoUpdate && now - (previous?.savedAt || 0) < LEARNING_PROGRESS_SAVE_INTERVAL_MS)) return false;
     learningProgressRequests.set(eventKey, { inFlight: true, savedAt: previous?.savedAt || 0 });
     try {
@@ -875,8 +875,8 @@ async function recordLearningEvent(activityType, lessonIndex = 1, progressPercen
         formData.append('progress_percent', String(progressPercent));
         formData.append('resume_position', String(resumePosition));
 
-        // keepalive + FormData is inconsistently handled by browsers. Use a
-        // normal request while the video is open; pausing also forces a save.
+
+
         const response = await fetchJsonWithTimeout('student_learning_api.php', { method: 'POST', body: formData, credentials: 'same-origin' }, 10000);
         const result = await response.json();
         if (result.status === 'success') {
@@ -1069,20 +1069,20 @@ function renderCourseSections(courses) {
     renderCourseCollection(publicGrid, courses, 'ยังไม่มีรายวิชาในระบบ');
 }
 
-//  โหลดวิชาทั้งหมด
+
 async function loadAllCourses() {
     try {
         const response = await fetchJsonWithTimeout('api_courses.php?action=get_all');
         const result = await response.json();
         const dropdown = document.getElementById('course-dropdown');
         if (!dropdown) return;
-        
+
         if (result.status === 'success') {
             dropdown.innerHTML = '';
             const courses = Array.isArray(result.data) ? result.data : [];
             primeCourseCache(courses);
             saveCachedCourses(courses);
-            
+
             courses.forEach(course => {
                 const subjectId = pick(course, 'subjects_id', 'Subjects_ID');
                 const subjectName = pick(course, 'subjects_name', 'Subjects_Name');
@@ -1119,15 +1119,15 @@ async function loadAllCourses() {
     }
 }
 
-//  โหลดข้อมูลตอนกดเข้าวิชา
+
 async function showCourse(subjectId) {
     if (courseIdByName[subjectId]) subjectId = courseIdByName[subjectId];
     currentSubjectId = subjectId;
     const requestedSubjectId = subjectId;
     const cachedCourse = courseCacheById[subjectId];
 
-    // เปลี่ยนหน้าและใช้ข้อมูลที่มีในหน่วยความจำทันที ไม่รอคำขอรายละเอียดรายวิชา
-    // แล้วค่อยเติมข้อมูลบทเรียนจริงเมื่อ API ตอบกลับ
+
+
     showPage('course-detail');
     if (cachedCourse) {
         currentCourseName = pick(cachedCourse, 'subjects_name', 'Subjects_Name');
@@ -1144,34 +1144,34 @@ async function showCourse(subjectId) {
         const response = await fetchJsonWithTimeout(`api_courses.php?action=get_detail&id=${subjectId}`);
         const result = await response.json();
         if (requestedSubjectId !== currentSubjectId) return;
-        
+
         if (result.status === 'success') {
             const course = result.course;
             const lessons = result.lessons;
-            currentCourseName = pick(course, 'subjects_name', 'Subjects_Name'); 
-            
+            currentCourseName = pick(course, 'subjects_name', 'Subjects_Name');
+
             document.getElementById('detail-title').innerText = currentCourseName;
             document.getElementById('detail-desc-top').innerText = pick(course, 'subjects_description', 'Subjects_Description') || 'รายละเอียดเบื้องต้น';
             document.getElementById('detail-desc').innerText = pick(course, 'subjects_description', 'Subjects_Description') || 'คำอธิบายรายวิชา...';
             document.getElementById('detail-duration').innerText = course.duration || 'ไม่ระบุเวลา';
             updateInstructorInfo(course);
-            
-            // ดึงบทเรียนมาจาก DB ทันที
+
+
             currentLessonsData = buildLessonsFromDB(Array.isArray(lessons) ? lessons : []);
             updateCourseMeta(course, lessons);
-            
+
             currentPassedLessons = new Set();
             applyCourseProgressSummary(null);
             renderAllLessonAccordions();
 
             openTab({ currentTarget: document.querySelector('.tab-btn') }, 'overview');
-            
+
             const url = new URL(window.location.href);
             url.searchParams.set('subject_id', subjectId);
             window.history.replaceState({}, '', url);
 
-            // ผู้ที่ลงทะเบียนแล้วไม่ต้องกดปุ่ม “เข้าเรียน” ซ้ำ
-            // ลดการเปิด connection ไป Supabase พร้อมกัน ซึ่งทำให้บางครั้ง timeout
+
+
             const isEnrolled = await checkCourseEnrollment(subjectId);
             if (requestedSubjectId === currentSubjectId && isEnrolled) {
                 goToCourseLearning();
@@ -1240,7 +1240,7 @@ function updateEnrollButton(isEnrolled) {
     const button = document.getElementById('enroll-course-btn');
     if (!button) return;
     button.disabled = false;
-    if(isEnrolled) { button.innerText = 'เข้าเรียน'; button.classList.add('is-enrolled'); } 
+    if(isEnrolled) { button.innerText = 'เข้าเรียน'; button.classList.add('is-enrolled'); }
     else { button.innerText = 'ลงทะเบียน'; button.classList.remove('is-enrolled'); }
 }
 
@@ -1290,15 +1290,15 @@ function openLearningTab(evt, tabName) {
     if (evt && evt.currentTarget) evt.currentTarget.classList.add("active");
 }
 
-//  ควบคุมการโชว์/ซ่อน รายชื่อบทเรียน
+
 function setCurriculumAccess(isEnrolled) {
     const lockedMsg = document.getElementById('curriculum-locked-msg');
     const lessonList = document.getElementById('course-curriculum-lesson-list');
     if (!lockedMsg || !lessonList) return;
-    
+
     if (isEnrolled) {
         lockedMsg.style.display = 'none';
-        lessonList.style.display = 'block'; // บังคับให้บล็อกเปิดเสมอถ้า Enroll แล้ว
+        lessonList.style.display = 'block';
     } else {
         lockedMsg.style.display = 'block';
         lessonList.style.display = 'none';
@@ -1382,8 +1382,8 @@ function formatVideoTimestamp(seconds) {
 function renderVideoModalBody(lessonIndex) {
     const body = document.getElementById('modal-body');
     if (!body) return;
-    // A lesson switch replaces the current <video> element without reliably
-    // firing pause, so persist its position before removing it.
+
+
     if (activeVideoProgressSaver) activeVideoProgressSaver();
     activeVideoProgressSaver = null;
     const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 3, Number(lessonIndex) || 1));
@@ -1519,12 +1519,12 @@ function openCourseVideo(lessonIndex) {
 function startQuiz(lessonIndex) {
     if (!enrolledCourses[currentSubjectId]) { alert('กรุณาลงรายวิชาก่อนทำแบบทดสอบ'); return; }
     if (!isQuizUnlocked(lessonIndex || 1)) { alert(getLessonLockMessage(lessonIndex || 1) || 'บทเรียนยังไม่ปลดล็อก'); return; }
-    
+
     const url = new URL('test.html', window.location.href);
     if (currentCourseName) url.searchParams.set('course', currentCourseName);
     if (currentSubjectId) url.searchParams.set('subject_id', currentSubjectId);
     if (lessonIndex) url.searchParams.set('lesson', String(lessonIndex));
-    
+
     recordLearningEvent('lesson_open', lessonIndex || 1);
     window.location.href = url.pathname.split('/').pop() + url.search;
 }
@@ -1572,8 +1572,8 @@ function showContact(type) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Paint cached course data before waiting for session/database requests.
-    // A slow Supabase connection should not leave the whole landing page blank.
+
+
     const cachedCoursesBeforeSession = readCachedCourses();
     if (cachedCoursesBeforeSession.length > 0) {
         primeCourseCache(cachedCoursesBeforeSession);
@@ -1627,6 +1627,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     const subjectId = params.get('subject_id');
     const courseName = params.get('course');
-    if (subjectId) { setTimeout(() => { showCourse(subjectId); }, 300); } 
+    if (subjectId) { setTimeout(() => { showCourse(subjectId); }, 300); }
     else if (courseName) { setTimeout(() => { showCourse(courseName); }, 400); }
 });

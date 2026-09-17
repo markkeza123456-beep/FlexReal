@@ -100,7 +100,7 @@ try {
         exit;
     }
 
-    // ตารางหลักเพียงตารางเดียวสำหรับคำถามที่อาจารย์เพิ่ม ทั้งปรนัยและข้อเขียน
+
     $rows = loadFromTestQuestions($conn, $lessonId);
     $fromQuizQuestions = false;
 

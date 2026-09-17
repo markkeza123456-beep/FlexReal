@@ -6,7 +6,7 @@ require_once 'db_connect.php';
 $new_password = trim((string)($_POST['new_password'] ?? ''));
 $confirm_password = trim((string)($_POST['confirm_password'] ?? ''));
 
-// เช็คความถูกต้องของ Session จาก Step 2
+
 if (!isset($_SESSION['reset_user_id'], $_SESSION['reset_token_id'], $_SESSION['reset_pin_verified_at'])) {
     echo json_encode(['status' => 'error', 'message' => 'กรุณายืนยัน PIN ก่อนเปลี่ยนรหัสผ่าน']);
     exit;
@@ -37,7 +37,7 @@ try {
     $user_id = (string)$_SESSION['reset_user_id'];
     $tokenId = (int) $_SESSION['reset_token_id'];
 
-    // ตรวจสอบคำขอเดิมซ้ำก่อนบันทึกรหัสใหม่
+
     $stmtToken = $conn->prepare('SELECT token_id FROM public.password_reset_tokens WHERE token_id = :token_id AND user_id = :uid AND used_at IS NULL AND expires_at > NOW()');
     $stmtToken->execute([':token_id' => $tokenId, ':uid' => $user_id]);
     $tokenRow = $stmtToken->fetch(PDO::FETCH_ASSOC);
@@ -53,13 +53,13 @@ try {
     $stmt_user = $conn->prepare('UPDATE public.users SET password_hash = :password_hash, updated_at = NOW() WHERE user_id = :uid');
     $stmt_user->execute(['password_hash' => password_hash($new_password, PASSWORD_DEFAULT), 'uid' => $user_id]);
 
-    // 4. ลบ PIN ทิ้งหลังใช้งานเสร็จ
+
     $stmt_del = $conn->prepare('UPDATE public.password_reset_tokens SET used_at = NOW() WHERE token_id = :id');
     $stmt_del->execute(['id' => $tokenRow['token_id']]);
 
     $conn->commit();
 
-    // เคลียร์ Session ป้องกันการแบคกลับมาเปลี่ยนรหัสซ้ำ
+
     unset($_SESSION['password_reset_user_id'], $_SESSION['password_reset_requested_at'], $_SESSION['reset_user_id'], $_SESSION['reset_token_id'], $_SESSION['reset_pin_verified_at']);
 
     echo json_encode(['status' => 'success', 'message' => 'เปลี่ยนรหัสผ่านสำเร็จ']);

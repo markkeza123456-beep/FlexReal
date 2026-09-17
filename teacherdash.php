@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// ตรวจสอบสิทธิ์การเข้าถึง
+
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
     header('Location: login.php');
     exit;
@@ -13,7 +13,7 @@ require_once __DIR__ . '/db_connect.php';
 
 const MAX_LESSONS_PER_SUBJECT = 3;
 
-// ฟังก์ชันป้องกัน XSS
+
 function h(?string $value): string {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
@@ -43,7 +43,7 @@ function scoreLabel(string $status): string {
 $teacherId = (string) $_SESSION['user_id'];
 $requestedSubjectId = trim((string) ($_GET['subject_id'] ?? ''));
 
-// 0. ดึง avatar_url จากฐานข้อมูล
+
 $avatar_url = '';
 try {
     $stmtAv = $conn->prepare("SELECT avatar_url FROM public.teachers WHERE user_id = :uid");
@@ -52,14 +52,14 @@ try {
     $avatar_url = $rowAv['avatar_url'] ?? '';
 } catch (Exception $e) { $avatar_url = ''; }
 
-// 1. ดึงข้อมูลอาจารย์
+
 $teacherStmt = $conn->prepare('SELECT user_id, full_name, phone FROM public.teachers WHERE user_id = :teacher_id LIMIT 1');
 $teacherStmt->execute([':teacher_id' => $teacherId]);
 $teacherRow = $teacherStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 $teacherName = trim((string) ($teacherRow['full_name'] ?? $_SESSION['name'] ?? $teacherId));
 if ($teacherName === '') $teacherName = $teacherId;
 
-// 2. ดึงข้อมูลวิชาที่อาจารย์คนนี้สอน
+
 $subjectStmt = $conn->prepare("
     SELECT c.course_id AS subjects_id, c.name AS subjects_name, c.description AS subjects_description,
         (SELECT COUNT(*) FROM public.lessons l WHERE l.course_id = c.course_id) AS lesson_count,
@@ -88,7 +88,7 @@ foreach ($subjectRows as $row) {
         'title' => $subjectName !== '' ? $subjectName : $subjectId,
         'subject' => trim((string) $row['subjects_description']) ?: 'ยังไม่มีคำอธิบายรายวิชา',
         'students' => $studentCount,
-        'progress' => 0, 
+        'progress' => 0,
         'status' => $lessonCount > 0 ? 'active' : 'draft',
         'lesson_count' => $lessonCount,
         'avg_score' => 0,
@@ -109,7 +109,7 @@ $selectedSubjectId = $requestedSubjectId !== '' && isset($subjectMap[$requestedS
     : (!empty($subjects) ? (string) $subjects[0]['id'] : '');
 $selectedSubject = $selectedSubjectId !== '' ? ($subjectMap[$selectedSubjectId] ?? null) : null;
 
-// 3. ดึงข้อมูลบทย่อย (Lessons)
+
 $subLessonsBySubject = [];
 if (!empty($subjectIds)) {
     $lessonStmt = $conn->prepare('
@@ -134,7 +134,7 @@ foreach ($subjectIds as $subjectId) {
     $subLessonsBySubject[$subjectId] = normalizeLessonSlots($subLessonsBySubject[$subjectId] ?? []);
 }
 
-// 4. ดึงข้อมูลนักเรียนและคะแนน
+
 $studentStmt = $conn->prepare("
     SELECT st.user_id AS student_id, st.full_name AS student_name, st.student_level AS class_name,
            STRING_AGG(DISTINCT c.course_id::text, ',') AS subject_ids,
@@ -156,13 +156,13 @@ $studentStmt->execute([':teacher_id' => $teacherId]);
 $students = [];
 $sumScore = 0;
 foreach ($studentStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-    $realScore = round((float) $row['real_score'], 1); 
+    $realScore = round((float) $row['real_score'], 1);
     $sumScore += $realScore;
-    
+
     $totalLessons = min((int) $row['total_lessons'], MAX_LESSONS_PER_SUBJECT);
     $completedLessons = min((int) $row['completed_lessons'], $totalLessons);
     $progressPct = $totalLessons > 0 ? round(($completedLessons / $totalLessons) * 100) : 0;
-    
+
     $completedNames = $row['completed_lesson_names'] ? array_slice(explode('||', $row['completed_lesson_names']), 0, MAX_LESSONS_PER_SUBJECT) : [];
 
     $students[] = [
@@ -181,7 +181,7 @@ foreach ($studentStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
 
 $overallAvgScore = count($students) > 0 ? round($sumScore / count($students), 1) : 0;
 
-// 5. ดึงคำถามข้อสอบของวิชานี้
+
 $quizzes = [];
 $defaultSubjectId = $selectedSubjectId;
 if ($defaultSubjectId) {
@@ -199,7 +199,7 @@ if ($defaultSubjectId) {
     $quizzes = $quizStmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-$teacherSubjectText = !empty($subjectNames) 
+$teacherSubjectText = !empty($subjectNames)
     ? implode(', ', array_slice($subjectNames, 0, 3)) . (count($subjectNames) > 3 ? ' +' . (count($subjectNames) - 3) : '')
     : 'ยังไม่มีบทเรียนที่ดูแล';
 
@@ -219,7 +219,7 @@ $stats = [
     'students' => count($students),
     'lessons' => $totalLessonCount,
     'subjects' => count($subjects),
-    'avg_score' => $overallAvgScore, 
+    'avg_score' => $overallAvgScore,
 ];
 ?>
 <!DOCTYPE html>
@@ -233,7 +233,7 @@ $stats = [
     <link rel="stylesheet" href="teacherdash.css?v=20260916-hidden-video-list">
     <style>
         .action-icon-btn {
-            background: none; border: none; cursor: pointer; padding: 6px; 
+            background: none; border: none; cursor: pointer; padding: 6px;
             border-radius: 6px; font-size: 14px; transition: background 0.2s;
         }
         .action-icon-btn:hover { background: rgba(255,255,255,0.1); }
@@ -243,7 +243,7 @@ $stats = [
             display: flex; align-items: center; gap: 4px;
         }
         .btn-open-add-quiz:hover { background: rgba(249, 115, 22, 0.2); transform: translateY(-1px); }
-        
+
         .choice-row {
             display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
         }
@@ -359,7 +359,7 @@ $stats = [
                         <tr class="lesson-row dashboard-student-row">
                             <td class="mono"><?= str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) ?></td>
                             <td>
-                                <a href="#" class="student-progress-link" 
+                                <a href="#" class="student-progress-link"
                                    data-id="<?= h($student['id']) ?>"
                                    data-name="<?= h($student['name']) ?>"
                                    data-class="<?= h($student['class']) ?>"
@@ -478,8 +478,8 @@ $stats = [
                                 <h3 style="font-size:16px;color:var(--text);font-weight:600;">รายการบทเรียนย่อย</h3>
                             </div>
                             <div style="display:flex;flex-direction:column;gap:12px;">
-                                <?php 
-                                if ($defaultSubjectId && !empty($subLessonsBySubject[$defaultSubjectId])): 
+                                <?php
+                                if ($defaultSubjectId && !empty($subLessonsBySubject[$defaultSubjectId])):
                                     foreach ($subLessonsBySubject[$defaultSubjectId] as $i => $subLesson):
                                         $isPlaceholderLesson = !empty($subLesson['is_placeholder']);
                                 ?>
@@ -499,15 +499,15 @@ $stats = [
                                             <button class="btn-open-add-quiz" data-id="<?= h($subLesson['id']) ?>" data-name="<?= h($subLesson['title']) ?>">
                                                 <span style="font-size:16px;line-height:1;">+</span> เพิ่มแบบทดสอบ
                                             </button>
-                                            
+
                                             <button class="action-icon-btn btn-edit-lsn" data-id="<?= h($subLesson['id']) ?>" data-name="<?= h($subLesson['title']) ?>" title="แก้ไขบทเรียน">แก้ไข</button>
                                             <button class="action-icon-btn btn-del-lsn" data-id="<?= h($subLesson['id']) ?>" title="ลบบทเรียน" style="color:#ef4444;">ลบ</button>
                                         <?php endif; ?>
                                     </div>
                                 </div>
-                                <?php 
+                                <?php
                                     endforeach;
-                                else: 
+                                else:
                                 ?>
                                 <div style="text-align:center;padding:40px;color:var(--text-muted);font-size:14px;background:var(--bg3);border-radius:var(--radius-sm);border:1px dashed var(--border);">
                                     <div style="font-size:32px;margin-bottom:10px;"></div>
@@ -571,7 +571,7 @@ $stats = [
                             <tr class="lesson-row detail-student-row" data-subject-ids="<?= h($student['subject_ids']) ?>">
                                 <td class="mono"><?= str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) ?></td>
                                 <td>
-                                    <a href="#" class="student-progress-link" 
+                                    <a href="#" class="student-progress-link"
                                        data-id="<?= h($student['id']) ?>"
                                        data-name="<?= h($student['name']) ?>"
                                        data-class="<?= h($student['class']) ?>"
@@ -803,7 +803,7 @@ $stats = [
         </div>
 
     </div>
-    
+
     <div id="view-reports" class="page-view" style="display:none">
         <header class="topbar">
             <div class="topbar-left">
@@ -946,7 +946,7 @@ $stats = [
 </div>
 
 <script>
-// Crop System และสคริปต์ทำงานคงเดิมทั้งหมด
+
 (function() {
     const overlay   = document.getElementById('cropModalOverlay');
     const cropImg   = document.getElementById('cropImg');
@@ -1166,7 +1166,7 @@ function showMsg(id, msg, success) {
 }
 </script>
 
-<!-- ===== Student Detail Modal ===== -->
+
 <div class="modal-overlay" id="studentDetailModal" style="z-index:1100;">
     <div class="modal" style="max-width:620px;width:95%;max-height:90vh;overflow-y:auto;">
         <div class="modal-header" style="position:sticky;top:0;background:var(--bg2);z-index:1;border-bottom:1px solid var(--border);padding:20px 24px;">
@@ -1181,7 +1181,7 @@ function showMsg(id, msg, success) {
         </div>
 
         <div class="modal-body" style="padding:24px;">
-            <!-- Summary cards -->
+
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;">
                 <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;">
                     <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">คะแนนเฉลี่ย</div>
@@ -1197,7 +1197,7 @@ function showMsg(id, msg, success) {
                 </div>
             </div>
 
-            <!-- Progress bar -->
+
             <div style="margin-bottom:24px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                     <span style="font-size:12px;color:var(--text-muted);font-weight:500;">ความคืบหน้าโดยรวม</span>
@@ -1208,7 +1208,7 @@ function showMsg(id, msg, success) {
                 </div>
             </div>
 
-            <!-- Lesson scores section (loaded via fetch) -->
+
             <div style="margin-bottom:8px;">
                 <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
                      คะแนนแต่ละบทเรียน
@@ -1244,12 +1244,12 @@ async function openStudentModal(el) {
 
     const sc = statusColors[status] || { color: '#f97316', label: '' };
 
-    // Fill header
+
     document.getElementById('sdm-avatar').textContent = name.charAt(0).toUpperCase();
     document.getElementById('sdm-name').textContent   = name;
     document.getElementById('sdm-class').textContent  = 'ระดับชั้น: ' + (cls || '-');
 
-    // Fill cards
+
     const scoreEl = document.getElementById('sdm-score');
     scoreEl.textContent = score.toFixed(1);
     scoreEl.style.color = sc.color;
@@ -1257,11 +1257,11 @@ async function openStudentModal(el) {
     document.getElementById('sdm-pct').textContent     = pct + '%';
     document.getElementById('sdm-lessons').textContent = completed + '/' + total;
 
-    // Progress bar
+
     document.getElementById('sdm-progress-bar').style.width = pct + '%';
     document.getElementById('sdm-pct-label').textContent     = 'สำเร็จ ' + completed + ' จาก ' + total + ' บทเรียน';
 
-    // Reset lesson list
+
     document.getElementById('sdm-lesson-list').innerHTML = `
         <div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px;">
             <div style="font-size:24px;margin-bottom:8px;">⏳</div>กำลังโหลดข้อมูล...
@@ -1269,7 +1269,7 @@ async function openStudentModal(el) {
 
     document.getElementById('studentDetailModal').classList.add('open');
 
-    // Fetch lesson scores
+
     try {
         const res  = await fetch('get_student_detail.php?student_id=' + encodeURIComponent(id));
         const data = await res.json();
@@ -1326,7 +1326,7 @@ function escHtml(str) {
     return d.innerHTML;
 }
 
-// Close on backdrop click
+
 document.getElementById('studentDetailModal').addEventListener('click', function(e) {
     if (e.target === this) this.classList.remove('open');
 });

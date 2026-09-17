@@ -16,7 +16,7 @@ $teacherId = (string) $_SESSION['user_id'];
 
 function ensureLessonMediaColumns(PDO $conn): void
 {
-    // The supplied schema stores files in public.lesson_resources.
+
 }
 
 function sanitizePathSegment(string $value, string $fallback = 'unknown'): string
@@ -284,8 +284,8 @@ try {
             $subjectId = (string) $courseStmt->fetchColumn();
             $documentUpload = uploadLessonFile('lesson_document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc', false, ['pdf']);
             if ($documentUpload['path'] !== '') {
-                 // Replace the first resource because student pages select the
-                 // first document by position. Remove duplicate resource rows.
+
+
                 $currentDocument = $conn->prepare(
                     "SELECT resource_id
                      FROM public.lesson_resources
@@ -520,8 +520,8 @@ try {
         if ($lessonId === '' || !teacherOwnsLesson($conn, $teacherId, $lessonId)) throw new Exception('บทเรียนที่เลือกไม่ถูกต้อง');
         $hasNewFile = isset($_FILES['video_file']) && (int) ($_FILES['video_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
 
-        // There is one active video per lesson. If the UI only supplies a new
-        // file, use that lesson's latest video record and keep its title.
+
+
         $activeVideo = $conn->prepare(
             "SELECT resource_id, title
              FROM public.lesson_resources

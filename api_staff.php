@@ -21,7 +21,7 @@ function postValue(string $key, $default = '') {
 
 function ensureLessonDocumentColumns(PDO $conn): void
 {
-    // Documents are stored as lesson_resources; do not alter the supplied schema.
+
 }
 
 function sanitizePathSegment(string $value, string $fallback = 'unknown'): string
@@ -50,7 +50,7 @@ function countSubjectLessons(PDO $conn, string $subjectId): int
 
 function ensureSubjectTeachersTable(PDO $conn): void
 {
-    // `course_teachers` is already created by database-v2.sql.
+
 }
 
 function buildLessonMediaSegments(string $teacherId, string $subjectId, string $lessonId, string $mediaType): array
@@ -123,9 +123,9 @@ try {
     ensureSubjectTeachersTable($conn);
     switch ($action) {
         case 'getAllData':
-            // All names below map directly to docs/database-v2.sql.
+
             $membersStmt = $conn->query('
-                SELECT 
+                SELECT
                     u.user_id as id,
                     u.role,
                     u.account_status as status_account,
@@ -269,7 +269,7 @@ try {
             $subjectId = $_POST['id'] ?? '';
             $teacherIds = json_decode((string) ($_POST['teacher_ids'] ?? '[]'), true);
             if (!is_array($teacherIds)) { $teacherIds = []; }
-            // รองรับคำขอจากหน้าเว็บเวอร์ชันเดิมที่เลือกอาจารย์ได้คนเดียว
+
             if (!$teacherIds && postValue('teacher_id') !== '') { $teacherIds = [postValue('teacher_id')]; }
             $teacherIds = array_values(array_unique(array_filter(array_map(static fn($id) => trim((string) $id), $teacherIds))));
             if ($teacherIds) {
@@ -550,7 +550,7 @@ try {
         case 'deleteMember':
             $memberId = $_POST['id'] ?? '';
             if (empty($memberId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
-            // The foreign key removes the matching staff profile automatically.
+
             $statement = $conn->prepare('DELETE FROM public.users WHERE user_id = :id');
             $statement->execute([':id' => $memberId]);
             jsonResponse(['status' => 'success']);

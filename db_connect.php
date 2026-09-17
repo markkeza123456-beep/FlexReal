@@ -1,8 +1,5 @@
 <?php
-/**
- * Loads private Supabase settings from outside the web root.
- * Copy docs/flexreal.env.example to D:\Xampp\config\flexreal.env and fill it in.
- */
+
 $envFile = 'D:\\Xampp\\config\\flexreal.env';
 
 if (!is_readable($envFile)) {
@@ -36,7 +33,7 @@ $user = requiredEnv($env, 'SUPABASE_DB_USER');
 $pass = requiredEnv($env, 'SUPABASE_DB_PASSWORD');
 $port = requiredEnv($env, 'SUPABASE_DB_PORT');
 
-// Kept available for existing Storage upload endpoints.
+
 $supabaseUrl = requiredEnv($env, 'SUPABASE_URL');
 $supabaseKey = requiredEnv($env, 'SUPABASE_ANON_KEY');
 

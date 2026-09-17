@@ -16,7 +16,7 @@ body {
     overflow-x: auto;
 }
 
-/* ระบบสลับหน้า */
+
 .page { display: none; min-height: 80vh; }
 .page.active { display: block; animation: fadeIn 0.4s ease-in-out; }
 
@@ -25,7 +25,7 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Navbar */
+
 .navbar {
     background: white; padding: 15px 8%; display: flex;
     align-items: center; justify-content: space-between;
@@ -105,7 +105,7 @@ body {
     font-weight: 700;
 }
 
-/* Dropdown */
+
 .dropdown { position: relative; display: inline-block; }
 .dropbtn { background: none; border: none; font-size: 16px; font-weight: 500; cursor: pointer; color: var(--deep-blue); padding: 10px 0; }
 .dropdown-content {
@@ -116,12 +116,12 @@ body {
 .dropdown-content a:hover { background: var(--soft-orange); color: var(--primary-orange); padding-left: 25px; }
 .dropdown:hover .dropdown-content { display: block; }
 
-/* Hero */
+
 .hero { background: linear-gradient(135deg, #ff6b00 0%, #ff9100 100%); padding: 60px 8%; text-align: center; color: white; }
 .hero h1 { font-size: 68px; font-weight: 800; line-height: 1.1; }
 .search-box { width: 100%; max-width: 600px; padding: 18px 30px; border-radius: 50px; border: none; margin-top: 20px; outline: none; box-shadow: var(--shadow); }
 
-/* Course Cards */
+
 .container { padding: 50px 8%; }
 .section-title { font-size: 24px; margin-bottom: 30px; border-left: 6px solid var(--primary-orange); padding-left: 15px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; }
@@ -232,25 +232,25 @@ body {
     color: var(--text-gray);
 }
 
-/* Steps Section */
+
 .steps-bg { background: white; padding: 60px 8%; margin-top: 20px; border-top: 1px solid #ff6b00; }
 .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; text-align: center; }
 .step-icon { width: 65px; height: 65px; background: var(--soft-orange); color: var(--primary-orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 22px; font-weight: bold; border: 2px solid var(--primary-orange); }
 
-/* จัดการหน้าคู่มือและหน้าติดต่อเราให้อยู่กึ่งกลาง */
-#page-guide .container, 
+
+#page-guide .container,
 #page-contact .container {
     display: flex;
     flex-direction: column;
-    align-items: center; /* จัดให้อยู่กึ่งกลางแนวนอน */
+    align-items: center;
     justify-content: center;
     min-height: 50vh;
 }
 
-#page-guide .info-card, 
+#page-guide .info-card,
 #page-contact .info-card {
     width: 100%;
-    max-width: 700px; /* จำกัดความกว้างตามภาพตัวอย่าง */
+    max-width: 700px;
     margin: 0 auto;
     text-align: left;
     color: #000000;
@@ -277,7 +277,7 @@ body {
     color: #ffffff;
 }
 
-/* Course Detail Layout */
+
 .course-layout-grid {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -287,7 +287,7 @@ body {
 
 .info-card { background: white; padding: 30px; border-radius: 20px; border: 1px solid #eee; margin-bottom: 20px; }
 
-/* --- รายการบทเรียนแบบ Thai MOOC --- */
+
 .curriculum-list {
     display: flex;
     flex-direction: column;
@@ -474,7 +474,7 @@ body {
     animation: fadeIn 0.2s ease;
 }
 
-/* Sidebar & Buttons */
+
 .sidebar-card {
     background: white;
     padding: 30px;
@@ -516,7 +516,7 @@ body {
 
 .meta-item span { color: var(--text-gray); }
 
-/* Tabs */
+
 .tabs { display: flex; gap: 30px; border-bottom: 1px solid #ddd; }
 .tab-btn {
     background: none; border: none; padding: 15px 5px; font-size: 16px;
@@ -550,14 +550,14 @@ body {
     }
 }
 
-/* ตั้งค่าเริ่มต้นให้เนื้อหา Tab อื่นๆ ถูกซ่อน */
+
 .tab-content {
     display: none;
     padding-top: 20px;
     animation: fadeIn 0.3s ease;
 }
 
-/* แสดงเฉพาะ Tab ที่มีคลาส active */
+
 .tab-content.active {
     display: block;
 }
@@ -572,11 +572,11 @@ body {
     display: block;
 }
 
-/* ตกแต่งปุ่ม Tab ตอนเอาเมาส์วาง */
+
 .tab-btn:hover {
     color: var(--primary-orange);
 }
-/* Modal Overlay */
+
 .modal-overlay {
     display: none;
     position: fixed;
@@ -590,7 +590,7 @@ body {
     align-items: center;
 }
 
-/* Modal Box */
+
 .modal-content {
     background: white;
     padding: 30px;
@@ -611,7 +611,7 @@ body {
     color: #333;
 }
 
-/* Video Responsive */
+
 .video-container {
     position: relative;
     padding-bottom: 56.25%;
@@ -625,7 +625,7 @@ body {
     height: 100%;
 }
 
-/* Quiz Style */
+
 .quiz-option {
     display: block;
     padding: 10px;
@@ -640,7 +640,7 @@ body {
 }
 .video-container {
     position: relative;
-    padding-bottom: 56.25%; /* อัตราส่วน 16:9 */
+    padding-bottom: 56.25%;
     height: 0;
     overflow: hidden;
     border-radius: 10px;
@@ -652,23 +652,23 @@ body {
     width: 100%;
     height: 100%;
 }
-/* ปรับปรุง Video Container ให้รองรับแท็ก video */
+
 .video-container video {
     width: 100%;
-    max-height: 70vh; /* ไม่ให้สูงเกินหน้าจอ */
+    max-height: 70vh;
     background: #000;
     border-radius: 8px;
     outline: none;
 }
 .btn-primary {
     display: block;
-    width: 100%;                  /* ให้ปุ่มกว้างเต็มกรอบสีขาว */
-    background-color: var(--primary-orange);    /* สีม่วงเข้มตามในรูป */
-    color: #ffffff;               /* ตัวอักษรสีขาว */
+    width: 100%;
+    background-color: var(--primary-orange);
+    color: #ffffff;
     padding: 15px 0;
     text-align: center;
-    text-decoration: none;        /* ลบเส้นใต้กรณีใช้แท็ก <a> */
-    border-radius: 10px;          /* ความโค้งมนของมุมปุ่ม */
+    text-decoration: none;
+    border-radius: 10px;
     font-size: 18px;
     font-weight: bold;
     border: none;
@@ -677,7 +677,7 @@ body {
 }
 
 .btn-primary:hover {
-    background-color: #d84315;    /* สีเข้มขึ้นเล็กน้อยเมื่อเอาเมาส์วาง */
+    background-color: #d84315;
 }
 
 

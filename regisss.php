@@ -1,5 +1,5 @@
 <?php
-// หน้าสมัครเวอร์ชันเดิมใช้ตารางที่เลิกใช้แล้ว จึงส่งต่อไปยังหน้าที่รองรับ schema ปัจจุบัน
+
 header('Location: regisstu.php', true, 302);
 exit;
 ?>
@@ -300,7 +300,7 @@ exit;
           </div>
         </div>
 
-        <!-- PIN นักเรียน -->
+
         <div class="role-field student-field" id="pin-section">
           <div class="section-label">ตั้ง PIN สำหรับผู้ปกครอง</div>
 
@@ -332,7 +332,7 @@ exit;
           </div>
         </div>
 
-        <!-- ข้อมูลนักเรียนที่ต้องการผูกบัญชี (เฉพาะผู้ปกครอง) -->
+
         <div class="role-field parent-field" id="parent-link-section" style="display:none;">
           <div class="section-label">ข้อมูลนักเรียนที่ต้องการผูก</div>
           <div class="field" id="field-link-student-id">

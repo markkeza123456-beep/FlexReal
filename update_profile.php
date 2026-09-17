@@ -1,9 +1,9 @@
 <?php
 session_start();
 header('Content-Type: application/json; charset=utf-8');
-require_once 'db_connect.php'; // ไฟล์เชื่อมต่อฐานข้อมูล
+require_once 'db_connect.php';
 
-// เช็คว่าล็อกอินเป็นอาจารย์จริงไหม
+
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
     echo json_encode(['success' => false, 'message' => 'กรุณาล็อกอินใหม่']);
     exit;
@@ -15,7 +15,7 @@ $pwd_current = $_POST['pwd_current'] ?? '';
 $pwd_new = $_POST['pwd_new'] ?? '';
 
 try {
-    // 0. อัปโหลดรูปโปรไฟล์ (ถ้ามีการส่งไฟล์มา)
+
     if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
         $file     = $_FILES['avatar'];
         $allowed  = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -27,7 +27,7 @@ try {
         $uploadDir = __DIR__ . '/uploads/avatars/';
         if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
 
-        // ลบรูปเก่า
+
         $stmtOld = $conn->prepare("SELECT avatar_url FROM public.teachers WHERE user_id = :id");
         $stmtOld->execute(['id' => $user_id]);
         $oldRow = $stmtOld->fetch(PDO::FETCH_ASSOC);
@@ -48,14 +48,14 @@ try {
         exit;
     }
 
-    // 1. อัปเดตชื่อ-นามสกุล (ถ้ามีการพิมพ์มา)
+
     if (!empty($name)) {
         $stmt = $conn->prepare("UPDATE public.teachers SET full_name = :name, updated_at = NOW() WHERE user_id = :uid");
         $stmt->execute(['name' => $name, 'uid' => $user_id]);
-        $_SESSION['name'] = $name; // อัปเดต session เพื่อให้ชื่อมุมขวาบนเปลี่ยนด้วย
+        $_SESSION['name'] = $name;
     }
 
-    // 2. อัปเดตรหัสผ่าน (ถ้ามีการกรอกรหัสใหม่มา)
+
     if (!empty($pwd_new)) {
         $stmt = $conn->prepare('SELECT password_hash FROM public.users WHERE user_id = :uid');
         $stmt->execute(['uid' => $user_id]);

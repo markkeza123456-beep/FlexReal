@@ -16,7 +16,7 @@ html, body { width: 100%; min-height: 100%; margin: 0 !important; padding: 0 !im
 body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color: var(--text-main); overflow: hidden; }
 .dashboard-container { display: flex; width: 100%; min-height: 100vh; height: 100vh; }
 
-/* Sidebar */
+
 .sidebar { width: 260px; min-width: 260px; height: 100vh; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); padding: 2rem 1.5rem; display: flex; flex-direction: column; }
 .logo-section { display: block; text-decoration: none; width: fit-content; }
 .logo-section h2 { color: var(--accent-orange); letter-spacing: 1px; }
@@ -27,11 +27,11 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .menu-item.active { color: white; background: rgba(255, 122, 0, 0.15); font-weight: 500; }
 .avatar { width: 42px; height: 42px; background: var(--accent-orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
 
-/* Main Content */
+
 .main-content { flex: 1; padding: 2.5rem; overflow-y: auto; min-height: 0; }
 .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
 
-/* Cards & Grid */
+
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem; }
 .stat-card { background: var(--card-bg); padding: 1.5rem; border-radius: 14px; border-left: 4px solid var(--accent-orange); }
 .stat-card.blue { border-color: #3b82f6; }
@@ -43,7 +43,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table td, .data-table th { padding: 1.2rem 0; border-bottom: 1px solid var(--border-color); text-align: left; }
 
-/* Assignment Styles */
+
 .assignment-item {
     background: var(--card-bg);
     padding: 1.5rem;
@@ -60,7 +60,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .btn-submit { background: transparent; border: 1px solid var(--accent-orange); color: var(--accent-orange); padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: 0.3s; }
 .btn-submit:hover { background: var(--accent-orange); color: white; }
 
-/* Lesson Card */
+
 .lessons-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
 .lesson-card { background: var(--card-bg); padding: 1.5rem; border-radius: 15px; border: 1px solid var(--border-color); }
 .lesson-card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:8px; }
@@ -71,11 +71,11 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .progress-bar-bg { background: #333; height: 8px; border-radius: 10px; margin: 10px 0; overflow: hidden; }
 .progress-bar-fill { background: var(--accent-orange); height: 100%; }
 
-/* Status Labels */
+
 .status-label { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; }
 .excellent { background: rgba(255, 122, 0, 0.1); color: var(--accent-orange); }
 .good { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-/* Logout button */
+
 .btn-logout {
     display: flex;
     align-items: center;
@@ -90,7 +90,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 }
 .btn-logout:hover { background: rgba(239,68,68,0.12); color: #ef4444; }
 
-/* ?”€?”€ Settings / Profile Page ?”€?”€ */
+
 .user-profile {
     display: flex;
     align-items: center;
@@ -123,7 +123,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
     color: var(--text-main);
 }
 
-/* Avatar */
+
 .avatar-section {
     display: flex;
     align-items: center;
@@ -172,7 +172,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .avatar-info .avatar-role { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
 .avatar-info .avatar-hint { font-size: 0.7rem; color: #555; margin-top: 4px; }
 
-/* Form */
+
 .settings-form { display: flex; flex-direction: column; gap: 14px; }
 
 .settings-field { display: flex; flex-direction: column; gap: 6px; }
@@ -192,7 +192,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 }
 .settings-input:focus { outline: none; border-color: var(--accent-orange); }
 
-/* Password */
+
 .pwd-section {
     border-top: 1px solid var(--border-color);
     padding-top: 1.2rem;
@@ -221,7 +221,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
     padding: 0;
 }
 
-/* Strength bar */
+
 .strength-bar-bg {
     height: 4px;
     border-radius: 2px;
@@ -237,7 +237,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .strength-label { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
 .pwd-match-msg { font-size: 0.7rem; margin-top: 4px; }
 
-/* Feedback & Save button */
+
 .profile-feedback {
     font-size: 0.8rem;
     padding: 10px 14px;
@@ -260,7 +260,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .btn-save-profile:hover { opacity: 0.85; }
 .btn-save-profile:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Notifications */
+
 .notif-list { display: flex; flex-direction: column; gap: 16px; }
 .notif-toggle {
     display: flex;
@@ -271,7 +271,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
     color: var(--text-muted);
 }
 
-/* Settings page centering */
+
 #settings-page {
     display: flex;
     flex-direction: column;
@@ -283,7 +283,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
     max-width: 620px;
 }
 
-/* -- Card Header + Search -- */
+
 .card-header {
     display: flex;
     align-items: center;

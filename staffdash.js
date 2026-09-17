@@ -1,12 +1,10 @@
-/* ============================================
-   NEXORA STAFF PANEL — staffdash.js (ฉบับสมบูรณ์)
-   ============================================ */
+
 
 (() => {
   let curricula = [];
   let subjects = [];
   let members = [];
-  let teachers = []; // สำหรับเก็บรายชื่ออาจารย์จากฐานข้อมูล
+  let teachers = [];
   let lessons = [];
   let memberSearchTerm = '';
   const initialPage = new URLSearchParams(window.location.search).get('page') || 'dashboard';
@@ -185,8 +183,8 @@
       curricula = data.curricula || [];
       subjects = data.subjects || [];
       members = (data.members || []).map(normalizeMember);
-      teachers = data.teachers || []; // รับข้อมูลรายชื่อครูจากฐานข้อมูลหลังบ้าน
-      
+      teachers = data.teachers || [];
+
       updateDashStats();
 
       if (currentPage === 'curriculum-list') {
@@ -216,7 +214,7 @@
   }
 
   function renderDashboardTables() {
-    // หลักสูตรล่าสุด (ทั้งหมด เรียงจากใหม่ไปเก่า)
+
     const dashCurriculumBody = document.getElementById('dashCurriculumBody');
     if (dashCurriculumBody) {
       const sorted = [...curricula].reverse();
@@ -231,7 +229,7 @@
         : '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text-muted);">ยังไม่มีข้อมูล</td></tr>';
     }
 
-    // รายวิชาล่าสุด (ทั้งหมด เรียงจากใหม่ไปเก่า)
+
     const dashSubjectBody = document.getElementById('dashSubjectBody');
     if (dashSubjectBody) {
       const sorted = [...subjects].reverse();
@@ -247,7 +245,7 @@
     }
   }
 
-  //  ฟังก์ชันโหลดอาจารย์ใส่ใน Select dropdown หน้าจัดการรายวิชา
+
   function populateTeacherSelect(selectedTeacherIds = []) {
     if (!subjectTeacherSelect) {
       return;
@@ -283,7 +281,7 @@
     return true;
   }
 
-  // เลือกจากดรอปดาวน์แล้วนับเป็นอาจารย์ผู้สอนทันที เหมือนการเลือกแบบเดิม
+
   subjectTeacherSelect?.addEventListener('change', addSelectedSubjectTeacher);
 
   selectedSubjectTeachers?.addEventListener('click', event => {
@@ -481,7 +479,7 @@
       return;
     }
 
-    //  อัปเดตตารางแสดงวิชาให้โชว์ "อาจารย์ผู้ดูแลรายวิชา" จากหลังบ้านจริง
+
     subjectBody.innerHTML = subjects.length
       ? subjects.map(subject => `
         <tr>
@@ -506,7 +504,7 @@
     document.getElementById('subjectFormTitle').textContent = 'เพิ่มรายวิชาใหม่';
     document.getElementById('subjectForm').reset();
     document.getElementById('sf-id').value = '';
-    populateTeacherSelect(''); // เคลียร์ค่า Dropdown อาจารย์ให้เป็นค่าเริ่มต้น
+    populateTeacherSelect('');
   });
 
   window.editSubject = id => {
@@ -522,7 +520,7 @@
     document.getElementById('sf-name').value = subject.name || '';
     document.getElementById('sf-credit').value = subject.credit || 0;
     document.getElementById('sf-type').value = subject.type || 'required';
-    
+
     populateTeacherSelect(subject.teacher_ids || '');
     goTo('subject-add');
   };
@@ -537,7 +535,7 @@
     formData.append('name', document.getElementById('sf-name').value);
     formData.append('credit', document.getElementById('sf-credit').value);
     formData.append('type', document.getElementById('sf-type').value);
-    // กันกรณีผู้ใช้กดบันทึกทันทีหลังเลือกชื่อ ก่อน event ของหน้าเว็บทำงานครบ
+
     addSelectedSubjectTeacher();
     formData.append('teacher_ids', JSON.stringify(selectedSubjectTeacherIds));
 
@@ -733,15 +731,15 @@
     }
   });
 
-  // --- ระบบจัดการวิชาเข้าหลักสูตร ---
+
   window.manageCurriculumSubjects = async (id, name) => {
     document.getElementById('csTitle').textContent = `จัดการวิชา: ${name}`;
     document.getElementById('cs-curriculum-id').value = id;
-    
+
     try {
       const data = await fetchJson(`api_staff.php?action=getCurriculumSubjects&curriculum_id=${encodeURIComponent(id)}`);
       const listContainer = document.getElementById('cs-subject-list');
-      
+
       if (!data.subjects || data.subjects.length === 0) {
          listContainer.innerHTML = '<p style="color:var(--text-secondary); text-align:center; padding: 20px;">ยังไม่มีรายวิชาในระบบ กรุณาไปเพิ่มรายวิชาก่อนครับ</p>';
       } else {
@@ -763,16 +761,16 @@
 
   document.getElementById('csForm')?.addEventListener('submit', async e => {
     e.preventDefault();
-    
+
     const curriculumId = document.getElementById('cs-curriculum-id').value;
     const checkboxes = document.querySelectorAll('input[name="curriculum_subjects[]"]:checked');
     const selectedIds = Array.from(checkboxes).map(cb => cb.value);
-    
+
     const formData = new FormData();
     formData.append('action', 'saveCurriculumSubjects');
     formData.append('curriculum_id', curriculumId);
-    formData.append('subjects', JSON.stringify(selectedIds)); // ส่งเป็น JSON array
-    
+    formData.append('subjects', JSON.stringify(selectedIds));
+
     try {
       await fetchJson('api_staff.php', { method: 'POST', body: formData });
       showToast('บันทึกรายวิชาเข้าหลักสูตรเรียบร้อย!', 'success');
@@ -786,9 +784,7 @@
   loadData();
 })();
 
-/* ══════════════════════════════════════════════
-   STAFF AVATAR — Crop & Upload
-   ══════════════════════════════════════════════ */
+
 const _staffCrop = {
   img: null, dragging: false,
   imgX: 0, imgY: 0, imgW: 0, imgH: 0, zoom: 1,

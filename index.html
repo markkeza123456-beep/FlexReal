@@ -1,16 +1,11 @@
-/**
- * ฟังก์ชันหลักสำหรับสลับหน้าจอ
- */
+
 function showPage(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(pageId).classList.add('active');
     window.scrollTo(0, 0);
 }
 
-/**
- * ฟังก์ชันสำหรับค้นหาวิชา (เพิ่มเข้าไปใหม่)
- * ทำงานร่วมกับ id="searchInput" ในไฟล์ HTML
- */
+
 function filterCourses() {
     let input = document.getElementById('searchInput').value.toLowerCase();
     let cards = document.getElementsByClassName('card');
@@ -18,31 +13,29 @@ function filterCourses() {
     for (let i = 0; i < cards.length; i++) {
         let title = cards[i].querySelector('h3').innerText.toLowerCase();
         if (title.includes(input)) {
-            cards[i].style.display = ""; // แสดงผล
+            cards[i].style.display = "";
         } else {
-            cards[i].style.display = "none"; // ซ่อน
+            cards[i].style.display = "none";
         }
     }
 }
 
-/**
-ฟังก์ชันแสดงรายละเอียดวิชา
- */
+
 function showCourse(courseName) {
     const titleElement = document.getElementById('detail-title');
-    const descTopElement = document.getElementById('detail-desc-top'); // ตัวแปรสำหรับบรรทัดบน
-    const descElement = document.getElementById('detail-desc');       // ตัวแปรใน Tab Overview
+    const descTopElement = document.getElementById('detail-desc-top');
+    const descElement = document.getElementById('detail-desc');
     const durationElement = document.getElementById('detail-duration');
 
-    // เปลี่ยนชื่อหัวข้อหลัก
+
     titleElement.innerText = courseName;
-    
-    // ตรวจสอบวิชาและเปลี่ยนข้อความให้ตรงกัน
+
+
     if (courseName === 'คณิตศาสตร์') {
         descTopElement.innerText = 'รายละเอียดเบื้องต้นของวิชาคณิตศาสตร์: เน้นการคิดวิเคราะห์และแก้โจทย์';
         descElement.innerText = 'เจาะลึกตรรกะและการแก้โจทย์ปัญหาอย่างเป็นระบบในระดับสากล';
         durationElement.innerText = '10 ชั่วโมง';
-    } 
+    }
     else if (courseName === 'ภาษาไทย') {
         descTopElement.innerText = 'รายละเอียดเบื้องต้นของวิชาภาษาไทย: การสื่อสารและการใช้ภาษาในที่ทำงาน';
         descElement.innerText = 'ทักษะการใช้ภาษาไทยเพื่อการทำงานและการสื่อสารอย่างมีประสิทธิภาพ';
@@ -69,14 +62,11 @@ function showCourse(courseName) {
         durationElement.innerText = '6 ชั่วโมง';
     }
 
-    // เมื่อตั้งค่าเสร็จแล้วจึงเปิดหน้า Course Detail
+
     showPage('course-detail');
 }
 
-/**
- * ฟังก์ชันสำหรับสลับ Tab ( Overview / Curriculum / Instructor )
- * เพิ่มเติม: ให้กลับมาที่หน้า Overview ทุกครั้งที่กดวิชาใหม่
- */
+
 function openTab(evt, tabName) {
     const tabContents = document.getElementsByClassName("tab-content");
     for (let i = 0; i < tabContents.length; i++) {
@@ -93,13 +83,11 @@ function openTab(evt, tabName) {
     document.getElementById(tabName).classList.add("active");
     evt.currentTarget.classList.add("active");
 }
-/**
- * ฟังก์ชันแสดงหน้าคู่มือการเรียน 
- */
+
 function showGuide(type) {
     const title = document.getElementById('guide-title');
     const content = document.getElementById('guide-content');
-    
+
     if (type === 'register') {
         title.innerText = 'ขั้นตอนการสมัครสมาชิก';
         content.innerHTML = `
@@ -124,17 +112,15 @@ function showGuide(type) {
                 <p>เมื่อเรียนจบครบ 100% และสอบผ่านเกณฑ์ ระบบจะให้ดาวน์โหลดใบประกาศทันทีในหน้าสรุปผล</p>
             </div>`;
     }
-    
+
     showPage('page-guide');
 }
 
-/**
- * ฟังก์ชันแสดงหน้าติดต่อเรา (ปรับปรุงเพื่อให้จัดกึ่งกลางตาม CSS ใหม่)
- */
+
 function showContact(type) {
     const title = document.getElementById('contact-title');
     const content = document.getElementById('contact-content');
-    
+
     if (type === 'channel') {
         title.innerText = 'ช่องทางการติดต่อ';
         content.innerHTML = `
@@ -151,34 +137,32 @@ function showContact(type) {
                 <p>อาคารflexblehub ชั้น 10 กรุงเทพมหานคร</p>
             </div>`;
     }
-    
+
     showPage('page-contact');
 }
 
-/**
- * ฟังก์ชันสลับ Tab (Overview, Curriculum, Instructor)
- */
+
 function openTab(evt, tabName) {
-    // 1. ซ่อนเนื้อหา Tab ทั้งหมด
+
     const tabContents = document.getElementsByClassName("tab-content");
     for (let i = 0; i < tabContents.length; i++) {
         tabContents[i].style.display = "none";
         tabContents[i].classList.remove("active");
     }
 
-    // 2. เอาคลาส 'active' ออกจากปุ่มทั้งหมด
+
     const tabButtons = document.getElementsByClassName("tab-btn");
     for (let i = 0; i < tabButtons.length; i++) {
         tabButtons[i].className = tabButtons[i].className.replace(" active", "");
     }
 
-    // 3. แสดงเนื้อหา Tab ที่เลือก และเพิ่มคลาส 'active' ให้ปุ่มที่กด
+
     document.getElementById(tabName).style.display = "block";
     document.getElementById(tabName).classList.add("active");
     evt.currentTarget.className += " active";
 }
 
-// 1.ฟังก์ชันดาวน์โหลดเอกสารจากโฟลเดอร์ 
+
 function downloadLesson(fileName) {
     const filePath = 'docs/' + fileName;
     const link = document.createElement('a');
@@ -189,11 +173,11 @@ function downloadLesson(fileName) {
     document.body.removeChild(link);
 }
 
-// ฟังก์ชันเปิดวิดีโอจากโฟลเดอร์ videos 
+
 function openLocalVideo(fileName) {
     const modal = document.getElementById('modal-overlay');
     const body = document.getElementById('modal-body');
-    const videoPath = 'videos/' + fileName; 
+    const videoPath = 'videos/' + fileName;
 
     body.innerHTML = `
         <h3 style="margin-bottom:15px; color:#E67E22;"> วิดีโอบทเรียน</h3>
@@ -206,12 +190,12 @@ function openLocalVideo(fileName) {
     `;
     modal.style.display = 'flex';
 }
-// 3. ฟังก์ชันเปิดหน้าแบบทดสอบ
+
 function startQuiz() {
     const modal = document.getElementById('modal-overlay');
     const body = document.getElementById('modal-body');
-    
-    // สร้างเนื้อหาแบบทดสอบจำลอง
+
+
     body.innerHTML = `
         <h3 style="margin-bottom:20px; color:var(--primary-orange);"> แบบทดสอบหลังเรียน</h3>
         <div style="text-align:left; background:#f9f9f9; padding:20px; border-radius:10px;">
@@ -225,10 +209,10 @@ function startQuiz() {
     modal.style.display = 'flex';
 }
 
-// 4. ฟังก์ชันปิด Modal (เพื่อให้วิดีโอหยุดเล่นเมื่อปิด)
+
 function closeModal() {
     const modal = document.getElementById('modal-overlay');
     const body = document.getElementById('modal-body');
-    body.innerHTML = ''; // ล้างเนื้อหาทิ้ง เพื่อให้เสียงวิดีโอหยุด
+    body.innerHTML = '';
     modal.style.display = 'none';
 }

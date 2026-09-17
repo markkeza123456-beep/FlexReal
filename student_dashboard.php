@@ -10,7 +10,7 @@
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Sidebar -->
+
         <aside class="sidebar">
             <a class="logo-section" href="web.html" title="กลับหน้าหลักและรายวิชา">
                 <h2>FLEXIBLE</h2>
@@ -40,10 +40,10 @@
             </div>
         </aside>
 
-        <!-- Main Content Area -->
+
         <main class="main-content">
-            
-            <!-- SECTION: Dashboard -->
+
+
             <section id="dashboard-page" class="content-section">
                 <header class="header">
                     <div class="welcome">
@@ -98,7 +98,7 @@
                 </section>
             </section>
 
-            <!-- SECTION: Lessons -->
+
             <section id="lesson-page" class="content-section" style="display: none;">
                 <header class="header">
                     <div class="welcome">
@@ -109,7 +109,7 @@
                 <div class="lessons-container" id="lessons-list"></div>
             </section>
 
-            <!-- SECTION: Settings / Profile -->
+
             <section id="settings-page" class="content-section" style="display: none;">
                 <header class="header">
                     <div class="welcome">
@@ -121,7 +121,7 @@
 
                 <div class="settings-wrapper">
 
-                    <!-- Profile Card -->
+
                     <div class="content-card settings-card">
                         <h2 class="settings-card-title">&#128100; โปรไฟล์</h2>
 
@@ -198,7 +198,7 @@
                         <button class="btn-save-profile" id="saveProfileBtn" onclick="saveProfile()">&#128190; บันทึกข้อมูล</button>
                     </div>
 
-                    <!-- Notification Card -->
+
                     <div class="content-card settings-card">
                         <h2 class="settings-card-title">&#128276; การแจ้งเตือน</h2>
                         <div class="notif-list">
