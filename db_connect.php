@@ -1,10 +1,25 @@
 <?php
 
-$envFile = 'D:\\Xampp\\config\\flexreal.env';
+// Keep credentials outside the web root.  The old single Windows-only path
+// made every database-backed page fail after the project was opened in XAMPP
+// on macOS/Linux.
+$envFileCandidates = array_filter([
+    getenv('FLEXREAL_ENV_FILE') ?: null,
+    '/Applications/XAMPP/xamppfiles/config/flexreal.env',
+    dirname(__DIR__) . '/config/flexreal.env',
+    'D:\\Xampp\\config\\flexreal.env', // legacy Windows installation
+]);
 
-if (!is_readable($envFile)) {
-    http_response_code(500);
-    die('Missing private configuration file. See docs/flexreal.env.example.');
+$envFile = null;
+foreach ($envFileCandidates as $candidate) {
+    if (is_readable($candidate)) {
+        $envFile = $candidate;
+        break;
+    }
+}
+
+if ($envFile === null) {
+    throw new RuntimeException('ระบบยังไม่ได้ตั้งค่าการเชื่อมต่อฐานข้อมูล กรุณาติดต่อผู้ดูแลระบบ');
 }
 
 $env = [];
@@ -20,9 +35,8 @@ foreach (file($envFile, FILE_IGNORE_NEW_LINES) as $line) {
 function requiredEnv(array $env, string $key): string
 {
     $value = trim((string) ($env[$key] ?? ''));
-    if ($value === '') {
-        http_response_code(500);
-        die("Missing required configuration: {$key}");
+if ($value === '') {
+        throw new RuntimeException("Missing required configuration: {$key}");
     }
     return $value;
 }
@@ -47,7 +61,6 @@ try {
     $conn->exec('SET client_encoding TO \'UTF8\'');
     $conn->exec('SET statement_timeout TO 8000');
 } catch (PDOException $e) {
-    http_response_code(500);
     error_log('Supabase database connection failed: ' . $e->getMessage());
-    die('Database connection failed.');
+    throw new RuntimeException('Database connection failed.', 0, $e);
 }
