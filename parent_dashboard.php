@@ -98,7 +98,7 @@
 <div class="wrap">
 
   <aside class="sidebar">
-    <a class="logo" href="web.html" title="กลับหน้าหลักและรายวิชา">
+    <a class="logo" href="index.html" title="กลับหน้าหลักและรายวิชา">
       <div class="logo-icon">
         <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
           <polygon points="20,2 38,12 38,28 20,38 2,28 2,12" fill="none" stroke="currentColor" stroke-width="2"/>
@@ -389,14 +389,14 @@
                 <label class="settings-label">รหัสผ่านปัจจุบัน</label>
                 <div class="pwd-input-wrap">
                   <input type="password" class="settings-input" id="pwdCurrent" placeholder="ใส่รหัสผ่านปัจจุบัน">
-                  <button type="button" onclick="togglePwd('pwdCurrent',this)" class="pwd-toggle-btn"></button>
+                  <button type="button" onclick="togglePwd('pwdCurrent',this)" class="pwd-toggle-btn">แสดง</button>
                 </div>
               </div>
               <div class="settings-field">
                 <label class="settings-label">รหัสผ่านใหม่</label>
                 <div class="pwd-input-wrap">
                   <input type="password" class="settings-input" id="pwdNew" placeholder="อย่างน้อย 6 ตัวอักษร" oninput="checkPwdStrength(this.value)">
-                  <button type="button" onclick="togglePwd('pwdNew',this)" class="pwd-toggle-btn"></button>
+                  <button type="button" onclick="togglePwd('pwdNew',this)" class="pwd-toggle-btn">แสดง</button>
                 </div>
                 <div id="pwdStrengthWrap" style="display:none;margin-top:8px">
                   <div class="strength-bar-bg"><div id="pwdStrengthBar" class="strength-bar-fill"></div></div>
@@ -407,7 +407,7 @@
                 <label class="settings-label">ยืนยันรหัสผ่านใหม่</label>
                 <div class="pwd-input-wrap">
                   <input type="password" class="settings-input" id="pwdConfirm" placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง" oninput="checkPwdMatch()">
-                  <button type="button" onclick="togglePwd('pwdConfirm',this)" class="pwd-toggle-btn"></button>
+                  <button type="button" onclick="togglePwd('pwdConfirm',this)" class="pwd-toggle-btn">แสดง</button>
                 </div>
                 <div id="pwdMatchMsg" class="pwd-match-msg"></div>
               </div>

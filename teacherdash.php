@@ -258,7 +258,7 @@ $stats = [
 </head>
 <body>
 <aside class="sidebar">
-    <a class="sidebar-logo" href="web.html" title="กลับหน้าหลักและรายวิชา">
+    <a class="sidebar-logo" href="index.html" title="กลับหน้าหลักและรายวิชา">
         <div class="logo-icon">
             <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
                 <polygon points="16,2 30,10 30,22 16,30 2,22 2,10" fill="none" stroke="#f97316" stroke-width="2.5"/>
@@ -665,7 +665,7 @@ $stats = [
             <div class="modal">
                 <div class="modal-header">
                     <h3 class="modal-title"> เพิ่มบทเรียนย่อย</h3>
-                    <button class="modal-close" onclick="document.getElementById('modalOverlay').classList.remove('open')"></button>
+                    <button class="modal-close" onclick="document.getElementById('modalOverlay').classList.remove('open')">ปิด</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
@@ -689,7 +689,7 @@ $stats = [
             <div class="modal">
                 <div class="modal-header">
                     <h3 class="modal-title"> แก้ไขชื่อบทเรียน</h3>
-                    <button class="modal-close" onclick="document.getElementById('editLessonModal').classList.remove('open')"></button>
+                    <button class="modal-close" onclick="document.getElementById('editLessonModal').classList.remove('open')">ปิด</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
@@ -709,7 +709,7 @@ $stats = [
             <div class="modal" style="max-width: 520px;">
                 <div class="modal-header">
                     <h3 class="modal-title"> เพิ่มคำถามลงในบทเรียน</h3>
-                    <button class="modal-close" onclick="document.getElementById('quizModalOverlay').classList.remove('open')"></button>
+                    <button class="modal-close" onclick="document.getElementById('quizModalOverlay').classList.remove('open')">ปิด</button>
                 </div>
                 <div class="modal-body">
                     <div style="background:var(--orange-dim); color:var(--orange); padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:10px; border:1px solid rgba(249,115,22,0.3);">
@@ -766,7 +766,7 @@ $stats = [
             <div class="modal" style="max-width: 520px;">
                 <div class="modal-header">
                     <h3 class="modal-title"> แก้ไขคำถาม</h3>
-                    <button class="modal-close" onclick="document.getElementById('editQuizModal').classList.remove('open')"></button>
+                    <button class="modal-close" onclick="document.getElementById('editQuizModal').classList.remove('open')">ปิด</button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="editQuizIdInput" value="">
@@ -924,7 +924,7 @@ $stats = [
     <div style="background:var(--surface,#1e1e2e);border-radius:16px;padding:24px;width:min(420px,92vw);display:flex;flex-direction:column;gap:16px;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
         <div style="display:flex;justify-content:space-between;align-items:center;">
             <span style="font-weight:700;font-size:16px;">️ ครอบรูปโปรไฟล์</span>
-            <button id="cropCancelBtn" style="background:none;border:none;color:var(--text-dim,#aaa);font-size:20px;cursor:pointer;line-height:1;"></button>
+            <button id="cropCancelBtn" style="background:none;border:none;color:var(--text-dim,#aaa);font-size:14px;cursor:pointer;line-height:1;">ยกเลิก</button>
         </div>
 
         <div style="position:relative;width:100%;aspect-ratio:1;background:#111;border-radius:12px;overflow:hidden;touch-action:none;" id="cropArea">
@@ -1177,7 +1177,7 @@ function showMsg(id, msg, success) {
                     <div id="sdm-class" style="font-size:12px;color:var(--text-muted);margin-top:3px;"></div>
                 </div>
             </div>
-            <button class="modal-close" onclick="document.getElementById('studentDetailModal').classList.remove('open')"></button>
+            <button class="modal-close" onclick="document.getElementById('studentDetailModal').classList.remove('open')">ปิด</button>
         </div>
 
         <div class="modal-body" style="padding:24px;">

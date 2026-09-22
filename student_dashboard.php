@@ -12,7 +12,7 @@
     <div class="dashboard-container">
 
         <aside class="sidebar">
-            <a class="logo-section" href="web.html" title="กลับหน้าหลักและรายวิชา">
+            <a class="logo-section" href="index.html" title="กลับหน้าหลักและรายวิชา">
                 <h2>FLEXIBLE</h2>
                 <span>LEARNING HUB</span>
             </a>
@@ -167,14 +167,14 @@
                                     <label class="settings-label">รหัสผ่านปัจจุบัน</label>
                                     <div class="pwd-input-wrap">
                                         <input type="password" class="settings-input" id="pwdCurrent" placeholder="ใส่รหัสผ่านปัจจุบัน">
-                                        <button type="button" onclick="togglePwd('pwdCurrent',this)" class="pwd-toggle-btn">&#128065;</button>
+                                        <button type="button" onclick="togglePwd('pwdCurrent',this)" class="pwd-toggle-btn">แสดง</button>
                                     </div>
                                 </div>
                                 <div class="settings-field">
                                     <label class="settings-label">รหัสผ่านใหม่</label>
                                     <div class="pwd-input-wrap">
                                         <input type="password" class="settings-input" id="pwdNew" placeholder="อย่างน้อย 6 ตัวอักษร" oninput="checkPwdStrength(this.value)">
-                                        <button type="button" onclick="togglePwd('pwdNew',this)" class="pwd-toggle-btn">&#128065;</button>
+                                        <button type="button" onclick="togglePwd('pwdNew',this)" class="pwd-toggle-btn">แสดง</button>
                                     </div>
                                     <div id="pwdStrengthWrap" style="display:none;margin-top:8px">
                                         <div class="strength-bar-bg">
@@ -187,7 +187,7 @@
                                     <label class="settings-label">ยืนยันรหัสผ่านใหม่</label>
                                     <div class="pwd-input-wrap">
                                         <input type="password" class="settings-input" id="pwdConfirm" placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง" oninput="checkPwdMatch()">
-                                        <button type="button" onclick="togglePwd('pwdConfirm',this)" class="pwd-toggle-btn">&#128065;</button>
+                                        <button type="button" onclick="togglePwd('pwdConfirm',this)" class="pwd-toggle-btn">แสดง</button>
                                     </div>
                                     <div id="pwdMatchMsg" class="pwd-match-msg"></div>
                                 </div>

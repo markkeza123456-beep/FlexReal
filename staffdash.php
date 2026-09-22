@@ -43,7 +43,7 @@ if (!empty($_SESSION['name'])) {
 
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <a class="brand-home-link" href="web.html" title="กลับหน้าหลักและรายวิชา">
+      <a class="brand-home-link" href="index.html" title="กลับหน้าหลักและรายวิชา">
       <div class="flex-brand-mark" aria-hidden="true">
         <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
           <polygon points="32,6 53,18 53,42 32,56 11,42 11,18" fill="none" stroke="#f07f37" stroke-width="5" stroke-linejoin="round"/>
@@ -55,7 +55,7 @@ if (!empty($_SESSION['name'])) {
         <span class="flex-brand-sub">LEARNING HUB</span>
       </div>
       </a>
-      <button class="sidebar-close" id="sidebarClose" title="ปิดเมนู">
+      <button class="sidebar-close" id="sidebarClose" title="ปิดเมนู">ปิด
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
@@ -64,7 +64,7 @@ if (!empty($_SESSION['name'])) {
 
     <div class="nav">
       <span class="nav-section-label">หลัก</span>
-      <a class="nav-item active" data-page="dashboard" href="#">
+      <a class="nav-item active" data-page="dashboard" href="staffdash.php?page=dashboard">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
           <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
@@ -73,7 +73,7 @@ if (!empty($_SESSION['name'])) {
       </a>
 
       <span class="nav-section-label">หลักสูตร</span>
-      <a class="nav-item" data-page="curriculum-list" href="#">
+      <a class="nav-item" data-page="curriculum-list" href="staffdash.php?page=curriculum-list">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
         </svg>
@@ -81,7 +81,7 @@ if (!empty($_SESSION['name'])) {
       </a>
 
       <span class="nav-section-label">รายวิชา</span>
-      <a class="nav-item" data-page="subject-list" href="#">
+      <a class="nav-item" data-page="subject-list" href="staffdash.php?page=subject-list">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
         </svg>
@@ -89,7 +89,7 @@ if (!empty($_SESSION['name'])) {
       </a>
 
       <span class="nav-section-label">สมาชิก</span>
-      <a class="nav-item" data-page="member-list" href="#">
+      <a class="nav-item" data-page="member-list" href="staffdash.php?page=member-list">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
           <circle cx="9" cy="7" r="4"/>
@@ -97,7 +97,7 @@ if (!empty($_SESSION['name'])) {
         </svg>
         จัดการผู้ใช้งาน
       </a>
-      <a class="nav-item" data-page="staff-add" href="#">
+      <a class="nav-item" data-page="staff-add" href="staffdash.php?page=staff-add">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
           <circle cx="12" cy="7" r="4"/>
@@ -122,7 +122,7 @@ if (!empty($_SESSION['name'])) {
         <span class="user-name"><?= htmlspecialchars($displayName) ?></span>
         <span class="user-role"><?= htmlspecialchars($displayRole) ?></span>
       </div>
-      <a class="btn-logout" href="logout.php" title="ออกจากระบบ">
+      <a class="btn-logout" href="logout.php" title="ออกจากระบบ">ออกจากระบบ
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
           <polyline points="16 17 21 12 16 7"/>
@@ -137,7 +137,7 @@ if (!empty($_SESSION['name'])) {
 
 
     <header class="topbar">
-      <button class="menu-btn" id="menuBtn" title="เปิดเมนู">
+      <button class="menu-btn" id="menuBtn" title="เปิดเมนู">เมนู
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
         </svg>

@@ -91,7 +91,7 @@ function renderLessons(courses) {
             </div>
             <p style="font-size: 0.8rem; color: #888;">ทำแบบทดสอบแล้ว: ${course.attempted_lessons}/${course.lesson_count} บท</p>
             <p style="font-size: 0.8rem; color: #888;">คะแนนสะสม: ${course.score_total > 0 ? `${course.score_earned}/${course.score_total} คะแนน` : 'ยังไม่มีคะแนน'}</p>
-            <a class="btn-submit" style="display:inline-block;text-decoration:none;margin-top:10px;" href="web.html?subject_id=${encodeURIComponent(course.subject_id)}">เข้าเรียนต่อ</a>
+            <a class="btn-submit" style="display:inline-block;text-decoration:none;margin-top:10px;" href="index.html?subject_id=${encodeURIComponent(course.subject_id)}">เข้าเรียนต่อ</a>
         </div>
     `).join('');
 }
@@ -469,7 +469,7 @@ function togglePwd(id, btn) {
     if (!inp) return;
     const show = inp.type === 'password';
     inp.type = show ? 'text' : 'password';
-    btn.textContent = show ? '' : ' ';
+    btn.textContent = show ? 'ซ่อน' : 'แสดง';
 }
 
 function checkPwdStrength(val) {

@@ -142,6 +142,9 @@
     if (topbarTitle) {
       topbarTitle.textContent = pageNames[page] || '';
     }
+    const pageUrl = new URL(window.location.href);
+    pageUrl.searchParams.set('page', page);
+    window.history.replaceState({ page }, '', pageUrl);
 
     if (page === 'dashboard') {
       updateDashStats();
@@ -168,6 +171,10 @@
       e.preventDefault();
       goTo(item.dataset.page);
     });
+  });
+
+  window.addEventListener('popstate', () => {
+    goTo(new URLSearchParams(window.location.search).get('page') || 'dashboard');
   });
 
   document.addEventListener('click', e => {
@@ -313,17 +320,13 @@
         <tr>
           <td>${member.name}</td>
           <td style="color:var(--text-secondary)">${member.email || '-'}</td>
-<<<<<<< Updated upstream
           <td style="color:var(--text-secondary)">${member.phone || '-'}</td>
           <td><span class="badge ${member.role === 'Staff' ? 'required' : 'draft'}">${roleName[member.role] || member.role}</span></td>
-=======
-          <td><span class="badge ${member.role === 'staff' ? 'required' : 'draft'}">${roleName[member.role] || member.role}</span></td>
->>>>>>> Stashed changes
           <td><span class="badge ${member.status === 'active' ? 'active' : 'draft'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
           <td>
             <div class="action-btns">
-              <button type="button" class="btn-icon edit" onclick="editMember('${member.id}')"></button>
-              <button type="button" class="btn-icon del" onclick="deleteMember('${member.id}')"></button>
+              <button type="button" class="btn-icon edit" onclick="editMember('${member.id}')">แก้ไข</button>
+              <button type="button" class="btn-icon del" onclick="deleteMember('${member.id}')">ลบ</button>
             </div>
           </td>
         </tr>
@@ -402,8 +405,8 @@
           <td>
             <div class="action-btns">
               <button type="button" class="btn-icon" style="color:var(--blue); border-color:var(--border);" onclick="manageCurriculumSubjects('${curriculum.id}', '${curriculum.name}')" title="จัดการวิชาเข้าหลักสูตร">จัดการ</button>
-              <button type="button" class="btn-icon edit" onclick="editCurriculum('${curriculum.id}')"></button>
-              <button type="button" class="btn-icon del" onclick="deleteCurriculum('${curriculum.id}')"></button>
+              <button type="button" class="btn-icon edit" onclick="editCurriculum('${curriculum.id}')">แก้ไข</button>
+              <button type="button" class="btn-icon del" onclick="deleteCurriculum('${curriculum.id}')">ลบ</button>
             </div>
           </td>
         </tr>
@@ -490,9 +493,9 @@
           <td style="color:var(--orange); font-weight:500;">${subject.teacher_name || 'ยังไม่มีผู้ดูแล'}</td>
           <td>
             <div class="action-btns">
-              <button type="button" class="btn-icon" style="color:var(--blue); border-color:var(--border);" onclick="manageLessons('${subject.id}')" title="จัดการบทเรียน"></button>
-              <button type="button" class="btn-icon edit" onclick="editSubject('${subject.id}')" title="แก้ไขรายวิชา"></button>
-              <button type="button" class="btn-icon del" onclick="deleteSubject('${subject.id}')"></button>
+              <button type="button" class="btn-icon" style="color:var(--blue); border-color:var(--border);" onclick="manageLessons('${subject.id}')" title="จัดการบทเรียน">บทเรียน</button>
+              <button type="button" class="btn-icon edit" onclick="editSubject('${subject.id}')" title="แก้ไขรายวิชา">แก้ไข</button>
+              <button type="button" class="btn-icon del" onclick="deleteSubject('${subject.id}')">ลบ</button>
             </div>
           </td>
         </tr>
@@ -597,8 +600,8 @@
           <td>${lesson.video_url ? `<a href="${lesson.video_url}" target="_blank" style="color:var(--blue);text-decoration:none;">ลิงก์วิดีโอ</a>` : '-'}</td>
           <td>
             <div class="action-btns">
-              <button type="button" class="btn-icon edit" onclick="editLesson('${lesson.id}')"></button>
-              <button type="button" class="btn-icon del" onclick="deleteLesson('${lesson.id}')"></button>
+              <button type="button" class="btn-icon edit" onclick="editLesson('${lesson.id}')">แก้ไข</button>
+              <button type="button" class="btn-icon del" onclick="deleteLesson('${lesson.id}')">ลบ</button>
             </div>
           </td>
         </tr>

@@ -1,218 +1,258 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flexible Learning Hub</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="web.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="theme.css">
+</head>
+<body>
 
-function showPage(pageId) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById(pageId).classList.add('active');
-    window.scrollTo(0, 0);
-}
-
-
-function filterCourses() {
-    let input = document.getElementById('searchInput').value.toLowerCase();
-    let cards = document.getElementsByClassName('card');
-
-    for (let i = 0; i < cards.length; i++) {
-        let title = cards[i].querySelector('h3').innerText.toLowerCase();
-        if (title.includes(input)) {
-            cards[i].style.display = "";
-        } else {
-            cards[i].style.display = "none";
-        }
-    }
-}
-
-
-function showCourse(courseName) {
-    const titleElement = document.getElementById('detail-title');
-    const descTopElement = document.getElementById('detail-desc-top');
-    const descElement = document.getElementById('detail-desc');
-    const durationElement = document.getElementById('detail-duration');
-
-
-    titleElement.innerText = courseName;
-
-
-    if (courseName === 'คณิตศาสตร์') {
-        descTopElement.innerText = 'รายละเอียดเบื้องต้นของวิชาคณิตศาสตร์: เน้นการคิดวิเคราะห์และแก้โจทย์';
-        descElement.innerText = 'เจาะลึกตรรกะและการแก้โจทย์ปัญหาอย่างเป็นระบบในระดับสากล';
-        durationElement.innerText = '10 ชั่วโมง';
-    }
-    else if (courseName === 'ภาษาไทย') {
-        descTopElement.innerText = 'รายละเอียดเบื้องต้นของวิชาภาษาไทย: การสื่อสารและการใช้ภาษาในที่ทำงาน';
-        descElement.innerText = 'ทักษะการใช้ภาษาไทยเพื่อการทำงานและการสื่อสารอย่างมีประสิทธิภาพ';
-        durationElement.innerText = '5 ชั่วโมง';
-    }
-    else if (courseName === 'วิทยาศาสตร์') {
-        descTopElement.innerText = 'รายละเอียดเบื้องต้นของวิชาวิทยาศาสตร์: กระบวนการทางวิทยาศาสตร์และนวัตกรรม';
-        descElement.innerText = 'เรียนรู้การทดลองและแนวคิดพื้นฐานทางฟิสิกส์ เคมี และชีววิทยา';
-        durationElement.innerText = '12 ชั่วโมง';
-    }
-    else if (courseName === 'สังคมศึกษา') {
-        descTopElement.innerText = 'รายละเอียดเบื้องต้นของวิชาสังคมศึกษา: วัฒนธรรมและความเป็นพลเมือง';
-        descElement.innerText = 'เรียนรู้วิธีการเข้าสังคมและทำความเข้าใจความหลากหลายทางวัฒนธรรม';
-        durationElement.innerText = '6 ชั่วโมง';
-    }
-    else if (courseName === 'ภาษาอังกฤษ') {
-        descTopElement.innerText = 'รายละเอียดเบื้องต้นของวิชาอังกฤษ: English for Business Communication';
-        descElement.innerText = 'Professional English skills for career advancement and daily life.';
-        durationElement.innerText = '8 ชั่วโมง';
-    }
-    else {
-        descTopElement.innerText = 'รายละเอียดเบื้องต้นของวิชา...';
-        descElement.innerText = 'เริ่มต้นเรียนรู้และพัฒนาทักษะไปกับหลักสูตรคุณภาพจากผู้เชี่ยวชาญ';
-        durationElement.innerText = '6 ชั่วโมง';
-    }
-
-
-    showPage('course-detail');
-}
-
-
-function openTab(evt, tabName) {
-    const tabContents = document.getElementsByClassName("tab-content");
-    for (let i = 0; i < tabContents.length; i++) {
-        tabContents[i].style.display = "none";
-        tabContents[i].classList.remove("active");
-    }
-
-    const tabButtons = document.getElementsByClassName("tab-btn");
-    for (let i = 0; i < tabButtons.length; i++) {
-        tabButtons[i].classList.remove("active");
-    }
-
-    document.getElementById(tabName).style.display = "block";
-    document.getElementById(tabName).classList.add("active");
-    evt.currentTarget.classList.add("active");
-}
-
-function showGuide(type) {
-    const title = document.getElementById('guide-title');
-    const content = document.getElementById('guide-content');
-
-    if (type === 'register') {
-        title.innerText = 'ขั้นตอนการสมัครสมาชิก';
-        content.innerHTML = `
-            <div class="info-card">
-                <h4 style="color:var(--primary-orange); margin-bottom:15px;"> วิธีเริ่มใช้งาน</h4>
-                <p>1. คลิกปุ่ม <b>Login</b> มุมขวาบนของหน้าจอ</p>
-                <p>2. กรอกรายละเอียดเพื่อสมัครสมาชิกด้วย Email หรือเลือกใช้งานผ่านระบบ Google</p>
-                <p>3. ยืนยันตัวตนแล้วเริ่มเรียนได้ทันที</p>
-            </div>`;
-    } else if (type === 'search') {
-        title.innerText = 'วิธีค้นหาบทเรียน';
-        content.innerHTML = `
-            <div class="info-card">
-                <h4 style="color:var(--primary-orange); margin-bottom:15px;"> การค้นหา</h4>
-                <p>ท่านสามารถค้นหาบทเรียนได้โดยพิมพ์ชื่อวิชาในช่อง Search หรือเลือกดูตามหมวดหมู่ที่เมนูด้านบน</p>
-            </div>`;
-    } else if (type === 'certificate') {
-        title.innerText = 'การรับใบประกาศ';
-        content.innerHTML = `
-            <div class="info-card">
-                <h4 style="color:var(--primary-orange); margin-bottom:15px;"> วุฒิบัตรดิจิทัล</h4>
-                <p>เมื่อเรียนจบครบ 100% และสอบผ่านเกณฑ์ ระบบจะให้ดาวน์โหลดใบประกาศทันทีในหน้าสรุปผล</p>
-            </div>`;
-    }
-
-    showPage('page-guide');
-}
-
-
-function showContact(type) {
-    const title = document.getElementById('contact-title');
-    const content = document.getElementById('contact-content');
-
-    if (type === 'channel') {
-        title.innerText = 'ช่องทางการติดต่อ';
-        content.innerHTML = `
-            <div class="info-card">
-                <h4 style="color:var(--primary-orange); margin-bottom:15px;"> ข้อมูลติดต่อ</h4>
-                <p><b>อีเมล:</b> @flexiblehub.kbu</p>
-                <p><b>Line:</b> @flexiblehub</p>
-            </div>`;
-    } else if (type === 'location') {
-        title.innerText = 'สถานที่ตั้ง';
-        content.innerHTML = `
-            <div class="info-card">
-                <h4 style="color:var(--primary-orange); margin-bottom:15px;"> ที่อยู่สำนักงาน</h4>
-                <p>อาคารflexblehub ชั้น 10 กรุงเทพมหานคร</p>
-            </div>`;
-    }
-
-    showPage('page-contact');
-}
-
-
-function openTab(evt, tabName) {
-
-    const tabContents = document.getElementsByClassName("tab-content");
-    for (let i = 0; i < tabContents.length; i++) {
-        tabContents[i].style.display = "none";
-        tabContents[i].classList.remove("active");
-    }
-
-
-    const tabButtons = document.getElementsByClassName("tab-btn");
-    for (let i = 0; i < tabButtons.length; i++) {
-        tabButtons[i].className = tabButtons[i].className.replace(" active", "");
-    }
-
-
-    document.getElementById(tabName).style.display = "block";
-    document.getElementById(tabName).classList.add("active");
-    evt.currentTarget.className += " active";
-}
-
-
-function downloadLesson(fileName) {
-    const filePath = 'docs/' + fileName;
-    const link = document.createElement('a');
-    link.href = filePath;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-
-function openLocalVideo(fileName) {
-    const modal = document.getElementById('modal-overlay');
-    const body = document.getElementById('modal-body');
-    const videoPath = 'videos/' + fileName;
-
-    body.innerHTML = `
-        <h3 style="margin-bottom:15px; color:#E67E22;"> วิดีโอบทเรียน</h3>
-        <div class="video-container">
-            <video width="100%" controls autoplay style="border-radius:10px; background:#000;">
-                <source src="${videoPath}" type="video/mp4">
-                เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ
-            </video>
+<nav class="navbar">
+    <a href="index.html" class="logo" onclick="return goHome(event)">Flexible Learning Hub</a>
+    <div class="nav-links">
+        <input type="text" id="searchInput" class="nav-search-input" onfocus="showPage('home')" onkeyup="filterCourses()" placeholder="ค้นหาบทเรียนที่คุณสนใจ...">
+        <a href="index.html" onclick="return goHome(event)" style="text-decoration:none; color:inherit; font-weight:500;">หน้าหลัก</a>
+        
+        <div class="dropdown">
+            <button class="dropbtn">หมวดหมู่ ▾</button>
+            <div class="dropdown-content" id="course-dropdown">
+                <a href="#" onclick="return false;">กำลังโหลดรายวิชา...</a>
+            </div>
         </div>
-    `;
-    modal.style.display = 'flex';
-}
 
-function startQuiz() {
-    const modal = document.getElementById('modal-overlay');
-    const body = document.getElementById('modal-body');
-
-
-    body.innerHTML = `
-        <h3 style="margin-bottom:20px; color:var(--primary-orange);"> แบบทดสอบหลังเรียน</h3>
-        <div style="text-align:left; background:#f9f9f9; padding:20px; border-radius:10px;">
-            <p style="margin-bottom:15px;"><b>ข้อที่ 1:</b> ข้อใดคือหลักการสำคัญในการเรียนรู้ผ่าน Flexible Hub?</p>
-            <label class="quiz-option"><input type="radio" name="q1"> ก. เรียนที่ไหน เมื่อไหร่ก็ได้</label>
-            <label class="quiz-option"><input type="radio" name="q1"> ข. ต้องเข้าเรียนตามเวลาเท่านั้น</label>
-            <label class="quiz-option"><input type="radio" name="q1"> ค. ไม่มีการทดสอบวัดความรู้</label>
+        <div class="dropdown">
+            <button class="dropbtn">คู่มือการเรียน ▾</button>
+            <div class="dropdown-content">
+                <a href="#" onclick="showGuide('register')">ขั้นตอนการสมัคร</a>
+                <a href="#" onclick="showGuide('certificate')">การรับใบประกาศ</a>
+            </div> 
         </div>
-        <button class="btn-enroll" style="margin-top:20px; width:100%;" onclick="submitQuiz()">ส่งคำตอบและดูคะแนน</button>
-    `;
-    modal.style.display = 'flex';
-}
 
+        <div class="dropdown">
+            <button class="dropbtn">ติดต่อเรา ▾</button>
+            <div class="dropdown-content">
+                <a href="#" onclick="showContact('channel')">ช่องทางการติดต่อ</a>
+                <a href="#" onclick="showContact('location')">สถานที่ตั้ง</a>
+            </div> 
+        </div>
 
-function closeModal() {
-    const modal = document.getElementById('modal-overlay');
-    const body = document.getElementById('modal-body');
-    body.innerHTML = '';
-    modal.style.display = 'none';
-}
+        <a href="login.php" id="loginBtn" class="btn-orange" style="text-decoration: none; padding: 8px 20px; background: var(--primary-orange); color: white; border: none; border-radius: 5px; cursor: pointer; display: inline-block;">Login</a>
+        <div id="userProfile" class="user-profile-wrap" style="display:none;">
+            <button type="button" id="userProfileBtn" class="user-profile">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <span id="userName">ผู้ใช้งาน</span>
+            </button>
+            <div id="userMenu" class="user-menu">
+                <a href="student_dashboard.php">ข้อมูลส่วนตัว</a>
+                <a href="logout.php?return=index.html">ออกจากระบบ</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div id="home" class="page active">
+    <div class="hero">
+        <h1>Learning Hub</h1>
+        <p style="margin-top:10px; opacity:0.9;">ค้นพบรายวิชาออนไลน์ที่ตอบโจทย์ชีวิตคุณ</p>
+    </div>
+
+    <div class="container">
+        <div id="public-course-section">
+            <h2 class="section-title">รายวิชาทั้งหมด</h2>
+            <div class="grid" id="course-grid">
+                <p style="text-align: center; color: gray;">กำลังโหลดข้อมูลวิชา...</p>
+            </div>
+        </div>
+
+        <div id="student-course-sections" style="display:none;">
+            <div class="course-section-block">
+                <div class="section-head-row">
+                    <h2 class="section-title">วิชาที่เรียน</h2>
+                </div>
+                <div class="course-carousel">
+                    <button class="carousel-control" type="button" aria-label="เลื่อนวิชาที่เรียนไปทางซ้าย" onclick="scrollCourseCarousel('required-course-grid', -1)">‹</button>
+                    <div class="grid" id="required-course-grid"></div>
+                    <button class="carousel-control" type="button" aria-label="เลื่อนวิชาที่เรียนไปทางขวา" onclick="scrollCourseCarousel('required-course-grid', 1)">›</button>
+                </div>
+            </div>
+
+            <div class="course-section-block">
+                <div class="section-head-row">
+                    <h2 class="section-title">วิชาที่ยังไม่เรียน</h2>
+                </div>
+                <div class="course-carousel">
+                    <button class="carousel-control" type="button" aria-label="เลื่อนวิชาที่ยังไม่เรียนไปทางซ้าย" onclick="scrollCourseCarousel('elective-course-grid', -1)">‹</button>
+                    <div class="grid" id="elective-course-grid"></div>
+                    <button class="carousel-control" type="button" aria-label="เลื่อนวิชาที่ยังไม่เรียนไปทางขวา" onclick="scrollCourseCarousel('elective-course-grid', 1)">›</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        
+
+    <div class="steps-bg">
+        <h2 class="section-title" style="text-align:center; border:none;">เรียนรู้ง่ายๆ ใน 5 ขั้นตอน</h2>
+        <div class="steps-grid" style="margin-top:40px;">
+            <div><div class="step-icon">1</div><h4>สมัครสมาชิก</h4></div>
+            <div><div class="step-icon">2</div><h4>ค้นหารายวิชา</h4></div>
+            <div><div class="step-icon">3</div><h4>เรียนออนไลน์</h4></div>
+            <div><div class="step-icon">4</div><h4>ทำแบบทดสอบ</h4></div>
+            <div><div class="step-icon">5</div><h4>รับใบประกาศ</h4></div>
+        </div>
+    </div>
+</div>
+
+<div id="course-detail" class="page">
+    <div class="container">
+        <div class="course-layout-grid">
+            
+            <div class="course-main-content">
+    <h1 id="detail-title" style="font-size: 32px; margin-bottom: 5px;">ชื่อวิชา</h1>
+    
+    <p id="detail-desc-top" style="color:var(--text-gray); margin-bottom: 25px;">รายละเอียดเบื้องต้นของวิชา...</p>
+    
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="openTab(event, 'overview')">รายละเอียด</button>
+                    <button class="tab-btn" onclick="openTab(event, 'curriculum')">เนื้อหาในคอร์ส</button>
+                    <button class="tab-btn" onclick="openTab(event, 'instructor')">ผู้สอน</button>
+                </div>
+
+                <div id="overview" class="tab-content active">
+                    <div class="info-card" style="margin-top: 25px;">
+                        <h3 class="section-title" style="border-left: 4px solid var(--primary-orange); padding-left: 10px; font-size: 20px; margin-bottom: 20px;">คำอธิบายรายวิชา</h3>
+                        <p id="detail-desc">เริ่มต้นเรียนรู้และพัฒนาทักษะไปกับหลักสูตรคุณภาพจากผู้เชี่ยวชาญ</p>
+                    </div>
+                </div>
+
+    <div id="curriculum" class="tab-content">
+    <div class="info-card">
+        <p id="curriculum-locked-msg" style="color:var(--text-gray);">กรุณาลงทะเบียนรายวิชาก่อน เพื่อปลดล็อกสื่อการสอนและแบบทดสอบ</p>
+        <div id="course-curriculum-lesson-list" class="lesson-accordion-list" style="display:none;"></div>
+    </div>
+</div>
+
+                <div id="instructor" class="tab-content">
+                    <div class="info-card" style="margin-top: 25px;">
+                        <h3 class="section-title" style="border-left: 4px solid var(--primary-orange); padding-left: 10px; font-size: 20px; margin-bottom: 20px;">อาจารย์ผู้สอน</h3>
+                        <div style="display:flex; gap:20px; align-items:center;">
+                            <div style="width:80px; height:80px; background:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px;">‍</div>
+                            <div>
+                                <b id="detail-instructor-name">อาจารย์ผู้เชี่ยวชาญประจำหลักสูตร</b>
+                                <p id="detail-instructor-role" style="color:var(--text-gray); font-size:14px;">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="course-sidebar">
+                <div class="sidebar-card">
+                    <button class="btn-enroll" id="enroll-course-btn" onclick="enrollCourseAndOpenLearning()">ลงทะเบียน</button>
+                    
+                    <div class="meta-list">
+                        <div class="meta-item"><span> Duration</span> <b id="detail-duration">5 ชั่วโมง</b></div>
+                        <div class="meta-item"><span> Lessons</span> <b id="detail-lesson-count">0 บทเรียน</b></div>
+                        <div class="meta-item"><span> Quizzes</span> <b id="detail-quiz-count">0 ชุด</b></div>
+                        <div class="meta-item"><span> Language</span> <b>ภาษาไทย</b></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div id="course-learning" class="page">
+    <div class="container">
+        <div class="course-layout-grid">
+            <div class="course-main-content">
+                <h1 id="learning-title" style="font-size: 32px; margin-bottom: 5px;">ชื่อวิชา</h1>
+                <p id="learning-desc-top" style="color:var(--text-gray); margin-bottom: 25px;">เริ่มเรียนรายวิชา</p>
+
+                <div class="tabs">
+                    <button class="tab-btn" onclick="openLearningTab(event, 'learning-overview')">รายละเอียด</button>
+                    <button class="tab-btn active" onclick="openLearningTab(event, 'learning-curriculum')">เนื้อหาในคอร์ส</button>
+                    <button class="tab-btn" onclick="openLearningTab(event, 'learning-instructor')">ผู้สอน</button>
+                </div>
+
+                <div id="learning-overview" class="learning-tab-content">
+                    <div class="info-card" style="margin-top: 25px;">
+                        <h3 class="section-title" style="border-left: 4px solid var(--primary-orange); padding-left: 10px; font-size: 20px; margin-bottom: 20px;">คำอธิบายรายวิชา</h3>
+                        <p id="learning-desc">เริ่มต้นเรียนรู้และพัฒนาทักษะไปกับหลักสูตรคุณภาพจากผู้เชี่ยวชาญ</p>
+                    </div>
+                </div>
+
+                <div id="learning-curriculum" class="learning-tab-content active">
+                    <div class="info-card">
+                        <div id="learning-lesson-text-list" class="lesson-accordion-list"></div>
+                    </div>
+                </div>
+
+                <div id="learning-instructor" class="learning-tab-content">
+                    <div class="info-card" style="margin-top: 25px;">
+                        <h3 class="section-title" style="border-left: 4px solid var(--primary-orange); padding-left: 10px; font-size: 20px; margin-bottom: 20px;">อาจารย์ผู้สอน</h3>
+                        <div style="display:flex; gap:20px; align-items:center;">
+                            <div style="width:80px; height:80px; background:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px;">‍</div>
+                            <div>
+                                <b id="learning-instructor-name">อาจารย์ผู้เชี่ยวชาญประจำหลักสูตร</b>
+                                <p id="learning-instructor-role" style="color:var(--text-gray); font-size:14px;">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="course-sidebar">
+                <div class="sidebar-card">
+                    <button class="btn-enroll is-enrolled">กำลังเรียน</button>
+
+                    <div class="meta-list">
+                        <div class="meta-item"><span> Duration</span> <b id="learning-duration">5 ชั่วโมง</b></div>
+                        <div class="meta-item"><span> Lessons</span> <b id="learning-lesson-count">0 บทเรียน</b></div>
+                        <div class="meta-item"><span> Quizzes</span> <b id="learning-quiz-count">0 ชุด</b></div>
+                        <div class="meta-item"><span> Language</span> <b>ภาษาไทย</b></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-overlay" class="modal-overlay">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <div id="modal-body"></div>
+    </div>
+</div>
+
+<div id="page-guide" class="page">
+    <div class="content-header">
+        <h1 id="guide-title">คู่มือการเรียน</h1>
+    </div>
+    <div class="container" id="guide-content">
+        </div>
+</div>
+
+<div id="page-contact" class="page">
+    <div class="content-header">
+        <h1 id="contact-title">ติดต่อเรา</h1>
+    </div>
+    <div class="container" id="contact-content">
+        </div>
+</div>
+
+<footer class="footer">
+    <p><b>Flexible Learning Hub</b></p>
+    <p>© 2026 Flow Learning. All Rights Reserved.</p>
+</footer>
+
+<script src="web.js?v=20260916-progress3"></script>
+
+</body>
+</html>

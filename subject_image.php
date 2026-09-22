@@ -2,7 +2,10 @@
 declare(strict_types=1);
 
 $subjectId = strtoupper(trim((string)($_GET['id'] ?? '')));
-if (!preg_match('/^[A-Z0-9_-]+$/', $subjectId)) {
+if (ctype_digit($subjectId)) {
+    $subjectId = 'SUB' . str_pad($subjectId, 3, '0', STR_PAD_LEFT);
+}
+if (!preg_match('/^SUB[A-Z0-9_-]+$/', $subjectId)) {
     http_response_code(404);
     exit;
 }
@@ -39,4 +42,3 @@ header('Cache-Control: public, max-age=86400, stale-while-revalidate=604800');
 header('ETag: "' . md5_file($picked) . '"');
 readfile($picked);
 exit;
-

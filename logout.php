@@ -19,7 +19,7 @@ if (ini_get('session.use_cookies')) {
 session_destroy();
 
 $return = (string)($_GET['return'] ?? '');
-$allowed = ['web.html', 'login.php'];
+$allowed = ['index.html', 'login.php'];
 if (!in_array($return, $allowed, true)) {
     $return = 'login.php';
 }

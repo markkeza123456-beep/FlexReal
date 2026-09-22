@@ -14,9 +14,14 @@ function rows(PDO $c, string $sql): array {
   catch (Throwable $e) { return []; }
 }
 function hasTable(PDO $c, string $t): bool {
-  $st = $c->prepare("SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name=:t LIMIT 1");
-  $st->execute([':t' => strtolower($t)]);
-  return (bool)$st->fetchColumn();
+  static $tableCache = [];
+  if ($tableCache === []) {
+    $st = $c->query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
+    foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $tableName) {
+      $tableCache[strtolower((string) $tableName)] = true;
+    }
+  }
+  return isset($tableCache[strtolower($t)]);
 }
 
 $officerName = 'เจ้าหน้าที่ระบบ';
@@ -41,12 +46,29 @@ $hasCourses = hasTable($conn, 'courses');
 $hasLearn = hasTable($conn, 'lesson_progress');
 $hasTest = hasTable($conn, 'quiz_attempts');
 
-$studentCount = $hasStudent ? q1($conn, "SELECT COUNT(*) FROM public.students") : '0';
-$regCount = $hasEnrollments ? q1($conn, "SELECT COUNT(*) FROM public.student_courses") : '0';
-$transferCount = $hasCurricula ? q1($conn, "SELECT COUNT(*) FROM public.student_curricula WHERE status = 'active'") : '0';
-$certCount = $hasCourses ? q1($conn, "SELECT COUNT(*) FROM public.courses WHERE status = 'active'") : '0';
-$learnCount = $hasLearn ? q1($conn, "SELECT COUNT(*) FROM public.lesson_progress") : '0';
-$testCount = $hasTest ? q1($conn, "SELECT COUNT(*) FROM public.quiz_attempts") : '0';
+$countQueries = array_filter([
+  'students' => $hasStudent ? "(SELECT COUNT(*) FROM public.students)" : null,
+  'registrations' => $hasEnrollments ? "(SELECT COUNT(*) FROM public.student_courses)" : null,
+  'transfers' => $hasCurricula ? "(SELECT COUNT(*) FROM public.student_curricula WHERE status = 'active')" : null,
+  'certificates' => $hasCourses ? "(SELECT COUNT(*) FROM public.courses WHERE status = 'active')" : null,
+  'learning' => $hasLearn ? "(SELECT COUNT(*) FROM public.lesson_progress)" : null,
+  'tests' => $hasTest ? "(SELECT COUNT(*) FROM public.quiz_attempts)" : null,
+]);
+$counts = [];
+if ($countQueries !== []) {
+  $countStmt = $conn->query('SELECT ' . implode(', ', array_map(
+    static fn (string $query, string $key): string => $query . ' AS ' . $key,
+    $countQueries,
+    array_keys($countQueries)
+  )));
+  $counts = $countStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+}
+$studentCount = (string) ($counts['students'] ?? 0);
+$regCount = (string) ($counts['registrations'] ?? 0);
+$transferCount = (string) ($counts['transfers'] ?? 0);
+$certCount = (string) ($counts['certificates'] ?? 0);
+$learnCount = (string) ($counts['learning'] ?? 0);
+$testCount = (string) ($counts['tests'] ?? 0);
 
 $students = $hasStudent ? rows($conn, "SELECT user_id AS student_id, full_name AS student_name, COALESCE(student_level,'-') AS student_level FROM public.students ORDER BY full_name ASC LIMIT 300") : [];
 $regs = $hasEnrollments ? rows($conn, "SELECT sc.student_id, s.full_name AS student_name, c.name AS subject_name, sc.status FROM public.student_courses sc JOIN public.students s ON s.user_id = sc.student_id JOIN public.courses c ON c.course_id = sc.course_id ORDER BY sc.enrolled_at DESC LIMIT 200") : [];
