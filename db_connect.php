@@ -59,7 +59,15 @@ $port = requiredEnv($env, 'SUPABASE_DB_PORT');
 $supabaseUrl = requiredEnv($env, 'SUPABASE_URL');
 $supabaseKey = requiredEnv($env, 'SUPABASE_ANON_KEY');
 
-$dsn = "pgsql:host={$host};port={$port};dbname={$db};sslmode=require;connect_timeout=8;";
+// XAMPP starts Apache as root before dropping privileges to `daemon`.
+// libpq then looks for a client certificate under /var/root and fails before
+// it can connect to Supabase. Point HOME at PHP's writable temp directory;
+// Supabase uses server-side TLS and does not require a client certificate.
+if (PHP_SAPI !== 'cli') {
+    putenv('HOME=' . sys_get_temp_dir());
+}
+
+$dsn = "pgsql:host={$host};port={$port};dbname={$db};sslmode=require;sslcert=;connect_timeout=8;";
 
 try {
     $conn = new PDO($dsn, $user, $pass, [
