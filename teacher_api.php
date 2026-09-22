@@ -1,8 +1,16 @@
-﻿<?php
+<?php
 session_start();
-require_once 'db_connect.php';
-require_once __DIR__ . '/learning_progress_lib.php';
 header('Content-Type: application/json; charset=utf-8');
+
+try {
+    require_once __DIR__ . '/db_connect.php';
+    require_once __DIR__ . '/learning_progress_lib.php';
+} catch (Throwable $e) {
+    error_log('Teacher API startup failed: ' . $e->getMessage());
+    http_response_code(503);
+    echo json_encode(['success' => false, 'message' => 'เชื่อมต่อฐานข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 const MAX_LESSONS_PER_SUBJECT = 3;
 
