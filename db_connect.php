@@ -1,5 +1,12 @@
 <?php
 
+<<<<<<< HEAD
+$envFile = __DIR__ . DIRECTORY_SEPARATOR . '.env';
+
+if (!is_readable($envFile)) {
+    $envFile = 'D:\\Xampp\\config\\flexreal.env';
+}
+=======
 // Keep credentials outside the web root.  The old single Windows-only path
 // made every database-backed page fail after the project was opened in XAMPP
 // on macOS/Linux.
@@ -9,6 +16,7 @@ $envFileCandidates = array_filter([
     dirname(__DIR__) . '/config/flexreal.env',
     'D:\\Xampp\\config\\flexreal.env', // legacy Windows installation
 ]);
+>>>>>>> 07337edba64e7dd111106f7bf28f21b375d6072e
 
 $envFile = null;
 foreach ($envFileCandidates as $candidate) {
@@ -42,6 +50,14 @@ if ($value === '') {
 }
 
 $host = requiredEnv($env, 'SUPABASE_DB_HOST');
+if (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+    $ipv4Host = gethostbyname($host);
+    if (filter_var($ipv4Host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+        http_response_code(500);
+        die('Database host does not have an IPv4 address.');
+    }
+    $host = $ipv4Host;
+}
 $db = requiredEnv($env, 'SUPABASE_DB_NAME');
 $user = requiredEnv($env, 'SUPABASE_DB_USER');
 $pass = requiredEnv($env, 'SUPABASE_DB_PASSWORD');
@@ -51,7 +67,7 @@ $port = requiredEnv($env, 'SUPABASE_DB_PORT');
 $supabaseUrl = requiredEnv($env, 'SUPABASE_URL');
 $supabaseKey = requiredEnv($env, 'SUPABASE_ANON_KEY');
 
-$dsn = "pgsql:host={$host};port={$port};dbname={$db};connect_timeout=8;";
+$dsn = "pgsql:host={$host};port={$port};dbname={$db};sslmode=require;connect_timeout=8;";
 
 try {
     $conn = new PDO($dsn, $user, $pass, [
