@@ -1,6 +1,10 @@
 <?php
 
-$envFile = 'D:\\Xampp\\config\\flexreal.env';
+$envFile = __DIR__ . DIRECTORY_SEPARATOR . '.env';
+
+if (!is_readable($envFile)) {
+    $envFile = 'D:\\Xampp\\config\\flexreal.env';
+}
 
 if (!is_readable($envFile)) {
     http_response_code(500);
@@ -28,6 +32,14 @@ function requiredEnv(array $env, string $key): string
 }
 
 $host = requiredEnv($env, 'SUPABASE_DB_HOST');
+if (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+    $ipv4Host = gethostbyname($host);
+    if (filter_var($ipv4Host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+        http_response_code(500);
+        die('Database host does not have an IPv4 address.');
+    }
+    $host = $ipv4Host;
+}
 $db = requiredEnv($env, 'SUPABASE_DB_NAME');
 $user = requiredEnv($env, 'SUPABASE_DB_USER');
 $pass = requiredEnv($env, 'SUPABASE_DB_PASSWORD');
@@ -37,7 +49,7 @@ $port = requiredEnv($env, 'SUPABASE_DB_PORT');
 $supabaseUrl = requiredEnv($env, 'SUPABASE_URL');
 $supabaseKey = requiredEnv($env, 'SUPABASE_ANON_KEY');
 
-$dsn = "pgsql:host={$host};port={$port};dbname={$db};connect_timeout=8;";
+$dsn = "pgsql:host={$host};port={$port};dbname={$db};sslmode=require;connect_timeout=8;";
 
 try {
     $conn = new PDO($dsn, $user, $pass, [
