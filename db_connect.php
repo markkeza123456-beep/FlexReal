@@ -1,22 +1,14 @@
 <?php
 
-<<<<<<< HEAD
-$envFile = __DIR__ . DIRECTORY_SEPARATOR . '.env';
-
-if (!is_readable($envFile)) {
-    $envFile = 'D:\\Xampp\\config\\flexreal.env';
-}
-=======
 // Keep credentials outside the web root.  The old single Windows-only path
 // made every database-backed page fail after the project was opened in XAMPP
 // on macOS/Linux.
 $envFileCandidates = array_filter([
     getenv('FLEXREAL_ENV_FILE') ?: null,
     '/Applications/XAMPP/xamppfiles/config/flexreal.env',
-    dirname(__DIR__) . '/config/flexreal.env',
+    dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'flexreal.env',
     'D:\\Xampp\\config\\flexreal.env', // legacy Windows installation
 ]);
->>>>>>> 07337edba64e7dd111106f7bf28f21b375d6072e
 
 $envFile = null;
 foreach ($envFileCandidates as $candidate) {
