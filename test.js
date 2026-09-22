@@ -25,8 +25,8 @@ let lastResultPassed = false;
 quizTitle.innerText = `แบบทดสอบวิชา ${courseName} (บทที่ ${lessonIndex})`;
 quizSubtitle.innerText = 'กำลังโหลดข้อสอบจากฐานข้อมูล...';
 backToCourse.href = subjectId
-    ? `web.html?subject_id=${encodeURIComponent(subjectId)}&course=${encodeURIComponent(courseName)}`
-    : `web.html?course=${encodeURIComponent(courseName)}`;
+    ? `index.html?subject_id=${encodeURIComponent(subjectId)}&course=${encodeURIComponent(courseName)}`
+    : `index.html?course=${encodeURIComponent(courseName)}`;
 
 async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
     const controller = new AbortController();

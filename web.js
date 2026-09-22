@@ -114,7 +114,7 @@ function getDashboardUrlForRole(role) {
         staff: 'staffdash.php',
         parent: 'parent_dashboard.php'
     };
-    return map[String(role || '').toLowerCase()] || 'web.html';
+    return map[String(role || '').toLowerCase()] || 'index.html';
 }
 
 function formatDisplayName(fullName, maxLength = 18) {
@@ -921,7 +921,7 @@ function goHome(event) {
 }
 
 function getCourseReturnUrl(courseName) {
-    const url = new URL('web.html', window.location.href);
+    const url = new URL('index.html', window.location.href);
     url.searchParams.set('subject_id', currentSubjectId);
     return url.pathname.split('/').pop() + url.search;
 }

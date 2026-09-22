@@ -17,6 +17,6 @@ try {
     $_SESSION['user_id'] = $user['user_id']; $_SESSION['role'] = $role; $_SESSION['name'] = $user['name'] ?? '';
     if ($role === 'student' && !empty($user['student_level'])) assignCurriculumAndEnrollRequiredSubjects($conn, (string) $user['user_id'], (string) $user['student_level']);
     if ($role === 'parent') $_SESSION['current_student_id'] = $user['student_id'] ?? null;
-    $redirect = match ($role) { 'parent' => 'parent_dashboard.php', 'teacher' => 'teacherdash.php', 'staff' => 'staffdash.php', default => 'web.html' };
+    $redirect = match ($role) { 'parent' => 'parent_dashboard.php', 'teacher' => 'teacherdash.php', 'staff' => 'staffdash.php', default => 'index.html' };
     echo json_encode(['status' => 'success', 'redirect_url' => $redirect, 'user_id' => (string) $user['user_id']], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) { echo json_encode(['status' => 'error', 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE); }

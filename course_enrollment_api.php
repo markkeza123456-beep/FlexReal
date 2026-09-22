@@ -6,7 +6,7 @@ function findCourseId(PDO $conn, string $id, string $name): ?string {
     if ($id !== '') { $s = $conn->prepare('SELECT course_id FROM public.courses WHERE course_id = :id'); $s->execute([':id' => $id]); if ($s->fetchColumn() !== false) return $id; }
     $s = $conn->prepare('SELECT course_id FROM public.courses WHERE LOWER(name) = LOWER(:name) LIMIT 1'); $s->execute([':name' => $name]); $result = $s->fetchColumn(); return $result === false ? null : (string) $result;
 }
-$studentId = currentStudentId(); if ($studentId === null) { $_SESSION['after_login_return'] = 'web.html'; jsonResponse(['status' => 'unauthorized', 'message' => 'กรุณาเข้าสู่ระบบนักเรียนก่อนลงรายวิชา', 'login_url' => 'login.php'], 401); }
+$studentId = currentStudentId(); if ($studentId === null) { $_SESSION['after_login_return'] = 'index.html'; jsonResponse(['status' => 'unauthorized', 'message' => 'กรุณาเข้าสู่ระบบนักเรียนก่อนลงรายวิชา', 'login_url' => 'login.php'], 401); }
 try {
     $courseId = findCourseId($conn, trim((string) ($_POST['course_id'] ?? $_POST['subject_id'] ?? $_GET['course_id'] ?? $_GET['subject_id'] ?? '')), trim((string) ($_POST['course_name'] ?? $_GET['course_name'] ?? '')));
     if ($courseId === null) jsonResponse(['status' => 'error', 'message' => 'ไม่พบรายวิชา'], 404);
