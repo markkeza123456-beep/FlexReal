@@ -1,5 +1,5 @@
 <?php
-session_start(); header('Content-Type: application/json; charset=utf-8');
+session_start(); header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0'); header('Pragma: no-cache');
 require_once __DIR__ . '/db_connect.php'; require_once __DIR__ . '/learning_progress_lib.php';
 function learningJson(array $payload, int $statusCode = 200): void { http_response_code($statusCode); echo json_encode($payload, JSON_UNESCAPED_UNICODE); exit; }
 function currentLearningStudentId(): ?string { return (($_SESSION['role'] ?? '') === 'student' && isset($_SESSION['user_id'])) ? (string) $_SESSION['user_id'] : null; }
@@ -21,10 +21,18 @@ $studentId = currentLearningStudentId(); if ($studentId === null) learningJson([
 try { $action = strtolower((string) ($_GET['action'] ?? $_POST['action'] ?? 'summary')); $courseId = trim((string) ($_POST['course_id'] ?? $_POST['subject_id'] ?? $_GET['course_id'] ?? $_GET['subject_id'] ?? '')); if ($courseId === '') learningJson(['status' => 'error', 'message' => 'ไม่พบรหัสรายวิชา'], 400);
     if ($action === 'record') {
         $position = max(1, (int) ($_POST['lesson_index'] ?? $_POST['position'] ?? 1));
-        recordLearningActivity($conn, $studentId, $courseId, $position, trim((string) ($_POST['activity_type'] ?? 'lesson_open')), trim((string) ($_POST['lesson_title'] ?? '')), (float) ($_POST['progress_percent'] ?? 0), (float) ($_POST['resume_position'] ?? 0));
-
-
-
+        $durationSeconds = max(0, (int) (($_POST['duration_seconds'] ?? $_POST['duration'] ?? 0)));
+        recordLearningActivity(
+            $conn,
+            $studentId,
+            $courseId,
+            $position,
+            trim((string) ($_POST['activity_type'] ?? 'lesson_open')),
+            trim((string) ($_POST['lesson_title'] ?? '')),
+            (float) ($_POST['progress_percent'] ?? 0),
+            (float) ($_POST['resume_position'] ?? 0),
+            $durationSeconds
+        );
         learningJson(['status' => 'success']);
     }
     learningJson(['status' => 'success', 'summary' => fetchCourseSummary($conn, $studentId, $courseId)]);

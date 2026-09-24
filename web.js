@@ -31,6 +31,8 @@ const LEARNING_PROGRESS_SAVE_INTERVAL_MS = 30000;
 const learningProgressRequests = new Map();
 const courseProgressRequests = new Map();
 let activeVideoProgressSaver = null;
+let activeVideoProgressBeacon = null;
+let pendingVideoProgressSave = Promise.resolve(true);
 
 
 
@@ -224,7 +226,9 @@ function getLessonStatusInfo(lessonIndex) {
     const passed = hasAttempt ? (score / Math.max(total, 1)) >= QUIZ_PASS_RATIO : isLessonPassed(lessonIndex);
 
     const progress = Number(row.progress_percent || 0);
-    const breakdown = `อ่าน ${Number(row.document_progress || 0)}% • วิดีโอ ${Number(row.video_progress || 0)}% • Quiz ${Number(row.quiz_progress || 0)}%`;
+    const documentReadPercent = Math.round(Number(row.document_progress_percent || 0) * 10) / 10;
+    const videoWatchedPercent = Math.round(Number(row.video_progress_percent || 0) * 10) / 10;
+    const breakdown = `อ่าน ${documentReadPercent}% (คิด ${Number(row.document_progress || 0)}%) • วิดีโอ ${videoWatchedPercent}% (คิด ${Number(row.video_progress || 0)}%) • Quiz ${Number(row.quiz_progress || 0)}%`;
     if (passed) return { label: 'ผ่าน', color: '#1e8449', bg: '#eafaf1', scoreText: hasAttempt ? `${score}/${total}` : '-', progress, breakdown };
     if (hasAttempt) return { label: 'ไม่ผ่าน', color: '#c0392b', bg: '#fdecea', scoreText: `${score}/${total}`, progress, breakdown };
     return { label: 'ยังไม่ทำ', color: '#7f8c8d', bg: '#f4f6f7', scoreText: '-', progress, breakdown };
@@ -839,11 +843,14 @@ async function fetchCourseProgress(subjectId) {
     if (existingRequest) return existingRequest;
     const request = (async () => {
         try {
-            const response = await fetchJsonWithTimeout(`student_learning_api.php?action=summary&subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin' });
+            const response = await fetchJsonWithTimeout(`student_learning_api.php?action=summary&subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin', cache: 'no-store' });
             const result = await response.json();
-            if (result.status === 'success') applyCourseProgressSummary(result.summary || null);
-        } catch (error) { applyCourseProgressSummary(null); }
-        finally { courseProgressRequests.delete(subjectId); }
+            if (result.status === 'success' && courseProgressRequests.get(subjectId) === request && subjectId === currentSubjectId) applyCourseProgressSummary(result.summary || null);
+        } catch (error) {
+            if (courseProgressRequests.get(subjectId) === request && subjectId === currentSubjectId) applyCourseProgressSummary(null);
+        } finally {
+            if (courseProgressRequests.get(subjectId) === request) courseProgressRequests.delete(subjectId);
+        }
     })();
     courseProgressRequests.set(subjectId, request);
     return request;
@@ -854,7 +861,7 @@ function refreshCourseProgress(subjectId) {
     return fetchCourseProgress(subjectId);
 }
 
-async function recordLearningEvent(activityType, lessonIndex = 1, progressPercent = 0, resumePosition = 0, force = false) {
+async function recordLearningEvent(activityType, lessonIndex = 1, progressPercent = 0, resumePosition = 0, force = false, durationSeconds = 0) {
     if (!currentSubjectId) return false;
     const eventKey = `${currentSubjectId}:${lessonIndex}:${activityType}`;
     const now = Date.now();
@@ -874,6 +881,9 @@ async function recordLearningEvent(activityType, lessonIndex = 1, progressPercen
         formData.append('activity_type', activityType);
         formData.append('progress_percent', String(progressPercent));
         formData.append('resume_position', String(resumePosition));
+        if (activityType === 'video_progress') {
+            formData.append('duration_seconds', String(Math.max(0, Number(durationSeconds) || 0)));
+        }
 
 
 
@@ -1384,8 +1394,11 @@ function renderVideoModalBody(lessonIndex) {
     if (!body) return;
 
 
-    if (activeVideoProgressSaver) activeVideoProgressSaver();
+    if (activeVideoProgressSaver) {
+        pendingVideoProgressSave = Promise.resolve(activeVideoProgressSaver()).catch(() => false);
+    }
     activeVideoProgressSaver = null;
+    activeVideoProgressBeacon = null;
     const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 3, Number(lessonIndex) || 1));
     const selectedLesson = getLessonRecord(safeIndex);
     const selectedTitle = selectedLesson ? selectedLesson.title : `Lesson ${safeIndex}`;
@@ -1418,53 +1431,123 @@ function renderVideoModalBody(lessonIndex) {
         const fallbackStatus = body.querySelector('#video-fallback-status');
         const progressStatus = body.querySelector('#video-progress-status');
         let candidateIndex = 0;
-        let lastExitSaveAt = 0;
         const progressRow = getLessonProgressMap().get(safeIndex) || {};
         const savedPosition = Math.max(0, Number(progressRow.video_position_seconds || 0));
-        let lastSavedSecond = -1;
-        let completionSaved = false;
+        let watchedSeconds = 0;
+        let lastSavedWatchedSeconds = 0;
+        let lastSavedResumePosition = savedPosition;
+        let lastVideoProgressSaveAttemptAt = 0;
+        let videoProgressSaveRequest = null;
+        let lastPlaybackTime = null;
+        let progressSaveLabel = '';
+        const showSeekWarning = () => {
+            if (!fallbackStatus) return;
+            fallbackStatus.style.display = 'block';
+            fallbackStatus.textContent = 'ห้ามข้ามวิดีโอ ระบบจะนับเฉพาะช่วงที่เล่นจริง';
+            clearTimeout(showSeekWarning.timer);
+            showSeekWarning.timer = setTimeout(() => { fallbackStatus.style.display = 'none'; }, 3500);
+        };
         const updateVideoProgressStatus = () => {
             if (!progressStatus || !Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return;
-            const watchedSeconds = Math.min(videoElement.duration, Math.max(0, videoElement.currentTime || 0));
             const watchedPercent = Math.min(100, (watchedSeconds / videoElement.duration) * 100);
             const lessonPercent = watchedPercent * 0.30;
-            progressStatus.textContent = `ดูแล้ว ${formatVideoTimestamp(watchedSeconds)} / ${formatVideoTimestamp(videoElement.duration)} · ${watchedPercent.toFixed(1)}% · คิดเป็น ${lessonPercent.toFixed(1)}% ของบทเรียน`;
+            const saveStatus = progressSaveLabel ? ` · ${progressSaveLabel}` : '';
+            progressStatus.textContent = `ดูแล้ว ${formatVideoTimestamp(watchedSeconds)} / ${formatVideoTimestamp(videoElement.duration)} · ${watchedPercent.toFixed(1)}% · คิดเป็น ${lessonPercent.toFixed(1)}% ของบทเรียน${saveStatus}`;
         };
         const saveVideoProgress = (force = false) => {
             if (!Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return Promise.resolve(false);
-            const seconds = Math.max(0, videoElement.currentTime || 0);
-            if (!force && seconds - lastSavedSecond < 5) return Promise.resolve(false);
-            lastSavedSecond = seconds;
-            const percent = Math.min(99.9, (seconds / videoElement.duration) * 100);
-            return recordLearningEvent('video_progress', safeIndex, percent, seconds, force);
+            const resumePosition = Math.max(0, videoElement.currentTime || 0);
+            const progressChanged = watchedSeconds > lastSavedWatchedSeconds + 0.1;
+            const resumeChanged = Math.abs(resumePosition - lastSavedResumePosition) > 0.1;
+            if (!progressChanged && !resumeChanged) return Promise.resolve(false);
+            if (videoProgressSaveRequest) {
+                return videoProgressSaveRequest.then((saved) => {
+                    if (saved && force) return saveVideoProgress(true);
+                    return saved;
+                });
+            }
+            const progressReadyToSave = progressChanged && watchedSeconds - lastSavedWatchedSeconds >= 5;
+            const resumeReadyToSave = resumeChanged && Math.abs(resumePosition - lastSavedResumePosition) >= 5;
+            if (!force && ((!progressReadyToSave && !resumeReadyToSave) || Date.now() - lastVideoProgressSaveAttemptAt < 5000)) return Promise.resolve(false);
+            const watchedSecondsToSave = watchedSeconds;
+            const resumePositionToSave = resumePosition;
+            const percent = Math.min(99.9, (watchedSecondsToSave / videoElement.duration) * 100);
+            lastVideoProgressSaveAttemptAt = Date.now();
+            progressSaveLabel = 'กำลังบันทึก';
+            updateVideoProgressStatus();
+            videoProgressSaveRequest = recordLearningEvent('video_progress', safeIndex, percent, resumePositionToSave, true, videoElement.duration)
+                .then((saved) => {
+                    if (!saved) {
+                        progressSaveLabel = 'บันทึกไม่สำเร็จ';
+                        updateVideoProgressStatus();
+                        return false;
+                    }
+                    lastSavedWatchedSeconds = Math.max(lastSavedWatchedSeconds, watchedSecondsToSave);
+                    lastSavedResumePosition = resumePositionToSave;
+                    progressSaveLabel = 'บันทึกแล้ว';
+                    updateVideoProgressStatus();
+                    if (currentSubjectId) refreshCourseProgress(currentSubjectId);
+                    return true;
+                })
+                .finally(() => { videoProgressSaveRequest = null; });
+            return videoProgressSaveRequest;
         };
         const saveVideoProgressOnExit = () => {
-            if (!currentSubjectId || !Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return;
-            const seconds = Math.max(0, videoElement.currentTime || 0);
-            const percent = Math.min(99.9, (seconds / videoElement.duration) * 100);
-            return recordLearningEvent('video_progress', safeIndex, percent, seconds, true)
-                .then((saved) => { if (saved) return refreshCourseProgress(currentSubjectId); return false; });
+            return saveVideoProgress(true);
         };
         activeVideoProgressSaver = saveVideoProgressOnExit;
+        activeVideoProgressBeacon = () => {
+            if (!Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return false;
+            const percent = watchedSeconds >= videoElement.duration ? 100 : Math.min(99.9, (watchedSeconds / videoElement.duration) * 100);
+            const formData = new FormData();
+            formData.append('action', 'record');
+            formData.append('subject_id', currentSubjectId);
+            formData.append('lesson_index', String(safeIndex));
+            formData.append('lesson_title', selectedTitle);
+            formData.append('activity_type', 'video_progress');
+            formData.append('progress_percent', String(percent));
+            formData.append('resume_position', String(Math.max(0, videoElement.currentTime || 0)));
+            formData.append('duration_seconds', String(Math.max(0, Number(videoElement.duration) || 0)));
+            return navigator.sendBeacon('student_learning_api.php', formData);
+        };
         videoElement.addEventListener('loadedmetadata', () => {
-            if (savedPosition > 0 && savedPosition < videoElement.duration - 1) {
+            const savedPercent = Math.max(0, Math.min(100, Number(progressRow.video_progress_percent || 0)));
+            watchedSeconds = Math.min(videoElement.duration, Math.max(savedPosition, videoElement.duration * savedPercent / 100));
+            lastSavedWatchedSeconds = watchedSeconds;
+            lastSavedResumePosition = Math.min(videoElement.duration, savedPosition);
+            if (savedPercent < 100 && savedPosition > 0 && savedPosition < videoElement.duration - 1) {
                 videoElement.currentTime = savedPosition;
             }
             updateVideoProgressStatus();
         }, { once: true });
+        videoElement.addEventListener('play', () => {
+            lastPlaybackTime = videoElement.currentTime;
+        });
         videoElement.addEventListener('timeupdate', () => {
+            const currentTime = videoElement.currentTime;
+            if (!videoElement.paused && !videoElement.seeking && lastPlaybackTime !== null) {
+                if (currentTime > lastPlaybackTime + 0.02) {
+                    watchedSeconds = Math.min(videoElement.duration, Math.max(watchedSeconds, currentTime));
+                }
+            }
+            lastPlaybackTime = currentTime;
             updateVideoProgressStatus();
             saveVideoProgress();
-            if (!completionSaved && Number.isFinite(videoElement.duration) && videoElement.duration > 0 && videoElement.currentTime / videoElement.duration >= 0.995) {
-                completionSaved = true;
-                recordLearningEvent('video_progress', safeIndex, 100, videoElement.duration, true)
-                    .then((saved) => { if (saved) refreshCourseProgress(currentSubjectId); });
+        });
+        videoElement.addEventListener('seeking', () => {
+            if (videoElement.currentTime > watchedSeconds + 0.1) {
+                videoElement.currentTime = Math.min(watchedSeconds, Math.max(0, videoElement.duration - 0.1));
+                showSeekWarning();
             }
+            lastPlaybackTime = videoElement.currentTime;
+        });
+        videoElement.addEventListener('seeked', () => {
+            lastPlaybackTime = videoElement.currentTime;
+            saveVideoProgress(true);
         });
         videoElement.addEventListener('pause', () => {
-            saveVideoProgress(true).then((saved) => {
-                if (saved) refreshCourseProgress(currentSubjectId);
-            });
+            lastPlaybackTime = null;
+            saveVideoProgress(true);
         });
         videoElement.addEventListener('error', () => {
             if (!sourceElement) return;
@@ -1485,24 +1568,36 @@ function renderVideoModalBody(lessonIndex) {
             videoElement.play().catch(() => {});
         });
         videoElement.addEventListener('ended', () => {
+            watchedSeconds = videoElement.duration;
             updateVideoProgressStatus();
-            recordLearningEvent('video_progress', safeIndex, 100, videoElement.duration, true).then(() => {
-                refreshCourseProgress(currentSubjectId);
-            });
+            Promise.resolve(videoProgressSaveRequest)
+                .then(() => recordLearningEvent('video_progress', safeIndex, 100, videoElement.duration, true, videoElement.duration))
+                .then((saved) => {
+                    if (saved) {
+                        lastSavedWatchedSeconds = videoElement.duration;
+                        if (currentSubjectId) refreshCourseProgress(currentSubjectId);
+                    }
+                });
         }, { once: true });
     }
 }
 
-window.changeModalLessonVideo = function(lessonIndex) {
+window.changeModalLessonVideo = async function(lessonIndex) {
     const targetIndex = Number(lessonIndex) || 1;
     if (!isVideoUnlocked(targetIndex)) {
         alert(getLessonLockMessage(targetIndex) || 'ต้องอ่านบทเรียนก่อนดูวิดีโอ');
         return;
     }
+    if (activeVideoProgressSaver) {
+        await activeVideoProgressSaver();
+        activeVideoProgressSaver = null;
+        activeVideoProgressBeacon = null;
+    }
+    await refreshCourseProgress(currentSubjectId);
     renderVideoModalBody(targetIndex);
 }
 
-function openCourseVideo(lessonIndex) {
+async function openCourseVideo(lessonIndex) {
     if (!enrolledCourses[currentSubjectId]) { alert('กรุณาลงรายวิชาก่อนชมวิดีโอ'); return; }
     if (!canAccessLesson(lessonIndex || 1)) { alert(`กรุณาผ่านแบบทดสอบบทที่ ${Number(lessonIndex || 1) - 1} ก่อน`); return; }
     const lesson = getLessonRecord(lessonIndex || 1);
@@ -1511,6 +1606,8 @@ function openCourseVideo(lessonIndex) {
         alert('กรุณาอ่านบทเรียนให้จบก่อนดูวิดีโอ');
         return;
     }
+    await pendingVideoProgressSave;
+    await refreshCourseProgress(currentSubjectId);
     const modal = document.getElementById('modal-overlay');
     renderVideoModalBody(lessonIndex || 1);
     modal.style.display = 'flex';
@@ -1530,8 +1627,11 @@ function startQuiz(lessonIndex) {
 }
 
 function closeModal() {
-    if (activeVideoProgressSaver) activeVideoProgressSaver();
+    if (activeVideoProgressSaver) {
+        pendingVideoProgressSave = Promise.resolve(activeVideoProgressSaver()).catch(() => false);
+    }
     activeVideoProgressSaver = null;
+    activeVideoProgressBeacon = null;
     const modalBody = document.getElementById('modal-body');
     if(modalBody) modalBody.innerHTML = '';
     document.getElementById('modal-overlay').style.display = 'none';
@@ -1543,7 +1643,8 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 window.addEventListener('pagehide', () => {
-    if (activeVideoProgressSaver) activeVideoProgressSaver();
+    if (activeVideoProgressBeacon) activeVideoProgressBeacon();
+    else if (activeVideoProgressSaver) activeVideoProgressSaver();
 });
 
 function showGuide(type) {

@@ -19,6 +19,28 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'teacher') {
     exit;
 }
 
+function phpSizeToBytes(string $size): int
+{
+    $size = trim($size);
+    if ($size === '') return 0;
+    $unit = strtolower(substr($size, -1));
+    $value = (float) $size;
+    return match ($unit) {
+        'g' => (int) round($value * 1024 * 1024 * 1024),
+        'm' => (int) round($value * 1024 * 1024),
+        'k' => (int) round($value * 1024),
+        default => (int) round($value),
+    };
+}
+
+$contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+$postMaxBytes = phpSizeToBytes((string) ini_get('post_max_size'));
+if ($postMaxBytes > 0 && $contentLength > $postMaxBytes) {
+    $limitMegabytes = round($postMaxBytes / 1024 / 1024);
+    echo json_encode(['success' => false, 'message' => "ไฟล์ที่อัปโหลดมีขนาดเกิน {$limitMegabytes} MB ซึ่งเป็นขีดจำกัดของเซิร์ฟเวอร์"], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 $action = $_POST['action'] ?? '';
 $teacherId = (string) $_SESSION['user_id'];
 

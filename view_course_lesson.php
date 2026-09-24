@@ -116,7 +116,7 @@ try {
     $resumePage = max(0, (int) ($savedProgress['page_index'] ?? 0));
     $documentProgressPercent = min(100, max(0, (float) ($savedProgress['progress_percent'] ?? 0)));
 } catch (PDOException) {  }
-$documentProgressPayload = json_encode(['type' => 'lesson-document-progress', 'courseId' => $courseId, 'lessonIndex' => $position, 'resumePage' => $resumePage, 'documentProgressPercent' => $documentProgressPercent], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+$documentProgressPayload = json_encode(['type' => 'lesson-document-progress', 'courseId' => $courseId, 'lessonIndex' => $position, 'resumePage' => $resumePage, 'documentProgressPercent' => $documentProgressPercent, 'documentUrl' => $relativePath], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 header('Content-Type: text/html; charset=utf-8');
 ?>
 <!doctype html>
@@ -130,7 +130,10 @@ header('Content-Type: text/html; charset=utf-8');
     header { display:flex; gap:12px; align-items:center; justify-content:space-between; padding: 12px 20px; background: #fff; border-bottom: 1px solid #e8eaed; font-weight: 700; }
     .header-title { display:flex; flex-direction:column; gap:2px; min-width:0; }.header-title > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.reading-status { color:#64748b; font-size:.82rem; font-weight:500; }
     main { max-width: 980px; min-height: calc(100vh - 59px); margin: auto; padding: 20px; box-sizing: border-box; }
-    .book-frame { display:block; width:100%; height:calc(100vh - 99px); border:1px solid #d8dee9; border-radius:8px; background:#525a67; box-shadow:0 8px 26px rgba(15,23,42,.16); }
+    .pdf-reader { height:calc(100vh - 99px); overflow-y:auto; border:1px solid #d8dee9; border-radius:8px; background:#525a67; box-shadow:0 8px 26px rgba(15,23,42,.16); }
+    .pdf-pages { display:flex; flex-direction:column; align-items:center; gap:18px; padding:18px; }
+    .pdf-page { display:block; max-width:100%; height:auto; background:#fff; box-shadow:0 2px 12px rgba(15,23,42,.3); }
+    .pdf-loading { padding:28px; color:#fff; text-align:center; }
     .book-image { display:block; max-width:100%; max-height:calc(100vh - 120px); margin:auto; box-shadow:0 8px 26px rgba(15,23,42,.16); background:#fff; }
     .notice { padding: 18px; border-radius: 10px; background: #fff7ed; color: #9a3412; }
   </style>
@@ -138,7 +141,7 @@ header('Content-Type: text/html; charset=utf-8');
 <body>
   <header><div class="header-title"><span><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span><span id="reading-status" class="reading-status"></span></div></header>
 <?php if ($extension === 'pdf'): ?>
-  <iframe class="book-frame" title="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>" src="<?= htmlspecialchars($relativePath, ENT_QUOTES, 'UTF-8') ?>#view=FitH"></iframe>
+  <main class="pdf-reader" id="pdf-reader" aria-label="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>"><div id="pdf-pages" class="pdf-pages"><div class="pdf-loading">กำลังเปิดเอกสาร…</div></div></main>
 <?php elseif (in_array($extension, $officeExtensions, true)): ?>
   <main><div class="notice"><strong>เอกสารนี้ยังไม่ใช่ PDF</strong><br><br>กรุณากลับไปแก้ไขบทเรียนและอัปโหลดไฟล์ PDF เพื่อเปิดอ่านแบบเลื่อนทีละหน้า</div></main>
 <?php elseif (in_array($extension, $imageExtensions, true)): ?>
@@ -147,10 +150,11 @@ header('Content-Type: text/html; charset=utf-8');
   <main><div class="notice">ไฟล์ชนิดนี้ยังไม่รองรับการแสดงเป็นหน้าหนังสือ กรุณาดาวน์โหลดเพื่อเปิดด้วยโปรแกรมที่รองรับ</div></main>
 <?php endif; ?>
 </body>
-<script>
+<script type="module">
   const documentPayload = <?= $documentProgressPayload ?>;
-  let page = 0;
-  const pages = Array.from(document.querySelectorAll('.docx-page'));
+  const reader = document.getElementById('pdf-reader');
+  const pagesContainer = document.getElementById('pdf-pages');
+
   async function saveReadingProgress(percent, resumePage) {
     const form = new FormData();
     form.append('action', 'record'); form.append('subject_id', documentPayload.courseId);
@@ -166,32 +170,70 @@ header('Content-Type: text/html; charset=utf-8');
     const lessonPercent = Math.round(documentPercent * 0.30 * 10) / 10;
     status.textContent = `อ่านแล้ว ${documentPercent}% · คิดเป็น ${lessonPercent}% ของบทเรียน`;
   }
-  function renderPage() {
-    pages.forEach((node, index) => node.classList.toggle('active', index === page));
-    const previous = document.getElementById('previous-page'); const next = document.getElementById('next-page'); const indicator = document.getElementById('page-indicator');
-    if (!pages.length) return;
-    previous.disabled = page === 0;
-    next.disabled = page === pages.length - 1;
-    next.textContent = page === pages.length - 1 ? 'หน้าสุดท้าย' : 'ถัดไป →';
-    indicator.textContent = `หน้า ${page + 1} / ${pages.length}`;
-    const progressPercent = ((page + 1) / pages.length) * 100;
-    updateReadingStatus(progressPercent);
-    saveReadingProgress(progressPercent, page + 1);
+
+  async function renderPdf() {
+    if (!reader || !pagesContainer) {
+      updateReadingStatus(documentPayload.documentProgressPercent);
+      return;
+    }
+
+    try {
+      const pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+      const pdf = await pdfjsLib.getDocument(documentPayload.documentUrl).promise;
+      const pageCanvases = [];
+      pagesContainer.replaceChildren();
+
+      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+        const pdfPage = await pdf.getPage(pageNumber);
+        const unscaledViewport = pdfPage.getViewport({ scale: 1 });
+        const availableWidth = Math.max(320, reader.clientWidth - 36);
+        const viewport = pdfPage.getViewport({ scale: Math.min(2, availableWidth / unscaledViewport.width) });
+        const canvas = document.createElement('canvas');
+        canvas.className = 'pdf-page';
+        canvas.dataset.pageNumber = String(pageNumber);
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+        canvas.setAttribute('aria-label', `หน้า ${pageNumber} จาก ${pdf.numPages}`);
+        await pdfPage.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        pagesContainer.append(canvas);
+        pageCanvases.push(canvas);
+      }
+
+      updateReadingStatus(documentPayload.documentProgressPercent);
+      if (documentPayload.resumePage > 1) {
+        const resumeCanvas = pageCanvases[Math.min(pageCanvases.length - 1, documentPayload.resumePage - 1)];
+        reader.scrollTop = Math.max(0, resumeCanvas.offsetTop - 18);
+      }
+
+      let highestReadPage = Math.floor((documentPayload.documentProgressPercent / 100) * pdf.numPages);
+      let scrollQueued = false;
+      const recordScrolledPages = () => {
+        scrollQueued = false;
+        const visibleBottom = reader.scrollTop + reader.clientHeight;
+        let reachedPage = 0;
+        pageCanvases.forEach((canvas, index) => {
+          if (visibleBottom >= canvas.offsetTop + (canvas.offsetHeight * 0.8)) reachedPage = index + 1;
+        });
+        if (reachedPage <= highestReadPage) return;
+        highestReadPage = reachedPage;
+        const percent = (highestReadPage / pdf.numPages) * 100;
+        updateReadingStatus(percent);
+        saveReadingProgress(percent, highestReadPage);
+      };
+
+      reader.addEventListener('scroll', () => {
+        if (!scrollQueued) {
+          scrollQueued = true;
+          requestAnimationFrame(recordScrolledPages);
+        }
+      }, { passive: true });
+    } catch (_) {
+      pagesContainer.innerHTML = '<div class="notice">ไม่สามารถเปิดเอกสารได้ กรุณาลองใหม่อีกครั้ง</div>';
+      updateReadingStatus(documentPayload.documentProgressPercent);
+    }
   }
-  function changePage(step) { page = Math.max(0, Math.min(pages.length - 1, page + step)); renderPage(); }
-  if (pages.length && documentPayload.resumePage > 0) page = Math.min(pages.length - 1, documentPayload.resumePage - 1);
-  if (!pages.length) {
-    updateReadingStatus(documentPayload.documentProgressPercent);
-    saveReadingProgress(Math.max(1, documentPayload.documentProgressPercent), 0);
-  }
-  renderPage();
-  window.addEventListener('pagehide', () => {
-    if (!pages.length) return;
-    const form = new FormData();
-    form.append('action', 'record'); form.append('subject_id', documentPayload.courseId);
-    form.append('lesson_index', String(documentPayload.lessonIndex)); form.append('activity_type', 'document_progress');
-    form.append('progress_percent', String(((page + 1) / pages.length) * 100)); form.append('resume_position', String(page + 1));
-    navigator.sendBeacon?.('student_learning_api.php', form);
-  });
+
+  renderPdf();
 </script>
 </html>
