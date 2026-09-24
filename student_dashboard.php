@@ -13,7 +13,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="theme.css">
-    <link rel="stylesheet" href="student_dashboard.css?v=20260924-report-print-headings">
+    <link rel="stylesheet" href="student_dashboard.css?v=20260924-report-print-frame">
 </head>
 <body>
     <div class="dashboard-container">
