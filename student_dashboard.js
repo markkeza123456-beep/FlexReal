@@ -6,14 +6,20 @@ let dashboardState = {
 const navBtns = {
     dashboard: document.getElementById('btn-dashboard'),
     lessons: document.getElementById('btn-lessons'),
+    reports: document.getElementById('btn-reports'),
     settings: document.getElementById('btn-settings')
 };
 
 const pages = {
     dashboard: document.getElementById('dashboard-page'),
     lessons: document.getElementById('lesson-page'),
+    reports: document.getElementById('reports-page'),
     settings: document.getElementById('settings-page')
 };
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+}
 
 function showPage(pageKey) {
     Object.keys(pages).forEach((key) => {
@@ -29,6 +35,7 @@ function showPage(pageKey) {
     });
 
     if (pageKey === 'lessons') renderLessons(dashboardState.courses);
+    if (pageKey === 'reports') renderReports(dashboardState.courses, dashboardState.stats || {});
 }
 
 function statusClass(score) {
@@ -39,6 +46,7 @@ function statusClass(score) {
 }
 
 function statusLabel(score) {
+    if (score === null || score === undefined) return 'ยังไม่มีคะแนน';
     const map = {
         excellent: 'ดีเยี่ยม',
         good: 'ดี',
@@ -51,7 +59,30 @@ function statusLabel(score) {
 function subjectTypeBadge(subjectType) {
     const type = String(subjectType || 'elective').toLowerCase();
     const label = type === 'required' ? 'วิชาบังคับ' : 'วิชาเลือก';
-    return '<span class="subject-type-badge ' + type + '">' + label + '</span>';
+    return '<span class="subject-type-badge ' + (type === 'required' ? 'required' : 'elective') + '">' + label + '</span>';
+}
+
+function renderLessonBreakdown(course) {
+    const lessons = Array.isArray(course.lessons) ? course.lessons : [];
+    if (!lessons.length) return '<p class="empty-state">รายวิชานี้ยังไม่มีบทเรียน</p>';
+    const rows = lessons.map((lesson) => {
+        const progress = Math.max(0, Math.min(100, Number(lesson.progress) || 0));
+        const fmt = (value) => Number(value || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
+        const quizScore = lesson.has_attempt ? `${fmt(lesson.score_earned)}/${fmt(lesson.score_total)} คะแนน` : 'ยังไม่มีผลสอบ';
+        const parts = [];
+        if (Number(lesson.objective_score_total) > 0) parts.push(`ปรนัย ${fmt(lesson.objective_score_earned)}/${fmt(lesson.objective_score_total)}`);
+        if (Number(lesson.essay_question_count) > 0) {
+            parts.push(`ข้อเขียน ${fmt(lesson.essay_score_earned)}/${fmt(lesson.essay_score_total)}`);
+        }
+        if (parts.length === 0) parts.push('ยังไม่มีรายละเอียดคะแนน');
+        const status = lesson.quiz_status === 'pending_review'
+            ? `<span class="lesson-score-status pending">รอตรวจข้อเขียน ${Number(lesson.essay_pending_count)} ข้อ</span>`
+            : lesson.quiz_status === 'passed' ? '<span class="lesson-score-status passed">ผ่าน</span>'
+                : lesson.quiz_status === 'failed' ? '<span class="lesson-score-status failed">ยังไม่ผ่าน</span>' : '';
+        const attemptLabel = lesson.has_attempt ? `ครั้งที่ ${Number(lesson.latest_attempt_number)} · ทำแล้ว ${Number(lesson.attempt_count)} ครั้ง` : 'ยังไม่เคยทำแบบทดสอบ';
+        return `<div class="lesson-breakdown-row"><div class="lesson-number">${Number(lesson.position)}</div><div class="lesson-detail"><strong>${escapeHtml(lesson.title)}</strong><span>${attemptLabel}</span><span>คะแนนรวม: ${quizScore}</span><span class="lesson-score-parts">${parts.join(' · ')}</span>${status}<span>ความคืบหน้า ${progress}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%"></div></div></div></div>`;
+    }).join('');
+    return `<details class="lesson-breakdown"><summary>ดูรายการบทเรียนย่อย (${lessons.length})</summary><div class="lesson-breakdown-list">${rows}</div></details>`;
 }
 
 function renderTable(courses) {
@@ -59,7 +90,7 @@ function renderTable(courses) {
     if (!courses.length) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" style="text-align:center;color:#888;">ยังไม่มีบทเรียนที่ลงทะเบียน</td>
+                <td colspan="4" style="text-align:center;color:#888;">ยังไม่มีบทเรียนที่ลงทะเบียน</td>
             </tr>
         `;
         return;
@@ -68,10 +99,9 @@ function renderTable(courses) {
     tbody.innerHTML = courses.map((item) => `
         <tr>
             <td style="color: #888;">${item.id}</td>
-            <td>${item.name} ${subjectTypeBadge(item.subject_type)}</td>
+            <td>${escapeHtml(item.name)} ${subjectTypeBadge(item.subject_type)}</td>
             <td>ทำแล้ว ${item.attempted_lessons}/${item.lesson_count} บท</td>
             <td>${item.score_total > 0 ? `${item.score_earned}/${item.score_total} คะแนน` : 'ยังไม่มีคะแนน'}</td>
-            <td><span class="status-label ${item.class}">${item.status}</span></td>
         </tr>
     `).join('');
 }
@@ -85,17 +115,98 @@ function renderLessons(courses) {
 
     container.innerHTML = courses.map((course) => `
         <div class="lesson-card">
-            <div class="lesson-card-head"><h3>${course.name}</h3>${subjectTypeBadge(course.subject_type)}</div>
+            <div class="lesson-card-head"><h3>${escapeHtml(course.name)}</h3>${subjectTypeBadge(course.subject_type)}</div>
+            <p class="course-description">${escapeHtml(course.description || 'ไม่มีคำอธิบายรายวิชา')}</p>
+            <div class="course-progress-label"><span>ความคืบหน้าแบบทดสอบ</span><strong>${course.progress}%</strong></div>
             <div class="progress-bar-bg">
-                <div class="progress-bar-fill" style="width: ${course.progress}%"></div>
+                <div class="progress-bar-fill" style="width: ${Math.max(0, Math.min(100, Number(course.progress) || 0))}%"></div>
             </div>
-            <p style="font-size: 0.8rem; color: #888;">ทำแบบทดสอบแล้ว: ${course.attempted_lessons}/${course.lesson_count} บท</p>
+            <p style="font-size: 0.8rem; color: #888;">แบบทดสอบในวิชานี้: ${course.attempted_lessons}/${course.lesson_count} บท</p>
             <p style="font-size: 0.8rem; color: #888;">คะแนนสะสม: ${course.score_total > 0 ? `${course.score_earned}/${course.score_total} คะแนน` : 'ยังไม่มีคะแนน'}</p>
-            <a class="btn-submit" style="display:inline-block;text-decoration:none;margin-top:10px;" href="index.html?subject_id=${encodeURIComponent(course.subject_id)}">เข้าเรียนต่อ</a>
+            ${renderLessonBreakdown(course)}
+            <a class="btn-submit" style="display:inline-block;text-decoration:none;margin-top:10px;" href="index.html?subject_id=${encodeURIComponent(course.subject_id)}">ดูรายวิชาและเข้าเรียน</a>
         </div>
     `).join('');
 }
 
+function flattenReportLessons(courses) {
+    return courses.flatMap((course) => (Array.isArray(course.lessons) ? course.lessons : []).map((lesson) => ({ ...lesson, course_id: course.subject_id, course_name: course.name, subject_type: course.subject_type })));
+}
+
+function formatReportDate(value) {
+    if (!value) return 'ยังไม่มีกิจกรรม';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function reportQuizStatus(lesson) {
+    if (!lesson.has_attempt) return '<span class="report-status none">ยังไม่ทำ</span>';
+    if (lesson.quiz_status === 'pending_review') return '<span class="report-status pending">รอตรวจข้อเขียน</span>';
+    if (lesson.quiz_status === 'passed') return '<span class="report-status passed">ผ่าน</span>';
+    if (lesson.quiz_status === 'failed') return '<span class="report-status failed">ยังไม่ผ่าน</span>';
+    return '<span class="report-status">ส่งแล้ว</span>';
+}
+
+function renderReports(courses) {
+    const summary = document.getElementById('reportSummary');
+    const courseBody = document.getElementById('courseReportBody');
+    const lessonBody = document.getElementById('lessonReportBody');
+    const filter = document.getElementById('reportCourseFilter');
+    if (!summary || !courseBody || !lessonBody || !filter) return;
+
+    const previous = filter.value || 'all';
+    filter.replaceChildren(new Option('ทุกรายวิชา', 'all'));
+    courses.forEach((course) => filter.add(new Option(course.name, course.subject_id)));
+    filter.value = courses.some((course) => String(course.subject_id) === previous) ? previous : 'all';
+
+    const student = dashboardState.student || {};
+    const studentInfo = [student.name, student.class_name && student.class_name !== '-' ? student.class_name : ''].filter(Boolean).join(' · ');
+    const studentLabel = document.getElementById('reportStudent');
+    if (studentLabel) studentLabel.textContent = studentInfo ? `นักเรียน: ${studentInfo}` : 'รายงานตามข้อมูลการลงทะเบียน';
+
+    const selectedId = filter.value;
+    const visibleCourses = selectedId === 'all' ? courses : courses.filter((course) => String(course.subject_id) === selectedId);
+    const rows = flattenReportLessons(visibleCourses);
+    const attempted = rows.filter((lesson) => lesson.has_attempt).length;
+    const lessonTotal = rows.length;
+    const earned = rows.reduce((sum, lesson) => sum + (Number(lesson.score_earned) || 0), 0);
+    const possible = rows.reduce((sum, lesson) => sum + (Number(lesson.score_total) || 0), 0);
+    const pendingEssays = rows.reduce((sum, lesson) => sum + (Number(lesson.essay_pending_count) || 0), 0);
+    const progress = lessonTotal ? Math.round(attempted / lessonTotal * 100) : 0;
+    const fmt = (value) => Number(value || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
+
+    summary.innerHTML = `
+        <div class="stat-card orange"><strong class="report-stat-heading">วิชาที่ลงทะเบียน</strong><p class="value">${visibleCourses.length}</p><span class="sub-value">เฉพาะวิชาของนักเรียน</span></div>
+        <div class="stat-card blue"><strong class="report-stat-heading">แบบทดสอบที่ทำแล้ว</strong><p class="value">${attempted}/${lessonTotal}</p><span class="sub-value">นับตามบทเรียนในวิชาที่เลือก</span></div>
+        <div class="stat-card green"><strong class="report-stat-heading">ความคืบหน้า</strong><p class="value">${progress}%</p><span class="sub-value">สัดส่วนบทที่ส่งแบบทดสอบ</span></div>
+        <div class="stat-card purple"><strong class="report-stat-heading">คะแนนรวม</strong><p class="value">${fmt(earned)}/${fmt(possible)}</p><span class="sub-value">รวมคะแนนข้อเขียนที่ตรวจแล้ว</span></div>
+        <div class="stat-card red"><strong class="report-stat-heading">ข้อเขียนรอตรวจ</strong><p class="value">${pendingEssays}</p><span class="sub-value">ข้อที่ยังรอครูตรวจ</span></div>`;
+
+    if (!visibleCourses.length) {
+        courseBody.innerHTML = '<tr><td colspan="8" class="report-empty">ยังไม่มีรายวิชาที่ลงทะเบียน</td></tr>';
+    } else {
+        courseBody.innerHTML = visibleCourses.map((course) => {
+            const courseLessons = Array.isArray(course.lessons) ? course.lessons : [];
+            const attempts = courseLessons.reduce((sum, lesson) => sum + (Number(lesson.attempt_count) || 0), 0);
+            const pending = courseLessons.reduce((sum, lesson) => sum + (Number(lesson.essay_pending_count) || 0), 0);
+            const score = Number(course.score_total) > 0 ? `${fmt(course.score_earned)}/${fmt(course.score_total)} (${fmt(course.score)}%)` : 'ยังไม่มีคะแนน';
+            return `<tr><td><strong>${escapeHtml(course.name)}</strong><small>${escapeHtml(course.description || 'ไม่มีคำอธิบาย')}</small></td><td>${subjectTypeBadge(course.subject_type)}</td><td>${Number(course.attempted_lessons)}/${Number(course.lesson_count)} บท</td><td><div class="report-progress"><span>${fmt(course.progress)}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${Math.max(0, Math.min(100, Number(course.progress) || 0))}%"></div></div></div></td><td>${score}</td><td>${attempts} ครั้ง</td><td>${pending ? `<span class="report-status pending">${pending} ข้อ</span>` : 'ไม่มี'}</td><td>${formatReportDate(course.last_activity_at)}</td></tr>`;
+        }).join('');
+    }
+
+    const countLabel = document.getElementById('reportLessonCount');
+    if (countLabel) countLabel.textContent = `${rows.length} บทเรียน`;
+    if (!rows.length) {
+        lessonBody.innerHTML = '<tr><td colspan="8" class="report-empty">ยังไม่มีข้อมูลบทเรียน</td></tr>';
+        return;
+    }
+    lessonBody.innerHTML = rows.map((lesson) => {
+        const quiz = lesson.has_attempt ? `${fmt(lesson.score_earned)}/${fmt(lesson.score_total)}` : '—';
+        const objective = lesson.objective_score_total > 0 ? `${fmt(lesson.objective_score_earned)}/${fmt(lesson.objective_score_total)}` : '—';
+        const essay = lesson.essay_question_count > 0 ? `${fmt(lesson.essay_score_earned)}/${fmt(lesson.essay_score_total)}` : 'ไม่มี';
+        return `<tr><td><strong>${escapeHtml(lesson.course_name)}</strong><small>บทที่ ${Number(lesson.position)} · ${escapeHtml(lesson.title)}</small></td><td>${reportQuizStatus(lesson)}</td><td>${quiz}</td><td>${objective}</td><td>${essay}</td><td>${Number(lesson.attempt_count)} ครั้ง</td><td>${formatReportDate(lesson.last_activity_at)}</td><td>${escapeHtml(lesson.essay_feedback || '—')}</td></tr>`;
+    }).join('');
+}
 
 function _applyAvatarUI(src) {
     const avatarImg     = document.getElementById('avatarImg');
@@ -106,7 +217,11 @@ function _applyAvatarUI(src) {
     const sidebarAvatar = document.getElementById('sidebarAvatar');
     if (sidebarAvatar) {
         sidebarAvatar.style.cssText += ';background:none;padding:0;overflow:hidden';
-        sidebarAvatar.innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = '';
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+        sidebarAvatar.replaceChildren(img);
     }
 }
 
@@ -125,8 +240,8 @@ function updateProfile(student) {
         if (el) el.textContent = value;
     };
 
-    setText('dashboardWelcome', `ยินดีต้อนรับกลับมา, ${name} `);
     setText('sidebarName', name);
+    setText('dashboardOwnerName', name);
     setText('displayName', name);
     setValue('profileName', name);
     setValue('profileEmail', student.email || '');
@@ -168,14 +283,6 @@ function updateStats(stats, courses) {
     setText('statAvgProgress', `${attemptedLessons}/${totalLessons}`);
     setText('statAvgScore', `${scoreEarned}/${scoreTotal}`);
 
-    let stateText = 'เริ่มต้น';
-    if (courseCount > 0 && attemptedLessons >= totalLessons && totalLessons > 0) {
-        stateText = 'ทำครบแล้ว';
-    } else if (courseCount > 0 && attemptedLessons > 0) {
-        stateText = 'กำลังเรียน';
-    }
-    setText('statLearningState', stateText);
-
     renderTable(courses);
 }
 
@@ -183,6 +290,7 @@ async function loadDashboardData() {
     const response = await fetch('student_dashboard_api.php', {
         credentials: 'same-origin'
     });
+    if (response.status === 401) { window.location.assign('login.php'); return; }
     const result = await response.json();
     if (result.status !== 'success') {
         throw new Error(result.message || 'load failed');
@@ -190,12 +298,14 @@ async function loadDashboardData() {
 
     dashboardState = {
         student: result.student || null,
-        courses: Array.isArray(result.courses) ? result.courses : []
+        courses: Array.isArray(result.courses) ? result.courses : [],
+        stats: result.stats || {}
     };
 
     updateProfile(dashboardState.student);
     updateStats(result.stats || {}, dashboardState.courses);
     renderLessons(dashboardState.courses);
+    renderReports(dashboardState.courses, dashboardState.stats);
 }
 
 Object.entries(navBtns).forEach(([key, button]) => {
@@ -210,10 +320,20 @@ document.getElementById('courseSearch')?.addEventListener('input', (e) => {
 });
 
 showPage('dashboard');
-loadDashboardData().catch(() => {
+loadDashboardData().catch((error) => {
+    const message = document.getElementById('dashboardLoadError');
+    if (message) {
+        message.textContent = 'โหลดข้อมูลไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อแล้วรีเฟรชหน้า';
+        message.hidden = false;
+    }
     renderTable([]);
     renderLessons([]);
+    renderReports([], {});
+    console.error('Student dashboard load failed:', error);
 });
+
+document.getElementById('reportCourseFilter')?.addEventListener('change', () => renderReports(dashboardState.courses, dashboardState.stats || {}));
+document.getElementById('reportPrintBtn')?.addEventListener('click', () => window.print());
 
 
 const _crop = {
@@ -565,8 +685,15 @@ function saveProfile() {
                 showFeedback('success', data.message);
                 if (dashboardState.student) {
                     dashboardState.student.name = name;
+                    dashboardState.student.email = document.getElementById('profileEmail')?.value.trim() ?? '';
+                    dashboardState.student.phone = document.getElementById('profilePhone')?.value.trim() ?? '';
                     updateProfile(dashboardState.student);
                 }
+                ['pwdCurrent', 'pwdNew', 'pwdConfirm'].forEach((id) => { const field = document.getElementById(id); if (field) field.value = ''; });
+                const strength = document.getElementById('pwdStrengthWrap');
+                if (strength) strength.style.display = 'none';
+                const match = document.getElementById('pwdMatchMsg');
+                if (match) match.textContent = '';
             } else {
                 showFeedback('error', data.message);
             }

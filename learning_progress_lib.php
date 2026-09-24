@@ -4,7 +4,7 @@ function ensureLearningProgressTables(PDO $conn): void {
 
 
 }
-function lessonProgressFromQuiz(int $score, int $totalScore, float $documentPercent = 0, float $videoPercent = 0): float {
+function lessonProgressFromQuiz(float $score, float $totalScore, float $documentPercent = 0, float $videoPercent = 0): float {
     $documentPart = min(100, max(0, $documentPercent)) * 0.30;
     $videoPart = min(100, max(0, $videoPercent)) * 0.30;
     $quizPart = $totalScore > 0 ? min(40.0, max(0.0, $score / $totalScore * 40.0)) : 0.0;

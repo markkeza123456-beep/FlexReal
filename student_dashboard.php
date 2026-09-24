@@ -1,12 +1,19 @@
+<?php
+session_start();
+if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? '')) !== 'student') {
+    header('Location: login.php');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub - Student Portal</title>
-    <link rel="stylesheet" href="student_dashboard.css">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="student_dashboard.css?v=20260924-report-print-headings">
 </head>
 <body>
     <div class="dashboard-container">
@@ -17,27 +24,27 @@
                 <span>LEARNING HUB</span>
             </a>
             <nav class="menu">
-                <div class="menu-item active" id="btn-dashboard">
+                <button type="button" class="menu-item active" id="btn-dashboard">
                     <span class="icon">⊞</span> แดชบอร์ด
-                </div>
-                <div class="menu-item" id="btn-lessons">
+                </button>
+                <button type="button" class="menu-item" id="btn-lessons">
                     <span class="icon"></span> บทเรียน
-                </div>
-                <div class="menu-item">
+                </button>
+                <button type="button" class="menu-item" id="btn-reports">
                     <span class="icon"></span> รายงานผล
-                </div>
+                </button>
             </nav>
             <a href="logout.php" class="btn-logout" onclick="return confirm('ต้องการออกจากระบบหรือไม่?')">
                 <span></span> ออกจากระบบ
             </a>
-            <div class="user-profile" id="btn-settings" title="แก้ไขโปรไฟล์">
+            <button type="button" class="user-profile" id="btn-settings" title="แก้ไขโปรไฟล์">
                 <div class="avatar" id="sidebarAvatar">-</div>
                 <div class="user-info">
                     <p class="name" id="sidebarName">กำลังโหลด...</p>
                     <p class="role" id="sidebarRole">-</p>
                 </div>
                 <span style="margin-left:auto;font-size:0.8rem;color:var(--accent-orange);">️</span>
-            </div>
+            </button>
         </aside>
 
 
@@ -48,31 +55,27 @@
                 <header class="header">
                     <div class="welcome">
                         <h1>แดชบอร์ด</h1>
-                        <p id="dashboardWelcome">กำลังโหลดข้อมูลผู้ใช้...</p>
+                        <p id="dashboardOwnerName"></p>
+                        <p id="dashboardLoadError" class="dashboard-load-error" role="status" hidden></p>
                     </div>
                     <div class="notif-icon"></div>
                 </header>
 
-                <section class="stats-grid">
+                <section class="stats-grid student-stats-grid">
                     <div class="stat-card orange">
-                        <p class="label">วิชาที่กำลังเรียน</p>
+                        <p class="label">วิชาที่ลงทะเบียน</p>
                         <p class="value" id="statCourseCount">0</p>
-                        <span class="sub-value">จำนวนบทเรียนที่ลงทะเบียน</span>
+                        <span class="sub-value">รายวิชาที่เปิดเรียนอยู่</span>
                     </div>
                     <div class="stat-card blue">
                         <p class="label">แบบทดสอบที่ทำแล้ว</p>
                         <p class="value" id="statAvgProgress">0/0</p>
-                        <span class="sub-value">จำนวนบทที่ส่งแบบทดสอบแล้ว</span>
+                        <span class="sub-value">รวมบทเรียนของวิชาที่ลงทะเบียน</span>
                     </div>
                     <div class="stat-card green">
                         <p class="label">คะแนนสะสม</p>
                         <p class="value" id="statAvgScore">0/0</p>
                         <span class="sub-value">ข้อเขียนจะเพิ่มเมื่อครูตรวจผ่าน</span>
-                    </div>
-                    <div class="stat-card purple">
-                        <p class="label">สถานะการเรียน</p>
-                        <p class="value" id="statLearningState">เริ่มต้น</p>
-                        <span class="sub-value">พร้อมติดตามทุกบทเรียน</span>
                     </div>
                 </section>
 
@@ -87,9 +90,8 @@
                                 <tr>
                                     <th>ลำดับ</th>
                                     <th>วิชาเรียน</th>
-                                    <th>แบบทดสอบ</th>
+                                    <th>แบบทดสอบในรายวิชา</th>
                                     <th>คะแนนสะสม</th>
-                                    <th>สถานะ</th>
                                 </tr>
                             </thead>
                             <tbody id="courseTableBody"></tbody>
@@ -107,6 +109,26 @@
                     </div>
                 </header>
                 <div class="lessons-container" id="lessons-list"></div>
+            </section>
+
+            <section id="reports-page" class="content-section" style="display: none;">
+                <header class="header">
+                    <div class="welcome"><h1>รายงานผลการเรียน</h1><p id="reportStudent"></p></div>
+                    <div class="report-actions">
+                        <label class="sr-only" for="reportCourseFilter">เลือกวิชา</label>
+                        <select id="reportCourseFilter" aria-label="กรองรายงานตามรายวิชา"><option value="all">ทุกรายวิชา</option></select>
+                        <button type="button" class="report-action-btn secondary" id="reportPrintBtn">พิมพ์รายงาน</button>
+                    </div>
+                </header>
+                <div class="report-summary" id="reportSummary"></div>
+                <section class="content-card report-card">
+                    <div class="card-header"><h2>สรุปรายวิชา</h2></div>
+                    <div class="table-responsive"><table class="data-table report-table course-report-table"><thead><tr><th>รายวิชา</th><th>ประเภท</th><th>แบบทดสอบ</th><th>ความคืบหน้า</th><th>คะแนนรวม</th><th>ครั้งที่ทำ</th><th>ข้อเขียนรอตรวจ</th><th>ทำล่าสุด</th></tr></thead><tbody id="courseReportBody"></tbody></table></div>
+                </section>
+                <section class="content-card report-card">
+                    <div class="card-header"><h2>ผลคะแนนแยกตามบทเรียน</h2><span id="reportLessonCount" class="report-meta"></span></div>
+                    <div class="table-responsive"><table class="data-table report-table lesson-report-table"><thead><tr><th>รายวิชา / บทเรียน</th><th>สถานะแบบทดสอบ</th><th>คะแนนรวม</th><th>ปรนัย</th><th>ข้อเขียน</th><th>จำนวนครั้ง</th><th>ทำล่าสุด</th><th>ข้อเสนอแนะจากครู</th></tr></thead><tbody id="lessonReportBody"></tbody></table></div>
+                </section>
             </section>
 
 
@@ -222,6 +244,6 @@
 
         </main>
     </div>
-    <script src="student_dashboard.js"></script>
+    <script src="student_dashboard.js?v=20260924-report-print-headings"></script>
 </body>
 </html>
