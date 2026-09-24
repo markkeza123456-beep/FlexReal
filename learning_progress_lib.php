@@ -113,7 +113,7 @@ function upsertVideoWatchSession(PDO $conn, string $studentId, string $courseId,
     $status = $progressPercent >= 100 ? 'completed' : 'in_progress';
 
     $conn->prepare('INSERT INTO public.video_watch_sessions (student_id, lesson_id, duration_seconds, current_seconds, progress_percent, status, last_watched_at, updated_at, completed_at)
-        VALUES (:student_id, :lesson_id, :duration_seconds, :current_seconds, :progress_percent, :status, now(), now(), CASE WHEN :status = :completed_status THEN now() ELSE NULL END)
+        VALUES (:student_id, :lesson_id, :duration_seconds, :current_seconds, :progress_percent, :status, now(), now(), CASE WHEN CAST(:status_insert AS text) = \'completed\' THEN now() ELSE NULL END)
         ON CONFLICT (student_id, lesson_id) DO UPDATE SET
             duration_seconds = GREATEST(video_watch_sessions.duration_seconds, EXCLUDED.duration_seconds),
             current_seconds = GREATEST(video_watch_sessions.current_seconds, EXCLUDED.current_seconds),
@@ -121,14 +121,14 @@ function upsertVideoWatchSession(PDO $conn, string $studentId, string $courseId,
             status = EXCLUDED.status,
             last_watched_at = now(),
             updated_at = now(),
-            completed_at = CASE WHEN EXCLUDED.status = :completed_status THEN COALESCE(video_watch_sessions.completed_at, now()) ELSE video_watch_sessions.completed_at END')->execute([
+            completed_at = CASE WHEN EXCLUDED.status = \'completed\' THEN COALESCE(video_watch_sessions.completed_at, now()) ELSE video_watch_sessions.completed_at END')->execute([
         ':student_id' => $studentId,
         ':lesson_id' => $lessonId,
         ':duration_seconds' => $durationSeconds,
         ':current_seconds' => $currentSeconds,
         ':progress_percent' => $progressPercent,
         ':status' => $status,
-        ':completed_status' => 'completed',
+        ':status_insert' => $status,
     ]);
 }
 function recordLearningActivity(PDO $conn, string $studentId, string $courseId, int $lessonIndex, string $activityType, string $lessonTitle = '', float $progressPercent = 0, float $resumePosition = 0, int $durationSeconds = 0): void {
@@ -140,7 +140,25 @@ function recordLearningActivity(PDO $conn, string $studentId, string $courseId, 
     if ($activityType === 'video_open') { $activityType = 'video_progress'; $progressPercent = 100; }
     $isDocument = $activityType === 'document_progress'; $isVideo = $activityType === 'video_progress';
 
-    $conn->prepare('UPDATE public.lesson_progress SET document_progress_percent = CASE WHEN CAST(:is_document AS boolean) THEN GREATEST(document_progress_percent, :progress) ELSE document_progress_percent END, document_page_index = CASE WHEN CAST(:is_document AS boolean) THEN GREATEST(document_page_index, CAST(:resume_position AS integer)) ELSE document_page_index END, video_progress_percent = CASE WHEN CAST(:is_video AS boolean) THEN GREATEST(video_progress_percent, :progress) ELSE video_progress_percent END, video_position_seconds = CASE WHEN CAST(:is_video AS boolean) THEN CASE WHEN :progress >= 100 THEN 0 ELSE :resume_position END ELSE video_position_seconds END, opened_count = CASE WHEN CAST(:is_document AS boolean) AND :progress >= 100 THEN GREATEST(opened_count, 1) ELSE opened_count END, video_open_count = CASE WHEN CAST(:is_video AS boolean) AND :progress >= 100 THEN GREATEST(video_open_count, 1) ELSE video_open_count END, first_opened_at = COALESCE(first_opened_at, now()), last_opened_at = CASE WHEN CAST(:is_document AS boolean) OR CAST(:is_video AS boolean) THEN now() ELSE last_opened_at END, last_activity_at = now() WHERE student_id = :student_id AND lesson_id = :lesson_id')->execute([':is_document' => $isDocument ? 'true' : 'false', ':is_video' => $isVideo ? 'true' : 'false', ':progress' => $progressPercent, ':resume_position' => max(0, $resumePosition), ':student_id' => $studentId, ':lesson_id' => $lessonId]);
+    $conn->prepare('UPDATE public.lesson_progress SET document_progress_percent = CASE WHEN CAST(:is_document_progress AS boolean) THEN GREATEST(document_progress_percent, CAST(:document_progress AS numeric)) ELSE document_progress_percent END, document_page_index = CASE WHEN CAST(:is_document_page AS boolean) THEN GREATEST(document_page_index, CAST(:document_page AS integer)) ELSE document_page_index END, video_progress_percent = CASE WHEN CAST(:is_video_progress AS boolean) THEN GREATEST(video_progress_percent, CAST(:video_progress AS numeric)) ELSE video_progress_percent END, video_position_seconds = CASE WHEN CAST(:is_video_position AS boolean) THEN CASE WHEN CAST(:video_progress_position AS numeric) >= 100 THEN 0 ELSE CAST(:video_position AS integer) END ELSE video_position_seconds END, opened_count = CASE WHEN CAST(:is_document_open AS boolean) AND CAST(:document_progress_open AS numeric) >= 100 THEN GREATEST(opened_count, 1) ELSE opened_count END, video_open_count = CASE WHEN CAST(:is_video_open AS boolean) AND CAST(:video_progress_open AS numeric) >= 100 THEN GREATEST(video_open_count, 1) ELSE video_open_count END, first_opened_at = COALESCE(first_opened_at, now()), last_opened_at = CASE WHEN CAST(:is_document_last AS boolean) OR CAST(:is_video_last AS boolean) THEN now() ELSE last_opened_at END, last_activity_at = now() WHERE student_id = :student_id AND lesson_id = :lesson_id')->execute([
+        ':is_document_progress' => $isDocument ? 'true' : 'false',
+        ':document_progress' => $progressPercent,
+        ':is_document_page' => $isDocument ? 'true' : 'false',
+        ':document_page' => max(0, $resumePosition),
+        ':is_video_progress' => $isVideo ? 'true' : 'false',
+        ':video_progress' => $progressPercent,
+        ':is_video_position' => $isVideo ? 'true' : 'false',
+        ':video_progress_position' => $progressPercent,
+        ':video_position' => max(0, $resumePosition),
+        ':is_document_open' => $isDocument ? 'true' : 'false',
+        ':document_progress_open' => $progressPercent,
+        ':is_video_open' => $isVideo ? 'true' : 'false',
+        ':video_progress_open' => $progressPercent,
+        ':is_document_last' => $isDocument ? 'true' : 'false',
+        ':is_video_last' => $isVideo ? 'true' : 'false',
+        ':student_id' => $studentId,
+        ':lesson_id' => $lessonId,
+    ]);
     if ($isVideo) {
         upsertVideoWatchSession($conn, $studentId, $courseId, $lessonIndex, $progressPercent, $resumePosition, $durationSeconds);
     }
