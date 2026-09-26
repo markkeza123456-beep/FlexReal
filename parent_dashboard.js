@@ -5,11 +5,11 @@ const PARENT_KEY = 'parentProfile_v1';
 
 
 const mockParent = {
-  name: 'คุณสมหญิง ใจดี',
-  email: 'parent@flexhub.ac.th',
+  name: 'ผู้ปกครอง',
+  email: '',
   phone: '',
   relation: 'ผู้ปกครอง',
-  avatarInitials: 'สม',
+  avatarInitials: 'ผป',
   photoDataUrl: null
 };
 
@@ -24,6 +24,16 @@ function loadParent() {
 function saveParent(profile) {
   try { localStorage.setItem(PARENT_KEY, JSON.stringify(profile)); }
   catch (e) { console.warn('localStorage error', e); }
+}
+
+function currentParentProfile() {
+  const profile = loadParent();
+  if (_parentData) {
+    profile.name = _parentData.parents_name || profile.name;
+    profile.email = _parentData.email || '';
+    profile.phone = _parentData.phone || '';
+  }
+  return profile;
 }
 
 
@@ -91,7 +101,7 @@ function previewAvatar(input) {
 }
 
 
-function saveProfile() {
+async function saveProfile() {
   const btn = document.getElementById('saveProfileBtn');
   const feedback = document.getElementById('profileFeedback');
 
@@ -118,30 +128,38 @@ function saveProfile() {
   if (pwdNew && !current)             { showFeedback('error', 'กรุณาใส่รหัสผ่านปัจจุบันก่อน'); return; }
 
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> กำลังบันทึก...'; }
+  try {
+    const body = new FormData();
+    body.append('name', name);
+    body.append('email', email);
+    body.append('phone', phone);
+    body.append('pwd_current', current);
+    body.append('pwd_new', pwdNew);
+    const response = await fetch('update_parent_profile.php', { method: 'POST', body, credentials: 'same-origin' });
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.message || 'บันทึกข้อมูลไม่สำเร็จ');
 
-
-  const p = loadParent();
-  p.name  = name;
-  p.email = email;
-  p.phone = phone;
-  p.avatarInitials = name.slice(0, 2);
-  saveParent(p);
-  applyParentProfile(p);
-
-
-  ['pwdCurrent','pwdNew','pwdConfirm'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  const sw = document.getElementById('pwdStrengthWrap');
-  if (sw) sw.style.display = 'none';
-  const mm = document.getElementById('pwdMatchMsg');
-  if (mm) mm.textContent = '';
-
-  setTimeout(() => {
-    showFeedback('success', 'บันทึกข้อมูลสำเร็จ ');
+    const profile = currentParentProfile();
+    profile.name = name;
+    profile.email = email;
+    profile.phone = phone;
+    profile.avatarInitials = name.slice(0, 2);
+    saveParent(profile);
+    _parentData.parents_name = name;
+    _parentData.email = email;
+    _parentData.phone = phone;
+    applyParentProfile(profile);
+    ['pwdCurrent','pwdNew','pwdConfirm'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    const sw = document.getElementById('pwdStrengthWrap');
+    if (sw) sw.style.display = 'none';
+    const mm = document.getElementById('pwdMatchMsg');
+    if (mm) mm.textContent = '';
+    showFeedback('success', result.message || 'บันทึกข้อมูลสำเร็จ');
+  } catch (error) {
+    showFeedback('error', error.message || 'บันทึกข้อมูลไม่สำเร็จ กรุณาลองอีกครั้ง');
+  } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> บันทึกข้อมูล'; }
-  }, 400);
+  }
 }
 
 
@@ -150,7 +168,11 @@ function togglePwd(id, btn) {
   if (!inp) return;
   const show = inp.type === 'password';
   inp.type = show ? 'text' : 'password';
-  btn.textContent = show ? 'ซ่อน' : 'แสดง';
+  const label = show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน';
+  btn.setAttribute('aria-label', label);
+  btn.title = label;
+  const icon = btn.querySelector('i');
+  if (icon) icon.className = show ? 'ti ti-eye-off' : 'ti ti-eye';
 }
 
 function checkPwdStrength(val) {
@@ -353,7 +375,7 @@ function _cropConfirm() {
 }
 
 
-const PAGE_IDS = ['overview', 'grades', 'attendance', 'messages', 'notifications', 'settings'];
+const PAGE_IDS = ['overview', 'grades', 'messages', 'notifications', 'settings'];
 
 function showPage(name, menuEl) {
   PAGE_IDS.forEach(id => {
@@ -368,7 +390,7 @@ function showPage(name, menuEl) {
 
   if (name === 'settings') {
     if (btnSettings) btnSettings.classList.add('active');
-    applyParentProfile(loadParent());
+    applyParentProfile(currentParentProfile());
   } else if (menuEl) {
     menuEl.classList.add('active');
   }
@@ -401,28 +423,56 @@ function closeMsg(e) {
 let _parentData  = null;
 let _children    = [];
 let _activeChild = 0;
+let _dashboardRefreshing = false;
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+}
+
+function formatActivity(value) {
+  if (!value) return 'ยังไม่มีประวัติการเรียน';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'ยังไม่มีประวัติการเรียน' : 'ทำกิจกรรมล่าสุด ' + new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+}
+
+function updateDashboardSyncStatus(message) {
+  ['overviewLastUpdated', 'gradesLastUpdated'].forEach(id => {
+    const status = document.getElementById(id);
+    if (status) status.textContent = message;
+  });
+}
 
 
 async function loadDashboardData() {
+  if (_dashboardRefreshing) return;
+  _dashboardRefreshing = true;
+  const selectedStudentId = _children[_activeChild]?.student_id;
   try {
-    const res    = await fetch('parent_dashboard_api.php', { credentials: 'same-origin' });
+    const res    = await fetch('parent_dashboard_api.php', { credentials: 'same-origin', cache: 'no-store' });
     const result = await res.json();
 
     if (result.status !== 'success') {
       console.warn('API error:', result.message);
+      updateDashboardSyncStatus('อัปเดตข้อมูลไม่สำเร็จ');
       return;
     }
 
+    const updatedAt = new Intl.DateTimeFormat('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date());
+    updateDashboardSyncStatus(`ข้อมูลจากฐานข้อมูล · อัปเดตล่าสุด ${updatedAt}`);
+
+    const settingsOpen = document.getElementById('page-settings')?.classList.contains('active');
     _parentData = result.parent;
     _children   = result.children || [];
 
 
     if (_parentData) {
       const p = loadParent();
-      p.name  = _parentData.parents_name || p.name;
-      p.email = _parentData.email        || p.email;
-      p.tel   = _parentData.tel          || p.tel;
-      applyParentProfile(p);
+      p.name  = _parentData.parents_name || 'ผู้ปกครอง';
+      p.email = _parentData.email || '';
+      p.phone = _parentData.phone || '';
+      p.avatarInitials = p.name.slice(0, 2);
+      saveParent(p);
+      if (!settingsOpen) applyParentProfile(p);
     }
 
 
@@ -430,11 +480,21 @@ async function loadDashboardData() {
 
 
     if (_children.length > 0) {
-      switchChild(0, null);
+      const selectedIndex = _children.findIndex(child => String(child.student_id) === String(selectedStudentId));
+      switchChild(selectedIndex >= 0 ? selectedIndex : 0, null);
+    } else {
+      renderLearningProgress([]);
+      renderCourseChart([]);
+      renderGradeTable([], {});
+      const subtitle = document.getElementById('overviewSubtitle');
+      if (subtitle) subtitle.textContent = 'ยังไม่มีนักเรียนที่เชื่อมโยงกับบัญชีนี้';
     }
 
   } catch (err) {
     console.warn('loadDashboardData error:', err);
+    updateDashboardSyncStatus('เชื่อมต่อฐานข้อมูลไม่สำเร็จ');
+  } finally {
+    _dashboardRefreshing = false;
   }
 }
 
@@ -447,7 +507,7 @@ const TAB_COLORS = [
 ];
 
 
-const TAB_CONTAINERS = ['childTabsOverview', 'childTabsGrades', 'childTabsAttendance'];
+const TAB_CONTAINERS = ['childTabsOverview', 'childTabsGrades'];
 
 function renderChildTabs() {
   TAB_CONTAINERS.forEach(containerId => {
@@ -469,17 +529,17 @@ function renderChildTabs() {
       const color   = TAB_COLORS[i % TAB_COLORS.length];
       const initial = child.initial || child.student_name.charAt(0);
       const level   = child.student_level
-        ? '<span style="font-size:0.72rem;opacity:.7;margin-left:4px;">' + child.student_level + '</span>'
+        ? '<span style="font-size:0.72rem;opacity:.7;margin-left:4px;">' + escapeHtml(child.student_level) + '</span>'
         : '';
       const avInner = child.avatar_url
-        ? '<img src="' + child.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
-        : initial;
+        ? '<img src="' + escapeHtml(child.avatar_url) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+        : escapeHtml(initial);
       return '<div class="child-tab' + (i === _activeChild ? ' active' : '') + '"'
         + ' onclick="switchChild(' + i + ', this)"'
         + ' data-child-idx="' + i + '"'
-        + ' title="' + child.student_name + '">'
+        + ' title="' + escapeHtml(child.student_name) + '">'
         + '<div class="child-av" style="background:' + color.bg + ';color:' + color.text + ';overflow:hidden;">' + avInner + '</div>'
-        + child.student_name + level
+        + escapeHtml(child.student_name) + level
         + '</div>';
     }).join('');
   });
@@ -509,6 +569,9 @@ function switchChild(idx, el) {
     h1.textContent = 'สวัสดี ผู้ปกครองของ' + child.student_name + ' ';
   }
 
+  const subtitle = document.getElementById('overviewSubtitle');
+  if (subtitle) subtitle.textContent = [child.student_level, formatActivity(child.stats?.last_activity_at)].filter(Boolean).join(' · ');
+
   renderChildStats(child);
 }
 
@@ -516,47 +579,31 @@ function switchChild(idx, el) {
 function renderChildStats(child) {
   const stats = child.stats || {};
 
-
-  const gpaEl = document.getElementById('stat-gpa');
-  if (gpaEl) gpaEl.textContent = stats.gpa ?? '-';
-
-  const attendEl = document.getElementById('stat-attend');
-  if (attendEl) attendEl.textContent = stats.total_days > 0 ? stats.attend_pct + '%' : '-';
-
-  const attendSubEl = document.getElementById('stat-attend-sub');
-  if (attendSubEl && stats.total_days > 0)
-    attendSubEl.textContent = stats.present_days + '/' + stats.total_days + ' วัน';
-
-
   const h1 = document.querySelector('#page-overview .page-header h1');
   if (h1 && _parentData) h1.textContent = 'สวัสดี ผู้ปกครองของ' + child.student_name + ' ';
 
 
-  renderSubjects(child.subjects || []);
-
-
   renderGradeTable(child.subjects || [], stats);
+  renderCourseChart(child.subjects || []);
+  renderLearningProgress(child.subjects || []);
 }
 
-function renderSubjects(subjects) {
-  const el = document.getElementById('subjectList');
-  if (!el) return;
+function renderCourseChart(subjects) {
+  const chart = document.getElementById('courseChart');
+  if (!chart) return;
   if (!subjects.length) {
-    el.innerHTML = '<div style="color:var(--text-muted);font-size:.82rem;padding:8px 0;">ยังไม่มีข้อมูลคะแนน</div>';
+    chart.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูลรายวิชาสำหรับแสดงกราฟ</div>';
     return;
   }
-  el.innerHTML = subjects.map(s => {
-    const score = s.total_score ?? 0;
-    const color = score >= 85 ? 'var(--green)' : score >= 70 ? 'var(--blue)' : 'var(--accent)';
-    return `
-      <div class="subject-row" style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <div style="flex:1;font-size:0.85rem;">${s.subject_name}</div>
-        <div style="width:120px;">
-          <div class="prog-bg"><div class="prog-fill" style="width:${score}%;background:${color}"></div></div>
-        </div>
-        <div style="width:36px;text-align:right;font-size:0.82rem;color:${color};">${score}</div>
-        <div style="width:28px;text-align:right;font-size:0.78rem;color:var(--text-muted);">${s.grade}</div>
-      </div>`;
+
+  chart.innerHTML = subjects.map(subject => {
+    const progress = Math.max(0, Math.min(100, Number(subject.progress) || 0));
+    const attempted = Number(subject.attempted_lessons) || 0;
+    const total = Number(subject.lesson_count) || 0;
+    return `<div class="course-chart-row">
+      <div class="course-chart-meta"><strong class="course-chart-name" title="${escapeHtml(subject.subject_name)}">${escapeHtml(subject.subject_name)}</strong><span>${attempted}/${total} บทเรียน</span></div>
+      <div class="course-chart-progress" role="img" aria-label="${escapeHtml(subject.subject_name)} ทำแบบทดสอบแล้ว ${attempted} จาก ${total} บทเรียน คิดเป็น ${progress} เปอร์เซ็นต์"><div class="course-chart-track"><span class="course-chart-fill" style="width:${progress}%"></span></div><strong>${progress}%</strong></div>
+    </div>`;
   }).join('');
 }
 
@@ -565,45 +612,105 @@ function renderGradeTable(subjects, stats) {
   if (!tbody) return;
 
   if (!subjects.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">ยังไม่มีข้อมูลคะแนน</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">ยังไม่มีข้อมูลคะแนน</td></tr>';
+    document.getElementById('topScore').textContent = '—';
+    document.getElementById('topSubject').textContent = 'ยังไม่มีคะแนน';
+    document.getElementById('gradeLessonsDone').textContent = '0';
+    document.getElementById('gradeLessonsTotal').textContent = 'จาก 0 บท';
     return;
   }
 
   tbody.innerHTML = subjects.map(s => {
-    const total = s.total_score ?? 0;
-    const gradeClass = s.grade.startsWith('A') ? 'grade-a'
-                     : s.grade.startsWith('B') ? 'grade-b'
-                     : s.grade.startsWith('C') ? 'grade-c'
-                     : s.grade === 'F'         ? 'grade-d' : 'grade-c';
-    const status = total >= 50 ? '<span class="grade-pill grade-a">ผ่าน</span>'
-                               : '<span class="grade-pill grade-d">ไม่ผ่าน</span>';
+    const attempted = Number(s.attempted_lessons) || 0;
+    const lessonCount = Number(s.lesson_count) || 0;
+    const courseStatus = subjectResultStatus(s);
+    const scoreLabel = attempted
+      ? `${Number(s.score_earned) || 0}/${Number(s.score_possible) || 0} คะแนน`
+      : '—';
+    const statusScore = attempted
+      ? `คะแนน ${Number(s.score_earned) || 0}/${Number(s.score_possible) || 0}`
+      : 'ยังไม่มีคะแนน';
     return `<tr>
-      <td>${s.subject_name}</td>
-      <td>${s.score_mid ?? '-'}</td>
-      <td>${s.score_final ?? '-'}</td>
-      <td>${total}</td>
-      <td><span class="grade-pill ${gradeClass}">${s.grade}</span></td>
-      <td>${status}</td>
+      <td>${escapeHtml(s.subject_name)}</td>
+      <td>${scoreLabel}</td>
+      <td>${attempted}/${lessonCount} บท</td>
+      <td><span class="grade-pill ${courseStatus.className}">${courseStatus.label}</span><div class="grade-status-score">${statusScore}</div></td>
     </tr>`;
   }).join('');
 
 
-  const gpaVal = document.getElementById('gpaVal');
-  if (gpaVal) gpaVal.textContent = stats.gpa ?? '-';
-
-  const gradeAEl = document.getElementById('gradeACount');
-  if (gradeAEl) gradeAEl.textContent = stats.grade_a ?? 0;
-
   const topScoreEl = document.getElementById('topScore');
-  if (topScoreEl) topScoreEl.textContent = stats.top_score ?? '-';
+  if (topScoreEl) topScoreEl.textContent = stats.top_score ?? '—';
 
   const topSubEl = document.getElementById('topSubject');
-  if (topSubEl) topSubEl.textContent = stats.top_subject ? 'วิชา' + stats.top_subject : '-';
+  if (topSubEl) topSubEl.textContent = stats.top_subject ? 'วิชา' + stats.top_subject : 'ยังไม่มีคะแนน';
+  const doneEl = document.getElementById('gradeLessonsDone');
+  if (doneEl) doneEl.textContent = stats.attempted_lessons ?? 0;
+  const totalEl = document.getElementById('gradeLessonsTotal');
+  if (totalEl) totalEl.textContent = `จาก ${stats.total_lessons ?? 0} บท`;
 }
 
+function subjectResultStatus(subject) {
+  const attempted = Number(subject.attempted_lessons) || 0;
+  const total = Number(subject.lesson_count) || 0;
+  const passed = Number(subject.passed_lessons) || 0;
+  const failed = Number(subject.failed_lessons) || 0;
+  if (failed > 0) return { label: 'มีบทไม่ผ่าน', className: 'grade-d' };
+  if (total > 0 && passed >= total) return { label: 'ผ่านทุกบท', className: 'grade-a' };
+  if (attempted === 0) return { label: 'ยังไม่เริ่ม', className: 'grade-c' };
+  return { label: 'กำลังเรียน', className: 'grade-b' };
+}
+
+function lessonResultStatus(lesson) {
+  switch (lesson.result_status) {
+    case 'passed': return { label: 'ผ่าน', className: 'grade-a' };
+    case 'failed': return { label: 'ไม่ผ่าน', className: 'grade-d' };
+    case 'pending_review': return { label: 'รอตรวจข้อเขียน', className: 'grade-pending' };
+    case 'not_attempted': return { label: 'ยังไม่ทำ', className: 'grade-c' };
+    default: return { label: 'รอผล', className: 'grade-c' };
+  }
+}
+
+function renderLearningProgress(subjects) {
+  const list = document.getElementById('progressList');
+  if (!list) return;
+  if (!subjects.length) {
+    list.innerHTML = '<div class="empty-state">ยังไม่มีรายวิชาหรือข้อมูลการเรียนของบุตรหลาน</div>';
+    return;
+  }
+  list.innerHTML = subjects.map(subject => {
+    const progress = Math.max(0, Math.min(100, Number(subject.progress) || 0));
+    const courseStatus = subjectResultStatus(subject);
+    const lessons = Array.isArray(subject.lessons) ? subject.lessons : [];
+    const lessonRows = lessons.length ? lessons.map((lesson, index) => {
+      const status = lessonResultStatus(lesson);
+      const essayCount = Number(lesson.essay_count) || 0;
+      const pendingEssays = Number(lesson.pending_essays) || 0;
+      const essayDetail = essayCount === 0 ? '' : pendingEssays > 0
+        ? `<div class="course-lesson-essay pending">ข้อสอบเขียน: รอตรวจ ${pendingEssays} ข้อ</div>`
+        : `<div class="course-lesson-essay">ข้อสอบเขียน: ตรวจแล้ว ${Number(lesson.essay_score) || 0}/${Number(lesson.essay_score_possible) || 0} คะแนน</div>`;
+      const scoreDetail = lesson.has_attempt && Number(lesson.score_total) > 0
+        ? `<span class="course-lesson-score">ทำได้ ${Number(lesson.score_earned) || 0}/${Number(lesson.score_total)} คะแนน</span>` : '';
+      return `<div class="course-lesson-item">
+        <div class="course-lesson-info"><strong>บทที่ ${Number(lesson.position) || index + 1}: ${escapeHtml(lesson.title)}</strong>${scoreDetail}</div>
+        <span class="grade-pill ${status.className}">${status.label}</span>
+        ${essayDetail}
+      </div>`;
+    }).join('') : '<div class="empty-state">ยังไม่มีบทเรียนในรายวิชานี้</div>';
+    return `<article class="progress-course">
+      <div class="progress-course-head"><div><h3>${escapeHtml(subject.subject_name)}</h3><p>${formatActivity(subject.last_activity_at)}</p></div><span class="grade-pill ${courseStatus.className}">${courseStatus.label}</span></div>
+      <div class="progress-course-meta"><span>ทำแบบทดสอบ ${Number(subject.attempted_lessons) || 0} จาก ${Number(subject.lesson_count) || 0} บท</span><strong>${progress}%</strong></div>
+      <div class="prog-bg"><div class="prog-fill" style="width:${progress}%"></div></div>
+      <div class="course-lesson-results">${lessonRows}</div>
+    </article>`;
+  }).join('');
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   applyParentProfile(loadParent());
-  renderSubjects([]);
   loadDashboardData();
+  window.setInterval(() => {
+    if (document.visibilityState === 'visible') loadDashboardData();
+  }, 10000);
+  window.addEventListener('focus', () => loadDashboardData());
 });

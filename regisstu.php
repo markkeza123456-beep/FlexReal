@@ -133,7 +133,7 @@ try {
           <div class="field" id="field-link-student-id">
             <label class="label" for="link_student_id">เลขบัตรประชาชนนักเรียน<span class="required">*</span></label>
             <div class="input-wrap">
-              <input type="text" id="link_student_id" name="link_student_id" placeholder="X-XXXX-XXXXX-XX-X" maxlength="17" autocomplete="off" required />
+              <input type="text" id="link_student_id" name="link_student_id" placeholder="เว้นว่างได้ หากยังไม่ต้องการเชื่อมบัญชีนักเรียน" maxlength="17" autocomplete="off" />
               <span class="focus-bar"></span>
             </div>
             <span class="error-msg" id="link-student-id-error"></span>
@@ -227,7 +227,7 @@ try {
 
         <div class="role-field student-field" id="pin-section">
           <div class="section-label">ตั้ง PIN สำหรับผู้ปกครอง</div>
-          <div class="field"><label class="label">PIN 6 หลัก</label><div class="input-wrap"><input type="password" name="student_pin" maxlength="6" required /><span class="focus-bar"></span></div></div>
+          <div class="field"><label class="label">PIN 6 หลัก</label><div class="input-wrap"><input type="password" name="student_pin" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" /><span class="focus-bar"></span></div></div>
         </div>
 
         <button type="submit" class="btn-submit" id="submitBtn">

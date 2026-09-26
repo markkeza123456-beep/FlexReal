@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Orbitron:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-  <link rel="stylesheet" href="parent_dashboard.css" />
+  <link rel="stylesheet" href="parent_dashboard.css?v=20260926-overview-charts" />
   <style>
 
     .settings-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; align-items: start; }
@@ -58,8 +58,9 @@
     .pwd-input-wrap .settings-input { width: 100%; box-sizing: border-box; padding-right: 40px; }
     .pwd-toggle-btn {
       position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-      background: none; border: none; cursor: pointer; font-size: 1rem; padding: 0; line-height: 1;
+      background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; padding: 4px; line-height: 1;
     }
+    .pwd-toggle-btn:hover, .pwd-toggle-btn:focus-visible { color: var(--accent); }
 
     .strength-bar-bg { height: 5px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; }
     .strength-bar-fill { height: 100%; border-radius: 10px; transition: width .3s, background .3s; width: 0; }
@@ -76,6 +77,8 @@
     }
     .btn-save-profile:hover { background: rgba(255,122,0,0.25); }
     .btn-save-profile:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-logout { display:flex; align-items:center; gap:10px; padding:.75rem 1rem; margin-bottom:.5rem; border-radius:10px; color:var(--text-muted); text-decoration:none; font-size:.9rem; transition:background .2s,color .2s; }
+    .btn-logout:hover { background:rgba(239,68,68,.12); color:#ef4444; }
 
     .notif-list { display: flex; flex-direction: column; gap: 0.85rem; }
     .notif-toggle {
@@ -98,18 +101,9 @@
 <div class="wrap">
 
   <aside class="sidebar">
-    <a class="logo" href="index.html" title="กลับหน้าหลักและรายวิชา">
-      <div class="logo-icon">
-        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <polygon points="20,2 38,12 38,28 20,38 2,28 2,12" fill="none" stroke="currentColor" stroke-width="2"/>
-          <polygon points="20,10 30,16 30,24 20,30 10,24 10,16" fill="currentColor" opacity="0.4"/>
-          <circle cx="20" cy="20" r="4" fill="currentColor"/>
-        </svg>
-      </div>
-      <div>
-        <div class="logo-text">FLEXIBLE</div>
-        <div class="logo-sub">LEARNING HUB</div>
-      </div>
+    <a class="logo logo-section" href="index.html" title="กลับหน้าหลักและรายวิชา">
+      <h2>FLEXIBLE</h2>
+      <span>LEARNING HUB</span>
     </a>
 
     <nav class="menu">
@@ -119,16 +113,17 @@
       <div class="menu-item" onclick="showPage('grades', this)">
         <i class="ti ti-chart-bar"></i> ผลการเรียน
       </div>
-      <div class="menu-item" onclick="showPage('attendance', this)">
-        <i class="ti ti-calendar-check"></i> การเข้าเรียน
-      </div>
     </nav>
+
+    <a href="logout.php" class="btn-logout" onclick="return confirm('ต้องการออกจากระบบหรือไม่?')">
+      <i class="ti ti-logout"></i> ออกจากระบบ
+    </a>
 
     <div class="sidebar-footer">
       <div class="parent-profile" id="btn-settings" onclick="showPage('settings', this)" title="ตั้งค่าโปรไฟล์" style="cursor:pointer;">
-        <div class="avatar" id="sidebarAvatar">สม</div>
+        <div class="avatar" id="sidebarAvatar">ผป</div>
         <div class="profile-info">
-          <div class="profile-name" id="sidebarName">คุณสมหญิง ใจดี</div>
+          <div class="profile-name" id="sidebarName">ผู้ปกครอง</div>
           <div class="profile-role" id="sidebarRole">ผู้ปกครอง</div>
         </div>
         <i class="ti ti-settings" style="color: var(--accent); font-size: 16px;"></i>
@@ -142,54 +137,55 @@
 
     <div id="page-overview" class="page active">
       <div class="page-header">
-        <h1>สวัสดี คุณสมหญิง </h1>
-        <p>ภาพรวมความคืบหน้าของบุตรหลาน · อัปเดตล่าสุด 26 พ.ค. 2569</p>
+        <h1>ภาพรวมการเรียน</h1>
+        <p id="overviewSubtitle">ข้อมูลผลการเรียนและความคืบหน้าของบุตรหลาน</p><p id="overviewLastUpdated" class="live-update-status" aria-live="polite">กำลังเชื่อมต่อฐานข้อมูล...</p>
       </div>
 
       <div class="child-tabs" id="childTabsOverview">
 
       </div>
 
-      <div class="stats-row overview-stats" id="statsRow">
-        <div class="stat-card">
-          <div class="stat-label">เกรดเฉลี่ย</div>
-          <div class="stat-value" id="stat-gpa" style="color: var(--accent);">3.75</div>
-          <div class="stat-sub">ภาคเรียนที่ 2/2568</div>
+      <section class="card overview-chart-card" aria-labelledby="courseChartTitle">
+        <div class="overview-chart-heading">
+          <div>
+            <div class="card-title" id="courseChartTitle"><i class="ti ti-chart-bar"></i> ภาพรวมความคืบหน้ารายวิชา</div>
+            <p class="overview-chart-note">จำนวนบทเรียนที่ทำแบบทดสอบแล้วเทียบกับบทเรียนทั้งหมด</p>
+          </div>
         </div>
-        <div class="stat-card blue">
-          <div class="stat-label">เข้าเรียน</div>
-          <div class="stat-value" id="stat-attend" style="color: var(--blue);">96%</div>
-          <div class="stat-sub" id="stat-attend-sub">48/50 วัน</div>
-        </div>
-      </div>
-
-      <div class="grid-3-1 overview-content">
-        <div class="card">
-          <div class="card-title"><i class="ti ti-book"></i> คะแนนรายวิชา</div>
-          <div id="subjectList"></div>
-        </div>
-      </div>
+        <div id="courseChart" class="course-chart" aria-live="polite"></div>
+      </section>
 
     </div>
 
 
     <div id="page-grades" class="page">
-      <div class="page-header"><h1>ผลการเรียน</h1><p>รายละเอียดเกรดทุกรายวิชา</p></div>
+      <div class="page-header"><h1>ผลการเรียน</h1><p>สรุปคะแนนแบบทดสอบล่าสุดของแต่ละรายวิชา · ดึงข้อมูลจากฐานข้อมูลทุก 10 วินาที</p><p id="gradesLastUpdated" class="live-update-status" aria-live="polite">กำลังเชื่อมต่อฐานข้อมูล...</p></div>
 
       <div class="child-tabs" id="childTabsGrades" style="margin-bottom: 1.5rem;">
 
       </div>
 
+      <div style="margin-bottom: 1.2rem;" class="stats-row grade-summary">
+        <div class="stat-card purple">
+          <div class="stat-label">บทเรียนที่ทำแบบทดสอบแล้ว</div>
+          <div class="stat-value" id="gradeLessonsDone" style="color: var(--purple);">0</div>
+          <div class="stat-sub" id="gradeLessonsTotal">จาก 0 บท</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">คะแนนสูงสุด</div>
+          <div class="stat-value" id="topScore" style="color: var(--blue);">—</div>
+          <div class="stat-sub" id="topSubject">ยังไม่มีคะแนน</div>
+        </div>
+      </div>
+
       <div class="card">
-        <div class="card-title"><i class="ti ti-list-details"></i> ผลการเรียนภาคเรียน 2/2568</div>
+        <div class="card-title"><i class="ti ti-list-details"></i> สถานะผลการเรียนและคะแนนรายวิชา</div>
         <table class="grade-table">
           <thead>
             <tr>
               <th>รายวิชา</th>
-              <th>คะแนนกลางภาค</th>
-              <th>คะแนนปลายภาค</th>
-              <th>คะแนนรวม</th>
-              <th>เกรด</th>
+              <th>คะแนนที่ทำได้</th>
+              <th>ทำแล้ว</th>
               <th>สถานะ</th>
             </tr>
           </thead>
@@ -197,74 +193,11 @@
         </table>
       </div>
 
-      <div style="margin-top: 1.2rem;" class="stats-row">
-        <div class="stat-card">
-          <div class="stat-label">เกรดเฉลี่ย GPA</div>
-          <div class="stat-value" id="gpaVal" style="color: var(--accent);">3.75</div>
-          <div class="stat-sub">ภาคเรียน 2/2568</div>
-        </div>
-        <div class="stat-card green">
-          <div class="stat-label">วิชาที่ได้ A</div>
-          <div class="stat-value" id="gradeACount" style="color: var(--green);">3</div>
-          <div class="stat-sub">จาก 7 วิชา</div>
-        </div>
-        <div class="stat-card blue">
-          <div class="stat-label">คะแนนสูงสุด</div>
-          <div class="stat-value" id="topScore" style="color: var(--blue);">95</div>
-          <div class="stat-sub" id="topSubject">วิชาพลศึกษา</div>
-        </div>
-        <div class="stat-card purple">
-          <div class="stat-label">อันดับในชั้น</div>
-          <div class="stat-value" id="rankVal" style="color: var(--purple);">5</div>
-          <div class="stat-sub">จาก 40 คน</div>
-        </div>
-      </div>
-    </div>
-
-
-    <div id="page-attendance" class="page">
-      <div class="page-header"><h1>การเข้าเรียน</h1><p>สถิติการเข้าเรียนรายวิชา</p></div>
-
-      <div class="child-tabs" id="childTabsAttendance" style="margin-bottom: 1.5rem;">
-
+      <div class="card" style="margin-top:1.2rem;">
+        <div class="card-title"><i class="ti ti-chart-bar"></i> สถานะรายบทและข้อสอบเขียน</div>
+        <div id="progressList" class="progress-list"></div>
       </div>
 
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-title"><i class="ti ti-calendar-stats"></i> สรุปการเข้าเรียน</div>
-          <div class="attend-row"><div class="attend-dot" style="background: var(--green)"></div><div class="attend-label">เข้าเรียนปกติ</div><div class="attend-count">46 วัน</div><div class="attend-bar-wrap"><div class="attend-bar" style="width: 92%; background: var(--green)"></div></div></div>
-          <div class="attend-row"><div class="attend-dot" style="background: var(--accent)"></div><div class="attend-label">ลาป่วย</div><div class="attend-count">2 วัน</div><div class="attend-bar-wrap"><div class="attend-bar" style="width: 4%; background: var(--accent)"></div></div></div>
-          <div class="attend-row"><div class="attend-dot" style="background: var(--blue)"></div><div class="attend-label">ลากิจ</div><div class="attend-count">1 วัน</div><div class="attend-bar-wrap"><div class="attend-bar" style="width: 2%; background: var(--blue)"></div></div></div>
-          <div class="attend-row"><div class="attend-dot" style="background: var(--red)"></div><div class="attend-label">ขาดเรียน</div><div class="attend-count">1 วัน</div><div class="attend-bar-wrap"><div class="attend-bar" style="width: 2%; background: var(--red)"></div></div></div>
-        </div>
-
-        <div class="card">
-          <div class="card-title"><i class="ti ti-percentage"></i> อัตราการเข้าเรียน</div>
-          <div style="display: flex; align-items: center; justify-content: center; height: 120px;">
-            <div style="text-align: center;">
-              <div style="font-size: 3rem; font-weight: 700; color: var(--green);">96%</div>
-              <div style="font-size: 0.8rem; color: var(--text-muted);">ของวันทั้งหมด 50 วัน</div>
-            </div>
-          </div>
-          <div style="background: #161616; border-radius: 10px; padding: 0.8rem 1rem; font-size: 0.78rem;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span style="color: var(--text-muted)">เป้าหมายขั้นต่ำ</span><span>80%</span></div>
-            <div class="prog-bg"><div class="prog-fill green" style="width: 96%"></div></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top: 1.2rem;">
-        <div class="card-title"><i class="ti ti-table"></i> รายวิชาที่ขาดเรียน</div>
-        <table class="grade-table">
-          <thead><tr><th>วันที่</th><th>รายวิชา</th><th>สถานะ</th><th>หมายเหตุ</th></tr></thead>
-          <tbody>
-            <tr><td>12 เม.ย. 2569</td><td>คณิตศาสตร์</td><td><span class="grade-pill grade-d">ขาด</span></td><td style="color: var(--text-muted);">-</td></tr>
-            <tr><td>3 พ.ค. 2569</td><td>ภาษาไทย</td><td><span class="grade-pill grade-c">ลาป่วย</span></td><td style="color: var(--text-muted);">ใบรับรองแพทย์</td></tr>
-            <tr><td>18 พ.ค. 2569</td><td>สังคมศึกษา</td><td><span class="grade-pill grade-b">ลากิจ</span></td><td style="color: var(--text-muted);">ธุระครอบครัว</td></tr>
-            <tr><td>22 พ.ค. 2569</td><td>วิทยาศาสตร์</td><td><span class="grade-pill grade-c">ลาป่วย</span></td><td style="color: var(--text-muted);">ไข้หวัด</td></tr>
-          </tbody>
-        </table>
-      </div>
     </div>
 
 
@@ -355,7 +288,7 @@
               <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="previewAvatar(this)">
             </div>
             <div class="avatar-info">
-              <div class="avatar-name" id="displayName">คุณสมหญิง ใจดี</div>
+        <div class="avatar-name" id="displayName">ผู้ปกครอง</div>
               <div class="avatar-role" id="profileRole">ผู้ปกครอง</div>
               <div class="avatar-hint">คลิกที่รูปเพื่อเปลี่ยน</div>
             </div>
@@ -389,14 +322,14 @@
                 <label class="settings-label">รหัสผ่านปัจจุบัน</label>
                 <div class="pwd-input-wrap">
                   <input type="password" class="settings-input" id="pwdCurrent" placeholder="ใส่รหัสผ่านปัจจุบัน">
-                  <button type="button" onclick="togglePwd('pwdCurrent',this)" class="pwd-toggle-btn">แสดง</button>
+                  <button type="button" onclick="togglePwd('pwdCurrent',this)" class="pwd-toggle-btn" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><i class="ti ti-eye"></i></button>
                 </div>
               </div>
               <div class="settings-field">
                 <label class="settings-label">รหัสผ่านใหม่</label>
                 <div class="pwd-input-wrap">
                   <input type="password" class="settings-input" id="pwdNew" placeholder="อย่างน้อย 6 ตัวอักษร" oninput="checkPwdStrength(this.value)">
-                  <button type="button" onclick="togglePwd('pwdNew',this)" class="pwd-toggle-btn">แสดง</button>
+                  <button type="button" onclick="togglePwd('pwdNew',this)" class="pwd-toggle-btn" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><i class="ti ti-eye"></i></button>
                 </div>
                 <div id="pwdStrengthWrap" style="display:none;margin-top:8px">
                   <div class="strength-bar-bg"><div id="pwdStrengthBar" class="strength-bar-fill"></div></div>
@@ -407,7 +340,7 @@
                 <label class="settings-label">ยืนยันรหัสผ่านใหม่</label>
                 <div class="pwd-input-wrap">
                   <input type="password" class="settings-input" id="pwdConfirm" placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง" oninput="checkPwdMatch()">
-                  <button type="button" onclick="togglePwd('pwdConfirm',this)" class="pwd-toggle-btn">แสดง</button>
+                  <button type="button" onclick="togglePwd('pwdConfirm',this)" class="pwd-toggle-btn" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><i class="ti ti-eye"></i></button>
                 </div>
                 <div id="pwdMatchMsg" class="pwd-match-msg"></div>
               </div>
@@ -440,10 +373,6 @@
               <input type="checkbox" style="accent-color:var(--accent);width:16px;height:16px">
               <span>แจ้งเตือนผลคะแนนสอบ</span>
             </label>
-            <label class="notif-toggle">
-              <input type="checkbox" style="accent-color:var(--accent);width:16px;height:16px">
-              <span>แจ้งเตือนกิจกรรมและข่าวสาร</span>
-            </label>
           </div>
         </div>
 
@@ -473,6 +402,6 @@
   </div>
 </div>
 
-<script src="parent_dashboard.js"></script>
+<script src="parent_dashboard.js?v=20260926-result-status-score"></script>
 </body>
 </html>

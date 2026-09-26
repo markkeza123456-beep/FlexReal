@@ -17,9 +17,19 @@ try {
     } elseif ($role === 'teacher') {
         $conn->prepare('INSERT INTO public.teachers (user_id, full_name, email, phone) VALUES (:id, :name, :email, :phone)')->execute([':id' => $userId, ':name' => $fullName, ':email' => $email, ':phone' => $phone ?: null]);
     } else {
-        $studentId = preg_replace('/\D+/', '', (string) ($_POST['link_student_id'] ?? '')); $check = $conn->prepare('SELECT 1 FROM public.students WHERE user_id = :id'); $check->execute([':id' => $studentId]); if (!$check->fetchColumn()) throw new RuntimeException('ไม่พบนักเรียนที่ต้องการเชื่อมโยง');
+        // Parent accounts may be created before a student account is available.
+        // If an ID is supplied, validate it and link the accounts in this transaction.
+        $studentId = preg_replace('/\D+/', '', (string) ($_POST['link_student_id'] ?? ''));
+        if ($studentId !== '') {
+            if (strlen($studentId) !== 13) throw new RuntimeException('เลขบัตรประชาชนนักเรียนต้องมี 13 หลัก');
+            $check = $conn->prepare('SELECT 1 FROM public.students WHERE user_id = :id');
+            $check->execute([':id' => $studentId]);
+            if (!$check->fetchColumn()) throw new RuntimeException('ไม่พบนักเรียนที่ต้องการเชื่อมโยง');
+        }
         $conn->prepare('INSERT INTO public.parents (user_id, full_name, email, phone) VALUES (:id, :name, :email, :phone)')->execute([':id' => $userId, ':name' => $fullName, ':email' => $email, ':phone' => $phone ?: null]);
-        $conn->prepare('UPDATE public.students SET parent_user_id = :parent, updated_at = now() WHERE user_id = :student')->execute([':parent' => $userId, ':student' => $studentId]);
+        if ($studentId !== '') {
+            $conn->prepare('UPDATE public.students SET parent_user_id = :parent, updated_at = now() WHERE user_id = :student')->execute([':parent' => $userId, ':student' => $studentId]);
+        }
     }
     $conn->prepare('INSERT INTO public.user_addresses (user_id, address_line, subdistrict, district, province, postal_code) VALUES (:id, :line, :subdistrict, :district, :province, :postal_code)')->execute([':id' => $userId, ':line' => trim((string) ($_POST['house'] ?? '')), ':subdistrict' => trim((string) ($_POST['tambon'] ?? '')) ?: null, ':district' => trim((string) ($_POST['amphoe'] ?? '')) ?: null, ':province' => trim((string) ($_POST['province'] ?? '')) ?: null, ':postal_code' => trim((string) ($_POST['zipcode'] ?? '')) ?: null]);
     $conn->commit(); echo "<script>alert('ลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ'); location.href='login.php';</script>";
