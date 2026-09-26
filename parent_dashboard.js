@@ -375,7 +375,7 @@ function _cropConfirm() {
 }
 
 
-const PAGE_IDS = ['overview', 'grades', 'messages', 'notifications', 'settings'];
+const PAGE_IDS = ['overview', 'grades', 'messages', 'settings'];
 
 function showPage(name, menuEl) {
   PAGE_IDS.forEach(id => {
@@ -424,6 +424,7 @@ let _parentData  = null;
 let _children    = [];
 let _activeChild = 0;
 let _dashboardRefreshing = false;
+let _overviewSubjects = [];
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
@@ -583,9 +584,52 @@ function renderChildStats(child) {
   if (h1 && _parentData) h1.textContent = 'สวัสดี ผู้ปกครองของ' + child.student_name + ' ';
 
 
+  _overviewSubjects = Array.isArray(child.subjects) ? child.subjects : [];
+  const courseCount = document.getElementById('overviewCourseCount');
+  const quizCount = document.getElementById('overviewQuizCount');
+  const scoreTotal = document.getElementById('overviewScoreTotal');
+  if (courseCount) courseCount.textContent = stats.course_count ?? _overviewSubjects.length;
+  if (quizCount) quizCount.textContent = `${stats.attempted_lessons ?? 0}/${stats.total_lessons ?? 0}`;
+  if (scoreTotal) scoreTotal.textContent = `${formatDashboardNumber(stats.score_earned ?? sumSubjectValue(_overviewSubjects, 'score_earned'))}/${formatDashboardNumber(stats.score_possible ?? sumSubjectValue(_overviewSubjects, 'score_possible'))}`;
+  renderOverviewCourseTable();
   renderGradeTable(child.subjects || [], stats);
   renderCourseChart(child.subjects || []);
   renderLearningProgress(child.subjects || []);
+}
+
+function formatDashboardNumber(value) {
+  const number = Number(value) || 0;
+  return Number.isInteger(number) ? String(number) : number.toFixed(1);
+}
+
+function sumSubjectValue(subjects, key) {
+  return subjects.reduce((total, subject) => total + (Number(subject[key]) || 0), 0);
+}
+
+function renderOverviewCourseTable() {
+  const tbody = document.getElementById('overviewCourseBody');
+  if (!tbody) return;
+  const query = (document.getElementById('overviewCourseSearch')?.value || '').trim().toLocaleLowerCase('th');
+  const subjects = _overviewSubjects.filter(subject => String(subject.subject_name || '').toLocaleLowerCase('th').includes(query));
+  if (!subjects.length) {
+    tbody.innerHTML = `<tr><td colspan="4" class="overview-course-empty">${_overviewSubjects.length ? 'ไม่พบรายวิชาที่ค้นหา' : 'ยังไม่มีรายวิชาที่ลงทะเบียน'}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = subjects.map(subject => {
+    const originalIndex = _overviewSubjects.indexOf(subject);
+    const attempted = Number(subject.attempted_lessons) || 0;
+    const total = Number(subject.lesson_count) || 0;
+    const score = attempted
+      ? `${formatDashboardNumber(subject.score_earned)}/${formatDashboardNumber(subject.score_possible)} คะแนน`
+      : 'ยังไม่มีคะแนน';
+    const subjectType = subject.subject_type === 'required' ? 'วิชาบังคับ' : 'วิชาเลือก';
+    return `<tr>
+      <td>${String(originalIndex + 1).padStart(2, '0')}</td>
+      <td><span class="overview-course-name">${escapeHtml(subject.subject_name)}</span><span class="overview-course-tag">${subjectType}</span></td>
+      <td>ทำแล้ว ${attempted}/${total} บท</td>
+      <td>${score}</td>
+    </tr>`;
+  }).join('');
 }
 
 function renderCourseChart(subjects) {
@@ -708,6 +752,7 @@ function renderLearningProgress(subjects) {
 
 document.addEventListener('DOMContentLoaded', () => {
   applyParentProfile(loadParent());
+  document.getElementById('overviewCourseSearch')?.addEventListener('input', renderOverviewCourseTable);
   loadDashboardData();
   window.setInterval(() => {
     if (document.visibilityState === 'visible') loadDashboardData();

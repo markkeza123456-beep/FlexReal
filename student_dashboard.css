@@ -263,17 +263,6 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .btn-save-profile:disabled { opacity: 0.5; cursor: not-allowed; }
 
 
-.notif-list { display: flex; flex-direction: column; gap: 16px; }
-.notif-toggle {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    font-size: 0.875rem;
-    color: var(--text-muted);
-}
-
-
 #settings-page {
     display: flex;
     flex-direction: column;

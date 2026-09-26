@@ -78,7 +78,9 @@ try {
              ORDER BY enrolled_at DESC LIMIT 1
          ) active_curriculum ON true
          LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id
-         WHERE sc.student_id = :student_id AND sc.status = 'active' AND c.status = 'active'
+         -- Show every course linked to this student, including historical enrollments
+         -- and courses hidden from the active catalog, so dashboard totals match DB links.
+         WHERE sc.student_id = :student_id
          ORDER BY c.name ASC"
     );
     $courseStmt->execute([':student_id' => $studentId]);

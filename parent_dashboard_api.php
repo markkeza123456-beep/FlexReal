@@ -42,11 +42,18 @@ try {
     $studentStmt->execute([':id' => $parentId]);
     $children = [];
     $courseStmt = $conn->prepare(
-        'SELECT DISTINCT c.course_id, c.name AS subject_name
+        "SELECT DISTINCT c.course_id, c.name AS subject_name,
+                COALESCE(cc.requirement_type, 'elective') AS subject_type
          FROM public.student_courses sc
          INNER JOIN public.courses c ON c.course_id = sc.course_id
+         LEFT JOIN LATERAL (
+             SELECT curriculum_id FROM public.student_curricula
+             WHERE student_id = :student_id AND status = 'active'
+             ORDER BY enrolled_at DESC LIMIT 1
+         ) active_curriculum ON true
+         LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id
          WHERE sc.student_id = :student_id
-         ORDER BY c.name'
+         ORDER BY c.name"
     );
     $lessonStmt = $conn->prepare(
         "SELECT l.lesson_id, l.position, l.title,
@@ -133,7 +140,7 @@ try {
             $percent = $scorePossible > 0 ? round(($scoreEarned / $scorePossible) * 100, 1) : 0.0;
             $lastActivities = array_filter(array_column($lessons, 'last_activity_at'));
             $subjects[] = [
-                'subject_name' => $course['subject_name'], 'score_mid' => 0, 'score_final' => $percent,
+                'subject_name' => $course['subject_name'], 'subject_type' => $course['subject_type'] ?? 'elective', 'score_mid' => 0, 'score_final' => $percent,
                 'total_score' => $percent, 'grade' => gradeFromScore($percent),
                 'score_earned' => $scoreEarned,
                 'score_possible' => $scorePossible,
@@ -168,6 +175,8 @@ try {
                 'course_count' => count($subjects),
                 'attempted_lessons' => array_sum(array_column($subjects, 'attempted_lessons')),
                 'total_lessons' => array_sum(array_column($subjects, 'lesson_count')),
+                'score_earned' => array_sum(array_column($subjects, 'score_earned')),
+                'score_possible' => array_sum(array_column($subjects, 'score_possible')),
                 'pending_essays' => array_sum(array_column($subjects, 'pending_essays')),
                 'last_activity_at' => max(array_filter(array_column($subjects, 'last_activity_at')) ?: [null]),
             ],

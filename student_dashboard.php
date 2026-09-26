@@ -13,7 +13,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="theme.css">
-    <link rel="stylesheet" href="student_dashboard.css?v=20260924-report-print-frame">
+    <link rel="stylesheet" href="student_dashboard.css?v=20260926-no-dashboard-notifications">
 </head>
 <body>
     <div class="dashboard-container">
@@ -58,7 +58,6 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                         <p id="dashboardOwnerName"></p>
                         <p id="dashboardLoadError" class="dashboard-load-error" role="status" hidden></p>
                     </div>
-                    <div class="notif-icon"></div>
                 </header>
 
                 <section class="stats-grid student-stats-grid">
@@ -138,7 +137,6 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                         <h1>ตั้งค่าโปรไฟล์</h1>
                         <p>จัดการข้อมูลส่วนตัวและรหัสผ่านของคุณ</p>
                     </div>
-                    <div class="notif-icon"></div>
                 </header>
 
                 <div class="settings-wrapper">
@@ -221,29 +219,11 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                     </div>
 
 
-                    <div class="content-card settings-card">
-                        <h2 class="settings-card-title">&#128276; การแจ้งเตือน</h2>
-                        <div class="notif-list">
-                            <label class="notif-toggle">
-                                <input type="checkbox" checked style="accent-color:var(--accent-orange);width:16px;height:16px">
-                                <span>แจ้งเตือนงานใกล้ครบกำหนด</span>
-                            </label>
-                            <label class="notif-toggle">
-                                <input type="checkbox" checked style="accent-color:var(--accent-orange);width:16px;height:16px">
-                                <span>แจ้งเตือนบทเรียนใหม่</span>
-                            </label>
-                            <label class="notif-toggle">
-                                <input type="checkbox" style="accent-color:var(--accent-orange);width:16px;height:16px">
-                                <span>แจ้งเตือนผลคะแนน</span>
-                            </label>
-                        </div>
-                    </div>
-
                 </div>
             </section>
 
         </main>
     </div>
-    <script src="student_dashboard.js?v=20260924-report-print-headings"></script>
+    <script src="student_dashboard.js?v=20260926-no-dashboard-notifications"></script>
 </body>
 </html>

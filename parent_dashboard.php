@@ -8,10 +8,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Orbitron:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-  <link rel="stylesheet" href="parent_dashboard.css?v=20260926-overview-charts" />
+  <link rel="stylesheet" href="parent_dashboard.css?v=20260926-parent-overview-student-data" />
   <style>
 
-    .settings-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; align-items: start; }
+    .settings-wrapper { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.2rem; align-items: start; max-width: 850px; }
     @media (max-width: 860px) { .settings-wrapper { grid-template-columns: 1fr; } }
 
     .settings-card { padding: 1.4rem 1.6rem; }
@@ -80,16 +80,6 @@
     .btn-logout { display:flex; align-items:center; gap:10px; padding:.75rem 1rem; margin-bottom:.5rem; border-radius:10px; color:var(--text-muted); text-decoration:none; font-size:.9rem; transition:background .2s,color .2s; }
     .btn-logout:hover { background:rgba(239,68,68,.12); color:#ef4444; }
 
-    .notif-list { display: flex; flex-direction: column; gap: 0.85rem; }
-    .notif-toggle {
-      display: flex; align-items: center; gap: 10px;
-      font-size: 0.85rem; color: var(--text); cursor: pointer;
-      padding: 8px 10px; border-radius: 8px;
-      transition: background .15s;
-    }
-    .notif-toggle:hover { background: rgba(255,255,255,0.04); }
-
-
     .parent-profile.active { background: rgba(255,122,0,0.1); border-radius: 10px; }
     .parent-profile { transition: background .2s; padding: 8px; margin: -8px; border-radius: 10px; }
     .parent-profile:hover { background: rgba(255,255,255,0.05); }
@@ -144,6 +134,37 @@
       <div class="child-tabs" id="childTabsOverview">
 
       </div>
+
+      <section class="stats-row overview-student-stats" aria-label="สรุปการเรียนของนักเรียน">
+        <div class="stat-card orange">
+          <div class="stat-label">วิชาที่ลงทะเบียน</div>
+          <div class="stat-value" id="overviewCourseCount">0</div>
+          <div class="stat-sub">รายวิชาที่เปิดเรียนอยู่</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">แบบทดสอบที่ทำแล้ว</div>
+          <div class="stat-value" id="overviewQuizCount">0/0</div>
+          <div class="stat-sub">รวมบทเรียนของวิชาที่ลงทะเบียน</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">คะแนนสะสม</div>
+          <div class="stat-value" id="overviewScoreTotal">0/0</div>
+          <div class="stat-sub">รวมคะแนนจากแบบทดสอบ</div>
+        </div>
+      </section>
+
+      <section class="card overview-courses-card" aria-labelledby="overviewCoursesTitle">
+        <div class="overview-courses-heading">
+          <h2 id="overviewCoursesTitle">ความคืบหน้าการเรียน</h2>
+          <label class="overview-course-search"><i class="ti ti-search" aria-hidden="true"></i><input id="overviewCourseSearch" type="search" placeholder="ค้นหาวิชาเรียน..." aria-label="ค้นหาวิชาเรียน"></label>
+        </div>
+        <div class="overview-course-table-wrap">
+          <table class="overview-course-table">
+            <thead><tr><th>ลำดับ</th><th>วิชาเรียน</th><th>แบบทดสอบในรายวิชา</th><th>คะแนนสะสม</th></tr></thead>
+            <tbody id="overviewCourseBody"><tr><td colspan="4" class="overview-course-empty">กำลังโหลดข้อมูลรายวิชา...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
 
       <section class="card overview-chart-card" aria-labelledby="courseChartTitle">
         <div class="overview-chart-heading">
@@ -251,20 +272,6 @@
     </div>
 
 
-    <div id="page-notifications" class="page">
-      <div class="page-header"><h1>การแจ้งเตือน</h1><p>การแจ้งเตือนทั้งหมดจากระบบ</p></div>
-      <div class="card">
-        <div class="card-title"><i class="ti ti-bell"></i> การแจ้งเตือนทั้งหมด</div>
-        <div class="notif-item"><div class="notif-icon warn"><i class="ti ti-clock-exclamation"></i></div><div class="notif-text"><p>กานต์มีงานค้างส่ง: รายงานวิทยาศาสตร์ ม.4 (ครบกำหนด 25 พ.ค.)</p><span>2 ชั่วโมงที่แล้ว · กานต์ ใจดี</span></div></div>
-        <div class="notif-item"><div class="notif-icon warn"><i class="ti ti-alert-circle"></i></div><div class="notif-text"><p>พิมขาดเรียนวิชาคณิตศาสตร์ โดยไม่มีใบลา วันที่ 24 พ.ค.</p><span>เมื่อวาน · พิม ใจดี</span></div></div>
-        <div class="notif-item"><div class="notif-icon info"><i class="ti ti-message-2"></i></div><div class="notif-text"><p>อ.สมชาย ส่งข้อความใหม่เกี่ยวกับผลการเรียนของกานต์</p><span>เมื่อวาน · กานต์ ใจดี</span></div></div>
-        <div class="notif-item"><div class="notif-icon ok"><i class="ti ti-trophy"></i></div><div class="notif-text"><p>กานต์ได้รับรางวัลคะแนนสูงสุดในชั้น วิชาวิทยาศาสตร์ เดือนพฤษภาคม</p><span>3 วันที่แล้ว · กานต์ ใจดี</span></div></div>
-        <div class="notif-item"><div class="notif-icon info"><i class="ti ti-calendar-event"></i></div><div class="notif-text"><p>แจ้งเตือนกำหนดการสอบปลายภาค: 10–20 มิ.ย. 2569</p><span>5 วันที่แล้ว · ทุกคน</span></div></div>
-        <div class="notif-item"><div class="notif-icon ok"><i class="ti ti-star"></i></div><div class="notif-text"><p>พิมได้คะแนนทดสอบภาษาอังกฤษ 90/100 ดีเยี่ยม!</p><span>1 สัปดาห์ที่แล้ว · พิม ใจดี</span></div></div>
-      </div>
-    </div>
-
-
     <div id="page-settings" class="page">
       <div class="page-header">
         <h1>ตั้งค่าโปรไฟล์</h1>
@@ -354,28 +361,6 @@
         </div>
 
 
-        <div class="card settings-card">
-          <div class="card-title"><i class="ti ti-bell"></i> การแจ้งเตือน</div>
-          <div class="notif-list">
-            <label class="notif-toggle">
-              <input type="checkbox" checked style="accent-color:var(--accent);width:16px;height:16px">
-              <span>แจ้งเตือนงานค้างส่งของบุตรหลาน</span>
-            </label>
-            <label class="notif-toggle">
-              <input type="checkbox" checked style="accent-color:var(--accent);width:16px;height:16px">
-              <span>แจ้งเตือนข้อความจากอาจารย์</span>
-            </label>
-            <label class="notif-toggle">
-              <input type="checkbox" checked style="accent-color:var(--accent);width:16px;height:16px">
-              <span>แจ้งเตือนการขาดเรียน</span>
-            </label>
-            <label class="notif-toggle">
-              <input type="checkbox" style="accent-color:var(--accent);width:16px;height:16px">
-              <span>แจ้งเตือนผลคะแนนสอบ</span>
-            </label>
-          </div>
-        </div>
-
       </div>
     </div>
 
@@ -402,6 +387,6 @@
   </div>
 </div>
 
-<script src="parent_dashboard.js?v=20260926-result-status-score"></script>
+  <script src="parent_dashboard.js?v=20260926-parent-overview-student-data"></script>
 </body>
 </html>

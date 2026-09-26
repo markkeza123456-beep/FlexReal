@@ -29,7 +29,6 @@ body { font-family: 'Kanit', sans-serif; background: var(--bg-dark); color: var(
 .menu-item:hover { background: rgba(255,255,255,0.05); color: var(--text-main); }
 .menu-item.active { background: var(--accent-dim); color: var(--text-main); font-weight: 500; }
 .menu-item i { font-size: 18px; }
-.notif-badge { margin-left: auto; background: var(--red); color: #ffffff; font-size: 0.65rem; font-weight: 600; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
 .sidebar-footer { border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 0.5rem; }
 .parent-profile { display: flex; align-items: center; gap: 10px; padding: 0.7rem 0.5rem; border-radius: 10px; cursor: pointer; transition: background 0.2s; }
@@ -57,6 +56,25 @@ body { font-family: 'Kanit', sans-serif; background: var(--bg-dark); color: var(
 .grade-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .overview-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .overview-stats .stat-card { padding: 1.35rem 1.5rem; }
+.overview-student-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 1.2rem; }
+.overview-student-stats .stat-card { position: relative; overflow: hidden; padding: 1.2rem 1.3rem; }
+.overview-student-stats .stat-card::before { content: ''; position: absolute; inset: 0 0 auto; height: 3px; background: var(--accent); }
+.overview-student-stats .stat-card.blue::before { background: var(--blue); }
+.overview-student-stats .stat-card.green::before { background: var(--green); }
+.overview-courses-card { margin-bottom: 1.2rem; }
+.overview-courses-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: .8rem; }
+.overview-courses-heading h2 { font-size: .95rem; font-weight: 600; }
+.overview-course-search { width: min(250px, 100%); height: 38px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid var(--border); border-radius: 24px; color: var(--text-muted); }
+.overview-course-search input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--text-main); font: inherit; font-size: .78rem; }
+.overview-course-table-wrap { overflow-x: auto; }
+.overview-course-table { width: 100%; min-width: 600px; border-collapse: collapse; font-size: .8rem; }
+.overview-course-table th { padding: .65rem .7rem; text-align: left; color: var(--text-muted); font-weight: 500; border-bottom: 1px solid var(--border); }
+.overview-course-table td { padding: .75rem .7rem; border-bottom: 1px solid var(--border); }
+.overview-course-table tr:last-child td { border-bottom: 0; }
+.overview-course-table tbody tr:nth-child(odd) { background: rgba(255,107,26,.045); }
+.overview-course-name { font-weight: 500; }
+.overview-course-tag { display: inline-block; margin-left: .4rem; padding: .16rem .55rem; border-radius: 20px; background: rgba(59,130,246,.1); color: var(--blue); font-size: .68rem; white-space: nowrap; }
+.overview-course-empty { text-align: center; color: var(--text-muted); }
 .stat-card { background: var(--card-bg); padding: 1.2rem 1.3rem; border-radius: 14px; border-left: 4px solid var(--accent); }
 .stat-card.blue { border-color: var(--blue); }
 .stat-card.green { border-color: var(--green); }
@@ -122,15 +140,6 @@ body { font-family: 'Kanit', sans-serif; background: var(--bg-dark); color: var(
 .unread-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 
 
-.notif-item { display: flex; gap: 10px; align-items: flex-start; padding: 0.8rem 0; border-bottom: 1px solid var(--border); }
-.notif-item:last-child { border-bottom: none; }
-.notif-icon { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; }
-.notif-icon.warn { background: rgba(239,68,68,0.15); color: var(--red); }
-.notif-icon.info { background: rgba(59,130,246,0.15); color: var(--blue); }
-.notif-icon.ok { background: rgba(34,197,94,0.15); color: var(--green); }
-.notif-text { flex: 1; }
-.notif-text p { font-size: 0.8rem; line-height: 1.4; }
-.notif-text span { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; display: block; }
 
 
 .grade-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
@@ -220,6 +229,6 @@ select, input[type="text"] {
 .attention-item.info { color: #245b94; background: #eef6ff; }
 .attention-item.ok { color: #187347; background: #ecfdf3; }
 .empty-state { padding: 18px 8px; color: var(--text-muted); font-size: .82rem; line-height: 1.6; }
-@media (max-width: 860px) { .grade-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 680px) { .grade-summary { grid-template-columns: 1fr; } .parent-subject-meta { flex-wrap: wrap; } }
+@media (max-width: 860px) { .grade-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .overview-student-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .overview-student-stats .stat-card:last-child { grid-column: 1 / -1; } }
+@media (max-width: 680px) { .grade-summary, .overview-student-stats { grid-template-columns: 1fr; } .overview-student-stats .stat-card:last-child { grid-column: auto; } .overview-courses-heading { align-items: flex-start; flex-direction: column; } .overview-course-search { width: 100%; } .parent-subject-meta { flex-wrap: wrap; } }
 select:focus, input[type="text"]:focus { outline: none; border-color: var(--accent); }
