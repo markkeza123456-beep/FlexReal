@@ -893,6 +893,7 @@ async function recordLearningEvent(activityType, lessonIndex = 1, progressPercen
             learningProgressRequests.set(eventKey, { inFlight: false, savedAt: Date.now() });
             return true;
         }
+        console.warn('Learning progress was rejected:', result.message || 'unknown server error');
         return false;
     } catch (error) {
         console.warn('Unable to save learning progress:', error);
