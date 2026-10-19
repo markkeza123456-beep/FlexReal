@@ -33,6 +33,9 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                 <button type="button" class="menu-item" id="btn-reports">
                     <span class="icon"></span> รายงานผล
                 </button>
+                <a class="menu-item" href="upload_transcript.php" style="text-decoration:none;">
+                    <span class="icon">⇧</span> ขอเทียบโอนหน่วยกิต
+                </a>
             </nav>
             <a href="logout.php" class="btn-logout" onclick="return confirm('ต้องการออกจากระบบหรือไม่?')">
                 <span></span> ออกจากระบบ
@@ -224,6 +227,6 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
 
         </main>
     </div>
-    <script src="student_dashboard.js?v=20260926-no-dashboard-notifications"></script>
+    <script src="student_dashboard.js?v=20261019-transcript-transfer"></script>
 </body>
 </html>

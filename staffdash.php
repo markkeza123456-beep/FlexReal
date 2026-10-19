@@ -30,7 +30,7 @@ if (!empty($_SESSION['name'])) {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="staffdash.css?v=20261019-sidebar-brand" />
+  <link rel="stylesheet" href="staffdash.css?v=20261019-transfer-permissions" />
   <link rel="stylesheet" href="theme.css" />
 </head>
 <body>
@@ -106,7 +106,26 @@ if (!empty($_SESSION['name'])) {
         </svg>
         เพิ่มเจ้าหน้าที่
       </a>
+
+      <span class="nav-section-label">สิทธิ์การใช้งาน</span>
+      <a class="nav-item" href="staff_transfer_permissions.php">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          <circle cx="12" cy="16" r="1"/>
+        </svg>
+        จัดการสิทธิ์เทียบโอน
+      </a>
+      <a class="nav-item" href="review_transcript.php">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/>
+        </svg>
+        ตรวจทรานสคริปต์
+      </a>
     </div>
+
+    <a href="logout.php" class="sidebar-logout">
+      <span></span><span>ออกจากระบบ</span>
+    </a>
 
     <div class="sidebar-footer">
       <input type="file" id="staffAvatarInput" accept="image/*" style="display:none" onchange="staffPreviewAvatar(this)">
@@ -122,13 +141,6 @@ if (!empty($_SESSION['name'])) {
         <span class="user-name"><?= htmlspecialchars($displayName) ?></span>
         <span class="user-role"><?= htmlspecialchars($displayRole) ?></span>
       </div>
-      <a class="btn-logout" href="logout.php" title="ออกจากระบบ">ออกจากระบบ
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-      </a>
     </div>
   </nav>
 
@@ -705,6 +717,20 @@ if (!empty($_SESSION['name'])) {
             <button type="submit" class="btn-primary"><span class="btn-text">สร้างบัญชีเจ้าหน้าที่</span></button>
           </div>
         </form>
+
+        <div class="form-card" style="margin-top:20px;">
+          <div class="form-section-label">รายชื่อเจ้าหน้าที่</div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>ชื่อ-นามสกุล</th><th>เลขสมาชิก</th><th>สถานะ</th><th>วันที่สมัคร</th><th style="width:100px;">จัดการ</th></tr>
+              </thead>
+              <tbody id="staffListBody">
+                <tr><td colspan="5" style="text-align:center;padding:24px;">กำลังโหลด...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
     </main>
@@ -731,6 +757,6 @@ if (!empty($_SESSION['name'])) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="staffdash.js?v=20261019-registration-date"></script>
+  <script src="staffdash.js?v=20261019-transfer-permissions"></script>
 </body>
 </html>

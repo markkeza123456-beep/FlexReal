@@ -60,6 +60,20 @@ function formatTeacherEditDate(?string $value): string {
 $teacherId = (string) $_SESSION['user_id'];
 $requestedSubjectId = trim((string) ($_GET['subject_id'] ?? ''));
 
+$canAccessTransferApproval = false;
+try {
+    $transferPermissionStmt = $conn->prepare(
+        'SELECT EXISTS (
+            SELECT 1 FROM public.transfer_permissions p
+            WHERE p.instructor_id = :teacher_id AND p.is_active = TRUE
+        )'
+    );
+    $transferPermissionStmt->execute([':teacher_id' => $teacherId]);
+    $canAccessTransferApproval = (bool) $transferPermissionStmt->fetchColumn();
+} catch (Throwable $e) {
+    error_log('Teacher transfer permission lookup failed: ' . $e->getMessage());
+}
+
 
 $avatar_url = '';
 try {
@@ -302,6 +316,14 @@ $stats = [
         <a href="#" class="nav-item active" data-view="dashboard"><span class="nav-icon"></span><span>แดชบอร์ด</span></a>
         <a href="#" class="nav-item" data-view="lessons"><span class="nav-icon"></span><span>บทเรียน</span></a>
         <a href="#" class="nav-item" data-view="reports"><span class="nav-icon"></span><span>ออกรายงาน</span></a>
+        <?php if ($canAccessTransferApproval): ?>
+        <a href="teacher_credit_transfers.php" class="nav-item"><span class="nav-icon"></span><span>เทียบโอนหน่วยกิต</span></a>
+        <a href="review_transcript.php" class="nav-item"><span class="nav-icon"></span><span>ตรวจทรานสคริปต์</span></a>
+        <?php else: ?>
+        <span class="nav-item transfer-nav-locked" aria-disabled="true" title="กรุณาติดต่อเจ้าหน้าที่เพื่อขอสิทธิ์">
+            <span class="nav-icon"></span><span>เทียบโอนหน่วยกิต <small aria-hidden="true">🔒</small></span>
+        </span>
+        <?php endif; ?>
     </nav>
 
     <a href="logout.php" class="sidebar-logout">

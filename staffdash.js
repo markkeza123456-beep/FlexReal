@@ -102,6 +102,10 @@
     };
   }
 
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+  }
+
   function normalizeMember(member) {
     const nameParts = splitMemberName(member.name);
 
@@ -178,6 +182,7 @@
   };
 
   document.querySelectorAll('.nav-item').forEach(item => {
+    if (!item.dataset.page) return;
     item.addEventListener('click', e => {
       e.preventDefault();
       goTo(item.dataset.page);
@@ -214,6 +219,7 @@
       if (currentPage === 'member-list') {
         renderMembers();
       }
+      renderStaffList();
     } catch (error) {
       showToast(error.message || 'ไม่สามารถโหลดข้อมูลได้', 'error');
     }
@@ -344,6 +350,23 @@
         </tr>
       `).join('')
       : '<tr><td colspan="7" style="text-align:center; padding:30px;">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>';
+  }
+
+  function renderStaffList() {
+    const body = document.getElementById('staffListBody');
+    if (!body) return;
+    const staffMembers = members.filter(member => String(member.roleValue).toLowerCase() === 'staff');
+    body.innerHTML = staffMembers.length
+      ? staffMembers.map(member => `
+        <tr>
+          <td>${escapeHtml(member.name)}</td>
+          <td>${escapeHtml(member.id)}</td>
+          <td><span class="badge ${member.status === 'active' ? 'active' : 'draft'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
+          <td>${formatRegistrationDate(member.registered_at)}</td>
+          <td><button type="button" class="btn-icon edit" onclick="editMember('${escapeHtml(member.id)}')">แก้ไข</button></td>
+        </tr>
+      `).join('')
+      : '<tr><td colspan="5" style="text-align:center;padding:24px;">ยังไม่มีบัญชีเจ้าหน้าที่</td></tr>';
   }
 
   window.editMember = id => {
