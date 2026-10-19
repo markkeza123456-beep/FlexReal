@@ -386,9 +386,9 @@ document.addEventListener('DOMContentLoaded', () => {
         inlineVideoForm.reset();
         document.getElementById('inlineVideoId').value = '';
         const input = document.getElementById('inlineVideoFile');
-        input.required = false;
-        document.getElementById('inlineVideoFileRequired').textContent = '';
-        document.getElementById('inlineVideoFileHint').textContent = 'เลือกไฟล์ใหม่เพื่อแทนที่วิดีโอเดิม; เว้นชื่อวิดีโอได้';
+        input.required = true;
+        document.getElementById('inlineVideoFileRequired').textContent = '*';
+        document.getElementById('inlineVideoFileHint').textContent = 'เลือกไฟล์ MP4 เพื่อเพิ่มวิดีโอใหม่';
     }
 
     function formatTeacherEditDate(value) {
@@ -413,9 +413,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!inlineVideoList) return;
         inlineVideos = data.videos || [];
         const videosForLesson = managedLessonId ? inlineVideos.filter(video => String(video.lessons_id) === managedLessonId) : [];
-        if (managedLessonId && videosForLesson[0] && !document.getElementById('inlineVideoId').value) {
-            editInlineVideo(videosForLesson[0]);
-        }
         inlineVideoList.innerHTML = videosForLesson.length ? videosForLesson.map((video) => `
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
                 <div style="min-width:0"><strong style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(video.title)}</strong><span style="font-size:11px;color:var(--text-muted)">แก้ไขล่าสุด ${formatTeacherEditDate(video.last_modified_epoch)}</span></div>
@@ -488,6 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else inlineVideos.unshift(savedVideo);
             document.getElementById('inlineVideoId').value = savedVideo.id;
             renderInlineVideos({ videos: inlineVideos });
+            document.getElementById('inlineVideoFileHint').textContent = result.message || 'อัปโหลดวิดีโอและบันทึกสำเร็จ';
             saveButton.disabled = false;
             saveButton.textContent = 'บันทึกวิดีโอ';
         } catch (error) { alert(error.message || 'บันทึกวิดีโอไม่สำเร็จ'); saveButton.disabled = false; saveButton.textContent = 'บันทึกวิดีโอ'; }

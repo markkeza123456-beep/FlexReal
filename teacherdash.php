@@ -566,7 +566,7 @@ $stats = [
                                     <input type="hidden" id="inlineVideoId">
                                     <input type="hidden" id="inlineVideoTitle" value="วิดีโอบทเรียน">
                                     <p style="font-size:13px;color:var(--text-muted);margin:-2px 0 14px;">วิดีโอนี้จะถูกผูกกับบทเรียนที่กรอกด้านบนโดยอัตโนมัติ</p>
-                                    <div class="form-group"><label>ไฟล์วิดีโอ <span id="inlineVideoFileRequired">*</span></label><input type="file" class="form-input" id="inlineVideoFile" accept="video/*" required><small id="inlineVideoFileHint" style="color:var(--text-muted);">เลือกไฟล์วิดีโอเพื่อบันทึก</small></div>
+                                    <div class="form-group"><label>ไฟล์วิดีโอ <span id="inlineVideoFileRequired">*</span></label><input type="file" class="form-input" id="inlineVideoFile" accept="video/mp4,.mp4" required><small id="inlineVideoFileHint" style="color:var(--text-muted);">เลือกไฟล์ MP4 เพื่อบันทึก</small></div>
                                     <button type="button" class="btn-save" id="saveInlineVideoBtn">บันทึกวิดีโอ</button>
                                     <button type="button" class="btn-cancel" id="inlineVideoClearBtn">ล้างฟอร์ม</button>
                                 </form>
