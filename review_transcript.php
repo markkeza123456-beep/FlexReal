@@ -117,8 +117,19 @@ function hReview(string $value): string
                 <?php
                     // file_path is saved as uploads/transcripts/<generated-name> by upload_transcript.php.
                     $fileViewerUrl = (string) $selectedRequest['file_path'];
+                    $fileExtension = strtolower(pathinfo($fileViewerUrl, PATHINFO_EXTENSION));
+                    $isTranscriptImage = in_array($fileExtension, ['jpg', 'jpeg', 'png', 'webp'], true);
+                    $isTranscriptPdf = $fileExtension === 'pdf';
                 ?>
-                <iframe class="transcript-pdf-viewer" title="เอกสารทรานสคริปต์ของนักเรียน" src="<?= hReview($fileViewerUrl) ?>" width="100%" height="600"></iframe>
+                <div class="transcript-viewer">
+                    <?php if ($isTranscriptImage): ?>
+                        <img src="<?= hReview($fileViewerUrl) ?>" alt="เอกสารทรานสคริปต์ของ <?= hReview((string) $selectedRequest['student_name']) ?>">
+                    <?php elseif ($isTranscriptPdf): ?>
+                        <iframe title="เอกสารทรานสคริปต์ของนักเรียน" src="<?= hReview($fileViewerUrl) ?>"></iframe>
+                    <?php else: ?>
+                        <p class="transcript-file-error">ไม่รองรับชนิดไฟล์นี้</p>
+                    <?php endif; ?>
+                </div>
                 <a class="transcript-open-link" href="<?= hReview($fileViewerUrl) ?>" target="_blank" rel="noopener noreferrer">เปิดไฟล์ในแท็บใหม่</a>
             </section>
             <form class="checklist-pane" id="transcriptReviewForm" action="process_transcript.php" method="post">
