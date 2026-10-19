@@ -120,7 +120,15 @@ function hReview(string $value): string
                     if ($fileExtension === '') {
                         $fileExtension = strtolower(pathinfo((string) $selectedRequest['file_path'], PATHINFO_EXTENSION));
                     }
-                    $isLocalTranscriptPath = str_starts_with((string) $selectedRequest['file_path'], 'uploads/transcripts/');
+                    $databaseFilePath = (string) $selectedRequest['file_path'];
+                    $transcriptRoot = realpath(__DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'transcripts');
+                    $candidateFilePath = __DIR__ . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $databaseFilePath);
+                    $resolvedFilePath = realpath($candidateFilePath);
+                    $fileExists = $resolvedFilePath !== false && is_file($resolvedFilePath);
+                    $fileIsInsideTranscriptDirectory = $fileExists && $transcriptRoot !== false
+                        && str_starts_with($resolvedFilePath, rtrim($transcriptRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
+                    $isLocalTranscriptPath = str_starts_with($databaseFilePath, 'uploads/transcripts/') && $fileIsInsideTranscriptDirectory;
+                    $debugAbsolutePath = $resolvedFilePath !== false ? $resolvedFilePath : $candidateFilePath;
                     if ($fileMimeType === '' || $fileMimeType === 'application/octet-stream') {
                         $fileMimeType = match ($fileExtension) {
                             'pdf' => 'application/pdf',
@@ -133,8 +141,15 @@ function hReview(string $value): string
                     $fileViewerUrl = 'transcript_file.php?request_id=' . (int) $selectedRequest['request_id'];
                 ?>
                 <div class="transcript-file-error" id="transcriptViewerError" role="status" hidden></div>
+                <details class="transcript-path-debug" open>
+                    <summary>Debug Path ไฟล์ (ชั่วคราว)</summary>
+                    <div><strong>Path จากฐานข้อมูล:</strong> <code><?= hReview($databaseFilePath) ?></code></div>
+                    <div><strong>Path ที่ตรวจบนเซิร์ฟเวอร์:</strong> <code><?= hReview($debugAbsolutePath) ?></code></div>
+                    <div><strong>โฟลเดอร์ uploads/transcripts:</strong> <code><?= hReview($transcriptRoot !== false ? $transcriptRoot : 'ไม่พบโฟลเดอร์') ?></code></div>
+                    <div><strong>พบไฟล์จริง:</strong> <?= $fileIsInsideTranscriptDirectory ? 'ใช่' : 'ไม่พบหรืออยู่นอกโฟลเดอร์ที่อนุญาต' ?></div>
+                </details>
                 <?php if (!$isLocalTranscriptPath): ?>
-                    <div class="transcript-file-error" role="status">คำขอนี้ไม่มี Path ไฟล์ในโฟลเดอร์อัปโหลดปัจจุบัน กรุณาให้นักเรียนส่งไฟล์อีกครั้ง</div>
+                    <div class="transcript-file-error" role="status">ไม่พบไฟล์ที่ Path ข้างต้นบนเซิร์ฟเวอร์ กรุณาเทียบกับ Path จากฐานข้อมูล หรือให้นักเรียนอัปโหลดไฟล์อีกครั้ง</div>
                 <?php elseif ($fileMimeType === 'application/pdf'): ?>
                     <iframe class="transcript-pdf-viewer" title="ทรานสคริปต์ PDF ของนักเรียน" src="<?= hReview($fileViewerUrl) ?>"></iframe>
                 <?php elseif (in_array($fileMimeType, ['image/jpeg', 'image/png', 'image/webp'], true)): ?>

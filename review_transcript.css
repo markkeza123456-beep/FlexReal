@@ -42,3 +42,6 @@
 .muted { color: #64748b; }
 @media (max-width: 900px) { .review-columns { grid-template-columns: 1fr; } .checklist-pane { max-height: none; } .document-pane { min-height: 540px; } .document-pane iframe, .transcript-image-viewer { min-height: 480px; } }
 @media (max-width: 640px) { .review-page { width: min(100% - 24px, 1440px); padding-top: 18px; } .review-header { align-items: stretch; flex-direction: column; } .request-picker { min-width: 0; } .review-actions { grid-template-columns: 1fr; } }
+.transcript-path-debug { margin: 10px 0; padding: 10px 12px; border: 1px dashed #b45309; border-radius: 8px; background: #fff7ed; color: #713f12; font-size: .78rem; overflow-wrap: anywhere; }
+.transcript-path-debug summary { cursor: pointer; font-weight: 700; margin-bottom: 6px; }
+.transcript-path-debug code { font-family: Consolas, monospace; }

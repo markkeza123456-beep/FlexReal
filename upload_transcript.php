@@ -15,6 +15,8 @@ $studentId = (string) $_SESSION['user_id'];
 $csrfToken = (string) $_SESSION['transcript_csrf'];
 $message = '';
 $messageType = 'error';
+$uploadSucceeded = false;
+$uploadDebug = null;
 $maxUploadBytes = 10 * 1024 * 1024;
 $allowedMimes = [
     'application/pdf' => 'pdf',
@@ -23,8 +25,22 @@ $allowedMimes = [
     'image/webp' => 'webp',
 ];
 
+function transcriptIniBytes(string $setting): int
+{
+    $setting = trim($setting);
+    if ($setting === '' || $setting === '0') return 0;
+    if (!preg_match('/^(\d+(?:\.\d+)?)\s*([KMG])?$/i', $setting, $matches)) return 0;
+    $power = match (strtoupper($matches[2] ?? '')) { 'K' => 1, 'M' => 2, 'G' => 3, default => 0 };
+    return (int) ((float) $matches[1] * (1024 ** $power));
+}
+
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-    if (!hash_equals($csrfToken, (string) ($_POST['csrf_token'] ?? ''))) {
+    $postLimit = transcriptIniBytes((string) ini_get('post_max_size'));
+    $requestSize = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+    if ($postLimit > 0 && $requestSize > $postLimit && !isset($_POST['csrf_token'])) {
+        $message = 'ข้อมูลอัปโหลดเกิน post_max_size ของ PHP (' . (string) ini_get('post_max_size') . ') กรุณาลดขนาดไฟล์หรือเพิ่มค่า post_max_size';
+        $uploadDebug = ['content_length_bytes' => $requestSize, 'post_max_size' => (string) ini_get('post_max_size')];
+    } elseif (!hash_equals($csrfToken, (string) ($_POST['csrf_token'] ?? ''))) {
         $message = 'แบบฟอร์มหมดอายุ กรุณาโหลดหน้าใหม่แล้วลองอีกครั้ง';
     } elseif (!isset($_FILES['transcript']) || !is_array($_FILES['transcript'])) {
         $message = 'กรุณาเลือกไฟล์ทรานสคริปต์';
@@ -36,8 +52,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'ไฟล์มีขนาดเกินกำหนด (สูงสุด 10 MB)',
                 UPLOAD_ERR_NO_FILE => 'กรุณาเลือกไฟล์ทรานสคริปต์',
                 UPLOAD_ERR_PARTIAL => 'อัปโหลดไฟล์ไม่ครบ กรุณาลองใหม่',
+                UPLOAD_ERR_NO_TMP_DIR => 'เซิร์ฟเวอร์ไม่มีโฟลเดอร์ชั่วคราวสำหรับรับไฟล์ (upload_tmp_dir)',
+                UPLOAD_ERR_CANT_WRITE => 'เซิร์ฟเวอร์เขียนไฟล์ลงโฟลเดอร์ชั่วคราวไม่ได้ ตรวจสอบพื้นที่ดิสก์และสิทธิ์เขียน',
+                UPLOAD_ERR_EXTENSION => 'PHP Extension หยุดการอัปโหลดไฟล์',
                 default => 'ไม่สามารถรับไฟล์ได้ กรุณาลองใหม่',
             };
+            $uploadDebug = ['upload_error_code' => $uploadError];
         } elseif ((int) ($file['size'] ?? 0) < 1 || (int) $file['size'] > $maxUploadBytes) {
             $message = 'ไฟล์ต้องมีขนาดไม่เกิน 10 MB';
         } else {
@@ -59,11 +79,24 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 if ($originalName === '') $originalName = 'transcript.' . $extension;
 
                 try {
-                    if (!is_dir($uploadDirectory) && !mkdir($uploadDirectory, 0750, true) && !is_dir($uploadDirectory)) {
-                        throw new RuntimeException('Unable to create transcript upload directory');
+                    if (!is_dir($uploadDirectory)) {
+                        $oldUmask = umask(0027);
+                        $created = @mkdir($uploadDirectory, 0777, true);
+                        umask($oldUmask);
+                        if (!$created && !is_dir($uploadDirectory)) {
+                            $lastError = error_get_last();
+                            throw new RuntimeException('สร้างโฟลเดอร์อัปโหลดไม่ได้: ' . (string) ($lastError['message'] ?? 'mkdir failed'));
+                        }
+                    }
+                    if (!is_writable($uploadDirectory)) {
+                        throw new RuntimeException('PHP ไม่มีสิทธิ์เขียนโฟลเดอร์: ' . $uploadDirectory);
                     }
                     if (!move_uploaded_file((string) $file['tmp_name'], $absolutePath)) {
-                        throw new RuntimeException('Unable to move uploaded transcript');
+                        $lastError = error_get_last();
+                        throw new RuntimeException('move_uploaded_file() ล้มเหลว: ' . (string) ($lastError['message'] ?? 'ไม่ทราบสาเหตุ'));
+                    }
+                    if (!is_file($absolutePath) || filesize($absolutePath) < 1) {
+                        throw new RuntimeException('ย้ายไฟล์แล้วแต่ไม่พบไฟล์ที่ปลายทาง: ' . $absolutePath);
                     }
 
                     $insert = $conn->prepare(
@@ -80,14 +113,30 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     ]);
                     $message = 'ส่งทรานสคริปต์เรียบร้อยแล้ว กรุณารอผู้ตรวจสอบพิจารณา';
                     $messageType = 'success';
+                    $uploadSucceeded = true;
+                    $uploadDebug = ['relative_path' => $relativePath, 'absolute_path' => $absolutePath, 'file_exists' => is_file($absolutePath)];
                 } catch (Throwable $e) {
                     if (is_file($absolutePath)) @unlink($absolutePath);
                     error_log('Transcript upload failed: ' . $e->getMessage());
-                    $message = 'บันทึกคำขอไม่สำเร็จ กรุณาลองใหม่ภายหลัง';
+                    $message = $e->getMessage();
+                    $uploadDebug = ['target_directory' => $uploadDirectory, 'target_directory_exists' => is_dir($uploadDirectory), 'target_directory_writable' => is_dir($uploadDirectory) ? is_writable($uploadDirectory) : false];
                 }
             }
         }
     }
+}
+
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
+    && (str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json')
+        || strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest')) {
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store, private');
+    echo json_encode([
+        'status' => $uploadSucceeded ? 'success' : 'error',
+        'message' => $message !== '' ? $message : 'ไม่สามารถรับไฟล์ได้ กรุณาลองใหม่',
+        'debug' => $uploadDebug,
+    ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    exit;
 }
 
 try {
@@ -127,7 +176,7 @@ function hTranscript(string $value): string
         <?php if ($message !== ''): ?>
             <p class="notice <?= $messageType === 'success' ? 'notice-success' : 'notice-error' ?>" role="status"><?= hTranscript($message) ?></p>
         <?php endif; ?>
-        <form method="post" enctype="multipart/form-data" class="transcript-form">
+        <form id="transcriptUploadForm" method="post" enctype="multipart/form-data" class="transcript-form">
             <input type="hidden" name="csrf_token" value="<?= hTranscript($csrfToken) ?>">
             <label for="transcriptFile">ไฟล์ทรานสคริปต์</label>
             <input id="transcriptFile" name="transcript" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" required>
@@ -156,5 +205,33 @@ function hTranscript(string $value): string
         <?php endif; ?>
     </section>
 </main>
+<script>
+document.getElementById('transcriptUploadForm')?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector('button[type="submit"]');
+    if (button) button.disabled = true;
+    try {
+        const response = await fetch(form.action || window.location.href, {
+            method: 'POST',
+            body: new FormData(form),
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const result = await response.json();
+        if (!response.ok || result.status !== 'success') {
+            const debug = result.debug ? '\nรายละเอียด: ' + JSON.stringify(result.debug) : '';
+            window.alert((result.message || 'อัปโหลดไม่สำเร็จ') + debug);
+            return;
+        }
+        window.alert(result.message || 'ส่งทรานสคริปต์เรียบร้อยแล้ว');
+        window.location.reload();
+    } catch (error) {
+        window.alert('ส่งข้อมูลไม่สำเร็จ: ' + (error?.message || 'ตรวจสอบการเชื่อมต่อแล้วลองใหม่'));
+    } finally {
+        if (button) button.disabled = false;
+    }
+});
+</script>
 </body>
 </html>
