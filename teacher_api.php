@@ -626,8 +626,6 @@ try {
         } else {
             $url = $oldUrl;
         }
-<<<<<<< HEAD
-
         try {
             $conn->beginTransaction();
             $params = [':title' => $title, ':url' => $url, ':lesson_id' => $lessonId];
@@ -667,23 +665,6 @@ try {
         }
 
         echo json_encode(['success' => true, 'message' => 'อัปโหลดวิดีโอสำเร็จและบันทึกเรียบร้อยแล้ว', 'video' => $savedVideo], JSON_UNESCAPED_UNICODE);
-=======
-        $params = [':title' => $title, ':url' => $url, ':lesson_id' => $lessonId];
-        if ($videoId === '') {
-            $stmt = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position, updated_at, updated_by) VALUES (:lesson_id, 'video', :title, :url, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lesson_resources WHERE lesson_id = :lesson_id), clock_timestamp(), :updated_by) RETURNING resource_id AS id, updated_by, EXTRACT(EPOCH FROM COALESCE(updated_at, created_at)) AS last_modified_epoch");
-        } else {
-            $params[':id'] = $videoId;
-            $stmt = $conn->prepare("UPDATE public.lesson_resources SET title = :title, url = :url, lesson_id = :lesson_id, updated_at = clock_timestamp(), updated_by = :updated_by WHERE resource_id = :id AND resource_type = 'video' RETURNING resource_id AS id, updated_by, EXTRACT(EPOCH FROM COALESCE(updated_at, created_at)) AS last_modified_epoch");
-        }
-        $params[':updated_by'] = $teacherId;
-        $stmt->execute($params);
-        $savedVideo = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$savedVideo) throw new Exception('ไม่พบวิดีโอที่บันทึก กรุณาเลือกวิดีโอใหม่แล้วลองอีกครั้ง');
-        $editorStmt = $conn->prepare('SELECT full_name FROM public.teachers WHERE user_id = :teacher_id');
-        $editorStmt->execute([':teacher_id' => $teacherId]);
-        $savedVideo['updated_by_name'] = $editorStmt->fetchColumn() ?: $teacherId;
-        echo json_encode(['success' => true, 'message' => 'บันทึกวิดีโอสำเร็จ', 'video' => $savedVideo], JSON_UNESCAPED_UNICODE);
->>>>>>> 530713fad3fdc1f013dc91178d3dc9aa06ceb89e
         exit;
     }
 
