@@ -101,6 +101,7 @@ try {
             "SELECT l.lesson_id, l.position, l.title,
                     COALESCE(lp.document_progress_percent, 0) AS document_progress,
                     COALESCE(lp.video_progress_percent, 0) AS video_progress,
+                    CASE WHEN COALESCE(lp.is_transferred, FALSE) THEN 1 ELSE 0 END AS is_transferred,
                     COALESCE(lp.last_activity_at, qa.submitted_at) AS last_activity_at,
                     qa.attempt_id, qa.attempt_number, qa.status AS quiz_status,
                     qa.submitted_at, qa.score, qa.total_score,
@@ -141,6 +142,7 @@ try {
         $lessons = [];
         foreach ($lessonStmt->fetchAll(PDO::FETCH_ASSOC) as $lessonRow) {
             $hasAttempt = $lessonRow['attempt_id'] !== null;
+            $isTransferred = (int) $lessonRow['is_transferred'] === 1;
             $answerCount = (int) ($lessonRow['answer_count'] ?? 0);
             $objectiveScore = (float) ($lessonRow['objective_score'] ?? 0);
             $objectiveTotal = (float) ($lessonRow['objective_total'] ?? 0);
@@ -151,7 +153,7 @@ try {
             }
             $lessonScoreEarned = $objectiveScore + $essayScore;
             $lessonScoreTotal = $hasAttempt ? (float) ($lessonRow['total_score'] ?? 0) : 0.0;
-            $lessonProgress = lessonProgressFromQuiz(
+            $lessonProgress = $isTransferred ? 100 : lessonProgressFromQuiz(
                 $lessonScoreEarned,
                 $lessonScoreTotal,
                 (float) ($lessonRow['document_progress'] ?? 0),
@@ -163,7 +165,8 @@ try {
                 'title' => (string) $lessonRow['title'],
                 'progress' => $lessonProgress,
                 'attempt_count' => (int) $lessonRow['attempt_count'],
-                'has_attempt' => $hasAttempt,
+                'has_attempt' => $hasAttempt || $isTransferred,
+                'is_transferred' => $isTransferred,
                 'score_earned' => $lessonScoreEarned,
                 'score_total' => $lessonScoreTotal,
                 'score_percent' => $lessonScoreTotal > 0 ? round(($lessonScoreEarned / $lessonScoreTotal) * 100, 1) : null,
@@ -174,7 +177,7 @@ try {
                 'essay_pending_count' => (int) ($lessonRow['essay_pending_count'] ?? 0),
                 'essay_question_count' => (int) ($lessonRow['essay_question_count'] ?? 0),
                 'essay_feedback' => (string) ($lessonRow['essay_feedback'] ?? ''),
-                'quiz_status' => $hasAttempt ? (string) ($lessonRow['quiz_status'] ?? 'submitted') : null,
+                'quiz_status' => $isTransferred ? 'passed' : ($hasAttempt ? (string) ($lessonRow['quiz_status'] ?? 'submitted') : null),
                 'latest_attempt_number' => $hasAttempt ? (int) $lessonRow['attempt_number'] : null,
                 'last_activity_at' => $lessonRow['last_activity_at'] ?? null,
             ];
@@ -183,7 +186,7 @@ try {
         // completed/total figure. This keeps the denominator in sync with the
         // actual lesson rows returned for the student's enrolled course.
         $lessonCount = count($lessons);
-        $attempted = count(array_filter($lessons, static fn (array $lesson): bool => $lesson['attempt_count'] > 0));
+        $attempted = count(array_filter($lessons, static fn (array $lesson): bool => $lesson['attempt_count'] > 0 || $lesson['is_transferred']));
         $earned = array_sum(array_column($lessons, 'score_earned'));
         $possible = array_sum(array_column($lessons, 'score_total'));
         $progress = $lessonCount > 0 ? round(($attempted / $lessonCount) * 100, 1) : 0;
