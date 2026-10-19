@@ -15,27 +15,25 @@ function graduationJson(array $payload, int $statusCode = 200): void
 function graduationSummary(PDO $conn, string $studentId): array
 {
     $stmt = $conn->prepare(
-        "WITH active_curriculum AS (
-            SELECT c.curriculum_id, c.total_credits
-            FROM public.student_curricula sc
-            INNER JOIN public.curricula c ON c.curriculum_id = sc.curriculum_id
-            WHERE sc.student_id = :student_curriculum_id AND sc.status = 'active'
-            ORDER BY sc.enrolled_at DESC
-            LIMIT 1
-        ), course_results AS (
-            SELECT cc.course_id,
+        "WITH course_progress AS (
+            SELECT sc.course_id,
                    COALESCE(c.credits, 0)::numeric AS credits,
+                   sc.status AS enrollment_status,
                    COUNT(l.lesson_id)::integer AS lesson_count,
                    COUNT(l.lesson_id) FILTER (
                        WHERE COALESCE(lp.is_transferred, FALSE)
+                          OR UPPER(COALESCE(lp.grade, '')) = 'TR'
                           OR qa.status = 'passed'
                           OR (qa.status <> 'pending_review'
                               AND COALESCE(qa.total_score, 0) > 0
                               AND qa.score >= CEIL(qa.total_score))
-                   )::integer AS passed_lessons
-            FROM active_curriculum ac
-            INNER JOIN public.curriculum_courses cc ON cc.curriculum_id = ac.curriculum_id
-            INNER JOIN public.courses c ON c.course_id = cc.course_id
+                   )::integer AS passed_lessons,
+                   COUNT(l.lesson_id) FILTER (
+                       WHERE COALESCE(lp.is_transferred, FALSE)
+                          OR UPPER(COALESCE(lp.grade, '')) = 'TR'
+                   )::integer AS transferred_lessons
+            FROM public.student_courses sc
+            INNER JOIN public.courses c ON c.course_id = sc.course_id
             LEFT JOIN public.lessons l ON l.course_id = c.course_id
             LEFT JOIN public.lesson_progress lp
                    ON lp.student_id = :student_progress_id AND lp.lesson_id = l.lesson_id
@@ -46,43 +44,41 @@ function graduationSummary(PDO $conn, string $studentId): array
                 ORDER BY a.submitted_at DESC, a.attempt_number DESC
                 LIMIT 1
             ) qa ON TRUE
-            GROUP BY cc.course_id, c.credits
+            WHERE sc.student_id = :student_course_id
+            GROUP BY sc.course_id, c.credits, sc.status
+        ), course_results AS (
+            SELECT *,
+                   (LOWER(COALESCE(enrollment_status, '')) IN ('passed', 'completed', 'tr')
+                    OR (lesson_count > 0 AND passed_lessons = lesson_count)) AS is_completed,
+                   (UPPER(COALESCE(enrollment_status, '')) = 'TR'
+                    OR (lesson_count > 0 AND transferred_lessons = lesson_count)) AS is_transferred
+            FROM course_progress
         )
-        SELECT ac.total_credits AS required_credits,
-               COALESCE(SUM(cr.credits) FILTER (
-                   WHERE cr.lesson_count > 0 AND cr.passed_lessons = cr.lesson_count
-               ), 0)::numeric AS earned_credits
-        FROM active_curriculum ac
-        LEFT JOIN course_results cr ON TRUE
-        GROUP BY ac.total_credits"
+        SELECT COUNT(*)::integer AS total_courses,
+               COUNT(*) FILTER (WHERE is_completed)::integer AS completed_courses,
+               COUNT(*) FILTER (WHERE is_transferred)::integer AS transferred_courses,
+               COALESCE(SUM(credits) FILTER (WHERE is_completed), 0)::numeric AS completed_credits
+        FROM course_results"
     );
     $stmt->execute([
-        ':student_curriculum_id' => $studentId,
         ':student_progress_id' => $studentId,
         ':student_attempt_id' => $studentId,
+        ':student_course_id' => $studentId,
     ]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$row) {
-        return [
-            'has_curriculum' => false,
-            'required_credits' => 0.0,
-            'earned_credits' => 0.0,
-            'progress_percent' => 0.0,
-            'eligible' => false,
-        ];
-    }
-
-    $required = max(0.0, (float) $row['required_credits']);
-    $earned = max(0.0, (float) $row['earned_credits']);
-    $percent = $required > 0 ? min(100.0, round(($earned / $required) * 100, 1)) : 0.0;
+    $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $total = max(0, (int) ($row['total_courses'] ?? 0));
+    $completed = max(0, (int) ($row['completed_courses'] ?? 0));
+    $transferred = max(0, (int) ($row['transferred_courses'] ?? 0));
+    $percent = $total > 0 ? min(100.0, round(($completed / $total) * 100, 1)) : 0.0;
 
     return [
-        'has_curriculum' => true,
-        'required_credits' => $required,
-        'earned_credits' => $earned,
+        'has_courses' => $total > 0,
+        'total_courses' => $total,
+        'completed_courses' => $completed,
+        'transferred_courses' => $transferred,
+        'completed_credits' => max(0.0, (float) ($row['completed_credits'] ?? 0)),
         'progress_percent' => $percent,
-        'eligible' => $required > 0 && $earned >= $required,
+        'eligible' => $total > 0 && $completed >= $total,
     ];
 }
 
@@ -136,9 +132,9 @@ try {
         $conn->rollBack();
         graduationJson([
             'status' => 'error',
-            'message' => $summary['has_curriculum']
-                ? 'หน่วยกิตยังไม่ครบตามหลักสูตร'
-                : 'ยังไม่พบหลักสูตรที่กำลังศึกษา กรุณาติดต่อเจ้าหน้าที่',
+            'message' => $summary['has_courses']
+                ? 'ยังเรียนไม่ครบทุกวิชาตามหลักสูตร'
+                : 'ยังไม่พบรายวิชาที่กำหนดให้เรียน กรุณาติดต่อเจ้าหน้าที่',
         ], 409);
     }
 
@@ -149,7 +145,7 @@ try {
     );
     $insertStmt->execute([
         ':student_id' => $studentId,
-        ':total_credits' => $summary['earned_credits'],
+        ':total_credits' => $summary['completed_credits'],
     ]);
     $requestId = (int) $insertStmt->fetchColumn();
     $conn->commit();

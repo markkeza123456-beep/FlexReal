@@ -90,22 +90,26 @@ function renderLessonBreakdown(course) {
 function renderTable(courses) {
     const tbody = document.getElementById('courseTableBody');
     if (!courses.length) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="4" style="text-align:center;color:#888;">ยังไม่มีบทเรียนที่ลงทะเบียน</td>
-            </tr>
-        `;
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888;">ยังไม่มีรายวิชาที่กำหนดให้เรียน</td></tr>';
         return;
     }
 
-    tbody.innerHTML = courses.map((item) => `
-        <tr>
-            <td style="color: #888;">${item.id}</td>
-            <td>${escapeHtml(item.name)} ${subjectTypeBadge(item.subject_type)}</td>
-            <td>ทำแล้ว ${item.attempted_lessons}/${item.lesson_count} บท</td>
-            <td>${item.score_total > 0 ? `${item.score_earned}/${item.score_total} คะแนน` : 'ยังไม่มีคะแนน'}</td>
-        </tr>
-    `).join('');
+    tbody.innerHTML = courses.map((item) => {
+        const progress = Math.max(0, Math.min(100, Number(item.progress) || 0));
+        const lessonCount = Number(item.lesson_count) || 0;
+        const passedLessons = Number(item.passed_lessons) || 0;
+        const progressCell = item.is_transferred
+            ? '<span class="course-transfer-status">ผ่านการเทียบโอน</span>'
+            : `<div class="course-table-progress"><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%"></div></div><span>${progress}% · ผ่าน ${passedLessons}/${lessonCount} บท</span></div>`;
+        const resultCell = item.is_transferred
+            ? '<span class="course-transfer-status">TR · ไม่แสดงคะแนนกิจกรรม</span>'
+            : `${item.is_passed ? '<span class="course-passed-status">ผ่าน</span> · ' : ''}${item.score_total > 0 ? `${fmtDashboardNumber(item.score_earned)}/${fmtDashboardNumber(item.score_total)} คะแนน` : 'ยังไม่มีคะแนน'}`;
+        return `<tr><td style="color:#888">${escapeHtml(item.id)}</td><td>${escapeHtml(item.name)} ${subjectTypeBadge(item.subject_type)}</td><td>${progressCell}</td><td>${resultCell}</td></tr>`;
+    }).join('');
+}
+
+function fmtDashboardNumber(value) {
+    return Number(value || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
 }
 
 function renderLessons(courses) {
@@ -288,43 +292,39 @@ function updateStats(stats, courses) {
     renderTable(courses);
 }
 
-function formatCredits(value) {
-    return Number(value || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
-}
-
 function renderGraduationTracker(graduation) {
-    const earned = Number(graduation?.earned_credits || 0);
-    const required = Number(graduation?.required_credits || 0);
+    const completed = Number(graduation?.completed_courses || 0);
+    const total = Number(graduation?.total_courses || 0);
     const percent = Math.max(0, Math.min(100, Number(graduation?.progress_percent || 0)));
     const pending = graduation?.pending_request;
     const message = document.getElementById('graduationTrackerMessage');
-    const credits = document.getElementById('graduationCreditsLabel');
+    const countLabel = document.getElementById('graduationCoursesLabel');
     const fill = document.getElementById('graduationProgressFill');
     const track = document.querySelector('.graduation-progress-track');
     const percentLabel = document.getElementById('graduationProgressPercent');
     const button = document.getElementById('graduationRequestBtn');
-    if (!message || !credits || !fill || !track || !percentLabel || !button) return;
+    if (!message || !countLabel || !fill || !track || !percentLabel || !button) return;
 
-    credits.textContent = `${formatCredits(earned)} / ${formatCredits(required)} หน่วยกิต`;
+    countLabel.textContent = `${completed} / ${total} วิชา`;
     fill.style.width = `${percent}%`;
     track.setAttribute('aria-valuenow', String(percent));
-    percentLabel.textContent = `${formatCredits(percent)}%`;
+    percentLabel.textContent = `${percent}%`;
     button.hidden = true;
     button.disabled = false;
 
-    if (!graduation?.has_curriculum) {
-        message.textContent = 'ยังไม่พบหลักสูตรที่กำลังศึกษา กรุณาติดต่อเจ้าหน้าที่';
+    if (!graduation?.has_courses) {
+        message.textContent = 'ยังไม่พบรายวิชาที่กำหนดให้เรียน กรุณาติดต่อเจ้าหน้าที่';
     } else if (pending) {
         message.textContent = 'ส่งคำขอจบการศึกษาแล้ว กำลังรอเจ้าหน้าที่พิจารณา';
         button.textContent = 'รอพิจารณา';
         button.hidden = false;
         button.disabled = true;
     } else if (graduation.eligible) {
-        message.textContent = 'หน่วยกิตครบตามหลักสูตรแล้ว สามารถยื่นขอจบการศึกษาได้';
+        message.textContent = 'ผ่านครบทุกวิชาตามหลักสูตรแล้ว สามารถยื่นขอจบการศึกษาได้';
         button.textContent = 'ยื่นขอจบการศึกษา';
         button.hidden = false;
     } else {
-        message.textContent = 'สะสมหน่วยกิตจากวิชาที่ผ่านและวิชาที่เทียบโอน';
+        message.textContent = 'ความคืบหน้ารวมจากรายวิชาที่ผ่านและรายวิชาที่เทียบโอน';
     }
 }
 

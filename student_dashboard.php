@@ -13,7 +13,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="theme.css">
-    <link rel="stylesheet" href="student_dashboard.css?v=20261019-graduation-tracker">
+    <link rel="stylesheet" href="student_dashboard.css?v=20261019-course-progress">
 </head>
 <body>
     <div class="dashboard-container">
@@ -63,6 +63,23 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                     </div>
                 </header>
 
+                <section class="content-card graduation-tracker" aria-labelledby="graduationTrackerTitle">
+                    <div class="graduation-tracker-heading">
+                        <div>
+                            <h2 id="graduationTrackerTitle">ความคืบหน้าหลักสูตร</h2>
+                            <p id="graduationTrackerMessage" class="graduation-tracker-message" role="status" aria-live="polite">กำลังคำนวณความคืบหน้า...</p>
+                        </div>
+                        <strong id="graduationCoursesLabel" class="graduation-credits-label">— / — วิชา</strong>
+                    </div>
+                    <div class="graduation-progress-track" role="progressbar" aria-label="ความคืบหน้ารายวิชาตามหลักสูตร" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                        <div id="graduationProgressFill" class="graduation-progress-fill"></div>
+                    </div>
+                    <div class="graduation-tracker-footer">
+                        <span id="graduationProgressPercent">0%</span>
+                        <button type="button" id="graduationRequestBtn" class="btn-graduation-request" hidden>ยื่นขอจบการศึกษา</button>
+                    </div>
+                </section>
+
                 <section class="stats-grid student-stats-grid">
                     <div class="stat-card orange">
                         <p class="label">วิชาที่ลงทะเบียน</p>
@@ -81,23 +98,6 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                     </div>
                 </section>
 
-                <section class="content-card graduation-tracker" aria-labelledby="graduationTrackerTitle">
-                    <div class="graduation-tracker-heading">
-                        <div>
-                            <h2 id="graduationTrackerTitle">ความคืบหน้าการจบการศึกษา</h2>
-                            <p id="graduationTrackerMessage" class="graduation-tracker-message" role="status" aria-live="polite">กำลังคำนวณหน่วยกิต...</p>
-                        </div>
-                        <strong id="graduationCreditsLabel" class="graduation-credits-label">— / — หน่วยกิต</strong>
-                    </div>
-                    <div class="graduation-progress-track" role="progressbar" aria-label="ความคืบหน้าหน่วยกิตสำหรับจบการศึกษา" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                        <div id="graduationProgressFill" class="graduation-progress-fill"></div>
-                    </div>
-                    <div class="graduation-tracker-footer">
-                        <span id="graduationProgressPercent">0%</span>
-                        <button type="button" id="graduationRequestBtn" class="btn-graduation-request" hidden>ยื่นขอจบการศึกษา</button>
-                    </div>
-                </section>
-
                 <section class="content-card">
                     <div class="card-header">
                         <h2>ความคืบหน้าการเรียน</h2>
@@ -108,9 +108,9 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                             <thead>
                                 <tr>
                                     <th>ลำดับ</th>
-                                    <th>วิชาเรียน</th>
-                                    <th>แบบทดสอบในรายวิชา</th>
-                                    <th>คะแนนสะสม</th>
+                                    <th>รายวิชาตามหลักสูตร</th>
+                                    <th>ความคืบหน้า</th>
+                                    <th>สถานะ / คะแนนกิจกรรม</th>
                                 </tr>
                             </thead>
                             <tbody id="courseTableBody"></tbody>
@@ -244,6 +244,6 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
 
         </main>
     </div>
-    <script src="student_dashboard.js?v=20261019-graduation-tracker"></script>
+    <script src="student_dashboard.js?v=20261019-course-progress"></script>
 </body>
 </html>

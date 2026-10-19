@@ -42,6 +42,17 @@ function dashboardScoreLabel(float $score): string
     return $labels[$class] ?? 'ยังไม่มีข้อมูล';
 }
 
+function dashboardActivityProgress(float $quizScore, float $quizTotal, float $documentPercent, float $videoPercent): float
+{
+    $videoPart = min(100.0, max(0.0, $videoPercent)) * 0.40;
+    $documentPart = min(100.0, max(0.0, $documentPercent)) * 0.30;
+    $quizPart = $quizTotal > 0
+        ? min(30.0, max(0.0, ($quizScore / $quizTotal) * 30.0))
+        : 0.0;
+
+    return round($videoPart + $documentPart + $quizPart, 1);
+}
+
 $role = strtolower((string) ($_SESSION['role'] ?? ''));
 if (!isset($_SESSION['user_id']) || $role !== 'student') {
     dashboardJson([
@@ -69,6 +80,7 @@ try {
 
     $courseStmt = $conn->prepare(
         "SELECT DISTINCT c.course_id, c.name, COALESCE(c.description, '') AS description,
+                COALESCE(sc.status, 'active') AS enrollment_status,
                 COALESCE(cc.requirement_type, 'elective') AS subject_type
          FROM public.student_courses sc
          INNER JOIN public.courses c ON c.course_id = sc.course_id
@@ -90,6 +102,7 @@ try {
     $totalLessons = 0;
     $scoreEarned = 0.0;
     $scoreTotal = 0.0;
+    $completedCourses = 0;
     foreach ($courseStmt->fetchAll(PDO::FETCH_ASSOC) as $index => $row) {
         $lessonCount = 0;
         $attempted = 0;
@@ -101,7 +114,7 @@ try {
             "SELECT l.lesson_id, l.position, l.title,
                     COALESCE(lp.document_progress_percent, 0) AS document_progress,
                     COALESCE(lp.video_progress_percent, 0) AS video_progress,
-                    CASE WHEN COALESCE(lp.is_transferred, FALSE) THEN 1 ELSE 0 END AS is_transferred,
+                    CASE WHEN COALESCE(lp.is_transferred, FALSE) OR UPPER(COALESCE(lp.grade, '')) = 'TR' THEN 1 ELSE 0 END AS is_transferred,
                     COALESCE(lp.last_activity_at, qa.submitted_at) AS last_activity_at,
                     qa.attempt_id, qa.attempt_number, qa.status AS quiz_status,
                     qa.submitted_at, qa.score, qa.total_score,
@@ -153,12 +166,18 @@ try {
             }
             $lessonScoreEarned = $objectiveScore + $essayScore;
             $lessonScoreTotal = $hasAttempt ? (float) ($lessonRow['total_score'] ?? 0) : 0.0;
-            $lessonProgress = $isTransferred ? 100 : lessonProgressFromQuiz(
+            $lessonProgress = $isTransferred ? 100 : dashboardActivityProgress(
                 $lessonScoreEarned,
                 $lessonScoreTotal,
                 (float) ($lessonRow['document_progress'] ?? 0),
                 (float) ($lessonRow['video_progress'] ?? 0)
             );
+            $isPassed = $isTransferred
+                || (string) ($lessonRow['quiz_status'] ?? '') === 'passed'
+                || ((string) ($lessonRow['quiz_status'] ?? '') !== 'pending_review'
+                    && $lessonScoreTotal > 0
+                    && $lessonScoreEarned >= ceil($lessonScoreTotal)
+                    && (int) ($lessonRow['essay_pending_count'] ?? 0) === 0);
             $lessons[] = [
                 'id' => (string) $lessonRow['lesson_id'],
                 'position' => (int) $lessonRow['position'],
@@ -167,6 +186,7 @@ try {
                 'attempt_count' => (int) $lessonRow['attempt_count'],
                 'has_attempt' => $hasAttempt || $isTransferred,
                 'is_transferred' => $isTransferred,
+                'is_passed' => $isPassed,
                 'score_earned' => $lessonScoreEarned,
                 'score_total' => $lessonScoreTotal,
                 'score_percent' => $lessonScoreTotal > 0 ? round(($lessonScoreEarned / $lessonScoreTotal) * 100, 1) : null,
@@ -187,14 +207,22 @@ try {
         // actual lesson rows returned for the student's enrolled course.
         $lessonCount = count($lessons);
         $attempted = count(array_filter($lessons, static fn (array $lesson): bool => $lesson['attempt_count'] > 0 || $lesson['is_transferred']));
+        $passedLessonCount = count(array_filter($lessons, static fn (array $lesson): bool => $lesson['is_passed']));
+        $isCourseTransferred = strtoupper(trim((string) $row['enrollment_status'])) === 'TR'
+            || ($lessonCount > 0 && count(array_filter($lessons, static fn (array $lesson): bool => $lesson['is_transferred'])) === $lessonCount);
+        $isCoursePassed = in_array(strtolower(trim((string) $row['enrollment_status'])), ['passed', 'completed', 'tr'], true)
+            || ($lessonCount > 0 && $passedLessonCount === $lessonCount);
         $earned = array_sum(array_column($lessons, 'score_earned'));
         $possible = array_sum(array_column($lessons, 'score_total'));
-        $progress = $lessonCount > 0 ? round(($attempted / $lessonCount) * 100, 1) : 0;
+        $progress = $isCoursePassed ? 100 : ($lessonCount > 0 ? round(array_sum(array_column($lessons, 'progress')) / $lessonCount, 1) : 0);
         $score = $possible > 0 ? round(($earned / $possible) * 100, 1) : 0;
         $attemptedLessons += $attempted;
         $totalLessons += $lessonCount;
         $scoreEarned += $earned;
         $scoreTotal += $possible;
+        if ($isCoursePassed) {
+            $completedCourses++;
+        }
         $courses[] = [
             'id' => str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT),
             'subject_id' => (string) ($row['course_id'] ?? ''),
@@ -203,6 +231,9 @@ try {
             'subject_type' => (string) ($row['subject_type'] ?? 'elective'),
             'lesson_count' => $lessonCount,
             'attempted_lessons' => $attempted,
+            'passed_lessons' => $passedLessonCount,
+            'is_transferred' => $isCourseTransferred,
+            'is_passed' => $isCoursePassed,
             'score_earned' => $earned,
             'score_total' => $possible,
             'progress' => $progress,
@@ -227,6 +258,8 @@ try {
         ],
         'stats' => [
             'course_count' => $courseCount,
+            'completed_courses' => $completedCourses,
+            'course_progress_percent' => $courseCount > 0 ? round(($completedCourses / $courseCount) * 100, 1) : 0,
             'attempted_lessons' => $attemptedLessons,
             'total_lessons' => $totalLessons,
             'score_earned' => $scoreEarned,
