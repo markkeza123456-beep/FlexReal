@@ -28,7 +28,7 @@ if ($binary === false || strlen($binary) > 5 * 1024 * 1024 || !str_starts_with($
 }
 
 try {
-    require_once __DIR__ . '/db_connect.php';
+    require_once __DIR__ . '/config/db.php';
 
     $userId = (string) $_SESSION['user_id'];
     $avatarDirectory = __DIR__ . '/uploads/avatars';

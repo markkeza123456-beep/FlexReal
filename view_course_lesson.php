@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 if (session_status() === PHP_SESSION_NONE) session_start();
-require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/learning_progress_lib.php';
 
 function lessonViewerError(string $message, int $status = 400): never

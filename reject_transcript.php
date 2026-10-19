@@ -30,7 +30,7 @@ if (!$requestId) rejectTranscriptJson(['status' => 'error', 'message' => 'รห
 $reviewerNote = mb_substr(trim((string) ($_POST['reviewer_note'] ?? '')), 0, 2000, 'UTF-8');
 
 try {
-    require_once __DIR__ . '/db_connect.php';
+    require_once __DIR__ . '/config/db.php';
     if ($role === 'staff') {
         $roleCheck = $conn->prepare("SELECT 1 FROM public.users WHERE user_id = :user_id AND role = 'staff'");
         $roleCheck->execute([':user_id' => $reviewerId]);

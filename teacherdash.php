@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
     exit;
 }
 
-require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/config/db.php';
 
 $conn->exec('ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ');
 $conn->exec('ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS updated_by VARCHAR(50)');
@@ -282,7 +282,7 @@ $stats = [
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="teacherdash.css?v=20261019-sidebar-brand">
+    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261019-sidebar-brand">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px;
@@ -306,7 +306,7 @@ $stats = [
         .choice-label { font-weight: 600; color: var(--text-dim); font-size: 14px; width: 16px; text-align: center; }
         @media (max-width: 760px) { .course-content-editor { grid-template-columns: 1fr !important; } }
     </style>
-    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="assets/css/theme.css">
 </head>
 <body>
 <aside class="sidebar">
@@ -1393,6 +1393,6 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-  <script src="teacherdash.js?v=20261019-content-editor-attribution-no-seconds"></script>
+  <script src="assets/js/teacherdash.js?v=20261019-content-editor-attribution-no-seconds"></script>
 </body>
 </html>

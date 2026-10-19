@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
     exit;
 }
 
-require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/config/db.php';
 
 $teacherId = (string) $_SESSION['user_id'];
 $studentId = trim((string) ($_GET['student_id'] ?? ''));

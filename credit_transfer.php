@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/config/db.php';
 
 // ตรวจสอบ session และยืนยัน role กับฐานข้อมูลก่อนแสดงหน้าส่งคำขอ
 if (($_SESSION['role'] ?? '') !== 'student' || empty($_SESSION['user_id'])) {
@@ -28,8 +28,8 @@ try {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ขอเทียบโอนหน่วยกิต</title>
-    <link rel="stylesheet" href="credit_transfer.css">
-    <script src="credit_transfer.js" defer></script>
+    <link rel="stylesheet" href="assets/css/credit_transfer.css">
+    <script src="assets/js/credit_transfer.js" defer></script>
 </head>
 <body>
     <main class="transfer-page">

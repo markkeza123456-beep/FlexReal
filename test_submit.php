@@ -1,7 +1,7 @@
 <?php
 session_start();
 header('Content-Type: application/json; charset=utf-8');
-require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/learning_progress_lib.php';
 
 function quizResponse(array $payload, int $status = 200): void

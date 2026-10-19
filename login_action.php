@@ -1,7 +1,7 @@
 <?php
 session_start(); header('Content-Type: application/json; charset=utf-8');
 try {
-    require_once __DIR__ . '/db_connect.php'; require_once __DIR__ . '/curriculum_subjects_lib.php';
+    require_once __DIR__ . '/config/db.php'; require_once __DIR__ . '/curriculum_subjects_lib.php';
     $role = strtolower(trim((string) ($_POST['role'] ?? ''))); $id = preg_replace('/\D+/', '', trim((string) ($_POST['email'] ?? ''))); $password = (string) ($_POST['password'] ?? '');
     if (!in_array($role, ['student', 'parent', 'teacher', 'staff'], true) || $id === '' || $password === '') throw new RuntimeException('กรุณากรอกข้อมูลให้ครบถ้วน');
     $profile = match ($role) {

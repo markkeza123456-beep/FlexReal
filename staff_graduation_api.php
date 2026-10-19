@@ -25,7 +25,7 @@ $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 session_write_close();
 
 try {
-    require_once __DIR__ . '/db_connect.php';
+    require_once __DIR__ . '/config/db.php';
     require_once __DIR__ . '/graduation_document_lib.php';
 
     if ($method === 'GET') {

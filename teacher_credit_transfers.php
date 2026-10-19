@@ -27,8 +27,8 @@ try {
     <title>คำขอเทียบโอนหน่วยกิต - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="teacherdash.css?v=20260916-hidden-video-list">
-    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20260916-hidden-video-list">
+    <link rel="stylesheet" href="assets/css/theme.css">
     <style>
         .transfer-content { max-width: 1100px; margin: 0 auto; padding: 36px; }
         .transfer-content h1 { margin: 0 0 8px; }

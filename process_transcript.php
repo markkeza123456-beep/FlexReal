@@ -44,7 +44,7 @@ $reviewerNote = trim((string) ($_POST['reviewer_note'] ?? ''));
 $reviewerNote = mb_substr($reviewerNote, 0, 2000, 'UTF-8');
 
 try {
-    require_once __DIR__ . '/db_connect.php';
+    require_once __DIR__ . '/config/db.php';
 
     if ($role === 'staff') {
         $staffCheck = $conn->prepare("SELECT 1 FROM public.users WHERE user_id = :user_id AND role = 'staff'");

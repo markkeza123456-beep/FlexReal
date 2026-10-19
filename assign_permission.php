@@ -33,7 +33,7 @@ if ($teacherId === '' || !in_array($action, ['grant', 'revoke'], true)) {
 }
 
 try {
-    require_once __DIR__ . '/db_connect.php';
+    require_once __DIR__ . '/config/db.php';
     if ($action === 'revoke') {
         $revokeStmt = $conn->prepare(
             "UPDATE public.transfer_permissions AS p

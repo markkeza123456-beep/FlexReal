@@ -36,7 +36,7 @@ if ($newPassword !== '' && (mb_strlen($newPassword) < 6 || $currentPassword === 
     parentProfileJson(['success' => false, 'message' => 'กรุณาตรวจสอบรหัสผ่านปัจจุบันและรหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)'], 422);
 }
 
-require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/config/db.php';
 try {
     $conn->beginTransaction();
     if ($newPassword !== '') {

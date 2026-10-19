@@ -1,7 +1,7 @@
-﻿<?php
+<?php
 session_start();
 header('Content-Type: application/json; charset=utf-8');
-require_once 'db_connect.php';
+require_once __DIR__ . '/config/db.php';
 
 $pin = trim((string)($_POST['pin'] ?? ''));
 

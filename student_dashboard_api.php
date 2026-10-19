@@ -1,9 +1,9 @@
-﻿<?php
+<?php
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, private');
 
-require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/learning_progress_lib.php';
 require_once __DIR__ . '/curriculum_subjects_lib.php';
 

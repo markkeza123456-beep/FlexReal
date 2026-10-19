@@ -30,8 +30,8 @@ if (!empty($_SESSION['name'])) {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="staffdash.css?v=20261019-transfer-permissions" />
-  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261019-transfer-permissions" />
+  <link rel="stylesheet" href="assets/css/theme.css" />
 </head>
 <body>
 
@@ -774,6 +774,6 @@ if (!empty($_SESSION['name'])) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="staffdash.js?v=20261019-transfer-permissions"></script>
+  <script src="assets/js/staffdash.js?v=20261019-transfer-permissions"></script>
 </body>
 </html>

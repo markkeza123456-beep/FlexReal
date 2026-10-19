@@ -27,7 +27,7 @@ $lessonIndex = filter_var($payload['lesson_index'] ?? null, FILTER_VALIDATE_INT,
 if (!$courseId || !$lessonIndex) examLogJson(['status' => 'error', 'message' => 'ข้อมูลข้อสอบไม่ถูกต้อง'], 400);
 
 try {
-    require_once __DIR__ . '/db_connect.php';
+    require_once __DIR__ . '/config/db.php';
     $conn->beginTransaction();
 
     $lessonStmt = $conn->prepare(
