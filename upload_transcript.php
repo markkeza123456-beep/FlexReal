@@ -68,53 +68,27 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             } elseif (!is_uploaded_file((string) $file['tmp_name'])) {
                 $message = 'ไฟล์อัปโหลดไม่ถูกต้อง กรุณาลองใหม่';
             } else {
-                // Absolute filesystem path shared with review_transcript.php and transcript_file.php.
-                $target_dir = __DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'transcripts' . DIRECTORY_SEPARATOR;
-                $uploadDirectory = rtrim($target_dir, DIRECTORY_SEPARATOR);
-                $relativeDirectory = 'uploads/transcripts';
                 $extension = $allowedMimes[$mimeType];
-                $storedName = uniqid('transcript_', true) . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
-                $absolutePath = $target_dir . $storedName;
-                $relativePath = $relativeDirectory . '/' . $storedName;
                 $originalName = trim((string) ($file['name'] ?? 'transcript'));
                 $originalName = mb_substr(basename($originalName), 0, 255, 'UTF-8');
                 if ($originalName === '') $originalName = 'transcript.' . $extension;
 
                 try {
-                    if (!is_dir($uploadDirectory)) {
-                        $oldUmask = umask(0027);
-                        $created = @mkdir($uploadDirectory, 0777, true);
-                        umask($oldUmask);
-                        if (!$created && !is_dir($uploadDirectory)) {
-                            $lastError = error_get_last();
-                            throw new RuntimeException('สร้างโฟลเดอร์อัปโหลดไม่ได้: ' . (string) ($lastError['message'] ?? 'mkdir failed'));
-                        }
+                    $binaryData = file_get_contents((string) $file['tmp_name']);
+                    if ($binaryData === false || $binaryData === '') {
+                        throw new RuntimeException('อ่านข้อมูลไฟล์ที่อัปโหลดไม่สำเร็จ');
                     }
-                    if (!is_writable($uploadDirectory)) {
-                        throw new RuntimeException('PHP ไม่มีสิทธิ์เขียนโฟลเดอร์: ' . $uploadDirectory);
-                    }
-                    $moved = move_uploaded_file((string) $file['tmp_name'], $absolutePath);
-                    if (!$moved && is_uploaded_file((string) $file['tmp_name'])) {
-                        // Some Windows/XAMPP setups fail to rename across volumes; copying the PHP upload temp file is a fallback.
-                        $moved = @copy((string) $file['tmp_name'], $absolutePath);
-                    }
-                    clearstatcache(true, $absolutePath);
-                    if (!$moved) {
-                        $lastError = error_get_last();
-                        throw new RuntimeException('ย้ายไฟล์ไม่สำเร็จ (move_uploaded_file/copy): ' . (string) ($lastError['message'] ?? 'ตรวจสอบสิทธิ์เขียนและพื้นที่ดิสก์'));
-                    }
-                    if (!is_file($absolutePath) || filesize($absolutePath) < 1) {
-                        throw new RuntimeException('ย้ายไฟล์แล้วแต่ไม่พบไฟล์ที่ปลายทาง: ' . $absolutePath);
-                    }
+                    $dataUri = 'data:' . $mimeType . ';base64,' . base64_encode($binaryData);
+                    unset($binaryData);
 
                     $insert = $conn->prepare(
                         "INSERT INTO public.transcript_requests
-                            (student_id, file_path, original_file_name, mime_type, file_size)
-                         VALUES (:student_id, :file_path, :original_file_name, :mime_type, :file_size)"
+                            (student_id, document_url, original_file_name, mime_type, file_size)
+                         VALUES (:student_id, :document_url, :original_file_name, :mime_type, :file_size)"
                     );
                     $insert->execute([
                         ':student_id' => $studentId,
-                        ':file_path' => $relativePath,
+                        ':document_url' => $dataUri,
                         ':original_file_name' => $originalName,
                         ':mime_type' => $mimeType,
                         ':file_size' => (int) $file['size'],
@@ -122,18 +96,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     $message = 'ส่งทรานสคริปต์เรียบร้อยแล้ว กรุณารอผู้ตรวจสอบพิจารณา';
                     $messageType = 'success';
                     $uploadSucceeded = true;
-                    $uploadDebug = ['relative_path' => $relativePath, 'absolute_path' => $absolutePath, 'file_exists' => is_file($absolutePath)];
                 } catch (Throwable $e) {
-                    clearstatcache(true, $absolutePath);
                     error_log('Transcript upload failed: ' . $e->getMessage());
                     $message = $e->getMessage();
-                    $uploadDebug = [
-                        'target_directory' => $uploadDirectory,
-                        'target_directory_exists' => is_dir($uploadDirectory),
-                        'target_directory_writable' => is_dir($uploadDirectory) ? is_writable($uploadDirectory) : false,
-                        'target_file' => $absolutePath,
-                        'target_file_exists' => is_file($absolutePath),
-                    ];
                 }
             }
         }
@@ -148,7 +113,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
     echo json_encode([
         'status' => $uploadSucceeded ? 'success' : 'error',
         'message' => $message !== '' ? $message : 'ไม่สามารถรับไฟล์ได้ กรุณาลองใหม่',
-        'debug' => $uploadDebug,
     ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
@@ -238,10 +202,7 @@ document.getElementById('transcriptUploadForm')?.addEventListener('submit', asyn
             window.alert((result.message || 'อัปโหลดไม่สำเร็จ') + debug);
             return;
         }
-        const savedPath = result.debug?.relative_path ? '\nPath: ' + result.debug.relative_path : '';
-        const serverPath = result.debug?.absolute_path ? '\nServer: ' + result.debug.absolute_path : '';
-        const fileState = typeof result.debug?.file_exists === 'boolean' ? '\nพบไฟล์หลังบันทึก: ' + (result.debug.file_exists ? 'ใช่' : 'ไม่พบ') : '';
-        window.alert((result.message || 'ส่งทรานสคริปต์เรียบร้อยแล้ว') + savedPath + serverPath + fileState);
+        window.alert(result.message || 'ส่งทรานสคริปต์เรียบร้อยแล้ว');
         window.location.reload();
     } catch (error) {
         window.alert('ส่งข้อมูลไม่สำเร็จ: ' + (error?.message || 'ตรวจสอบการเชื่อมต่อแล้วลองใหม่'));

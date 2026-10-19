@@ -29,7 +29,7 @@ if (empty($_SESSION['transcript_review_csrf'])) {
 }
 $csrfToken = (string) $_SESSION['transcript_review_csrf'];
 $requestsStmt = $conn->query(
-    "SELECT r.request_id, r.student_id, r.file_path, r.original_file_name, r.mime_type, r.submitted_at,
+    "SELECT r.request_id, r.student_id, r.document_url, r.file_path, r.original_file_name, r.mime_type, r.submitted_at,
             COALESCE(s.full_name, r.student_id) AS student_name
      FROM public.transcript_requests r
      LEFT JOIN public.students s ON s.user_id = r.student_id
@@ -115,11 +115,15 @@ function hReview(string $value): string
             <section class="document-pane" aria-label="เอกสารทรานสคริปต์">
                 <div class="pane-title">เอกสารทรานสคริปต์</div>
                 <?php
-                    // file_path is saved as uploads/transcripts/<generated-name> by upload_transcript.php.
-                    $fileViewerUrl = (string) $selectedRequest['file_path'];
-                    $fileExtension = strtolower(pathinfo($fileViewerUrl, PATHINFO_EXTENSION));
-                    $isTranscriptImage = in_array($fileExtension, ['jpg', 'jpeg', 'png', 'webp'], true);
-                    $isTranscriptPdf = $fileExtension === 'pdf';
+                    // New requests store a Base64 data URI; retain fallback for older local-file requests.
+                    $fileViewerUrl = (string) ($selectedRequest['document_url'] ?? '');
+                    if ($fileViewerUrl === '') $fileViewerUrl = (string) ($selectedRequest['file_path'] ?? '');
+                    $fileMimeType = strtolower((string) ($selectedRequest['mime_type'] ?? ''));
+                    $isTranscriptImage = str_starts_with($fileViewerUrl, 'data:image/')
+                        || in_array($fileMimeType, ['image/jpeg', 'image/png', 'image/webp'], true);
+                    $isTranscriptPdf = str_starts_with($fileViewerUrl, 'data:application/pdf;')
+                        || $fileMimeType === 'application/pdf'
+                        || strtolower(pathinfo(parse_url($fileViewerUrl, PHP_URL_PATH) ?: $fileViewerUrl, PATHINFO_EXTENSION)) === 'pdf';
                 ?>
                 <div class="transcript-viewer">
                     <?php if ($isTranscriptImage): ?>
