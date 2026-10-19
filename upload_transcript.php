@@ -68,11 +68,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             } elseif (!is_uploaded_file((string) $file['tmp_name'])) {
                 $message = 'ไฟล์อัปโหลดไม่ถูกต้อง กรุณาลองใหม่';
             } else {
-                $uploadDirectory = __DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'transcripts';
+                // Absolute filesystem path shared with review_transcript.php and transcript_file.php.
+                $target_dir = __DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'transcripts' . DIRECTORY_SEPARATOR;
+                $uploadDirectory = rtrim($target_dir, DIRECTORY_SEPARATOR);
                 $relativeDirectory = 'uploads/transcripts';
                 $extension = $allowedMimes[$mimeType];
                 $storedName = uniqid('transcript_', true) . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
-                $absolutePath = $uploadDirectory . DIRECTORY_SEPARATOR . $storedName;
+                $absolutePath = $target_dir . $storedName;
                 $relativePath = $relativeDirectory . '/' . $storedName;
                 $originalName = trim((string) ($file['name'] ?? 'transcript'));
                 $originalName = mb_substr(basename($originalName), 0, 255, 'UTF-8');

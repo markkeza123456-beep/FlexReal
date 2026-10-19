@@ -70,8 +70,14 @@ try {
     if (!str_starts_with($relativePath, 'uploads/transcripts/')) {
         throw new RuntimeException('Invalid transcript storage path');
     }
-    $basePath = realpath(__DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'transcripts');
-    $filePath = realpath(__DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath));
+    $target_dir = __DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'transcripts' . DIRECTORY_SEPARATOR;
+    $relativeFileName = substr($relativePath, strlen('uploads/transcripts/'));
+    if ($relativeFileName === '' || basename(str_replace('\\', '/', $relativeFileName)) !== $relativeFileName
+        || str_contains($relativeFileName, '/') || str_contains($relativeFileName, '\\')) {
+        throw new RuntimeException('Invalid transcript filename');
+    }
+    $basePath = realpath(rtrim($target_dir, DIRECTORY_SEPARATOR));
+    $filePath = realpath($target_dir . $relativeFileName);
     if ($basePath === false || $filePath === false || !str_starts_with($filePath, $basePath . DIRECTORY_SEPARATOR) || !is_file($filePath)) {
         http_response_code(404);
         exit('ไม่พบไฟล์ทรานสคริปต์');
