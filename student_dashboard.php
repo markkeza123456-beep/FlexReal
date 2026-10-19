@@ -13,7 +13,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="theme.css">
-    <link rel="stylesheet" href="student_dashboard.css?v=20261019-sidebar-brand">
+    <link rel="stylesheet" href="student_dashboard.css?v=20261019-graduation-tracker">
 </head>
 <body>
     <div class="dashboard-container">
@@ -78,6 +78,23 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                         <p class="label">คะแนนสะสม</p>
                         <p class="value" id="statAvgScore">0/0</p>
                         <span class="sub-value">ข้อเขียนจะเพิ่มเมื่อครูตรวจผ่าน</span>
+                    </div>
+                </section>
+
+                <section class="content-card graduation-tracker" aria-labelledby="graduationTrackerTitle">
+                    <div class="graduation-tracker-heading">
+                        <div>
+                            <h2 id="graduationTrackerTitle">ความคืบหน้าการจบการศึกษา</h2>
+                            <p id="graduationTrackerMessage" class="graduation-tracker-message" role="status" aria-live="polite">กำลังคำนวณหน่วยกิต...</p>
+                        </div>
+                        <strong id="graduationCreditsLabel" class="graduation-credits-label">— / — หน่วยกิต</strong>
+                    </div>
+                    <div class="graduation-progress-track" role="progressbar" aria-label="ความคืบหน้าหน่วยกิตสำหรับจบการศึกษา" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                        <div id="graduationProgressFill" class="graduation-progress-fill"></div>
+                    </div>
+                    <div class="graduation-tracker-footer">
+                        <span id="graduationProgressPercent">0%</span>
+                        <button type="button" id="graduationRequestBtn" class="btn-graduation-request" hidden>ยื่นขอจบการศึกษา</button>
                     </div>
                 </section>
 
@@ -227,6 +244,6 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
 
         </main>
     </div>
-    <script src="student_dashboard.js?v=20261019-transcript-transfer"></script>
+    <script src="student_dashboard.js?v=20261019-graduation-tracker"></script>
 </body>
 </html>

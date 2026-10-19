@@ -298,6 +298,25 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .status-label.no-score { background:#f1f5f9; color:#64748b; }
 .progress-bar-bg { background:#e5e7eb; }
 
+.graduation-tracker { margin-bottom: 1.5rem; }
+.graduation-tracker-heading,
+.graduation-tracker-footer { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.graduation-tracker-heading h2 { font-size:1.05rem; margin-bottom:.25rem; }
+.graduation-tracker-message { color:var(--text-muted); font-size:.85rem; }
+.graduation-credits-label { color:var(--text-main); white-space:nowrap; }
+.graduation-progress-track { height:12px; margin:.9rem 0 .55rem; overflow:hidden; border-radius:999px; background:#f3d2be; }
+.graduation-progress-fill { width:0; height:100%; border-radius:inherit; background:linear-gradient(90deg,#ff6b1a,#ff9b54); transition:width .35s ease; }
+.graduation-tracker-footer { color:var(--text-muted); font-size:.8rem; }
+.btn-graduation-request { border:0; border-radius:9px; padding:.65rem 1rem; background:var(--accent-orange); color:#fff; font:inherit; font-size:.85rem; cursor:pointer; }
+.btn-graduation-request:hover:not(:disabled) { filter:brightness(.94); }
+.btn-graduation-request:disabled { cursor:default; opacity:.7; }
+.btn-graduation-request[hidden] { display:none; }
+
+@media (max-width:480px) {
+    .graduation-tracker-heading { align-items:flex-start; flex-direction:column; }
+    .graduation-tracker-footer { align-items:flex-start; flex-direction:column; }
+}
+
 @media (max-width: 800px) {
     .dashboard-container { height:auto; min-height:100vh; display:block; }
     .sidebar { width:100%; min-width:0; height:auto; padding:1rem; border-right:0; border-bottom:1px solid var(--border-color); }
