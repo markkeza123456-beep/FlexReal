@@ -30,7 +30,7 @@ if (!empty($_SESSION['name'])) {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="staffdash.css?v=20261019-sidebar-brand" />
+  <link rel="stylesheet" href="staffdash.css?v=20261019-transfer-permissions" />
   <link rel="stylesheet" href="theme.css" />
 </head>
 <body>
@@ -105,6 +105,15 @@ if (!empty($_SESSION['name'])) {
           <line x1="9" y1="20" x2="15" y2="20"/>
         </svg>
         เพิ่มเจ้าหน้าที่
+      </a>
+
+      <span class="nav-section-label">สิทธิ์การใช้งาน</span>
+      <a class="nav-item" href="staff_transfer_permissions.php">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          <circle cx="12" cy="16" r="1"/>
+        </svg>
+        จัดการสิทธิ์เทียบโอน
       </a>
     </div>
 
@@ -731,6 +740,6 @@ if (!empty($_SESSION['name'])) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="staffdash.js?v=20261019-registration-date"></script>
+  <script src="staffdash.js?v=20261019-transfer-permissions"></script>
 </body>
 </html>
