@@ -38,7 +38,36 @@
 
     const form = document.getElementById('transcriptReviewForm');
     const button = form?.querySelector('.approve-button');
+    const rejectButton = document.getElementById('rejectTranscriptButton');
     const message = document.getElementById('reviewMessage');
+    rejectButton?.addEventListener('click', async () => {
+        if (!window.confirm('ยืนยันไม่อนุมัติคำขอนี้และลบไฟล์ทรานสคริปต์ที่อัปโหลด?')) return;
+        message.textContent = '';
+        rejectButton.disabled = true;
+        button.disabled = true;
+        rejectButton.textContent = 'กำลังไม่อนุมัติและลบไฟล์...';
+        try {
+            const response = await fetch('reject_transcript.php', {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin'
+            });
+            const result = await response.json();
+            if (!response.ok || result.status !== 'success') {
+                throw new Error(result.message || 'ไม่สามารถปฏิเสธคำขอได้');
+            }
+            window.alert(result.message || 'ไม่อนุมัติคำขอและลบไฟล์แล้ว');
+            window.location.assign('review_transcript.php');
+        } catch (error) {
+            message.textContent = error instanceof Error ? error.message : 'เชื่อมต่อระบบไม่สำเร็จ';
+        } finally {
+            rejectButton.disabled = false;
+            button.disabled = false;
+            rejectButton.textContent = 'ไม่อนุมัติและลบไฟล์';
+        }
+    });
+
     form?.addEventListener('submit', async event => {
         event.preventDefault();
         if (!form.querySelector('input[name="lesson_ids[]"]:checked')) {

@@ -165,7 +165,10 @@ function hReview(string $value): string
                 </div>
                 <label class="review-note-label" for="reviewerNote">หมายเหตุ (ถ้ามี)</label>
                 <textarea id="reviewerNote" name="reviewer_note" rows="3" maxlength="2000" placeholder="บันทึกข้อสังเกตถึงนักเรียน"></textarea>
-                <button class="approve-button" type="submit" <?= !$lessonsByCourse ? 'disabled' : '' ?>>อนุมัติผลเทียบโอน</button>
+                <div class="review-actions">
+                    <button class="approve-button" type="submit" <?= !$lessonsByCourse ? 'disabled' : '' ?>>อนุมัติผลเทียบโอน</button>
+                    <button class="reject-button" id="rejectTranscriptButton" type="button">ไม่อนุมัติและลบไฟล์</button>
+                </div>
                 <p class="review-message" id="reviewMessage" role="status" aria-live="polite"></p>
             </form>
         </div>
