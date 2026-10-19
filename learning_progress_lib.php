@@ -132,7 +132,6 @@ function upsertVideoWatchSession(PDO $conn, string $studentId, string $courseId,
     ]);
 }
 function recordLearningActivity(PDO $conn, string $studentId, string $courseId, int $lessonIndex, string $activityType, string $lessonTitle = '', float $progressPercent = 0, float $resumePosition = 0, int $durationSeconds = 0): void {
-    ensureLearningProgressTables($conn);
     $lessonId = learningLessonId($conn, $courseId, $lessonIndex); if ($lessonId === null) throw new RuntimeException('ไม่พบบทเรียนในรายวิชานี้');
     $conn->prepare('INSERT INTO public.lesson_progress (student_id, lesson_id) VALUES (:student_id, :lesson_id) ON CONFLICT (student_id, lesson_id) DO NOTHING')->execute([':student_id' => $studentId, ':lesson_id' => $lessonId]);
     $progressPercent = min(100, max(0, $progressPercent));
@@ -144,12 +143,12 @@ function recordLearningActivity(PDO $conn, string $studentId, string $courseId, 
         ':is_document_progress' => $isDocument ? 'true' : 'false',
         ':document_progress' => $progressPercent,
         ':is_document_page' => $isDocument ? 'true' : 'false',
-        ':document_page' => max(0, $resumePosition),
+        ':document_page' => max(0, (int) floor($resumePosition)),
         ':is_video_progress' => $isVideo ? 'true' : 'false',
         ':video_progress' => $progressPercent,
         ':is_video_position' => $isVideo ? 'true' : 'false',
         ':video_progress_position' => $progressPercent,
-        ':video_position' => max(0, $resumePosition),
+        ':video_position' => max(0, (int) floor($resumePosition)),
         ':is_document_open' => $isDocument ? 'true' : 'false',
         ':document_progress_open' => $progressPercent,
         ':is_video_open' => $isVideo ? 'true' : 'false',

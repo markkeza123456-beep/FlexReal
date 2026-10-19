@@ -129,6 +129,7 @@ try {
                     u.user_id as id,
                     u.role,
                     u.account_status as status_account,
+                    u.created_at as registered_at,
                     COALESCE(s.full_name, t.full_name, p.full_name, NULLIF(TRIM(stf.first_name || \' \' || stf.last_name), \'\'), \'-\') as name,
                     COALESCE(s.email, t.email, p.email, \'-\') as email,
                     COALESCE(s.phone, t.phone, p.phone, \'-\') as phone

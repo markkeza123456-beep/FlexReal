@@ -126,6 +126,17 @@
     return String(Math.trunc(numeric));
   }
 
+  function formatRegistrationDate(value) {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return new Intl.DateTimeFormat('th-TH', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(date);
+  }
+
   window.goTo = function goTo(page) {
     if (!document.getElementById(`page-${page}`)) {
       page = 'dashboard';
@@ -323,6 +334,7 @@
           <td style="color:var(--text-secondary)">${member.phone || '-'}</td>
           <td><span class="badge ${member.role === 'Staff' ? 'required' : 'draft'}">${roleName[member.role] || member.role}</span></td>
           <td><span class="badge ${member.status === 'active' ? 'active' : 'draft'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
+          <td>${formatRegistrationDate(member.registered_at)}</td>
           <td>
             <div class="action-btns">
               <button type="button" class="btn-icon edit" onclick="editMember('${member.id}')">แก้ไข</button>
@@ -331,7 +343,7 @@
           </td>
         </tr>
       `).join('')
-      : '<tr><td colspan="6" style="text-align:center; padding:30px;">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>';
+      : '<tr><td colspan="7" style="text-align:center; padding:30px;">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>';
   }
 
   window.editMember = id => {

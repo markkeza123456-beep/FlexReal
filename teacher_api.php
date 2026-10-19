@@ -293,11 +293,14 @@ try {
             throw new Exception('คุณไม่มีสิทธิ์แก้ไขบทเรียนนี้');
         }
 
-        $stmt = $conn->prepare('UPDATE public.lessons SET title = :name, updated_at = NOW() WHERE lesson_id = :id');
-        $stmt->execute([
-            ':name' => $lessonName,
-            ':id' => $lessonId,
-        ]);
+        $currentLesson = $conn->prepare('SELECT title FROM public.lessons WHERE lesson_id = :id');
+        $currentLesson->execute([':id' => $lessonId]);
+        $currentTitle = $currentLesson->fetchColumn();
+        if ($currentTitle === false) throw new Exception('ไม่พบบทเรียน');
+        if ((string) $currentTitle !== $lessonName) {
+            $stmt = $conn->prepare('UPDATE public.lessons SET title = :name WHERE lesson_id = :id');
+            $stmt->execute([':name' => $lessonName, ':id' => $lessonId]);
+        }
 
         $hasDocumentUpload = !empty($_FILES['lesson_document']) && ($_FILES['lesson_document']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
         if (!$hasDocumentUpload) {
@@ -329,7 +332,7 @@ try {
                 if ($resourceId !== false) {
                     $resource = $conn->prepare(
                         "UPDATE public.lesson_resources
-                         SET title = :title, url = :url
+                         SET title = :title, url = :url, updated_at = NOW()
                          WHERE resource_id = :resource_id"
                     );
                     $resource->execute([
@@ -497,7 +500,8 @@ try {
              SET question_type = :question_type,
                  question_text = :question_text,
                  options = CAST(:options AS jsonb),
-                 correct_choice = :correct_choice
+                 correct_choice = :correct_choice,
+                 updated_at = NOW()
              WHERE question_id = :question_id'
         );
         $stmt->execute([
@@ -533,7 +537,7 @@ try {
         }
         $lessonStmt = $conn->prepare('SELECT lesson_id AS id, title FROM public.lessons WHERE course_id = :subject_id ORDER BY position LIMIT 3');
         $lessonStmt->execute([':subject_id' => $subjectId]);
-        $videoStmt = $conn->prepare("SELECT r.resource_id AS id, r.title, r.url, '' AS description, r.duration_seconds, r.position AS display_order, r.lesson_id AS lessons_id, l.title AS lesson_title FROM public.lesson_resources r INNER JOIN public.lessons l ON l.lesson_id = r.lesson_id WHERE l.course_id = :subject_id AND r.resource_type = 'video' ORDER BY r.lesson_id, r.position DESC, r.resource_id DESC");
+        $videoStmt = $conn->prepare("SELECT r.resource_id AS id, r.title, r.url, '' AS description, r.duration_seconds, r.position AS display_order, r.lesson_id AS lessons_id, l.title AS lesson_title, EXTRACT(EPOCH FROM COALESCE(r.updated_at, r.created_at)) AS last_modified_epoch FROM public.lesson_resources r INNER JOIN public.lessons l ON l.lesson_id = r.lesson_id WHERE l.course_id = :subject_id AND r.resource_type = 'video' ORDER BY r.lesson_id, r.position DESC, r.resource_id DESC");
         $videoStmt->execute([':subject_id' => $subjectId]);
         echo json_encode(['success' => true, 'lessons' => $lessonStmt->fetchAll(PDO::FETCH_ASSOC), 'videos' => $videoStmt->fetchAll(PDO::FETCH_ASSOC)]);
         exit;
@@ -583,13 +587,15 @@ try {
         }
         $params = [':title' => $title, ':url' => $url, ':lesson_id' => $lessonId];
         if ($videoId === '') {
-            $stmt = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position) VALUES (:lesson_id, 'video', :title, :url, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lesson_resources WHERE lesson_id = :lesson_id))");
+            $stmt = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position) VALUES (:lesson_id, 'video', :title, :url, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lesson_resources WHERE lesson_id = :lesson_id)) RETURNING resource_id AS id, EXTRACT(EPOCH FROM COALESCE(updated_at, created_at)) AS last_modified_epoch");
         } else {
             $params[':id'] = $videoId;
-            $stmt = $conn->prepare("UPDATE public.lesson_resources SET title = :title, url = :url, lesson_id = :lesson_id WHERE resource_id = :id AND resource_type = 'video'");
+            $stmt = $conn->prepare("UPDATE public.lesson_resources SET title = :title, url = :url, lesson_id = :lesson_id, updated_at = NOW() WHERE resource_id = :id AND resource_type = 'video' RETURNING resource_id AS id, EXTRACT(EPOCH FROM COALESCE(updated_at, created_at)) AS last_modified_epoch");
         }
         $stmt->execute($params);
-        echo json_encode(['success' => true, 'message' => 'บันทึกวิดีโอสำเร็จ']);
+        $savedVideo = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$savedVideo) throw new Exception('ไม่พบวิดีโอที่บันทึก กรุณาเลือกวิดีโอใหม่แล้วลองอีกครั้ง');
+        echo json_encode(['success' => true, 'message' => 'บันทึกวิดีโอสำเร็จ', 'video' => $savedVideo], JSON_UNESCAPED_UNICODE);
         exit;
     }
 

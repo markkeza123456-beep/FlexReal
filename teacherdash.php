@@ -11,6 +11,13 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
 
 require_once __DIR__ . '/db_connect.php';
 
+$conn->exec('ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ');
+$conn->exec('ALTER TABLE public.lesson_resources ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ');
+$conn->exec('CREATE OR REPLACE FUNCTION public.set_content_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $$');
+foreach ([['lessons', 'lessons_set_updated_at'], ['questions', 'questions_set_updated_at'], ['lesson_resources', 'lesson_resources_set_updated_at']] as [$table, $trigger]) {
+    $conn->exec("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid = 'public.{$table}'::regclass AND tgname = '{$trigger}') THEN CREATE TRIGGER {$trigger} BEFORE UPDATE ON public.{$table} FOR EACH ROW EXECUTE FUNCTION public.set_content_updated_at(); END IF; END $$");
+}
+
 const MAX_LESSONS_PER_SUBJECT = 3;
 
 
@@ -38,6 +45,16 @@ function scoreStatus(float $score): string {
 function scoreLabel(string $status): string {
     $labels = ['excellent' => 'ดีเยี่ยม', 'good' => 'ดี', 'average' => 'ปานกลาง', 'needs-help' => 'ต้องดูแล'];
     return $labels[$status] ?? 'ยังไม่มีข้อมูล';
+}
+
+function formatTeacherEditDate(?string $value): string {
+    if (!$value) return 'ยังไม่มีข้อมูลวันที่';
+    try {
+        $date = (new DateTimeImmutable($value))->setTimezone(new DateTimeZone('Asia/Bangkok'));
+        return $date->format('d/m/') . ((int) $date->format('Y') + 543) . $date->format(' H:i');
+    } catch (Throwable $error) {
+        return 'ยังไม่มีข้อมูลวันที่';
+    }
 }
 
 $teacherId = (string) $_SESSION['user_id'];
@@ -113,7 +130,8 @@ $selectedSubject = $selectedSubjectId !== '' ? ($subjectMap[$selectedSubjectId] 
 $subLessonsBySubject = [];
 if (!empty($subjectIds)) {
     $lessonStmt = $conn->prepare('
-        SELECT l.lesson_id AS lessons_id, l.title AS lessons_name, l.study_hours, l.course_id AS subjects_id
+        SELECT l.lesson_id AS lessons_id, l.title AS lessons_name, l.study_hours, l.course_id AS subjects_id,
+            COALESCE(l.updated_at, l.created_at) AS last_modified_at
         FROM public.lessons l
         INNER JOIN public.course_teachers ct ON ct.course_id = l.course_id
         WHERE ct.teacher_id = :teacher_id
@@ -125,6 +143,7 @@ if (!empty($subjectIds)) {
             'id' => $lessonRow['lessons_id'],
             'title' => $lessonRow['lessons_name'],
             'duration' => $lessonRow['study_hours'] > 0 ? $lessonRow['study_hours'] . ' ชั่วโมง' : 'ไม่ระบุเวลา',
+            'last_modified_at' => $lessonRow['last_modified_at'],
             'status' => 'active',
         ];
     }
@@ -187,6 +206,7 @@ $defaultSubjectId = $selectedSubjectId;
 if ($defaultSubjectId) {
     $quizStmt = $conn->prepare("
         SELECT q.question_id AS questions_id, q.question_text AS questions_text,
+               COALESCE(q.updated_at, q.created_at) AS last_modified_at,
                COALESCE(q.options->>0, '') AS choice_a, COALESCE(q.options->>1, '') AS choice_b,
                COALESCE(q.options->>2, '') AS choice_c, COALESCE(q.options->>3, '') AS choice_d,
                COALESCE(q.correct_choice, '-') AS correct_answer, q.lesson_id AS lessons_id, l.title AS lessons_name
@@ -491,6 +511,7 @@ $stats = [
                                         <div>
                                             <div style="color:var(--text);font-size:15px;font-weight:500;"><?= h($subLesson['title']) ?></div>
                                             <div style="color:var(--text-dim);font-size:12px;margin-top:2px;">⏳ <?= h($subLesson['duration']) ?></div>
+                                            <div style="color:var(--text-muted);font-size:11px;margin-top:3px;">แก้ไขล่าสุด <?= h(formatTeacherEditDate($subLesson['last_modified_at'] ?? null)) ?></div>
                                         </div>
                                     </div>
                                     <div style="display:flex;align-items:center;gap:10px;">
@@ -637,7 +658,7 @@ $stats = [
                                     $qLabel = $qType === 'essay' ? 'อัตนัย (ข้อเขียน)' : ($qType === 'truefalse' ? 'ถูก/ผิด' : 'ปรนัย (4 ตัวเลือก)');
                                 ?>
                                     <div class="quiz-item" style="border:1px solid var(--border);border-radius:8px;padding:13px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
-                                        <div style="display:flex;gap:10px;min-width:0;"><b class="mono" style="color:var(--orange);">Q<?= $i + 1 ?></b><div><div style="font-size:14px;color:var(--text);margin-bottom:5px;"><?= h($q['questions_text']) ?></div><span class="badge badge-draft" style="font-size:10.5px;"><?= $qLabel ?></span></div></div>
+                                        <div style="display:flex;gap:10px;min-width:0;"><b class="mono" style="color:var(--orange);">Q<?= $i + 1 ?></b><div><div style="font-size:14px;color:var(--text);margin-bottom:5px;"><?= h($q['questions_text']) ?></div><span class="badge badge-draft" style="font-size:10.5px;"><?= $qLabel ?></span><div style="color:var(--text-muted);font-size:11px;margin-top:5px;">แก้ไขล่าสุด <?= h(formatTeacherEditDate($q['last_modified_at'] ?? null)) ?></div></div></div>
                                         <div style="display:flex;gap:4px;flex-shrink:0;"><button class="action-icon-btn btn-edit-quiz" data-id="<?= h($q['questions_id']) ?>" data-type="<?= $qType ?>" data-question="<?= h($q['questions_text']) ?>" data-ca="<?= h($q['choice_a']) ?>" data-cb="<?= h($q['choice_b']) ?>" data-cc="<?= h($q['choice_c']) ?>" data-cd="<?= h($q['choice_d']) ?>" data-answer="<?= h($q['correct_answer']) ?>" title="แก้ไขคำถาม">แก้ไข</button><button class="action-icon-btn btn-del-quiz" data-id="<?= h($q['questions_id']) ?>" title="ลบคำถาม" style="color:#ef4444;">ลบ</button></div>
                                     </div>
                                 <?php endforeach; endif; ?>
@@ -1332,6 +1353,6 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-<script src="teacherdash.js?v=20260916-optional-video-name"></script>
+  <script src="teacherdash.js?v=20261019-video-date-returning"></script>
 </body>
 </html>
