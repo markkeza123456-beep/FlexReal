@@ -1,62 +1,59 @@
 <?php
 session_start();
 header('Content-Type: application/json; charset=utf-8');
-require_once 'db_connect.php';
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
-    echo json_encode(['success' => false, 'message' => 'กรุณาล็อกอินใหม่']);
+function avatarResponse(bool $success, string $message, array $extra = [], int $status = 200): never
+{
+    http_response_code($status);
+    echo json_encode(['success' => $success, 'message' => $message] + $extra, JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-$user_id = $_SESSION['user_id'];
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    avatarResponse(false, 'คำขอไม่ถูกต้อง', [], 405);
+}
+if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'teacher') {
+    avatarResponse(false, 'กรุณาล็อกอินใหม่', [], 401);
+}
+
 $data = json_decode(file_get_contents('php://input'), true);
-if (!isset($data['image'])) {
-    echo json_encode(['success' => false, 'message' => 'ไม่พบข้อมูลรูปภาพ']);
-    exit;
+$dataUrl = is_array($data) ? (string) ($data['image'] ?? '') : '';
+if (!preg_match('/^data:image\/png;base64,([A-Za-z0-9+\/]+={0,2})$/', $dataUrl, $matches)) {
+    avatarResponse(false, 'ข้อมูลรูปภาพไม่ถูกต้อง กรุณาเลือกรูปใหม่', [], 400);
 }
 
-$base64 = preg_replace('/^data:image\/\w+;base64,/', '', $data['image']);
-$binary = base64_decode($base64);
-if (!$binary) {
-    echo json_encode(['success' => false, 'message' => 'ข้อมูลรูปภาพไม่ถูกต้อง']);
-    exit;
+$binary = base64_decode($matches[1], true);
+if ($binary === false || strlen($binary) > 5 * 1024 * 1024 || !str_starts_with($binary, "\x89PNG\r\n\x1a\n")) {
+    avatarResponse(false, 'ไฟล์รูปต้องเป็น PNG และมีขนาดไม่เกิน 5MB', [], 400);
 }
-
-$SUPABASE_URL = $supabaseUrl;
-$SUPABASE_KEY = $supabaseKey;
-$BUCKET = 'avatars';
-$filePath = "teachers/{$user_id}.png";
-
-$uploadUrl = "{$SUPABASE_URL}/storage/v1/object/{$BUCKET}/{$filePath}";
-$ch = curl_init($uploadUrl);
-curl_setopt_array($ch, [
-    CURLOPT_CUSTOMREQUEST => 'POST',
-    CURLOPT_POSTFIELDS => $binary,
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_HTTPHEADER => [
-        "Authorization: Bearer {$SUPABASE_KEY}",
-        'Content-Type: image/png',
-        'x-upsert: true',
-    ],
-]);
-$res = curl_exec($ch);
-$status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-
-if ($status !== 200 && $status !== 201) {
-    echo json_encode(['success' => false, 'message' => "อัปโหลดล้มเหลว: HTTP $status — $res"]);
-    exit;
-}
-
-$publicUrl = "{$SUPABASE_URL}/storage/v1/object/public/{$BUCKET}/{$filePath}?t=" . time();
 
 try {
-    $stmt = $conn->prepare(
-        'UPDATE public.teachers SET avatar_url = :url, updated_at = NOW() WHERE user_id = :uid'
-    );
-    $stmt->execute(['url' => $publicUrl, 'uid' => $user_id]);
-    echo json_encode(['success' => true, 'url' => $publicUrl]);
-} catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => 'บันทึก URL ล้มเหลว: ' . $e->getMessage()]);
+    require_once __DIR__ . '/db_connect.php';
+
+    $userId = (string) $_SESSION['user_id'];
+    $avatarDirectory = __DIR__ . '/uploads/avatars';
+    if (!is_dir($avatarDirectory) && !mkdir($avatarDirectory, 0755, true) && !is_dir($avatarDirectory)) {
+        throw new RuntimeException('Unable to create avatar upload directory.');
+    }
+
+    $fileName = 'teacher_' . hash('sha256', $userId) . '.png';
+    if (file_put_contents($avatarDirectory . '/' . $fileName, $binary, LOCK_EX) === false) {
+        throw new RuntimeException('Unable to write teacher avatar file.');
+    }
+
+    $publicUrl = 'uploads/avatars/' . $fileName . '?t=' . time();
+    $stmt = $conn->prepare('UPDATE public.teachers SET avatar_url = :url WHERE user_id = :uid');
+    $stmt->execute([':url' => $publicUrl, ':uid' => $userId]);
+    if ($stmt->rowCount() === 0) {
+        $check = $conn->prepare('SELECT 1 FROM public.teachers WHERE user_id = :uid');
+        $check->execute([':uid' => $userId]);
+        if (!$check->fetchColumn()) {
+            throw new RuntimeException('Teacher profile was not found for the authenticated user.');
+        }
+    }
+
+    avatarResponse(true, 'บันทึกรูปโปรไฟล์สำเร็จ', ['url' => $publicUrl]);
+} catch (Throwable $e) {
+    error_log('Teacher avatar save failed: ' . $e->getMessage());
+    avatarResponse(false, 'บันทึกรูปไม่สำเร็จ กรุณาลองใหม่หรือติดต่อผู้ดูแลระบบ', [], 500);
 }
-?>

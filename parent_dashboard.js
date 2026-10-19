@@ -1,7 +1,10 @@
 
 
 
-const PARENT_KEY = 'parentProfile_v1';
+function parentProfileKey() {
+  const parentId = String(_parentData?.parents_id || '').trim();
+  return parentId ? `parentProfile_v1:${encodeURIComponent(parentId)}` : null;
+}
 
 
 const mockParent = {
@@ -16,13 +19,16 @@ const mockParent = {
 
 function loadParent() {
   try {
-    const s = localStorage.getItem(PARENT_KEY);
+    const key = parentProfileKey();
+    const s = key ? localStorage.getItem(key) : null;
     return s ? Object.assign({}, mockParent, JSON.parse(s)) : { ...mockParent };
   } catch { return { ...mockParent }; }
 }
 
 function saveParent(profile) {
-  try { localStorage.setItem(PARENT_KEY, JSON.stringify(profile)); }
+  const key = parentProfileKey();
+  if (!key) return;
+  try { localStorage.setItem(key, JSON.stringify(profile)); }
   catch (e) { console.warn('localStorage error', e); }
 }
 

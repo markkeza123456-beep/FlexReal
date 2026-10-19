@@ -1090,29 +1090,33 @@ $stats = [
 
     document.getElementById('cropConfirmBtn').addEventListener('click', async function() {
         const btn = this;
+        if (!imgNaturalW || !imgNaturalH) {
+            showMsg('profileMsg', 'กรุณารอให้รูปโหลดเสร็จก่อน', false);
+            return;
+        }
         btn.textContent = '⏳ กำลังอัปโหลด...'; btn.disabled = true;
-        const base64 = exportCircle();
-        overlay.style.display = 'none';
         showMsg('profileMsg', '⏳ กำลังอัปโหลดรูป...', true);
         try {
+            const base64 = exportCircle();
             const res = await fetch('uploadavatar.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ image: base64 })
             });
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
             if (data.success) {
                 const newUrl = data.url;
                 ['sidebarAvatarWrap', 'settingsAvatarWrap'].forEach(id => {
                     const wrap = document.getElementById(id);
                     if (wrap) wrap.innerHTML = `<img src="${newUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
                 });
+                overlay.style.display = 'none';
                 showMsg('profileMsg', ' เปลี่ยนรูปโปรไฟล์สำเร็จ!', true);
             } else {
-                showMsg('profileMsg', ' ' + data.message, false);
+                showMsg('profileMsg', ' ' + (data.message || 'บันทึกรูปไม่สำเร็จ กรุณาลองใหม่'), false);
             }
         } catch(err) {
-            showMsg('profileMsg', ' เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', false);
+            showMsg('profileMsg', ' บันทึกรูปไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อแล้วลองใหม่', false);
         }
         btn.textContent = ' ใช้รูปนี้'; btn.disabled = false;
     });
