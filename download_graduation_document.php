@@ -16,7 +16,7 @@ if (!$requestId) {
 }
 
 try {
-    require_once __DIR__ . '/db_connect.php';
+    require_once __DIR__ . '/config/db.php';
     require_once __DIR__ . '/transcript_storage.php';
     $stmt = $conn->prepare(
         "SELECT request_id, document_bucket, document_object_path

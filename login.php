@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="login.css" />
+  <link rel="stylesheet" href="assets/css/login.css" />
 </head>
 <body>
   <div class="bg-grid"></div>
@@ -97,6 +97,6 @@
     </div>
   </main>
   <div class="toast" id="toast"></div>
-  <script src="login.js"></script>
+  <script src="assets/js/login.js"></script>
 </body>
 </html>

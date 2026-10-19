@@ -1,5 +1,5 @@
 <?php
-session_start(); header('Content-Type: application/json; charset=utf-8'); require_once __DIR__ . '/db_connect.php';
+session_start(); header('Content-Type: application/json; charset=utf-8'); require_once __DIR__ . '/config/db.php';
 function jsonResponse(array $payload, int $statusCode = 200): void { http_response_code($statusCode); echo json_encode($payload, JSON_UNESCAPED_UNICODE); exit; }
 function currentStudentId(): ?string { return (($_SESSION['role'] ?? '') === 'student' && isset($_SESSION['user_id'])) ? (string) $_SESSION['user_id'] : null; }
 function findCourseId(PDO $conn, string $id, string $name): ?string {

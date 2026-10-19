@@ -14,8 +14,8 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="staff_subject_editor.css?v=20260902" />
-    <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="assets/css/staff_subject_editor.css?v=20260902" />
+    <link rel="stylesheet" href="assets/css/theme.css">
 </head>
 <body>
   <div class="bg-grid"></div>
@@ -185,6 +185,6 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
   </main>
 
   <div class="toast" id="toast"></div>
-  <script src="staff_subject_editor.js?v=20260901"></script>
+  <script src="assets/js/staff_subject_editor.js?v=20260901"></script>
 </body>
 </html>

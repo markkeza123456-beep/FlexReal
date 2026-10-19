@@ -1,5 +1,5 @@
 <?php
-session_start(); require_once __DIR__ . '/db_connect.php'; require_once __DIR__ . '/curriculum_subjects_lib.php';
+session_start(); require_once __DIR__ . '/config/db.php'; require_once __DIR__ . '/curriculum_subjects_lib.php';
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: regisstu.php'); exit; }
 try {
     $role = strtolower(trim((string) ($_POST['role'] ?? ''))); $userId = preg_replace('/\D+/', '', (string) ($_POST['userid'] ?? '')); $phone = preg_replace('/\D+/', '', (string) ($_POST['phone'] ?? ''));

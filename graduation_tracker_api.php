@@ -111,7 +111,7 @@ if (!in_array($method, ['GET', 'POST'], true) || ($method === 'GET' && $action !
 }
 
 try {
-    require_once __DIR__ . '/db_connect.php';
+    require_once __DIR__ . '/config/db.php';
 
     if ($method === 'GET') {
         $summary = graduationSummary($conn, $studentId);

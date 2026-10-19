@@ -2,7 +2,7 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/learning_progress_lib.php';
 
 function gradeFromScore(float $score): string

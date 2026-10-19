@@ -1,34 +1,6 @@
 'use strict';
 
 (() => {
-    const transcriptViewer = document.querySelector('.document-pane iframe, .document-pane img');
-    const transcriptError = document.getElementById('transcriptViewerError');
-    if (transcriptViewer && transcriptError) {
-        const showTranscriptError = message => {
-            transcriptViewer.hidden = true;
-            transcriptError.textContent = message;
-            transcriptError.hidden = false;
-        };
-
-        transcriptViewer.addEventListener('error', () => {
-            showTranscriptError('ไม่พบไฟล์ทรานสคริปต์บนเซิร์ฟเวอร์นี้ กรุณาให้นักเรียนอัปโหลดไฟล์อีกครั้ง');
-        });
-
-        fetch(transcriptViewer.getAttribute('src'), {
-            method: 'HEAD',
-            credentials: 'same-origin',
-            cache: 'no-store'
-        }).then(response => {
-            if (response.ok) return;
-            if (response.status === 403) throw new Error('บัญชีนี้ไม่มีสิทธิ์เปิดไฟล์ทรานสคริปต์');
-            if (response.status === 401) throw new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
-            if (response.status === 404) throw new Error('ไม่พบไฟล์บนเซิร์ฟเวอร์นี้ กรุณาให้นักเรียนอัปโหลดไฟล์อีกครั้ง');
-            throw new Error('ไม่สามารถเปิดไฟล์ทรานสคริปต์ได้ กรุณาลองอีกครั้ง');
-        }).catch(error => {
-            showTranscriptError(error instanceof Error ? error.message : 'ไม่สามารถเปิดไฟล์ทรานสคริปต์ได้');
-        });
-    }
-
     const picker = document.getElementById('requestPicker');
     picker?.addEventListener('change', () => {
         const url = new URL(window.location.href);
@@ -40,11 +12,12 @@
     const button = form?.querySelector('.approve-button');
     const rejectButton = document.getElementById('rejectTranscriptButton');
     const message = document.getElementById('reviewMessage');
+
     rejectButton?.addEventListener('click', async () => {
         if (!window.confirm('ยืนยันไม่อนุมัติคำขอนี้และลบไฟล์ทรานสคริปต์ที่อัปโหลด?')) return;
         message.textContent = '';
         rejectButton.disabled = true;
-        button.disabled = true;
+        if (button) button.disabled = true;
         rejectButton.textContent = 'กำลังไม่อนุมัติและลบไฟล์...';
         try {
             const response = await fetch('reject_transcript.php', {
@@ -54,16 +27,14 @@
                 credentials: 'same-origin'
             });
             const result = await response.json();
-            if (!response.ok || result.status !== 'success') {
-                throw new Error(result.message || 'ไม่สามารถปฏิเสธคำขอได้');
-            }
-            window.alert(result.message || 'ไม่อนุมัติคำขอและลบไฟล์แล้ว');
+            if (!response.ok || result.status !== 'success') throw new Error(result.message || 'ไม่สามารถปฏิเสธคำขอได้');
+            window.alert(result.message || 'ไม่อนุมัติคำขอเรียบร้อยแล้ว');
             window.location.assign('review_transcript.php');
         } catch (error) {
             message.textContent = error instanceof Error ? error.message : 'เชื่อมต่อระบบไม่สำเร็จ';
         } finally {
             rejectButton.disabled = false;
-            button.disabled = false;
+            if (button) button.disabled = false;
             rejectButton.textContent = 'ไม่อนุมัติและลบไฟล์';
         }
     });
@@ -85,9 +56,7 @@
                 credentials: 'same-origin'
             });
             const result = await response.json();
-            if (!response.ok || result.status !== 'success') {
-                throw new Error(result.message || 'บันทึกผลเทียบโอนไม่สำเร็จ');
-            }
+            if (!response.ok || result.status !== 'success') throw new Error(result.message || 'บันทึกผลเทียบโอนไม่สำเร็จ');
             window.alert(result.message || 'อนุมัติผลเทียบโอนเรียบร้อยแล้ว');
             window.location.assign('review_transcript.php');
         } catch (error) {
@@ -97,4 +66,52 @@
             button.textContent = 'อนุมัติผลเทียบโอน';
         }
     });
+
+    const pdfViewer = document.getElementById('transcriptPdfViewer');
+    const imageViewer = document.getElementById('transcriptImageViewer');
+    const documentViewer = pdfViewer || imageViewer;
+    const openLink = document.getElementById('transcriptOpenLink');
+    const dataUri = documentViewer?.dataset.document || (imageViewer?.src.startsWith('data:image/') ? imageViewer.src : '');
+    if (dataUri) {
+        const blobReady = fetch(dataUri)
+            .then(response => {
+                if (!response.ok) throw new Error('อ่านเอกสารไม่สำเร็จ');
+                return response.blob();
+            })
+            .then(blob => {
+                const blobUrl = URL.createObjectURL(blob);
+                documentViewer.src = blobUrl;
+                if (openLink) {
+                    openLink.href = blobUrl;
+                    openLink.removeAttribute('aria-disabled');
+                }
+                window.addEventListener('pagehide', () => URL.revokeObjectURL(blobUrl), { once: true });
+                return blobUrl;
+            })
+            .catch(error => {
+                console.error('Transcript document load failed:', error);
+                const errorMessage = document.createElement('p');
+                errorMessage.className = 'transcript-file-error';
+                errorMessage.textContent = 'โหลดเอกสารไม่สำเร็จ กรุณาลองโหลดหน้าใหม่';
+                documentViewer.parentElement.insertAdjacentElement('afterend', errorMessage);
+                return null;
+            });
+
+        openLink?.addEventListener('click', event => {
+            event.preventDefault();
+            const tab = window.open('about:blank', '_blank');
+            if (!tab) {
+                window.alert('เบราว์เซอร์บล็อกแท็บใหม่ กรุณาอนุญาตป๊อปอัปแล้วลองอีกครั้ง');
+                return;
+            }
+            blobReady.then(blobUrl => {
+                if (!blobUrl) {
+                    tab.close();
+                    return;
+                }
+                tab.opener = null;
+                tab.location.replace(blobUrl);
+            });
+        });
+    }
 })();

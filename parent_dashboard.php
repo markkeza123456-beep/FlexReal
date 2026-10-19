@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Orbitron:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-  <link rel="stylesheet" href="parent_dashboard.css?v=20261019-sidebar-brand" />
+  <link rel="stylesheet" href="assets/css/parent_dashboard.css?v=20261019-sidebar-brand" />
   <style>
 
     .settings-wrapper { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.2rem; align-items: start; max-width: 850px; }
@@ -84,7 +84,7 @@
     .parent-profile { transition: background .2s; padding: 8px; margin: -8px; border-radius: 10px; }
     .parent-profile:hover { background: rgba(255,255,255,0.05); }
   </style>
-  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="assets/css/theme.css" />
 </head>
 <body>
 
@@ -387,6 +387,6 @@
   </div>
 </div>
 
-  <script src="parent_dashboard.js?v=20261019-parent-avatar-per-account"></script>
+  <script src="assets/js/parent_dashboard.js?v=20261019-parent-avatar-per-account"></script>
 </body>
 </html>

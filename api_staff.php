@@ -1,7 +1,7 @@
 <?php
 session_start();
 header('Content-Type: application/json; charset=utf-8');
-require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/config/db.php';
 
 const MAX_LESSONS_PER_SUBJECT = 3;
 

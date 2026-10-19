@@ -35,7 +35,7 @@ if (filter_var($documentUrl, FILTER_VALIDATE_URL) === false || !in_array(strtolo
 }
 
 try {
-    require_once __DIR__ . '/db_connect.php';
+    require_once __DIR__ . '/config/db.php';
 
     // Check that this course exists before creating a transfer request.
     $courseStmt = $conn->prepare('SELECT 1 FROM public.courses WHERE course_id = :course_id');

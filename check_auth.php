@@ -8,7 +8,7 @@ if (($_SESSION['role'] ?? '') !== 'teacher' || empty($_SESSION['user_id'])) {
     exit('กรุณาเข้าสู่ระบบอาจารย์');
 }
 
-require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/config/db.php';
 
 try {
     $permissionStmt = $conn->prepare(

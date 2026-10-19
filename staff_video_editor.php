@@ -11,8 +11,8 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>จัดการวิดีโอรายวิชา | NEXORA</title>
-  <link rel="stylesheet" href="staff_subject_editor.css" />
-  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="assets/css/staff_subject_editor.css" />
+  <link rel="stylesheet" href="assets/css/theme.css" />
 </head>
 <body>
   <div class="bg-grid"></div><div class="glow-orb orb-1"></div><div class="glow-orb orb-2"></div>
@@ -50,6 +50,6 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
       </form>
     </section>
     <section class="panel error-panel" id="errorPanel" hidden><div class="error-body" id="errorMessage"></div></section>
-  </main><div class="toast" id="toast"></div><script src="staff_video_editor.js"></script>
+  </main><div class="toast" id="toast"></div><script src="assets/js/staff_video_editor.js"></script>
 </body>
 </html>

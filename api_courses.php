@@ -1,5 +1,5 @@
 <?php
-session_start(); require_once __DIR__ . '/db_connect.php'; header('Content-Type: application/json; charset=utf-8'); $action = $_GET['action'] ?? ''; session_write_close();
+session_start(); require_once __DIR__ . '/config/db.php'; header('Content-Type: application/json; charset=utf-8'); $action = $_GET['action'] ?? ''; session_write_close();
 function loadLessons(PDO $conn, string $courseId): array {
     $stmt = $conn->prepare("SELECT l.lesson_id, l.course_id, l.title, l.content, l.position, l.study_hours, l.pass_percentage,
         COALESCE(video.url, '') AS video_url, COALESCE(video.url, '') AS video_path, COALESCE(video.title, '') AS video_name,

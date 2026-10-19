@@ -1,7 +1,7 @@
 <?php
 session_start();
 header('Content-Type: application/json; charset=utf-8');
-require_once 'db_connect.php';
+require_once __DIR__ . '/config/db.php';
 
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {

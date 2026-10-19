@@ -1,6 +1,6 @@
 <?php
 session_start(); header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0'); header('Pragma: no-cache');
-require_once __DIR__ . '/db_connect.php'; require_once __DIR__ . '/learning_progress_lib.php';
+require_once __DIR__ . '/config/db.php'; require_once __DIR__ . '/learning_progress_lib.php';
 function learningJson(array $payload, int $statusCode = 200): void { http_response_code($statusCode); echo json_encode($payload, JSON_UNESCAPED_UNICODE); exit; }
 function currentLearningStudentId(): ?string { return (($_SESSION['role'] ?? '') === 'student' && isset($_SESSION['user_id'])) ? (string) $_SESSION['user_id'] : null; }
 function fetchCourseSummary(PDO $conn, string $studentId, string $courseId): array {

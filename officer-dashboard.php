@@ -2,7 +2,7 @@
 declare(strict_types=1);
 if (session_status() === PHP_SESSION_NONE) session_start();
 header('Content-Type: text/html; charset=UTF-8');
-require_once __DIR__ . '/db_connect.php';
+require_once __DIR__ . '/config/db.php';
 
 function h(?string $v): string { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 function q1(PDO $c, string $sql): string {
@@ -95,8 +95,8 @@ $summaryCards = [
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="officer-dashboard.css">
-    <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="assets/css/officer-dashboard.css">
+    <link rel="stylesheet" href="assets/css/theme.css">
 </head>
 <body>
   <div class="page-shell">

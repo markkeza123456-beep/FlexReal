@@ -1,7 +1,7 @@
-﻿<?php
+<?php
 session_start();
 header('Content-Type: application/json; charset=utf-8');
-require_once 'db_connect.php';
+require_once __DIR__ . '/config/db.php';
 
 $new_password = trim((string)($_POST['new_password'] ?? ''));
 $confirm_password = trim((string)($_POST['confirm_password'] ?? ''));
