@@ -30,11 +30,15 @@
 .lesson-option small { color: #64748b; line-height: 1.45; }
 .review-note-label { margin: 12px 0 5px; font-size: 13px; font-weight: 600; }
 .checklist-pane textarea { width: 100%; padding: 9px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; resize: vertical; }
-.approve-button { min-height: 44px; margin-top: 12px; border: 0; border-radius: 8px; background: #f97316; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.review-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.approve-button, .reject-button { min-height: 44px; margin-top: 12px; border: 0; border-radius: 8px; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.approve-button { background: #f97316; }
 .approve-button:hover:not(:disabled) { background: #ea580c; }
-.approve-button:disabled { opacity: .6; cursor: not-allowed; }
+.reject-button { background: #b91c1c; }
+.reject-button:hover:not(:disabled) { background: #991b1b; }
+.approve-button:disabled, .reject-button:disabled { opacity: .6; cursor: not-allowed; }
 .review-message { min-height: 1.5em; margin: 8px 0 0; color: #b91c1c; font-size: 13px; }
 .review-empty { padding: 60px 20px; color: #64748b; text-align: center; }
 .muted { color: #64748b; }
 @media (max-width: 900px) { .review-columns { grid-template-columns: 1fr; } .checklist-pane { max-height: none; } .document-pane { min-height: 540px; } .document-pane iframe, .transcript-image-viewer { min-height: 480px; } }
-@media (max-width: 640px) { .review-page { width: min(100% - 24px, 1440px); padding-top: 18px; } .review-header { align-items: stretch; flex-direction: column; } .request-picker { min-width: 0; } }
+@media (max-width: 640px) { .review-page { width: min(100% - 24px, 1440px); padding-top: 18px; } .review-header { align-items: stretch; flex-direction: column; } .request-picker { min-width: 0; } .review-actions { grid-template-columns: 1fr; } }
