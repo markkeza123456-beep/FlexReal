@@ -303,13 +303,13 @@ try {
         }
 
         $conn->beginTransaction();
-        $stmt = $conn->prepare('INSERT INTO public.lessons (course_id, title, content, study_hours, position) VALUES (:course_id, :title, :content, 1, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lessons WHERE course_id = :course_id)) RETURNING lesson_id');
-        $stmt->execute([':course_id' => $subjectId, ':title' => $lessonName, ':content' => $lessonContent]);
+        $stmt = $conn->prepare('INSERT INTO public.lessons (course_id, title, content, study_hours, position, updated_at, updated_by) VALUES (:course_id, :title, :content, 1, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lessons WHERE course_id = :course_id), clock_timestamp(), :updated_by) RETURNING lesson_id');
+        $stmt->execute([':course_id' => $subjectId, ':title' => $lessonName, ':content' => $lessonContent, ':updated_by' => $teacherId]);
         $lessonId = (string) $stmt->fetchColumn();
         $documentUpload = uploadLessonFile('lesson_document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc', false, ['pdf']);
         if ($documentUpload['path'] !== '') {
-            $resource = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position) VALUES (:lesson_id, 'document', :title, :url, 1)");
-            $resource->execute([':lesson_id' => $lessonId, ':title' => $documentUpload['name'], ':url' => $documentUpload['path']]);
+            $resource = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position, updated_at, updated_by) VALUES (:lesson_id, 'document', :title, :url, 1, clock_timestamp(), :updated_by)");
+            $resource->execute([':lesson_id' => $lessonId, ':title' => $documentUpload['name'], ':url' => $documentUpload['path'], ':updated_by' => $teacherId]);
         }
         $conn->commit();
 
@@ -366,13 +366,14 @@ try {
                 if ($resourceId !== false) {
                     $resource = $conn->prepare(
                         "UPDATE public.lesson_resources
-                         SET title = :title, url = :url, updated_at = NOW()
+                         SET title = :title, url = :url, updated_at = clock_timestamp(), updated_by = :updated_by
                          WHERE resource_id = :resource_id"
                     );
                     $resource->execute([
                         ':resource_id' => $resourceId,
                         ':title' => $documentUpload['name'],
                         ':url' => $documentUpload['path'],
+                        ':updated_by' => $teacherId,
                     ]);
                     $conn->prepare(
                         "DELETE FROM public.lesson_resources
@@ -380,22 +381,23 @@ try {
                     )->execute([':lesson_id' => $lessonId, ':resource_id' => $resourceId]);
                 } else {
                     $resource = $conn->prepare(
-                        "INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position)
+                        "INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position, updated_at, updated_by)
                          VALUES (:lesson_id, 'document', :title, :url,
                            (SELECT COALESCE(MAX(position), 0) + 1
-                            FROM public.lesson_resources WHERE lesson_id = :lesson_id))"
+                            FROM public.lesson_resources WHERE lesson_id = :lesson_id), clock_timestamp(), :updated_by)"
                     );
                     $resource->execute([
                         ':lesson_id' => $lessonId,
                         ':title' => $documentUpload['name'],
                         ':url' => $documentUpload['path'],
+                        ':updated_by' => $teacherId,
                     ]);
                 }
             }
         }
 
-        $conn->prepare('UPDATE public.lessons SET updated_at = NOW() WHERE lesson_id = :lesson_id')
-            ->execute([':lesson_id' => $lessonId]);
+        $conn->prepare('UPDATE public.lessons SET updated_at = clock_timestamp(), updated_by = :updated_by WHERE lesson_id = :lesson_id')
+            ->execute([':lesson_id' => $lessonId, ':updated_by' => $teacherId]);
         echo json_encode(['success' => true, 'message' => 'แก้ไขบทเรียนสำเร็จ']);
         exit;
     }
@@ -573,7 +575,7 @@ try {
         }
         $lessonStmt = $conn->prepare('SELECT lesson_id AS id, title FROM public.lessons WHERE course_id = :subject_id ORDER BY position LIMIT 3');
         $lessonStmt->execute([':subject_id' => $subjectId]);
-        $videoStmt = $conn->prepare("SELECT r.resource_id AS id, r.title, r.url, '' AS description, r.duration_seconds, r.position AS display_order, r.lesson_id AS lessons_id, l.title AS lesson_title, EXTRACT(EPOCH FROM COALESCE(r.updated_at, r.created_at)) AS last_modified_epoch FROM public.lesson_resources r INNER JOIN public.lessons l ON l.lesson_id = r.lesson_id WHERE l.course_id = :subject_id AND r.resource_type = 'video' ORDER BY r.lesson_id, r.position DESC, r.resource_id DESC");
+        $videoStmt = $conn->prepare("SELECT r.resource_id AS id, r.title, r.url, '' AS description, r.duration_seconds, r.position AS display_order, r.lesson_id AS lessons_id, l.title AS lesson_title, EXTRACT(EPOCH FROM COALESCE(r.updated_at, r.created_at)) AS last_modified_epoch, COALESCE(t.full_name, r.updated_by, 'ยังไม่มีข้อมูล') AS updated_by_name FROM public.lesson_resources r INNER JOIN public.lessons l ON l.lesson_id = r.lesson_id LEFT JOIN public.teachers t ON t.user_id = r.updated_by WHERE l.course_id = :subject_id AND r.resource_type = 'video' ORDER BY r.lesson_id, r.position DESC, r.resource_id DESC");
         $videoStmt->execute([':subject_id' => $subjectId]);
         echo json_encode(['success' => true, 'lessons' => $lessonStmt->fetchAll(PDO::FETCH_ASSOC), 'videos' => $videoStmt->fetchAll(PDO::FETCH_ASSOC)]);
         exit;
@@ -624,6 +626,7 @@ try {
         } else {
             $url = $oldUrl;
         }
+<<<<<<< HEAD
 
         try {
             $conn->beginTransaction();
@@ -664,6 +667,23 @@ try {
         }
 
         echo json_encode(['success' => true, 'message' => 'อัปโหลดวิดีโอสำเร็จและบันทึกเรียบร้อยแล้ว', 'video' => $savedVideo], JSON_UNESCAPED_UNICODE);
+=======
+        $params = [':title' => $title, ':url' => $url, ':lesson_id' => $lessonId];
+        if ($videoId === '') {
+            $stmt = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position, updated_at, updated_by) VALUES (:lesson_id, 'video', :title, :url, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lesson_resources WHERE lesson_id = :lesson_id), clock_timestamp(), :updated_by) RETURNING resource_id AS id, updated_by, EXTRACT(EPOCH FROM COALESCE(updated_at, created_at)) AS last_modified_epoch");
+        } else {
+            $params[':id'] = $videoId;
+            $stmt = $conn->prepare("UPDATE public.lesson_resources SET title = :title, url = :url, lesson_id = :lesson_id, updated_at = clock_timestamp(), updated_by = :updated_by WHERE resource_id = :id AND resource_type = 'video' RETURNING resource_id AS id, updated_by, EXTRACT(EPOCH FROM COALESCE(updated_at, created_at)) AS last_modified_epoch");
+        }
+        $params[':updated_by'] = $teacherId;
+        $stmt->execute($params);
+        $savedVideo = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$savedVideo) throw new Exception('ไม่พบวิดีโอที่บันทึก กรุณาเลือกวิดีโอใหม่แล้วลองอีกครั้ง');
+        $editorStmt = $conn->prepare('SELECT full_name FROM public.teachers WHERE user_id = :teacher_id');
+        $editorStmt->execute([':teacher_id' => $teacherId]);
+        $savedVideo['updated_by_name'] = $editorStmt->fetchColumn() ?: $teacherId;
+        echo json_encode(['success' => true, 'message' => 'บันทึกวิดีโอสำเร็จ', 'video' => $savedVideo], JSON_UNESCAPED_UNICODE);
+>>>>>>> 530713fad3fdc1f013dc91178d3dc9aa06ceb89e
         exit;
     }
 

@@ -3,6 +3,8 @@ let dashboardState = {
     courses: []
 };
 
+let graduationCsrfToken = '';
+
 const navBtns = {
     dashboard: document.getElementById('btn-dashboard'),
     lessons: document.getElementById('btn-lessons'),
@@ -286,6 +288,80 @@ function updateStats(stats, courses) {
     renderTable(courses);
 }
 
+function formatCredits(value) {
+    return Number(value || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
+}
+
+function renderGraduationTracker(graduation) {
+    const earned = Number(graduation?.earned_credits || 0);
+    const required = Number(graduation?.required_credits || 0);
+    const percent = Math.max(0, Math.min(100, Number(graduation?.progress_percent || 0)));
+    const pending = graduation?.pending_request;
+    const message = document.getElementById('graduationTrackerMessage');
+    const credits = document.getElementById('graduationCreditsLabel');
+    const fill = document.getElementById('graduationProgressFill');
+    const track = document.querySelector('.graduation-progress-track');
+    const percentLabel = document.getElementById('graduationProgressPercent');
+    const button = document.getElementById('graduationRequestBtn');
+    if (!message || !credits || !fill || !track || !percentLabel || !button) return;
+
+    credits.textContent = `${formatCredits(earned)} / ${formatCredits(required)} หน่วยกิต`;
+    fill.style.width = `${percent}%`;
+    track.setAttribute('aria-valuenow', String(percent));
+    percentLabel.textContent = `${formatCredits(percent)}%`;
+    button.hidden = true;
+    button.disabled = false;
+
+    if (!graduation?.has_curriculum) {
+        message.textContent = 'ยังไม่พบหลักสูตรที่กำลังศึกษา กรุณาติดต่อเจ้าหน้าที่';
+    } else if (pending) {
+        message.textContent = 'ส่งคำขอจบการศึกษาแล้ว กำลังรอเจ้าหน้าที่พิจารณา';
+        button.textContent = 'รอพิจารณา';
+        button.hidden = false;
+        button.disabled = true;
+    } else if (graduation.eligible) {
+        message.textContent = 'หน่วยกิตครบตามหลักสูตรแล้ว สามารถยื่นขอจบการศึกษาได้';
+        button.textContent = 'ยื่นขอจบการศึกษา';
+        button.hidden = false;
+    } else {
+        message.textContent = 'สะสมหน่วยกิตจากวิชาที่ผ่านและวิชาที่เทียบโอน';
+    }
+}
+
+async function loadGraduationTracker() {
+    const response = await fetch('graduation_tracker_api.php', { credentials: 'same-origin' });
+    if (response.status === 401) {
+        window.location.assign('login.php');
+        return;
+    }
+    const result = await response.json();
+    if (result.status !== 'success') throw new Error(result.message || 'โหลดความคืบหน้าการจบไม่สำเร็จ');
+    graduationCsrfToken = String(result.graduation?.csrf_token || '');
+    renderGraduationTracker(result.graduation || {});
+}
+
+async function submitGraduationRequest() {
+    const button = document.getElementById('graduationRequestBtn');
+    const message = document.getElementById('graduationTrackerMessage');
+    if (!button || button.disabled || !graduationCsrfToken) return;
+
+    button.disabled = true;
+    message.textContent = 'กำลังส่งคำขอ...';
+    try {
+        const response = await fetch('graduation_tracker_api.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'X-CSRF-Token': graduationCsrfToken }
+        });
+        const result = await response.json();
+        if (result.status !== 'success') throw new Error(result.message || 'ส่งคำขอไม่สำเร็จ');
+        await loadGraduationTracker();
+    } catch (error) {
+        message.textContent = error.message || 'ส่งคำขอไม่สำเร็จ กรุณาลองอีกครั้ง';
+        button.disabled = false;
+    }
+}
+
 async function loadDashboardData() {
     const response = await fetch('student_dashboard_api.php', {
         credentials: 'same-origin'
@@ -306,6 +382,10 @@ async function loadDashboardData() {
     updateStats(result.stats || {}, dashboardState.courses);
     renderLessons(dashboardState.courses);
     renderReports(dashboardState.courses, dashboardState.stats);
+    loadGraduationTracker().catch((error) => {
+        const message = document.getElementById('graduationTrackerMessage');
+        if (message) message.textContent = error.message || 'โหลดความคืบหน้าการจบไม่สำเร็จ';
+    });
 }
 
 Object.entries(navBtns).forEach(([key, button]) => {
@@ -334,6 +414,7 @@ loadDashboardData().catch((error) => {
 
 document.getElementById('reportCourseFilter')?.addEventListener('change', () => renderReports(dashboardState.courses, dashboardState.stats || {}));
 document.getElementById('reportPrintBtn')?.addEventListener('click', () => window.print());
+document.getElementById('graduationRequestBtn')?.addEventListener('click', submitGraduationRequest);
 
 
 const _crop = {
