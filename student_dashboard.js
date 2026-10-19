@@ -68,7 +68,7 @@ function renderLessonBreakdown(course) {
     const rows = lessons.map((lesson) => {
         const progress = Math.max(0, Math.min(100, Number(lesson.progress) || 0));
         const fmt = (value) => Number(value || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
-        const quizScore = lesson.has_attempt ? `${fmt(lesson.score_earned)}/${fmt(lesson.score_total)} คะแนน` : 'ยังไม่มีผลสอบ';
+        const quizScore = lesson.is_transferred ? 'ผ่านโดยการเทียบโอน' : (lesson.has_attempt ? `${fmt(lesson.score_earned)}/${fmt(lesson.score_total)} คะแนน` : 'ยังไม่มีผลสอบ');
         const parts = [];
         if (Number(lesson.objective_score_total) > 0) parts.push(`ปรนัย ${fmt(lesson.objective_score_earned)}/${fmt(lesson.objective_score_total)}`);
         if (Number(lesson.essay_question_count) > 0) {
@@ -79,7 +79,7 @@ function renderLessonBreakdown(course) {
             ? `<span class="lesson-score-status pending">รอตรวจข้อเขียน ${Number(lesson.essay_pending_count)} ข้อ</span>`
             : lesson.quiz_status === 'passed' ? '<span class="lesson-score-status passed">ผ่าน</span>'
                 : lesson.quiz_status === 'failed' ? '<span class="lesson-score-status failed">ยังไม่ผ่าน</span>' : '';
-        const attemptLabel = lesson.has_attempt ? `ครั้งที่ ${Number(lesson.latest_attempt_number)} · ทำแล้ว ${Number(lesson.attempt_count)} ครั้ง` : 'ยังไม่เคยทำแบบทดสอบ';
+        const attemptLabel = lesson.is_transferred ? 'ผ่านจากการเทียบโอนหน่วยกิต' : (lesson.has_attempt ? `ครั้งที่ ${Number(lesson.latest_attempt_number)} · ทำแล้ว ${Number(lesson.attempt_count)} ครั้ง` : 'ยังไม่เคยทำแบบทดสอบ');
         return `<div class="lesson-breakdown-row"><div class="lesson-number">${Number(lesson.position)}</div><div class="lesson-detail"><strong>${escapeHtml(lesson.title)}</strong><span>${attemptLabel}</span><span>คะแนนรวม: ${quizScore}</span><span class="lesson-score-parts">${parts.join(' · ')}</span>${status}<span>ความคืบหน้า ${progress}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%"></div></div></div></div>`;
     }).join('');
     return `<details class="lesson-breakdown"><summary>ดูรายการบทเรียนย่อย (${lessons.length})</summary><div class="lesson-breakdown-list">${rows}</div></details>`;
@@ -177,7 +177,7 @@ function renderReports(courses) {
 
     summary.innerHTML = `
         <div class="stat-card orange"><strong class="report-stat-heading">วิชาที่ลงทะเบียน</strong><p class="value">${visibleCourses.length}</p><span class="sub-value">เฉพาะวิชาของนักเรียน</span></div>
-        <div class="stat-card blue"><strong class="report-stat-heading">แบบทดสอบที่ทำแล้ว</strong><p class="value">${attempted}/${lessonTotal}</p><span class="sub-value">นับตามบทเรียนในวิชาที่เลือก</span></div>
+        <div class="stat-card blue"><strong class="report-stat-heading">บทเรียนที่มีผล</strong><p class="value">${attempted}/${lessonTotal}</p><span class="sub-value">รวมผลสอบและผลเทียบโอน</span></div>
         <div class="stat-card green"><strong class="report-stat-heading">ความคืบหน้า</strong><p class="value">${progress}%</p><span class="sub-value">สัดส่วนบทที่ส่งแบบทดสอบ</span></div>
         <div class="stat-card purple"><strong class="report-stat-heading">คะแนนรวม</strong><p class="value">${fmt(earned)}/${fmt(possible)}</p><span class="sub-value">รวมคะแนนข้อเขียนที่ตรวจแล้ว</span></div>
         <div class="stat-card red"><strong class="report-stat-heading">ข้อเขียนรอตรวจ</strong><p class="value">${pendingEssays}</p><span class="sub-value">ข้อที่ยังรอครูตรวจ</span></div>`;
@@ -201,7 +201,7 @@ function renderReports(courses) {
         return;
     }
     lessonBody.innerHTML = rows.map((lesson) => {
-        const quiz = lesson.has_attempt ? `${fmt(lesson.score_earned)}/${fmt(lesson.score_total)}` : '—';
+        const quiz = lesson.is_transferred ? 'เทียบโอน' : (lesson.has_attempt ? `${fmt(lesson.score_earned)}/${fmt(lesson.score_total)}` : '—');
         const objective = lesson.objective_score_total > 0 ? `${fmt(lesson.objective_score_earned)}/${fmt(lesson.objective_score_total)}` : '—';
         const essay = lesson.essay_question_count > 0 ? `${fmt(lesson.essay_score_earned)}/${fmt(lesson.essay_score_total)}` : 'ไม่มี';
         return `<tr><td><strong>${escapeHtml(lesson.course_name)}</strong><small>บทที่ ${Number(lesson.position)} · ${escapeHtml(lesson.title)}</small></td><td>${reportQuizStatus(lesson)}</td><td>${quiz}</td><td>${objective}</td><td>${essay}</td><td>${Number(lesson.attempt_count)} ครั้ง</td><td>${formatReportDate(lesson.last_activity_at)}</td><td>${escapeHtml(lesson.essay_feedback || '—')}</td></tr>`;
