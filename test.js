@@ -21,6 +21,9 @@ let quiz = { subtitle: '', questions: [] };
 let answers = [];
 let currentQuestion = 0;
 let lastResultPassed = false;
+let quizSubmissionStarted = false;
+let automaticCheatSubmissionStarted = false;
+let tabSwitchLogQueue = Promise.resolve();
 
 quizTitle.innerText = `แบบทดสอบวิชา ${courseName} (บทที่ ${lessonIndex})`;
 quizSubtitle.innerText = 'กำลังโหลดข้อสอบจากฐานข้อมูล...';
@@ -164,30 +167,35 @@ function bindResultAction(isPassed) {
     };
 }
 
-async function showResult() {
+async function showResult(options = {}) {
+    if (quizSubmissionStarted) return;
+    quizSubmissionStarted = true;
+    const forcedFailure = Boolean(options.forcedFailure);
     saveCurrentAnswer();
     const totalQuestions = quiz.questions.length;
     const essayCount = quiz.questions.filter((item) => isEssayQuestion(item)).length;
     const hasPendingEssay = quiz.questions.some((item, index) => isEssayQuestion(item) && String(answers[index] || '').trim() !== '');
-    const score = quiz.questions.reduce((total, item, index) => {
+    const calculatedScore = quiz.questions.reduce((total, item, index) => {
         if (isEssayQuestion(item)) return total;
         return total + (answers[index] === item.answer ? 1 : 0);
     }, 0);
+    const score = forcedFailure ? 0 : calculatedScore;
     const requiredScore = Math.max(1, Math.ceil(totalQuestions * QUIZ_PASS_RATIO));
     const isPassed = score >= requiredScore;
+    const effectivePassed = isPassed && !forcedFailure;
 
     resultBox.hidden = false;
     resultBox.innerHTML = `
         <h2>ผลคะแนน</h2>
         <p>คุณได้ <span class="score">${score}/${totalQuestions}</span> คะแนน</p>
-        <p>${isPassed ? 'ผ่านเกณฑ์แล้ว สามารถกลับไปหน้ารายวิชาได้' : hasPendingEssay ? 'ส่งข้อเขียนแล้ว รออาจารย์ตรวจผลก่อน' : 'ยังไม่ผ่านเกณฑ์ กรุณาทำซ้ำบทเดิมอีกครั้ง'}</p>
+        <p>${forcedFailure ? 'ระบบส่งข้อสอบอัตโนมัติและบันทึกผลไม่ผ่าน เนื่องจากสลับแท็บครบ 3 ครั้ง' : isPassed ? 'ผ่านเกณฑ์แล้ว สามารถกลับไปหน้ารายวิชาได้' : hasPendingEssay ? 'ส่งข้อเขียนแล้ว รออาจารย์ตรวจผลก่อน' : 'ยังไม่ผ่านเกณฑ์ กรุณาทำซ้ำบทเดิมอีกครั้ง'}</p>
         <p>เกณฑ์ผ่าน: ${requiredScore} คะแนน</p>
         ${essayCount > 0 ? `<p>มีข้อเขียน ${essayCount} ข้อ รอครูตรวจ</p>` : ''}
-        ${isPassed ? renderAnswerKey() : ''}
+        ${effectivePassed ? renderAnswerKey() : ''}
         <p id="saveStatus">กำลังบันทึกผลแบบทดสอบ...</p>
-        ${renderResultActionButton(isPassed, hasPendingEssay)}
+        ${renderResultActionButton(effectivePassed, hasPendingEssay && !forcedFailure)}
     `;
-    bindResultAction(isPassed);
+    bindResultAction(effectivePassed);
 
     quizForm.hidden = true;
     prevBtn.hidden = true;
@@ -206,7 +214,7 @@ async function showResult() {
             return;
         }
         if (result.status === 'success') {
-            lastResultPassed = result.quiz_status === 'pass';
+            lastResultPassed = result.quiz_status === 'passed';
             window.__lastQuizSaveResult = {
                 ok: true,
                 status: result.quiz_status || 'success',
@@ -215,7 +223,14 @@ async function showResult() {
                 requiredScore,
             };
             saveStatus.innerText = 'บันทึกผลแล้ว';
-            if (result.pending_review) {
+            if (result.cheating_detected) {
+                lastResultPassed = false;
+                const warning = document.createElement('p');
+                warning.textContent = result.message || 'ระบบบันทึกผลไม่ผ่านเนื่องจากสลับแท็บครบ 3 ครั้ง';
+                warning.style.color = '#b91c1c';
+                warning.style.fontWeight = '600';
+                saveStatus.before(warning);
+            } else if (result.pending_review) {
                 const pendingNotice = document.createElement('p');
                 pendingNotice.textContent = 'ส่งคำตอบข้อเขียนแล้ว รออาจารย์ตรวจและยืนยันผล';
                 pendingNotice.style.color = '#b45309';
@@ -340,3 +355,30 @@ submitBtn.addEventListener('click', () => {
 });
 
 loadQuizFromDatabase();
+
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'hidden' || quiz.questions.length === 0 || quizSubmissionStarted) return;
+    tabSwitchLogQueue = tabSwitchLogQueue.then(async () => {
+        if (automaticCheatSubmissionStarted || quizSubmissionStarted) return;
+        try {
+            const response = await fetch('log_exam_tab_switch.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                keepalive: true,
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({ course_id: subjectId, lesson_index: lessonIndex })
+            });
+            const result = await response.json();
+            if (!response.ok || result.status !== 'success') throw new Error(result.message || 'บันทึกเหตุการณ์ไม่สำเร็จ');
+            window.alert('ตรวจพบการสลับออกจากหน้าข้อสอบ ระบบได้บันทึกเหตุการณ์ครั้งที่ ' + result.tab_switch_count);
+            if (result.auto_submit) {
+                automaticCheatSubmissionStarted = true;
+                saveCurrentAnswer();
+                window.alert('คุณสลับแท็บครบ 3 ครั้ง ระบบจะส่งข้อสอบทันทีและบันทึกผลเป็นไม่ผ่าน');
+                await showResult({ forcedFailure: true });
+            }
+        } catch (error) {
+            console.error('[exam-monitor] tab-switch logging failed', error);
+        }
+    });
+});

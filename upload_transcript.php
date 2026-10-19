@@ -48,29 +48,32 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             } elseif (!is_uploaded_file((string) $file['tmp_name'])) {
                 $message = 'ไฟล์อัปโหลดไม่ถูกต้อง กรุณาลองใหม่';
             } else {
-                $storedName = bin2hex(random_bytes(16)) . '.' . $allowedMimes[$mimeType];
-                $objectPath = gmdate('Y/m') . '/' . $storedName;
+                $uploadDirectory = __DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'transcripts';
+                $relativeDirectory = 'uploads/transcripts';
+                $extension = $allowedMimes[$mimeType];
+                $storedName = uniqid('transcript_', true) . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
+                $absolutePath = $uploadDirectory . DIRECTORY_SEPARATOR . $storedName;
+                $relativePath = $relativeDirectory . '/' . $storedName;
                 $originalName = trim((string) ($file['name'] ?? 'transcript'));
                 $originalName = mb_substr(basename($originalName), 0, 255, 'UTF-8');
-                if ($originalName === '') $originalName = 'transcript.' . $allowedMimes[$mimeType];
-                $uploadedToStorage = false;
-                $bucket = (string) ($env['SUPABASE_TRANSCRIPT_BUCKET'] ?? 'transcripts');
+                if ($originalName === '') $originalName = 'transcript.' . $extension;
 
                 try {
-                    require_once __DIR__ . '/transcript_storage.php';
-                    transcriptStorageUpload($bucket, $objectPath, (string) $file['tmp_name'], $mimeType);
-                    $uploadedToStorage = true;
+                    if (!is_dir($uploadDirectory) && !mkdir($uploadDirectory, 0750, true) && !is_dir($uploadDirectory)) {
+                        throw new RuntimeException('Unable to create transcript upload directory');
+                    }
+                    if (!move_uploaded_file((string) $file['tmp_name'], $absolutePath)) {
+                        throw new RuntimeException('Unable to move uploaded transcript');
+                    }
 
                     $insert = $conn->prepare(
                         "INSERT INTO public.transcript_requests
-                            (student_id, file_path, storage_bucket, storage_object_path, original_file_name, mime_type, file_size)
-                         VALUES (:student_id, :file_path, :storage_bucket, :storage_object_path, :original_file_name, :mime_type, :file_size)"
+                            (student_id, file_path, original_file_name, mime_type, file_size)
+                         VALUES (:student_id, :file_path, :original_file_name, :mime_type, :file_size)"
                     );
                     $insert->execute([
                         ':student_id' => $studentId,
-                        ':file_path' => 'storage://' . $bucket . '/' . $objectPath,
-                        ':storage_bucket' => $bucket,
-                        ':storage_object_path' => $objectPath,
+                        ':file_path' => $relativePath,
                         ':original_file_name' => $originalName,
                         ':mime_type' => $mimeType,
                         ':file_size' => (int) $file['size'],
@@ -78,12 +81,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     $message = 'ส่งทรานสคริปต์เรียบร้อยแล้ว กรุณารอผู้ตรวจสอบพิจารณา';
                     $messageType = 'success';
                 } catch (Throwable $e) {
-                    if ($uploadedToStorage) {
-                        try { transcriptStorageDelete($bucket, $objectPath); }
-                        catch (Throwable $cleanupError) { error_log('Transcript Storage cleanup failed: ' . $cleanupError->getMessage()); }
-                    }
+                    if (is_file($absolutePath)) @unlink($absolutePath);
                     error_log('Transcript upload failed: ' . $e->getMessage());
-                    $message = 'บันทึกคำขอไม่สำเร็จ กรุณาตรวจสอบการตั้งค่า Storage หรือลองใหม่ภายหลัง';
+                    $message = 'บันทึกคำขอไม่สำเร็จ กรุณาลองใหม่ภายหลัง';
                 }
             }
         }

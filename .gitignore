@@ -2,3 +2,5 @@
 .env.*
 !.env.example
 db_connect.php
+/vendor/
+/tmp/mpdf/

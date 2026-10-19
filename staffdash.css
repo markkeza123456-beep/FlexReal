@@ -505,6 +505,19 @@ body {
 .page-btn:hover { border-color: var(--orange); color: var(--orange); }
 .page-btn.active { background: var(--orange); border-color: var(--orange); color: #ffffff; }
 .page-btn:disabled { opacity: .35; cursor: not-allowed; }
+.graduation-review-message { margin-bottom: 16px; color: var(--text-secondary); }
+.graduation-review-message[hidden] { display: none; }
+.graduation-request-list { display: grid; gap: 16px; }
+.graduation-request-card { display: grid; gap: 14px; }
+.graduation-request-heading, .graduation-request-actions { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.graduation-request-heading h2 { margin:0; font-size:1.05rem; }
+.graduation-request-heading p { margin:4px 0 0; color:var(--text-secondary); font-size:.85rem; }
+.graduation-request-heading strong { color:var(--orange); white-space:nowrap; }
+.graduation-grade-tr { display:inline-block; padding:4px 8px; border-radius:999px; color:#9a3412; background:#fff1e7; font-weight:600; white-space:nowrap; }
+.graduation-ineligible { color:#b42318; }
+.graduation-request-actions span { color:var(--text-secondary); font-size:.9rem; }
+.graduation-request-actions button:disabled { opacity:.55; cursor:not-allowed; }
+@media (max-width: 700px) { .graduation-request-heading, .graduation-request-actions { align-items:flex-start; flex-direction:column; } }
 
 
 .form-card {

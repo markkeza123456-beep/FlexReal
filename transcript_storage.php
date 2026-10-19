@@ -60,6 +60,11 @@ function transcriptStorageUpload(string $bucket, string $objectPath, string $loc
 {
     $body = file_get_contents($localPath);
     if ($body === false) throw new RuntimeException('Unable to read uploaded transcript');
+    transcriptStorageUploadBytes($bucket, $objectPath, $body, $mimeType);
+}
+
+function transcriptStorageUploadBytes(string $bucket, string $objectPath, string $body, string $mimeType): void
+{
     $response = transcriptStorageRequest('POST', $bucket, $objectPath, $body, $mimeType);
     if ($response['status'] < 200 || $response['status'] >= 300) throw new RuntimeException('Storage upload rejected with HTTP ' . $response['status']);
 }
