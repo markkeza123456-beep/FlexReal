@@ -44,11 +44,9 @@ if ($value === '') {
 $host = requiredEnv($env, 'SUPABASE_DB_HOST');
 if (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
     $ipv4Host = gethostbyname($host);
-    if (filter_var($ipv4Host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
-        http_response_code(500);
-        die('Database host does not have an IPv4 address.');
+    if (filter_var($ipv4Host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+        $host = $ipv4Host;
     }
-    $host = $ipv4Host;
 }
 $db = requiredEnv($env, 'SUPABASE_DB_NAME');
 $user = requiredEnv($env, 'SUPABASE_DB_USER');
