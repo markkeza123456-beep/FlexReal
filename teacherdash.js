@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!Number.isFinite(timestamp) || timestamp <= 0) return 'ยังไม่มีข้อมูลวันที่';
         const date = new Date(timestamp * 1000);
         if (Number.isNaN(date.getTime())) return 'ยังไม่มีข้อมูลวันที่';
-        return new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(date);
+        return new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date);
     }
 
     function editInlineVideo(video) {
@@ -418,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         inlineVideoList.innerHTML = videosForLesson.length ? videosForLesson.map((video) => `
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
-                <div style="min-width:0"><strong style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(video.title)}</strong><span style="font-size:11px;color:var(--text-muted)">แก้ไขล่าสุด ${formatTeacherEditDate(video.last_modified_epoch)}</span></div>
+                <div style="min-width:0"><strong style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(video.title)}</strong><span style="font-size:11px;color:var(--text-muted)">แก้ไขล่าสุด ${formatTeacherEditDate(video.last_modified_epoch)} · โดย ${escapeHtml(video.updated_by_name || 'ยังไม่มีข้อมูล')}</span></div>
                 <div style="display:flex;gap:5px;flex-shrink:0"><button type="button" class="action-icon-btn" data-inline-video-edit="${escapeHtml(video.id)}" title="แก้ไขวิดีโอ">แก้ไข</button><button type="button" class="action-icon-btn" data-inline-video-delete="${escapeHtml(video.id)}" title="ลบวิดีโอ" style="color:#ef4444">ลบ</button></div>
             </div>`).join('') : `<div style="padding:12px 0;color:var(--text-muted);font-size:13px">${managedLessonId ? 'ยังไม่มีวิดีโอในบทเรียนนี้' : 'บันทึกบทเรียนก่อน แล้วจึงเพิ่มวิดีโอได้'}</div>`;
     }
@@ -476,12 +476,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (videoFile.files[0]) videoForm.append('video_file', videoFile.files[0]);
             const result = await teacherRequest(videoForm);
             const videoModifiedAt = document.getElementById(`lessonVideoModified-${managedLessonId}`);
-            if (videoModifiedAt) videoModifiedAt.textContent = `วิดีโอแก้ไขล่าสุด ${formatTeacherEditDate(result.video.last_modified_epoch)}`;
+            if (videoModifiedAt) videoModifiedAt.textContent = `วิดีโอแก้ไขล่าสุด ${formatTeacherEditDate(result.video.last_modified_epoch)} · โดย ${result.video.updated_by_name}`;
             const savedVideo = {
                 id: String(result.video.id),
                 title: videoTitle.value.trim() || 'วิดีโอบทเรียน',
                 lessons_id: managedLessonId,
                 last_modified_epoch: result.video.last_modified_epoch,
+                updated_by_name: result.video.updated_by_name,
             };
             const existingIndex = inlineVideos.findIndex(video => String(video.id) === savedVideo.id);
             if (existingIndex >= 0) inlineVideos[existingIndex] = { ...inlineVideos[existingIndex], ...savedVideo };

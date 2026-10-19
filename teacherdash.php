@@ -12,7 +12,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
 require_once __DIR__ . '/db_connect.php';
 
 $conn->exec('ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ');
+$conn->exec('ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS updated_by VARCHAR(50)');
 $conn->exec('ALTER TABLE public.lesson_resources ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ');
+$conn->exec('ALTER TABLE public.lesson_resources ADD COLUMN IF NOT EXISTS updated_by VARCHAR(50)');
 $conn->exec('CREATE OR REPLACE FUNCTION public.set_content_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = clock_timestamp(); RETURN NEW; END; $$');
 foreach ([['lessons', 'lessons_set_updated_at'], ['questions', 'questions_set_updated_at'], ['lesson_resources', 'lesson_resources_set_updated_at']] as [$table, $trigger]) {
     $conn->exec("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid = 'public.{$table}'::regclass AND tgname = '{$trigger}') THEN CREATE TRIGGER {$trigger} BEFORE UPDATE ON public.{$table} FOR EACH ROW EXECUTE FUNCTION public.set_content_updated_at(); END IF; END $$");
@@ -146,13 +148,20 @@ if (!empty($subjectIds)) {
     $lessonStmt = $conn->prepare('
         SELECT l.lesson_id AS lessons_id, l.title AS lessons_name, l.study_hours, l.course_id AS subjects_id,
             COALESCE(l.updated_at, l.created_at) AS last_modified_at,
-            video_edit.last_modified_at AS video_last_modified_at
+            COALESCE(lesson_editor.full_name, l.updated_by, \'ยังไม่มีข้อมูล\') AS lesson_editor_name,
+            video_edit.last_modified_at AS video_last_modified_at,
+            COALESCE(video_edit.editor_name, \'ยังไม่มีข้อมูล\') AS video_editor_name
         FROM public.lessons l
         INNER JOIN public.course_teachers ct ON ct.course_id = l.course_id
+        LEFT JOIN public.teachers lesson_editor ON lesson_editor.user_id = l.updated_by
         LEFT JOIN LATERAL (
-            SELECT MAX(COALESCE(r.updated_at, r.created_at)) AS last_modified_at
+            SELECT COALESCE(r.updated_at, r.created_at) AS last_modified_at,
+                   COALESCE(video_editor.full_name, r.updated_by) AS editor_name
             FROM public.lesson_resources r
+            LEFT JOIN public.teachers video_editor ON video_editor.user_id = r.updated_by
             WHERE r.lesson_id = l.lesson_id AND r.resource_type = \'video\'
+            ORDER BY COALESCE(r.updated_at, r.created_at) DESC, r.resource_id DESC
+            LIMIT 1
         ) video_edit ON TRUE
         WHERE ct.teacher_id = :teacher_id
         ORDER BY l.course_id ASC, l.position ASC
@@ -164,7 +173,9 @@ if (!empty($subjectIds)) {
             'title' => $lessonRow['lessons_name'],
             'duration' => $lessonRow['study_hours'] > 0 ? $lessonRow['study_hours'] . ' ชั่วโมง' : 'ไม่ระบุเวลา',
             'last_modified_at' => $lessonRow['last_modified_at'],
+            'lesson_editor_name' => $lessonRow['lesson_editor_name'],
             'video_last_modified_at' => $lessonRow['video_last_modified_at'],
+            'video_editor_name' => $lessonRow['video_editor_name'],
             'status' => 'active',
         ];
     }
@@ -540,8 +551,8 @@ $stats = [
                                         <div>
                                             <div style="color:var(--text);font-size:15px;font-weight:500;"><?= h($subLesson['title']) ?></div>
                                             <div style="color:var(--text-dim);font-size:12px;margin-top:2px;">⏳ <?= h($subLesson['duration']) ?></div>
-                                            <div style="color:var(--text-muted);font-size:11px;margin-top:3px;">แก้ไขล่าสุด <?= h(formatTeacherEditDate($subLesson['last_modified_at'] ?? null)) ?></div>
-                                            <div id="lessonVideoModified-<?= h($subLesson['id']) ?>" style="color:var(--text-muted);font-size:11px;margin-top:3px;">วิดีโอแก้ไขล่าสุด <?= h(formatTeacherEditDate($subLesson['video_last_modified_at'] ?? null)) ?></div>
+                                            <div style="color:var(--text-muted);font-size:11px;margin-top:3px;">บทเรียนแก้ไขล่าสุด <?= h(formatTeacherEditDate($subLesson['last_modified_at'] ?? null)) ?> · โดย <?= h($subLesson['lesson_editor_name'] ?? 'ยังไม่มีข้อมูล') ?></div>
+                                            <div id="lessonVideoModified-<?= h($subLesson['id']) ?>" style="color:var(--text-muted);font-size:11px;margin-top:3px;">วิดีโอแก้ไขล่าสุด <?= h(formatTeacherEditDate($subLesson['video_last_modified_at'] ?? null)) ?> · โดย <?= h($subLesson['video_editor_name'] ?? 'ยังไม่มีข้อมูล') ?></div>
                                         </div>
                                     </div>
                                     <div style="display:flex;align-items:center;gap:10px;">
@@ -1387,6 +1398,6 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-  <script src="teacherdash.js?v=20261019-video-date-on-lesson"></script>
+  <script src="teacherdash.js?v=20261019-content-editor-attribution-no-seconds"></script>
 </body>
 </html>
