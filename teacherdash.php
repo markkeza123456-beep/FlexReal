@@ -13,7 +13,7 @@ require_once __DIR__ . '/db_connect.php';
 
 $conn->exec('ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ');
 $conn->exec('ALTER TABLE public.lesson_resources ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ');
-$conn->exec('CREATE OR REPLACE FUNCTION public.set_content_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $$');
+$conn->exec('CREATE OR REPLACE FUNCTION public.set_content_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = clock_timestamp(); RETURN NEW; END; $$');
 foreach ([['lessons', 'lessons_set_updated_at'], ['questions', 'questions_set_updated_at'], ['lesson_resources', 'lesson_resources_set_updated_at']] as [$table, $trigger]) {
     $conn->exec("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid = 'public.{$table}'::regclass AND tgname = '{$trigger}') THEN CREATE TRIGGER {$trigger} BEFORE UPDATE ON public.{$table} FOR EACH ROW EXECUTE FUNCTION public.set_content_updated_at(); END IF; END $$");
 }
@@ -145,9 +145,15 @@ $subLessonsBySubject = [];
 if (!empty($subjectIds)) {
     $lessonStmt = $conn->prepare('
         SELECT l.lesson_id AS lessons_id, l.title AS lessons_name, l.study_hours, l.course_id AS subjects_id,
-            COALESCE(l.updated_at, l.created_at) AS last_modified_at
+            COALESCE(l.updated_at, l.created_at) AS last_modified_at,
+            video_edit.last_modified_at AS video_last_modified_at
         FROM public.lessons l
         INNER JOIN public.course_teachers ct ON ct.course_id = l.course_id
+        LEFT JOIN LATERAL (
+            SELECT MAX(COALESCE(r.updated_at, r.created_at)) AS last_modified_at
+            FROM public.lesson_resources r
+            WHERE r.lesson_id = l.lesson_id AND r.resource_type = \'video\'
+        ) video_edit ON TRUE
         WHERE ct.teacher_id = :teacher_id
         ORDER BY l.course_id ASC, l.position ASC
     ');
@@ -158,6 +164,7 @@ if (!empty($subjectIds)) {
             'title' => $lessonRow['lessons_name'],
             'duration' => $lessonRow['study_hours'] > 0 ? $lessonRow['study_hours'] . ' ชั่วโมง' : 'ไม่ระบุเวลา',
             'last_modified_at' => $lessonRow['last_modified_at'],
+            'video_last_modified_at' => $lessonRow['video_last_modified_at'],
             'status' => 'active',
         ];
     }
@@ -264,7 +271,7 @@ $stats = [
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="teacherdash.css?v=20260916-hidden-video-list">
+    <link rel="stylesheet" href="teacherdash.css?v=20261019-sidebar-brand">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px;
@@ -533,6 +540,7 @@ $stats = [
                                             <div style="color:var(--text);font-size:15px;font-weight:500;"><?= h($subLesson['title']) ?></div>
                                             <div style="color:var(--text-dim);font-size:12px;margin-top:2px;">⏳ <?= h($subLesson['duration']) ?></div>
                                             <div style="color:var(--text-muted);font-size:11px;margin-top:3px;">แก้ไขล่าสุด <?= h(formatTeacherEditDate($subLesson['last_modified_at'] ?? null)) ?></div>
+                                            <div id="lessonVideoModified-<?= h($subLesson['id']) ?>" style="color:var(--text-muted);font-size:11px;margin-top:3px;">วิดีโอแก้ไขล่าสุด <?= h(formatTeacherEditDate($subLesson['video_last_modified_at'] ?? null)) ?></div>
                                         </div>
                                     </div>
                                     <div style="display:flex;align-items:center;gap:10px;">
@@ -1378,6 +1386,6 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-  <script src="teacherdash.js?v=20261019-video-date-returning"></script>
+  <script src="teacherdash.js?v=20261019-video-date-on-lesson"></script>
 </body>
 </html>
