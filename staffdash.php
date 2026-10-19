@@ -30,7 +30,7 @@ if (!empty($_SESSION['name'])) {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="staffdash.css?v=20260902" />
+  <link rel="stylesheet" href="staffdash.css?v=20261019-logout-hover" />
   <link rel="stylesheet" href="theme.css" />
 </head>
 <body>
@@ -108,6 +108,10 @@ if (!empty($_SESSION['name'])) {
       </a>
     </div>
 
+    <a href="logout.php" class="sidebar-logout">
+      <span></span><span>ออกจากระบบ</span>
+    </a>
+
     <div class="sidebar-footer">
       <input type="file" id="staffAvatarInput" accept="image/*" style="display:none" onchange="staffPreviewAvatar(this)">
       <div class="user-avatar" id="staffAvatarCircle"
@@ -122,13 +126,6 @@ if (!empty($_SESSION['name'])) {
         <span class="user-name"><?= htmlspecialchars($displayName) ?></span>
         <span class="user-role"><?= htmlspecialchars($displayRole) ?></span>
       </div>
-      <a class="btn-logout" href="logout.php" title="ออกจากระบบ">ออกจากระบบ
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-      </a>
     </div>
   </nav>
 
@@ -705,6 +702,20 @@ if (!empty($_SESSION['name'])) {
             <button type="submit" class="btn-primary"><span class="btn-text">สร้างบัญชีเจ้าหน้าที่</span></button>
           </div>
         </form>
+
+        <div class="form-card" style="margin-top:20px;">
+          <div class="form-section-label">รายชื่อเจ้าหน้าที่</div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>ชื่อ-นามสกุล</th><th>เลขสมาชิก</th><th>สถานะ</th><th>วันที่สมัคร</th><th style="width:100px;">จัดการ</th></tr>
+              </thead>
+              <tbody id="staffListBody">
+                <tr><td colspan="5" style="text-align:center;padding:24px;">กำลังโหลด...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
     </main>
@@ -731,6 +742,6 @@ if (!empty($_SESSION['name'])) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="staffdash.js?v=20261019-registration-date"></script>
+  <script src="staffdash.js?v=20261019-staff-edit-list"></script>
 </body>
 </html>
