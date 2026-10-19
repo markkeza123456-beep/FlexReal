@@ -360,6 +360,8 @@ try {
             }
         }
 
+        $conn->prepare('UPDATE public.lessons SET updated_at = NOW() WHERE lesson_id = :lesson_id')
+            ->execute([':lesson_id' => $lessonId]);
         echo json_encode(['success' => true, 'message' => 'แก้ไขบทเรียนสำเร็จ']);
         exit;
     }
@@ -590,7 +592,7 @@ try {
             $stmt = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position) VALUES (:lesson_id, 'video', :title, :url, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lesson_resources WHERE lesson_id = :lesson_id)) RETURNING resource_id AS id, EXTRACT(EPOCH FROM COALESCE(updated_at, created_at)) AS last_modified_epoch");
         } else {
             $params[':id'] = $videoId;
-            $stmt = $conn->prepare("UPDATE public.lesson_resources SET title = :title, url = :url, lesson_id = :lesson_id, updated_at = NOW() WHERE resource_id = :id AND resource_type = 'video' RETURNING resource_id AS id, EXTRACT(EPOCH FROM COALESCE(updated_at, created_at)) AS last_modified_epoch");
+            $stmt = $conn->prepare("UPDATE public.lesson_resources SET title = :title, url = :url, lesson_id = :lesson_id, updated_at = clock_timestamp() WHERE resource_id = :id AND resource_type = 'video' RETURNING resource_id AS id, EXTRACT(EPOCH FROM COALESCE(updated_at, created_at)) AS last_modified_epoch");
         }
         $stmt->execute($params);
         $savedVideo = $stmt->fetch(PDO::FETCH_ASSOC);
