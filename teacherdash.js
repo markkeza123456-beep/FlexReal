@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!Number.isFinite(timestamp) || timestamp <= 0) return 'ยังไม่มีข้อมูลวันที่';
         const date = new Date(timestamp * 1000);
         if (Number.isNaN(date.getTime())) return 'ยังไม่มีข้อมูลวันที่';
-        return new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date);
+        return new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(date);
     }
 
     function editInlineVideo(video) {
@@ -475,6 +475,8 @@ document.addEventListener('DOMContentLoaded', () => {
             videoForm.append('lesson_id', managedLessonId);
             if (videoFile.files[0]) videoForm.append('video_file', videoFile.files[0]);
             const result = await teacherRequest(videoForm);
+            const videoModifiedAt = document.getElementById(`lessonVideoModified-${managedLessonId}`);
+            if (videoModifiedAt) videoModifiedAt.textContent = `วิดีโอแก้ไขล่าสุด ${formatTeacherEditDate(result.video.last_modified_epoch)}`;
             const savedVideo = {
                 id: String(result.video.id),
                 title: videoTitle.value.trim() || 'วิดีโอบทเรียน',
