@@ -137,46 +137,68 @@ function hReview(string $value): string
                         || $fileMimeType === 'application/pdf'
                         || strtolower(pathinfo(parse_url($fileViewerUrl, PHP_URL_PATH) ?: $fileViewerUrl, PATHINFO_EXTENSION)) === 'pdf';
                     $isBase64Pdf = str_starts_with($fileViewerUrl, 'data:application/pdf;');
+                    $isBase64Image = str_starts_with($fileViewerUrl, 'data:image/');
+                    $isBase64Document = $isBase64Pdf || $isBase64Image;
                 ?>
                 <div class="transcript-viewer">
                     <?php if ($isTranscriptImage): ?>
-                        <img src="<?= hReview($fileViewerUrl) ?>" alt="เอกสารทรานสคริปต์ของ <?= hReview((string) $selectedRequest['student_name']) ?>">
+                        <img <?= $isBase64Image ? 'id="transcriptImageViewer"' : '' ?> src="<?= hReview($fileViewerUrl) ?>" alt="เอกสารทรานสคริปต์ของ <?= hReview((string) $selectedRequest['student_name']) ?>">
                     <?php elseif ($isTranscriptPdf): ?>
                         <iframe id="transcriptPdfViewer" title="เอกสารทรานสคริปต์ของนักเรียน" <?= $isBase64Pdf ? '' : 'src="' . hReview($fileViewerUrl) . '"' ?>></iframe>
                     <?php else: ?>
                         <p class="transcript-file-error">ไม่รองรับชนิดไฟล์นี้</p>
                     <?php endif; ?>
                 </div>
-                <a class="transcript-open-link" <?= $isBase64Pdf ? 'id="transcriptPdfOpenLink" href="#" aria-disabled="true"' : 'href="' . hReview($fileViewerUrl) . '"' ?> target="_blank" rel="noopener noreferrer">เปิดไฟล์ในแท็บใหม่</a>
-                <?php if ($isBase64Pdf): ?>
+                <a class="transcript-open-link" <?= $isBase64Document ? 'id="transcriptOpenLink" href="#" aria-disabled="true"' : 'href="' . hReview($fileViewerUrl) . '"' ?> target="_blank" rel="noopener noreferrer">เปิดไฟล์ในแท็บใหม่</a>
+                <?php if ($isBase64Document): ?>
                     <script>
                     (() => {
                         const dataUri = <?= json_encode($fileViewerUrl, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) ?>;
-                        const viewer = document.getElementById('transcriptPdfViewer');
-                        const openLink = document.getElementById('transcriptPdfOpenLink');
+                        const viewer = document.getElementById('transcriptPdfViewer') || document.getElementById('transcriptImageViewer');
+                        const openLink = document.getElementById('transcriptOpenLink');
                         if (!viewer || !dataUri) return;
 
-                        fetch(dataUri)
+                        const pdfReady = fetch(dataUri)
                             .then(response => {
                                 if (!response.ok) throw new Error('อ่านข้อมูล PDF ไม่สำเร็จ');
                                 return response.blob();
                             })
                             .then(blob => {
-                                const pdfBlob = blob.type === 'application/pdf'
-                                    ? blob
-                                    : new Blob([blob], { type: 'application/pdf' });
-                                const blobUrl = URL.createObjectURL(pdfBlob);
+                                const blobUrl = URL.createObjectURL(blob);
                                 viewer.src = blobUrl;
                                 if (openLink) {
                                     openLink.href = blobUrl;
                                     openLink.removeAttribute('aria-disabled');
                                 }
                                 window.addEventListener('pagehide', () => URL.revokeObjectURL(blobUrl), { once: true });
+                                return blobUrl;
                             })
                             .catch(error => {
                                 console.error('Error loading PDF blob:', error);
                                 viewer.insertAdjacentHTML('afterend', '<p class="transcript-file-error">โหลดเอกสาร PDF ไม่สำเร็จ</p>');
+                                return null;
                             });
+
+                        openLink?.addEventListener('click', event => {
+                            event.preventDefault();
+                            // Open synchronously in the click gesture so popup blockers do not block the PDF tab.
+                            const pdfTab = window.open('about:blank', '_blank');
+                            if (!pdfTab) {
+                                window.alert('เบราว์เซอร์บล็อกแท็บใหม่ กรุณาอนุญาตป๊อปอัปแล้วลองอีกครั้ง');
+                                return;
+                            }
+                            pdfReady
+                                .then(blobUrl => {
+                                    if (!blobUrl) {
+                                        pdfTab.close();
+                                        window.alert('เปิดเอกสาร PDF ไม่สำเร็จ กรุณาลองโหลดหน้าใหม่');
+                                        return;
+                                    }
+                                    pdfTab.opener = null;
+                                    pdfTab.location.replace(blobUrl);
+                                })
+                                .catch(error => console.error('Unable to open PDF tab:', error));
+                        });
                     })();
                     </script>
                 <?php endif; ?>
