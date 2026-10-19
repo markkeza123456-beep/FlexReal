@@ -548,18 +548,20 @@ function _uploadAvatarToServer(dataURL) {
         credentials: 'same-origin',
         body: JSON.stringify({ image: dataURL })
     })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-
-            if (dashboardState.student) {
-                dashboardState.student.avatar_url = data.url;
-            }
-        } else {
-            console.warn('อัปโหลดรูปไม่สำเร็จ:', data.message);
-        }
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || 'บันทึกรูปโปรไฟล์ไม่สำเร็จ');
+        return data;
     })
-    .catch(err => console.warn('Avatar upload error:', err));
+    .then(data => {
+        if (dashboardState.student) dashboardState.student.avatar_url = data.url;
+        _applyAvatarUI(data.url);
+    })
+    .catch(err => {
+        console.error('Avatar upload error:', err);
+        if (dashboardState.student) updateProfile(dashboardState.student);
+        alert(err.message || 'บันทึกรูปโปรไฟล์ไม่สำเร็จ');
+    });
 }
 
 
