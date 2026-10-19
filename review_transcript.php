@@ -115,58 +115,11 @@ function hReview(string $value): string
             <section class="document-pane" aria-label="เอกสารทรานสคริปต์">
                 <div class="pane-title">เอกสารทรานสคริปต์</div>
                 <?php
-                    $fileMimeType = strtolower(trim((string) ($selectedRequest['mime_type'] ?? '')));
-                    $fileExtension = strtolower(pathinfo((string) $selectedRequest['original_file_name'], PATHINFO_EXTENSION));
-                    if ($fileExtension === '') {
-                        $fileExtension = strtolower(pathinfo((string) $selectedRequest['file_path'], PATHINFO_EXTENSION));
-                    }
-                    $databaseFilePath = (string) $selectedRequest['file_path'];
-                    // Resolve the relative DB path beneath the same absolute folder used by upload_transcript.php.
-                    $target_dir = __DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'transcripts' . DIRECTORY_SEPARATOR;
-                    $transcriptRoot = realpath(rtrim($target_dir, DIRECTORY_SEPARATOR));
-                    $relativeFileName = str_starts_with($databaseFilePath, 'uploads/transcripts/')
-                        ? substr($databaseFilePath, strlen('uploads/transcripts/'))
-                        : '';
-                    $safeFileName = $relativeFileName !== ''
-                        && basename(str_replace('\\', '/', $relativeFileName)) === $relativeFileName
-                        && !str_contains($relativeFileName, '/')
-                        && !str_contains($relativeFileName, '\\');
-                    $candidateFilePath = $safeFileName ? $target_dir . $relativeFileName : $target_dir . '__invalid_path__';
-                    $resolvedFilePath = $safeFileName ? realpath($candidateFilePath) : false;
-                    $fileExists = $resolvedFilePath !== false && is_file($resolvedFilePath);
-                    $fileIsInsideTranscriptDirectory = $fileExists && $transcriptRoot !== false
-                        && str_starts_with($resolvedFilePath, rtrim($transcriptRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
-                    $isLocalTranscriptPath = $safeFileName && $fileIsInsideTranscriptDirectory;
-                    $debugAbsolutePath = $resolvedFilePath !== false ? $resolvedFilePath : $candidateFilePath;
-                    if ($fileMimeType === '' || $fileMimeType === 'application/octet-stream') {
-                        $fileMimeType = match ($fileExtension) {
-                            'pdf' => 'application/pdf',
-                            'jpg', 'jpeg' => 'image/jpeg',
-                            'png' => 'image/png',
-                            'webp' => 'image/webp',
-                            default => '',
-                        };
-                    }
-                    $fileViewerUrl = 'transcript_file.php?request_id=' . (int) $selectedRequest['request_id'];
+                    // file_path is saved as uploads/transcripts/<generated-name> by upload_transcript.php.
+                    $fileViewerUrl = (string) $selectedRequest['file_path'];
                 ?>
-                <div class="transcript-file-error" id="transcriptViewerError" role="status" hidden></div>
-                <details class="transcript-path-debug" open>
-                    <summary>Debug Path ไฟล์ (ชั่วคราว)</summary>
-                    <div><strong>Path จากฐานข้อมูล:</strong> <code><?= hReview($databaseFilePath) ?></code></div>
-                    <div><strong>Path ที่ตรวจบนเซิร์ฟเวอร์:</strong> <code><?= hReview($debugAbsolutePath) ?></code></div>
-                    <div><strong>โฟลเดอร์ uploads/transcripts:</strong> <code><?= hReview($transcriptRoot !== false ? $transcriptRoot : 'ไม่พบโฟลเดอร์') ?></code></div>
-                    <div><strong>พบไฟล์จริง:</strong> <?= $fileIsInsideTranscriptDirectory ? 'ใช่' : 'ไม่พบหรืออยู่นอกโฟลเดอร์ที่อนุญาต' ?></div>
-                </details>
-                <?php if (!$isLocalTranscriptPath): ?>
-                    <div class="transcript-file-error" role="status">ไม่พบไฟล์ที่ Path ข้างต้นบนเซิร์ฟเวอร์ กรุณาเทียบกับ Path จากฐานข้อมูล หรือให้นักเรียนอัปโหลดไฟล์อีกครั้ง</div>
-                <?php elseif ($fileMimeType === 'application/pdf'): ?>
-                    <iframe class="transcript-pdf-viewer" title="ทรานสคริปต์ PDF ของนักเรียน" src="<?= hReview($fileViewerUrl) ?>"></iframe>
-                <?php elseif (in_array($fileMimeType, ['image/jpeg', 'image/png', 'image/webp'], true)): ?>
-                    <div class="transcript-image-viewer"><img src="<?= hReview($fileViewerUrl) ?>" alt="ทรานสคริปต์ของ <?= hReview((string) $selectedRequest['student_name']) ?>" loading="lazy"></div>
-                <?php else: ?>
-                    <div class="transcript-file-error" role="status">ไม่รองรับชนิดไฟล์นี้ กรุณาติดต่อเจ้าหน้าที่</div>
-                <?php endif; ?>
-                <?php if ($isLocalTranscriptPath): ?><a class="transcript-open-link" href="<?= hReview($fileViewerUrl) ?>" target="_blank" rel="noopener noreferrer">เปิดไฟล์ในแท็บใหม่</a><?php endif; ?>
+                <iframe class="transcript-pdf-viewer" title="เอกสารทรานสคริปต์ของนักเรียน" src="<?= hReview($fileViewerUrl) ?>" width="100%" height="600"></iframe>
+                <a class="transcript-open-link" href="<?= hReview($fileViewerUrl) ?>" target="_blank" rel="noopener noreferrer">เปิดไฟล์ในแท็บใหม่</a>
             </section>
             <form class="checklist-pane" id="transcriptReviewForm" action="process_transcript.php" method="post">
                 <input type="hidden" name="csrf_token" value="<?= hReview($csrfToken) ?>">
