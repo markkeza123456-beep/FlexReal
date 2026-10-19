@@ -17,7 +17,8 @@ $message = '';
 $messageType = 'error';
 $uploadSucceeded = false;
 $uploadDebug = null;
-$maxUploadBytes = 10 * 1024 * 1024;
+$maxUploadBytes = 2 * 1024 * 1024;
+$uploadTooLargeMessage = 'ไฟล์ใหญ่เกินไป กรุณาใช้อัปโหลดไฟล์ขนาดไม่เกิน 2MB';
 $allowedMimes = [
     'application/pdf' => 'pdf',
     'image/jpeg' => 'jpg',
@@ -38,7 +39,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $postLimit = transcriptIniBytes((string) ini_get('post_max_size'));
     $requestSize = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
     if ($postLimit > 0 && $requestSize > $postLimit && !isset($_POST['csrf_token'])) {
-        $message = 'ข้อมูลอัปโหลดเกิน post_max_size ของ PHP (' . (string) ini_get('post_max_size') . ') กรุณาลดขนาดไฟล์หรือเพิ่มค่า post_max_size';
+        $message = $uploadTooLargeMessage;
         $uploadDebug = ['content_length_bytes' => $requestSize, 'post_max_size' => (string) ini_get('post_max_size')];
     } elseif (!hash_equals($csrfToken, (string) ($_POST['csrf_token'] ?? ''))) {
         $message = 'แบบฟอร์มหมดอายุ กรุณาโหลดหน้าใหม่แล้วลองอีกครั้ง';
@@ -49,7 +50,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $uploadError = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
         if ($uploadError !== UPLOAD_ERR_OK) {
             $message = match ($uploadError) {
-                UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'ไฟล์มีขนาดเกินกำหนด (สูงสุด 10 MB)',
+                UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => $uploadTooLargeMessage,
                 UPLOAD_ERR_NO_FILE => 'กรุณาเลือกไฟล์ทรานสคริปต์',
                 UPLOAD_ERR_PARTIAL => 'อัปโหลดไฟล์ไม่ครบ กรุณาลองใหม่',
                 UPLOAD_ERR_NO_TMP_DIR => 'เซิร์ฟเวอร์ไม่มีโฟลเดอร์ชั่วคราวสำหรับรับไฟล์ (upload_tmp_dir)',
@@ -59,7 +60,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             };
             $uploadDebug = ['upload_error_code' => $uploadError];
         } elseif ((int) ($file['size'] ?? 0) < 1 || (int) $file['size'] > $maxUploadBytes) {
-            $message = 'ไฟล์ต้องมีขนาดไม่เกิน 10 MB';
+            $message = $uploadTooLargeMessage;
         } else {
             $finfo = new finfo(FILEINFO_MIME_TYPE);
             $mimeType = $finfo->file((string) $file['tmp_name']);
@@ -152,7 +153,7 @@ function hTranscript(string $value): string
     <a class="back-link" href="index.html">← กลับหน้าหลัก</a>
     <section class="transcript-card">
         <h1>ขอเทียบโอนผลการเรียน</h1>
-        <p class="intro">อัปโหลดทรานสคริปต์ฉบับที่อ่านได้ชัดเจน รองรับ PDF หรือรูปภาพ ขนาดไม่เกิน 10 MB</p>
+        <p class="intro">อัปโหลดทรานสคริปต์ฉบับที่อ่านได้ชัดเจน รองรับ PDF หรือรูปภาพ ขนาดไม่เกิน 2 MB</p>
         <?php if ($message !== ''): ?>
             <p class="notice <?= $messageType === 'success' ? 'notice-success' : 'notice-error' ?>" role="status"><?= hTranscript($message) ?></p>
         <?php endif; ?>
@@ -189,6 +190,12 @@ function hTranscript(string $value): string
 document.getElementById('transcriptUploadForm')?.addEventListener('submit', async event => {
     event.preventDefault();
     const form = event.currentTarget;
+    const fileInput = form.querySelector('input[type="file"]');
+    if (fileInput?.files?.[0]?.size > 2 * 1024 * 1024) {
+        window.alert('ไฟล์ใหญ่เกินไป กรุณาใช้อัปโหลดไฟล์ขนาดไม่เกิน 2MB');
+        fileInput.value = '';
+        return;
+    }
     const button = form.querySelector('button[type="submit"]');
     if (button) button.disabled = true;
     try {

@@ -48,8 +48,9 @@ try {
 
     $conn->beginTransaction();
     $requestStmt = $conn->prepare(
-        'SELECT status, file_path
-         FROM public.transcript_requests WHERE request_id = :request_id FOR UPDATE'
+        "SELECT status,
+                CASE WHEN file_path LIKE 'uploads/transcripts/%' THEN file_path ELSE NULL END AS local_file_path
+         FROM public.transcript_requests WHERE request_id = :request_id FOR UPDATE"
     );
     $requestStmt->execute([':request_id' => $requestId]);
     $request = $requestStmt->fetch(PDO::FETCH_ASSOC);
@@ -62,8 +63,8 @@ try {
         rejectTranscriptJson(['status' => 'error', 'message' => 'คำขอนี้ได้รับการตรวจสอบไปแล้ว'], 409);
     }
 
-    $relativePath = (string) $request['file_path'];
-    if (str_starts_with($relativePath, 'uploads/transcripts/')) {
+    $relativePath = (string) ($request['local_file_path'] ?? '');
+    if ($relativePath !== '') {
         $basePath = realpath(__DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'transcripts');
         $absolutePath = realpath(__DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath));
         if ($basePath !== false && $absolutePath !== false && str_starts_with($absolutePath, $basePath . DIRECTORY_SEPARATOR) && is_file($absolutePath) && !unlink($absolutePath)) {

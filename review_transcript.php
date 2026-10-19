@@ -29,7 +29,7 @@ if (empty($_SESSION['transcript_review_csrf'])) {
 }
 $csrfToken = (string) $_SESSION['transcript_review_csrf'];
 $requestsStmt = $conn->query(
-    "SELECT r.request_id, r.student_id, r.document_url, r.file_path, r.original_file_name, r.mime_type, r.submitted_at,
+    "SELECT r.request_id, r.student_id, r.original_file_name, r.submitted_at,
             COALESCE(s.full_name, r.student_id) AS student_name
      FROM public.transcript_requests r
      LEFT JOIN public.students s ON s.user_id = r.student_id
@@ -48,6 +48,19 @@ foreach ($requests as $request) {
 if (!$selectedRequest && $requests) {
     $selectedRequest = $requests[0];
     $selectedRequestId = (string) $selectedRequest['request_id'];
+}
+if ($selectedRequest) {
+    $documentStmt = $conn->prepare(
+        "SELECT COALESCE(NULLIF(document_url, ''), file_path) AS document_data, mime_type
+         FROM public.transcript_requests
+         WHERE request_id = :request_id AND status = 'pending'"
+    );
+    $documentStmt->execute([':request_id' => $selectedRequestId]);
+    $document = $documentStmt->fetch(PDO::FETCH_ASSOC);
+    if ($document) {
+        $selectedRequest['document_data'] = $document['document_data'];
+        $selectedRequest['mime_type'] = $document['mime_type'];
+    }
 }
 
 $lessonsByCourse = [];
@@ -116,8 +129,7 @@ function hReview(string $value): string
                 <div class="pane-title">เอกสารทรานสคริปต์</div>
                 <?php
                     // New requests store a Base64 data URI; retain fallback for older local-file requests.
-                    $fileViewerUrl = (string) ($selectedRequest['document_url'] ?? '');
-                    if ($fileViewerUrl === '') $fileViewerUrl = (string) ($selectedRequest['file_path'] ?? '');
+                    $fileViewerUrl = (string) ($selectedRequest['document_data'] ?? '');
                     $fileMimeType = strtolower((string) ($selectedRequest['mime_type'] ?? ''));
                     $isTranscriptImage = str_starts_with($fileViewerUrl, 'data:image/')
                         || in_array($fileMimeType, ['image/jpeg', 'image/png', 'image/webp'], true);

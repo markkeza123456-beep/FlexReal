@@ -47,7 +47,8 @@ function graduationSummary(PDO $conn, string $studentId): array
             WHERE sc.student_id = :student_course_id
             GROUP BY sc.course_id, c.credits, sc.status
         ), course_results AS (
-            SELECT *,
+            SELECT course_id, credits, enrollment_status, lesson_count,
+                   passed_lessons, transferred_lessons,
                    (LOWER(COALESCE(enrollment_status, '')) IN ('passed', 'completed', 'tr')
                     OR (lesson_count > 0 AND passed_lessons = lesson_count)) AS is_completed,
                    (UPPER(COALESCE(enrollment_status, '')) = 'TR'
