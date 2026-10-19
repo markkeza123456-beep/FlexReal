@@ -121,13 +121,22 @@ function hReview(string $value): string
                         $fileExtension = strtolower(pathinfo((string) $selectedRequest['file_path'], PATHINFO_EXTENSION));
                     }
                     $databaseFilePath = (string) $selectedRequest['file_path'];
-                    $transcriptRoot = realpath(__DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'transcripts');
-                    $candidateFilePath = __DIR__ . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $databaseFilePath);
-                    $resolvedFilePath = realpath($candidateFilePath);
+                    // Resolve the relative DB path beneath the same absolute folder used by upload_transcript.php.
+                    $target_dir = __DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'transcripts' . DIRECTORY_SEPARATOR;
+                    $transcriptRoot = realpath(rtrim($target_dir, DIRECTORY_SEPARATOR));
+                    $relativeFileName = str_starts_with($databaseFilePath, 'uploads/transcripts/')
+                        ? substr($databaseFilePath, strlen('uploads/transcripts/'))
+                        : '';
+                    $safeFileName = $relativeFileName !== ''
+                        && basename(str_replace('\\', '/', $relativeFileName)) === $relativeFileName
+                        && !str_contains($relativeFileName, '/')
+                        && !str_contains($relativeFileName, '\\');
+                    $candidateFilePath = $safeFileName ? $target_dir . $relativeFileName : $target_dir . '__invalid_path__';
+                    $resolvedFilePath = $safeFileName ? realpath($candidateFilePath) : false;
                     $fileExists = $resolvedFilePath !== false && is_file($resolvedFilePath);
                     $fileIsInsideTranscriptDirectory = $fileExists && $transcriptRoot !== false
                         && str_starts_with($resolvedFilePath, rtrim($transcriptRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
-                    $isLocalTranscriptPath = str_starts_with($databaseFilePath, 'uploads/transcripts/') && $fileIsInsideTranscriptDirectory;
+                    $isLocalTranscriptPath = $safeFileName && $fileIsInsideTranscriptDirectory;
                     $debugAbsolutePath = $resolvedFilePath !== false ? $resolvedFilePath : $candidateFilePath;
                     if ($fileMimeType === '' || $fileMimeType === 'application/octet-stream') {
                         $fileMimeType = match ($fileExtension) {
