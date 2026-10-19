@@ -1,6 +1,34 @@
 'use strict';
 
 (() => {
+    const transcriptViewer = document.querySelector('.document-pane iframe, .document-pane img');
+    const transcriptError = document.getElementById('transcriptViewerError');
+    if (transcriptViewer && transcriptError) {
+        const showTranscriptError = message => {
+            transcriptViewer.hidden = true;
+            transcriptError.textContent = message;
+            transcriptError.hidden = false;
+        };
+
+        transcriptViewer.addEventListener('error', () => {
+            showTranscriptError('ไม่พบไฟล์ทรานสคริปต์บนเซิร์ฟเวอร์นี้ กรุณาให้นักเรียนอัปโหลดไฟล์อีกครั้ง');
+        });
+
+        fetch(transcriptViewer.getAttribute('src'), {
+            method: 'HEAD',
+            credentials: 'same-origin',
+            cache: 'no-store'
+        }).then(response => {
+            if (response.ok) return;
+            if (response.status === 403) throw new Error('บัญชีนี้ไม่มีสิทธิ์เปิดไฟล์ทรานสคริปต์');
+            if (response.status === 401) throw new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+            if (response.status === 404) throw new Error('ไม่พบไฟล์บนเซิร์ฟเวอร์นี้ กรุณาให้นักเรียนอัปโหลดไฟล์อีกครั้ง');
+            throw new Error('ไม่สามารถเปิดไฟล์ทรานสคริปต์ได้ กรุณาลองอีกครั้ง');
+        }).catch(error => {
+            showTranscriptError(error instanceof Error ? error.message : 'ไม่สามารถเปิดไฟล์ทรานสคริปต์ได้');
+        });
+    }
+
     const picker = document.getElementById('requestPicker');
     picker?.addEventListener('change', () => {
         const url = new URL(window.location.href);

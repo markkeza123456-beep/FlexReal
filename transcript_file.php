@@ -2,6 +2,13 @@
 session_start();
 header('Cache-Control: no-store, private');
 
+$requestMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+if (!in_array($requestMethod, ['GET', 'HEAD'], true)) {
+    header('Allow: GET, HEAD');
+    http_response_code(405);
+    exit('รองรับเฉพาะการเปิดดูไฟล์');
+}
+
 $role = strtolower(trim((string) ($_SESSION['role'] ?? '')));
 $userId = (string) ($_SESSION['user_id'] ?? '');
 if ($userId === '' || !in_array($role, ['student', 'teacher', 'staff'], true)) {
@@ -70,7 +77,9 @@ try {
     header("Content-Disposition: inline; filename*=UTF-8''{$filename}");
     header('X-Content-Type-Options: nosniff');
     header('Content-Length: ' . (string) filesize($filePath));
-    readfile($filePath);
+    if ($requestMethod !== 'HEAD') {
+        readfile($filePath);
+    }
 } catch (Throwable $e) {
     error_log('Transcript file delivery failed: ' . $e->getMessage());
     http_response_code(500);

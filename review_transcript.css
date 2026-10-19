@@ -12,6 +12,11 @@
 .pane-title { margin-bottom: 10px; font-size: 17px; font-weight: 600; color: #1f2937; }
 .document-pane { display: flex; flex-direction: column; min-height: 680px; }
 .document-pane iframe { width: 100%; flex: 1; min-height: 620px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f8fafc; }
+.transcript-image-viewer { display:flex; flex:1; min-height:620px; align-items:center; justify-content:center; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; background:#f8fafc; }
+.transcript-image-viewer img { display:block; max-width:100%; max-height:78vh; object-fit:contain; }
+.transcript-file-error { display:grid; flex:1; min-height:300px; place-items:center; padding:24px; color:#b91c1c; text-align:center; }
+.transcript-file-error[hidden] { display:none; }
+.transcript-open-link { align-self:flex-start; margin-top:10px; color:#c2410c; font-size:13px; }
 .checklist-pane { display: flex; flex-direction: column; max-height: 760px; }
 .checklist-help { margin: -4px 0 10px; color: #64748b; font-size: 13px; }
 .lesson-checklist { flex: 1; overflow-y: auto; padding-right: 4px; }
@@ -31,5 +36,5 @@
 .review-message { min-height: 1.5em; margin: 8px 0 0; color: #b91c1c; font-size: 13px; }
 .review-empty { padding: 60px 20px; color: #64748b; text-align: center; }
 .muted { color: #64748b; }
-@media (max-width: 900px) { .review-columns { grid-template-columns: 1fr; } .checklist-pane { max-height: none; } .document-pane { min-height: 540px; } .document-pane iframe { min-height: 480px; } }
+@media (max-width: 900px) { .review-columns { grid-template-columns: 1fr; } .checklist-pane { max-height: none; } .document-pane { min-height: 540px; } .document-pane iframe, .transcript-image-viewer { min-height: 480px; } }
 @media (max-width: 640px) { .review-page { width: min(100% - 24px, 1440px); padding-top: 18px; } .review-header { align-items: stretch; flex-direction: column; } .request-picker { min-width: 0; } }

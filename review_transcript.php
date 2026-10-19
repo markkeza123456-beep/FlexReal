@@ -29,7 +29,7 @@ if (empty($_SESSION['transcript_review_csrf'])) {
 }
 $csrfToken = (string) $_SESSION['transcript_review_csrf'];
 $requestsStmt = $conn->query(
-    "SELECT r.request_id, r.student_id, r.original_file_name, r.submitted_at,
+    "SELECT r.request_id, r.student_id, r.file_path, r.original_file_name, r.mime_type, r.submitted_at,
             COALESCE(s.full_name, r.student_id) AS student_name
      FROM public.transcript_requests r
      LEFT JOIN public.students s ON s.user_id = r.student_id
@@ -114,7 +114,32 @@ function hReview(string $value): string
         <div class="review-columns">
             <section class="document-pane" aria-label="เอกสารทรานสคริปต์">
                 <div class="pane-title">เอกสารทรานสคริปต์</div>
-                <iframe title="ทรานสคริปต์ของนักเรียน" src="transcript_file.php?request_id=<?= (int) $selectedRequest['request_id'] ?>"></iframe>
+                <?php
+                    $fileMimeType = strtolower(trim((string) ($selectedRequest['mime_type'] ?? '')));
+                    $fileExtension = strtolower(pathinfo((string) $selectedRequest['original_file_name'], PATHINFO_EXTENSION));
+                    if ($fileExtension === '') {
+                        $fileExtension = strtolower(pathinfo((string) $selectedRequest['file_path'], PATHINFO_EXTENSION));
+                    }
+                    if ($fileMimeType === '' || $fileMimeType === 'application/octet-stream') {
+                        $fileMimeType = match ($fileExtension) {
+                            'pdf' => 'application/pdf',
+                            'jpg', 'jpeg' => 'image/jpeg',
+                            'png' => 'image/png',
+                            'webp' => 'image/webp',
+                            default => '',
+                        };
+                    }
+                    $fileViewerUrl = 'transcript_file.php?request_id=' . (int) $selectedRequest['request_id'];
+                ?>
+                <div class="transcript-file-error" id="transcriptViewerError" role="status" hidden></div>
+                <?php if ($fileMimeType === 'application/pdf'): ?>
+                    <iframe class="transcript-pdf-viewer" title="ทรานสคริปต์ PDF ของนักเรียน" src="<?= hReview($fileViewerUrl) ?>"></iframe>
+                <?php elseif (in_array($fileMimeType, ['image/jpeg', 'image/png', 'image/webp'], true)): ?>
+                    <div class="transcript-image-viewer"><img src="<?= hReview($fileViewerUrl) ?>" alt="ทรานสคริปต์ของ <?= hReview((string) $selectedRequest['student_name']) ?>" loading="lazy"></div>
+                <?php else: ?>
+                    <div class="transcript-file-error" role="status">ไม่รองรับชนิดไฟล์นี้ กรุณาติดต่อเจ้าหน้าที่</div>
+                <?php endif; ?>
+                <a class="transcript-open-link" href="<?= hReview($fileViewerUrl) ?>" target="_blank" rel="noopener noreferrer">เปิดไฟล์ในแท็บใหม่</a>
             </section>
             <form class="checklist-pane" id="transcriptReviewForm" action="process_transcript.php" method="post">
                 <input type="hidden" name="csrf_token" value="<?= hReview($csrfToken) ?>">
