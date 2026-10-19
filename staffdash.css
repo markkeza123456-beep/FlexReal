@@ -696,3 +696,25 @@ body {
   }
   .member-search-wrap input { width: 100%; }
 }
+
+/* Dashboard sidebar brand header */
+.sidebar > .sidebar-header {
+  height: 102px;
+  min-height: 102px;
+  padding: 0 16px;
+  background: #fffaf6;
+  border-bottom: 1px solid #f7c8aa;
+}
+.sidebar-header .brand-home-link {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+}
+.sidebar-header .flex-brand-mark { display: none; }
+.sidebar-header .flex-brand-text { gap: 4px; padding-top: 0; }
+.sidebar-header .flex-brand-name,
+.sidebar-header .flex-brand-sub { color: #2d3436; }
+.sidebar-header .flex-brand-name { font-family: 'Kanit', sans-serif; font-size: 13px; line-height: 1.2; letter-spacing: .12em; }
+.sidebar-header .flex-brand-sub { font-family: 'Kanit', sans-serif; font-size: 9px; line-height: 1.2; letter-spacing: .14em; }

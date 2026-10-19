@@ -92,6 +92,8 @@ html, body {
     transition: background .18s, color .18s;
 }
 .nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.transfer-nav-locked { cursor: not-allowed; opacity: .65; }
+.nav-item.transfer-nav-locked:hover { background: transparent; color: var(--text-dim); }
 .nav-item.active {
     background: var(--orange-dim);
     color: var(--orange);
@@ -583,3 +585,22 @@ html, body {
 .sub-lesson-row:last-of-type td { border-bottom: 1px solid var(--border); }
 .lesson-main-row[data-expanded="true"] .lesson-title-cell { color: var(--orange); }
 .btn-expand-sub { flex-shrink: 0; }
+
+/* Dashboard sidebar brand header */
+.sidebar > .sidebar-logo {
+    height: 102px;
+    min-height: 102px;
+    margin: -24px 0 0;
+    padding: 0 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 4px;
+    background: #fffaf6;
+    border-bottom: 1px solid #f7c8aa;
+}
+.sidebar-logo .logo-icon { display: none; }
+.sidebar-logo .logo-name,
+.sidebar-logo .logo-sub { color: #2d3436; }
+.sidebar-logo .logo-name { font-size: 13px; line-height: 1.2; letter-spacing: .12em; }
+.sidebar-logo .logo-sub { margin-top: 2px; font-size: 9px; line-height: 1.2; letter-spacing: .14em; }
