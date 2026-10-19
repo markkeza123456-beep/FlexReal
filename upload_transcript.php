@@ -48,30 +48,29 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             } elseif (!is_uploaded_file((string) $file['tmp_name'])) {
                 $message = 'ไฟล์อัปโหลดไม่ถูกต้อง กรุณาลองใหม่';
             } else {
-                $uploadDir = __DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'transcripts';
                 $storedName = bin2hex(random_bytes(16)) . '.' . $allowedMimes[$mimeType];
-                $targetPath = $uploadDir . DIRECTORY_SEPARATOR . $storedName;
-                $relativePath = 'uploads/transcripts/' . $storedName;
+                $objectPath = gmdate('Y/m') . '/' . $storedName;
                 $originalName = trim((string) ($file['name'] ?? 'transcript'));
                 $originalName = mb_substr(basename($originalName), 0, 255, 'UTF-8');
                 if ($originalName === '') $originalName = 'transcript.' . $allowedMimes[$mimeType];
+                $uploadedToStorage = false;
+                $bucket = (string) ($env['SUPABASE_TRANSCRIPT_BUCKET'] ?? 'transcripts');
 
                 try {
-                    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0750, true) && !is_dir($uploadDir)) {
-                        throw new RuntimeException('ไม่สามารถเตรียมพื้นที่จัดเก็บไฟล์ได้');
-                    }
-                    if (!move_uploaded_file((string) $file['tmp_name'], $targetPath)) {
-                        throw new RuntimeException('ไม่สามารถบันทึกไฟล์ได้');
-                    }
+                    require_once __DIR__ . '/transcript_storage.php';
+                    transcriptStorageUpload($bucket, $objectPath, (string) $file['tmp_name'], $mimeType);
+                    $uploadedToStorage = true;
 
                     $insert = $conn->prepare(
                         "INSERT INTO public.transcript_requests
-                            (student_id, file_path, original_file_name, mime_type, file_size)
-                         VALUES (:student_id, :file_path, :original_file_name, :mime_type, :file_size)"
+                            (student_id, file_path, storage_bucket, storage_object_path, original_file_name, mime_type, file_size)
+                         VALUES (:student_id, :file_path, :storage_bucket, :storage_object_path, :original_file_name, :mime_type, :file_size)"
                     );
                     $insert->execute([
                         ':student_id' => $studentId,
-                        ':file_path' => $relativePath,
+                        ':file_path' => 'storage://' . $bucket . '/' . $objectPath,
+                        ':storage_bucket' => $bucket,
+                        ':storage_object_path' => $objectPath,
                         ':original_file_name' => $originalName,
                         ':mime_type' => $mimeType,
                         ':file_size' => (int) $file['size'],
@@ -79,9 +78,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     $message = 'ส่งทรานสคริปต์เรียบร้อยแล้ว กรุณารอผู้ตรวจสอบพิจารณา';
                     $messageType = 'success';
                 } catch (Throwable $e) {
-                    if (is_file($targetPath)) @unlink($targetPath);
+                    if ($uploadedToStorage) {
+                        try { transcriptStorageDelete($bucket, $objectPath); }
+                        catch (Throwable $cleanupError) { error_log('Transcript Storage cleanup failed: ' . $cleanupError->getMessage()); }
+                    }
                     error_log('Transcript upload failed: ' . $e->getMessage());
-                    $message = 'บันทึกคำขอไม่สำเร็จ กรุณาลองใหม่ภายหลัง';
+                    $message = 'บันทึกคำขอไม่สำเร็จ กรุณาตรวจสอบการตั้งค่า Storage หรือลองใหม่ภายหลัง';
                 }
             }
         }
