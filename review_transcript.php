@@ -124,17 +124,50 @@ function hReview(string $value): string
                     $isTranscriptPdf = str_starts_with($fileViewerUrl, 'data:application/pdf;')
                         || $fileMimeType === 'application/pdf'
                         || strtolower(pathinfo(parse_url($fileViewerUrl, PHP_URL_PATH) ?: $fileViewerUrl, PATHINFO_EXTENSION)) === 'pdf';
+                    $isBase64Pdf = str_starts_with($fileViewerUrl, 'data:application/pdf;');
                 ?>
                 <div class="transcript-viewer">
                     <?php if ($isTranscriptImage): ?>
                         <img src="<?= hReview($fileViewerUrl) ?>" alt="เอกสารทรานสคริปต์ของ <?= hReview((string) $selectedRequest['student_name']) ?>">
                     <?php elseif ($isTranscriptPdf): ?>
-                        <iframe title="เอกสารทรานสคริปต์ของนักเรียน" src="<?= hReview($fileViewerUrl) ?>"></iframe>
+                        <iframe id="transcriptPdfViewer" title="เอกสารทรานสคริปต์ของนักเรียน" <?= $isBase64Pdf ? '' : 'src="' . hReview($fileViewerUrl) . '"' ?>></iframe>
                     <?php else: ?>
                         <p class="transcript-file-error">ไม่รองรับชนิดไฟล์นี้</p>
                     <?php endif; ?>
                 </div>
-                <a class="transcript-open-link" href="<?= hReview($fileViewerUrl) ?>" target="_blank" rel="noopener noreferrer">เปิดไฟล์ในแท็บใหม่</a>
+                <a class="transcript-open-link" <?= $isBase64Pdf ? 'id="transcriptPdfOpenLink" href="#" aria-disabled="true"' : 'href="' . hReview($fileViewerUrl) . '"' ?> target="_blank" rel="noopener noreferrer">เปิดไฟล์ในแท็บใหม่</a>
+                <?php if ($isBase64Pdf): ?>
+                    <script>
+                    (() => {
+                        const dataUri = <?= json_encode($fileViewerUrl, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) ?>;
+                        const viewer = document.getElementById('transcriptPdfViewer');
+                        const openLink = document.getElementById('transcriptPdfOpenLink');
+                        if (!viewer || !dataUri) return;
+
+                        fetch(dataUri)
+                            .then(response => {
+                                if (!response.ok) throw new Error('อ่านข้อมูล PDF ไม่สำเร็จ');
+                                return response.blob();
+                            })
+                            .then(blob => {
+                                const pdfBlob = blob.type === 'application/pdf'
+                                    ? blob
+                                    : new Blob([blob], { type: 'application/pdf' });
+                                const blobUrl = URL.createObjectURL(pdfBlob);
+                                viewer.src = blobUrl;
+                                if (openLink) {
+                                    openLink.href = blobUrl;
+                                    openLink.removeAttribute('aria-disabled');
+                                }
+                                window.addEventListener('pagehide', () => URL.revokeObjectURL(blobUrl), { once: true });
+                            })
+                            .catch(error => {
+                                console.error('Error loading PDF blob:', error);
+                                viewer.insertAdjacentHTML('afterend', '<p class="transcript-file-error">โหลดเอกสาร PDF ไม่สำเร็จ</p>');
+                            });
+                    })();
+                    </script>
+                <?php endif; ?>
             </section>
             <form class="checklist-pane" id="transcriptReviewForm" action="process_transcript.php" method="post">
                 <input type="hidden" name="csrf_token" value="<?= hReview($csrfToken) ?>">
