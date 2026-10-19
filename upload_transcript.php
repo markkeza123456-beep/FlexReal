@@ -83,11 +83,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
                     $insert = $conn->prepare(
                         "INSERT INTO public.transcript_requests
-                            (student_id, document_url, original_file_name, mime_type, file_size)
-                         VALUES (:student_id, :document_url, :original_file_name, :mime_type, :file_size)"
+                            (student_id, file_path, document_url, original_file_name, mime_type, file_size)
+                         VALUES (:student_id, :file_path, :document_url, :original_file_name, :mime_type, :file_size)"
                     );
                     $insert->execute([
                         ':student_id' => $studentId,
+                        // Keep file_path populated for existing NOT NULL schema constraints.
+                        ':file_path' => $dataUri,
                         ':document_url' => $dataUri,
                         ':original_file_name' => $originalName,
                         ':mime_type' => $mimeType,
