@@ -1,0 +1,105 @@
+:root {
+    color-scheme: light;
+    font-family: "Prompt", "Noto Sans Thai", system-ui, sans-serif;
+    color: #263238;
+    background: #f5f7fa;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.transfer-page {
+    width: min(100% - 32px, 640px);
+    margin: 0 auto;
+    padding: 40px 0;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 18px;
+    color: #475569;
+    text-decoration: none;
+}
+
+.back-link:hover { color: #ea6b28; }
+
+.transfer-card {
+    padding: clamp(24px, 5vw, 40px);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 12px 36px rgb(15 23 42 / 7%);
+}
+
+h1 {
+    margin: 0;
+    font-size: clamp(24px, 5vw, 32px);
+}
+
+.intro {
+    margin: 8px 0 28px;
+    color: #64748b;
+    line-height: 1.7;
+}
+
+.field { margin-bottom: 22px; }
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+input {
+    width: 100%;
+    min-height: 48px;
+    padding: 11px 13px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+}
+
+input:focus {
+    border-color: #ea6b28;
+    outline: 3px solid rgb(234 107 40 / 17%);
+}
+
+small {
+    display: block;
+    margin-top: 7px;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+button {
+    width: 100%;
+    min-height: 48px;
+    border: 0;
+    border-radius: 8px;
+    background: #ea6b28;
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+button:hover:not(:disabled) { background: #d85a1d; }
+button:disabled { cursor: wait; opacity: .7; }
+
+.form-message {
+    min-height: 1.5em;
+    margin: 12px 0 0;
+    color: #b42318;
+    line-height: 1.5;
+}
+
+@media (max-width: 480px) {
+    .transfer-page { padding: 24px 0; }
+}

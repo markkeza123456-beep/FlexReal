@@ -92,6 +92,8 @@ html, body {
     transition: background .18s, color .18s;
 }
 .nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.transfer-nav-locked { cursor: not-allowed; opacity: .65; }
+.nav-item.transfer-nav-locked:hover { background: transparent; color: var(--text-dim); }
 .nav-item.active {
     background: var(--orange-dim);
     color: var(--orange);
