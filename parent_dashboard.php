@@ -387,6 +387,6 @@
   </div>
 </div>
 
-  <script src="parent_dashboard.js?v=20260926-parent-overview-student-data"></script>
+  <script src="parent_dashboard.js?v=20261019-parent-avatar-per-account"></script>
 </body>
 </html>
