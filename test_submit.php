@@ -82,8 +82,27 @@ try {
     $attemptNoStmt = $conn->prepare('SELECT COALESCE(MAX(attempt_number), 0) + 1 FROM public.quiz_attempts WHERE student_id = :student_id AND lesson_id = :lesson_id');
     $attemptNoStmt->execute([':student_id' => $studentId, ':lesson_id' => $lessonId]);
     $attemptNo = (int) $attemptNoStmt->fetchColumn();
+    $tabSwitchStmt = $conn->prepare(
+        'SELECT COALESCE(MAX(tab_switch_count), 0)
+         FROM public.exam_logs
+         WHERE student_id = :student_id AND exam_id = :exam_id AND attempt_number = :attempt_number'
+    );
+    $tabSwitchStmt->execute([
+        ':student_id' => $studentId,
+        ':exam_id' => $lessonId,
+        ':attempt_number' => $attemptNo,
+    ]);
+    $cheatingDetected = (int) $tabSwitchStmt->fetchColumn() >= 3;
+    if ($cheatingDetected) {
+        $score = 0.0;
+        foreach ($savedAnswers as &$savedAnswer) {
+            $savedAnswer['score'] = 0.0;
+            if ($savedAnswer['review_status'] === 'pending') $savedAnswer['review_status'] = 'not_required';
+        }
+        unset($savedAnswer);
+    }
     $requiredScore = $totalScore;
-    $status = $hasEssay ? 'pending_review' : ($score >= $requiredScore ? 'passed' : 'failed');
+    $status = $cheatingDetected ? 'failed' : ($hasEssay ? 'pending_review' : ($score >= $requiredScore ? 'passed' : 'failed'));
     $attemptStmt = $conn->prepare('INSERT INTO public.quiz_attempts (student_id, lesson_id, attempt_number, score, total_score, status) VALUES (:student_id, :lesson_id, :attempt_number, :score, :total_score, :status) RETURNING attempt_id');
     $attemptStmt->execute([':student_id' => $studentId, ':lesson_id' => $lessonId, ':attempt_number' => $attemptNo, ':score' => $score, ':total_score' => $totalScore, ':status' => $status]);
     $attemptId = (int) $attemptStmt->fetchColumn();
@@ -94,7 +113,7 @@ try {
     }
     recordLearningActivity($conn, $studentId, $courseId, $lessonIndex, 'quiz_submit', (string) $lessonRow['title'], (int) $score, (int) $totalScore);
     $conn->commit();
-    quizResponse(['status' => 'success', 'quiz_status' => $status, 'score' => $score, 'total_score' => $totalScore, 'required_score' => $requiredScore, 'pending_review' => $hasEssay, 'message' => 'บันทึกผลสอบเรียบร้อย']);
+    quizResponse(['status' => 'success', 'quiz_status' => $status, 'score' => $score, 'total_score' => $totalScore, 'required_score' => $requiredScore, 'pending_review' => $hasEssay && !$cheatingDetected, 'cheating_detected' => $cheatingDetected, 'message' => $cheatingDetected ? 'ระบบส่งข้อสอบอัตโนมัติและบันทึกผลไม่ผ่าน เนื่องจากสลับแท็บครบ 3 ครั้ง' : 'บันทึกผลสอบเรียบร้อย']);
 } catch (Throwable $e) {
     if ($conn->inTransaction()) $conn->rollBack();
     error_log('Quiz submit failed: ' . $e->getMessage());

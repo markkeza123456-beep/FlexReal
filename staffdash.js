@@ -22,7 +22,9 @@
     'member-list': 'จัดการผู้ใช้งาน',
     'member-edit': 'แก้ไขข้อมูลสมาชิก',
     'staff-add': 'เพิ่มเจ้าหน้าที่',
+    'graduation-requests': 'อนุมัติจบการศึกษา',
   };
+  let graduationReviewCsrf = '';
 
   const sidebar = document.getElementById('sidebar');
   const topbarTitle = document.getElementById('topbarTitle');
@@ -176,6 +178,9 @@
     if (page === 'subject-add') {
       populateTeacherSelect(selectedSubjectTeacherIds);
     }
+    if (page === 'graduation-requests') {
+      loadGraduationRequests();
+    }
 
     sidebar?.classList.remove('open');
     window.scrollTo(0, 0);
@@ -188,6 +193,61 @@
       goTo(item.dataset.page);
     });
   });
+
+  document.getElementById('graduationRefreshBtn')?.addEventListener('click', loadGraduationRequests);
+  document.getElementById('graduationRequestsList')?.addEventListener('click', async event => {
+    const button = event.target.closest('[data-approve-graduation]');
+    if (!button || button.disabled) return;
+    const requestId = button.dataset.approveGraduation;
+    if (!window.confirm('ยืนยันอนุมัติจบการศึกษาและออกใบสรุปผลการเรียน PDF?')) return;
+    button.disabled = true;
+    const formData = new FormData();
+    formData.append('action', 'approve');
+    formData.append('request_id', requestId);
+    formData.append('csrf_token', graduationReviewCsrf);
+    try {
+      const result = await fetchJson('staff_graduation_api.php', { method: 'POST', credentials: 'same-origin', body: formData });
+      showToast(result.message || 'อนุมัติเรียบร้อย', 'success');
+      await loadGraduationRequests();
+    } catch (error) {
+      button.disabled = false;
+      showToast(error.message || 'อนุมัติไม่สำเร็จ', 'error');
+    }
+  });
+
+  async function loadGraduationRequests() {
+    const list = document.getElementById('graduationRequestsList');
+    const message = document.getElementById('graduationRequestsMessage');
+    if (!list || !message) return;
+    message.hidden = false;
+    message.textContent = 'กำลังโหลดคำขอ...';
+    try {
+      const result = await fetchJson('staff_graduation_api.php', { credentials: 'same-origin' });
+      graduationReviewCsrf = String(result.csrf_token || '');
+      const requests = Array.isArray(result.requests) ? result.requests : [];
+      message.hidden = requests.length > 0;
+      message.textContent = requests.length ? '' : 'ไม่มีคำขอจบการศึกษาที่รอพิจารณา';
+      list.innerHTML = requests.map(request => {
+        const courses = Array.isArray(request.courses) ? request.courses : [];
+        const rows = courses.map(course => `<tr>
+          <td class="mono">${escapeHtml(course.code || '-')}</td>
+          <td>${escapeHtml(course.name || '-')}</td>
+          <td>${escapeHtml(course.credits ?? 0)}</td>
+          <td>${Number(course.transferred_lessons || 0) > 0 ? `<span class="graduation-grade-tr">TR · เทียบโอน (${escapeHtml(course.transfer_summary)})</span>` : escapeHtml(course.grade_label || '-')}</td>
+        </tr>`).join('');
+        const eligible = Boolean(request.eligible);
+        return `<article class="form-card graduation-request-card">
+          <div class="graduation-request-heading"><div><h2>${escapeHtml(request.student_name || 'นักเรียน')}</h2><p>รหัส ${escapeHtml(request.student_id)} · ส่งเมื่อ ${escapeHtml(formatRegistrationDate(request.submitted_at))}</p></div><strong>${Number(request.total_credits || 0).toLocaleString('th-TH')} หน่วยกิต</strong></div>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>รหัสวิชา</th><th>รายวิชา</th><th>หน่วยกิต</th><th>ผลการเรียน</th></tr></thead><tbody>${rows || '<tr><td colspan="4">ไม่พบรายวิชา</td></tr>'}</tbody></table></div>
+          <div class="graduation-request-actions">${eligible ? '<span>ตรวจสอบครบทุกวิชาแล้ว</span>' : '<span class="graduation-ineligible">ยังมีวิชาที่ไม่ผ่าน จึงอนุมัติไม่ได้</span>'}<button type="button" class="btn-primary" data-approve-graduation="${escapeHtml(request.request_id)}" ${eligible ? '' : 'disabled'}>อนุมัติและออก PDF</button></div>
+        </article>`;
+      }).join('');
+    } catch (error) {
+      message.hidden = false;
+      message.textContent = error.message || 'ไม่สามารถโหลดคำขอได้';
+      list.innerHTML = '';
+    }
+  }
 
   window.addEventListener('popstate', () => {
     goTo(new URLSearchParams(window.location.search).get('page') || 'dashboard');

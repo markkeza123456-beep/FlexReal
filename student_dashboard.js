@@ -303,6 +303,7 @@ function renderGraduationTracker(graduation) {
     const track = document.querySelector('.graduation-progress-track');
     const percentLabel = document.getElementById('graduationProgressPercent');
     const button = document.getElementById('graduationRequestBtn');
+    const downloadLink = document.getElementById('graduationDownloadLink');
     if (!message || !countLabel || !fill || !track || !percentLabel || !button) return;
 
     countLabel.textContent = `${completed} / ${total} วิชา`;
@@ -311,6 +312,13 @@ function renderGraduationTracker(graduation) {
     percentLabel.textContent = `${percent}%`;
     button.hidden = true;
     button.disabled = false;
+    if (downloadLink) {
+        const approvedDocument = graduation?.approved_document;
+        downloadLink.hidden = !approvedDocument?.request_id;
+        if (approvedDocument?.request_id) {
+            downloadLink.href = `download_graduation_document.php?request_id=${encodeURIComponent(approvedDocument.request_id)}`;
+        }
+    }
 
     if (!graduation?.has_courses) {
         message.textContent = 'ยังไม่พบรายวิชาที่กำหนดให้เรียน กรุณาติดต่อเจ้าหน้าที่';

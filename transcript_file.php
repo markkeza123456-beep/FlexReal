@@ -24,7 +24,7 @@ try {
         exit('รหัสคำขอไม่ถูกต้อง');
     }
     $requestStmt = $conn->prepare(
-        'SELECT student_id, file_path, storage_bucket, storage_object_path, original_file_name, mime_type, file_size
+        'SELECT student_id, file_path, original_file_name, mime_type, file_size
          FROM public.transcript_requests WHERE request_id = :request_id'
     );
     $requestStmt->execute([':request_id' => $requestId]);
@@ -66,24 +66,6 @@ try {
     header("Content-Disposition: inline; filename*=UTF-8''{$filename}");
     header('X-Content-Type-Options: nosniff');
 
-    if (!empty($request['storage_bucket']) && !empty($request['storage_object_path'])) {
-        require_once __DIR__ . '/transcript_storage.php';
-        $storageResponse = transcriptStorageRequest($requestMethod, (string) $request['storage_bucket'], (string) $request['storage_object_path']);
-        if ($storageResponse['status'] === 404) {
-            http_response_code(404);
-            exit('ไม่พบไฟล์ทรานสคริปต์ใน Storage');
-        }
-        if ($storageResponse['status'] < 200 || $storageResponse['status'] >= 300) {
-            error_log('Transcript Storage delivery returned HTTP ' . $storageResponse['status']);
-            http_response_code(502);
-            exit('ไม่สามารถเปิดไฟล์ได้');
-        }
-        $contentLength = $storageResponse['headers']['content-length'] ?? (string) ($request['file_size'] ?? '');
-        if ($contentLength !== '') header('Content-Length: ' . (string) (int) $contentLength);
-        if ($requestMethod !== 'HEAD') echo $storageResponse['body'];
-        exit;
-    }
-
     $relativePath = (string) $request['file_path'];
     if (!str_starts_with($relativePath, 'uploads/transcripts/')) {
         throw new RuntimeException('Invalid transcript storage path');
@@ -95,7 +77,6 @@ try {
         exit('ไม่พบไฟล์ทรานสคริปต์');
     }
 
-    // Legacy local uploads are served from the old transcript directory.
     header('Content-Length: ' . (string) filesize($filePath));
     if ($requestMethod !== 'HEAD') {
         readfile($filePath);

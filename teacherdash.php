@@ -328,12 +328,7 @@ $stats = [
         <a href="#" class="nav-item" data-view="lessons"><span class="nav-icon"></span><span>บทเรียน</span></a>
         <a href="#" class="nav-item" data-view="reports"><span class="nav-icon"></span><span>ออกรายงาน</span></a>
         <?php if ($canAccessTransferApproval): ?>
-        <a href="teacher_credit_transfers.php" class="nav-item"><span class="nav-icon"></span><span>เทียบโอนหน่วยกิต</span></a>
         <a href="review_transcript.php" class="nav-item"><span class="nav-icon"></span><span>ตรวจทรานสคริปต์</span></a>
-        <?php else: ?>
-        <span class="nav-item transfer-nav-locked" aria-disabled="true" title="กรุณาติดต่อเจ้าหน้าที่เพื่อขอสิทธิ์">
-            <span class="nav-icon"></span><span>เทียบโอนหน่วยกิต <small aria-hidden="true">🔒</small></span>
-        </span>
         <?php endif; ?>
     </nav>
 

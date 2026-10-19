@@ -120,6 +120,7 @@ function hReview(string $value): string
                     if ($fileExtension === '') {
                         $fileExtension = strtolower(pathinfo((string) $selectedRequest['file_path'], PATHINFO_EXTENSION));
                     }
+                    $isLocalTranscriptPath = str_starts_with((string) $selectedRequest['file_path'], 'uploads/transcripts/');
                     if ($fileMimeType === '' || $fileMimeType === 'application/octet-stream') {
                         $fileMimeType = match ($fileExtension) {
                             'pdf' => 'application/pdf',
@@ -132,14 +133,16 @@ function hReview(string $value): string
                     $fileViewerUrl = 'transcript_file.php?request_id=' . (int) $selectedRequest['request_id'];
                 ?>
                 <div class="transcript-file-error" id="transcriptViewerError" role="status" hidden></div>
-                <?php if ($fileMimeType === 'application/pdf'): ?>
+                <?php if (!$isLocalTranscriptPath): ?>
+                    <div class="transcript-file-error" role="status">คำขอนี้ไม่มี Path ไฟล์ในโฟลเดอร์อัปโหลดปัจจุบัน กรุณาให้นักเรียนส่งไฟล์อีกครั้ง</div>
+                <?php elseif ($fileMimeType === 'application/pdf'): ?>
                     <iframe class="transcript-pdf-viewer" title="ทรานสคริปต์ PDF ของนักเรียน" src="<?= hReview($fileViewerUrl) ?>"></iframe>
                 <?php elseif (in_array($fileMimeType, ['image/jpeg', 'image/png', 'image/webp'], true)): ?>
                     <div class="transcript-image-viewer"><img src="<?= hReview($fileViewerUrl) ?>" alt="ทรานสคริปต์ของ <?= hReview((string) $selectedRequest['student_name']) ?>" loading="lazy"></div>
                 <?php else: ?>
                     <div class="transcript-file-error" role="status">ไม่รองรับชนิดไฟล์นี้ กรุณาติดต่อเจ้าหน้าที่</div>
                 <?php endif; ?>
-                <a class="transcript-open-link" href="<?= hReview($fileViewerUrl) ?>" target="_blank" rel="noopener noreferrer">เปิดไฟล์ในแท็บใหม่</a>
+                <?php if ($isLocalTranscriptPath): ?><a class="transcript-open-link" href="<?= hReview($fileViewerUrl) ?>" target="_blank" rel="noopener noreferrer">เปิดไฟล์ในแท็บใหม่</a><?php endif; ?>
             </section>
             <form class="checklist-pane" id="transcriptReviewForm" action="process_transcript.php" method="post">
                 <input type="hidden" name="csrf_token" value="<?= hReview($csrfToken) ?>">

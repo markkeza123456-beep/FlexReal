@@ -121,6 +121,12 @@ if (!empty($_SESSION['name'])) {
         </svg>
         ตรวจทรานสคริปต์
       </a>
+      <a class="nav-item" data-page="graduation-requests" href="staffdash.php?page=graduation-requests">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4h16v16H4z"/><path d="m8 12 2.5 2.5L16 9"/><path d="M8 2v4M16 2v4"/>
+        </svg>
+        อนุมัติจบการศึกษา
+      </a>
     </div>
 
     <a href="logout.php" class="sidebar-logout">
@@ -733,6 +739,17 @@ if (!empty($_SESSION['name'])) {
         </div>
       </section>
 
+      <section class="page" id="page-graduation-requests">
+        <div class="page-header">
+          <div>
+            <div class="page-title">อนุมัติจบการศึกษา</div>
+            <div class="page-sub">ตรวจสอบผลการเรียนและอนุมัติพร้อมออกใบสรุปผลการเรียน PDF</div>
+          </div>
+          <button type="button" class="page-btn" id="graduationRefreshBtn">โหลดรายการใหม่</button>
+        </div>
+        <div id="graduationRequestsMessage" class="form-card graduation-review-message" role="status" aria-live="polite">กำลังโหลดคำขอ...</div>
+        <div id="graduationRequestsList" class="graduation-request-list"></div>
+      </section>
     </main>
   </div>
 

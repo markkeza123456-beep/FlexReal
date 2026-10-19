@@ -48,7 +48,7 @@ try {
 
     $conn->beginTransaction();
     $requestStmt = $conn->prepare(
-        'SELECT status, file_path, storage_bucket, storage_object_path
+        'SELECT status, file_path
          FROM public.transcript_requests WHERE request_id = :request_id FOR UPDATE'
     );
     $requestStmt->execute([':request_id' => $requestId]);
@@ -62,21 +62,12 @@ try {
         rejectTranscriptJson(['status' => 'error', 'message' => 'คำขอนี้ได้รับการตรวจสอบไปแล้ว'], 409);
     }
 
-    if (!empty($request['storage_bucket']) && !empty($request['storage_object_path'])) {
-        require_once __DIR__ . '/transcript_storage.php';
-        $delete = transcriptStorageRequest('DELETE', (string) $request['storage_bucket'], (string) $request['storage_object_path']);
-        // Missing objects are already deleted; any other failure aborts the rejection.
-        if ($delete['status'] !== 404 && ($delete['status'] < 200 || $delete['status'] >= 300)) {
-            throw new RuntimeException('Storage delete rejected with HTTP ' . $delete['status']);
-        }
-    } else {
-        $relativePath = (string) $request['file_path'];
-        if (str_starts_with($relativePath, 'uploads/transcripts/')) {
-            $basePath = realpath(__DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'transcripts');
-            $absolutePath = realpath(__DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath));
-            if ($basePath !== false && $absolutePath !== false && str_starts_with($absolutePath, $basePath . DIRECTORY_SEPARATOR) && is_file($absolutePath) && !unlink($absolutePath)) {
-                throw new RuntimeException('Unable to remove legacy transcript file');
-            }
+    $relativePath = (string) $request['file_path'];
+    if (str_starts_with($relativePath, 'uploads/transcripts/')) {
+        $basePath = realpath(__DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'transcripts');
+        $absolutePath = realpath(__DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath));
+        if ($basePath !== false && $absolutePath !== false && str_starts_with($absolutePath, $basePath . DIRECTORY_SEPARATOR) && is_file($absolutePath) && !unlink($absolutePath)) {
+            throw new RuntimeException('Unable to remove transcript file');
         }
     }
 
