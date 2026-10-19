@@ -232,3 +232,26 @@ select, input[type="text"] {
 @media (max-width: 860px) { .grade-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .overview-student-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .overview-student-stats .stat-card:last-child { grid-column: 1 / -1; } }
 @media (max-width: 680px) { .grade-summary, .overview-student-stats { grid-template-columns: 1fr; } .overview-student-stats .stat-card:last-child { grid-column: auto; } .overview-courses-heading { align-items: flex-start; flex-direction: column; } .overview-course-search { width: 100%; } .parent-subject-meta { flex-wrap: wrap; } }
 select:focus, input[type="text"]:focus { outline: none; border-color: var(--accent); }
+
+/* Dashboard sidebar brand header */
+.sidebar > .logo.logo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  width: calc(100% + 2.4rem);
+  height: 102px;
+  min-height: 102px;
+  margin: -1.5rem -1.2rem 22px;
+  padding: 0 16px;
+  background: #fffaf6;
+  border-bottom: 1px solid #f7c8aa;
+  text-align: left;
+}
+.sidebar > .logo.logo-section h2,
+.sidebar > .logo.logo-section span,
+.sidebar > .logo.logo-section:hover h2,
+.sidebar > .logo.logo-section:hover span { color: #2d3436; }
+.sidebar > .logo.logo-section h2 { font-size: 13px; line-height: 1.2; letter-spacing: .12em; }
+.sidebar > .logo.logo-section span { margin-top: 2px; font-size: 9px; line-height: 1.2; letter-spacing: .14em; }

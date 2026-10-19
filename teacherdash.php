@@ -250,7 +250,7 @@ $stats = [
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="teacherdash.css?v=20260916-hidden-video-list">
+    <link rel="stylesheet" href="teacherdash.css?v=20261019-sidebar-brand">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px;
