@@ -9,7 +9,34 @@
   function render(data) { lessons=data.lessons||[]; videos=data.videos||[]; $('subjectTitle').textContent=`วิดีโอของวิชา ${subjectId}`; $('videoMeta').innerHTML=`<span class="meta-pill">วิดีโอ ${videos.length} รายการ</span>`; $('videoLesson').innerHTML='<option value="" disabled selected>เลือกบทเรียน</option>'+lessons.map(l=>`<option value="${esc(l.id)}">${esc(l.title)}</option>`).join(''); $('videoTableBody').innerHTML=videos.length?videos.map(v=>`<tr><td>${esc(v.title)}</td><td>${esc(v.lesson_title||'-')}</td><td><div class="action-btns"><button class="btn-icon" data-edit="${esc(v.id)}">แก้ไข</button><button class="btn-icon danger" data-delete="${esc(v.id)}">ลบ</button></div></td></tr>`).join(''):'<tr><td colspan="3" class="empty-cell">ยังไม่มีวิดีโอในวิชานี้</td></tr>'; }
   async function load() { if(!subjectId) { $('errorPanel').hidden=false; $('errorMessage').textContent='ไม่พบรหัสวิชา'; return; } const f=new FormData(); f.append('action','get_videos'); f.append('subject_id',subjectId); try { render(await request(f)); } catch(e) { $('errorPanel').hidden=false; $('errorMessage').textContent=e.message; } }
   function edit(id) { const v=videos.find(x=>String(x.id)===String(id)); if(!v)return; $('videoId').value=v.id; $('videoTitle').value=v.title||''; $('videoDescription').value=v.description||''; $('videoLesson').value=v.lessons_id||''; $('videoFormTitle').textContent=`แก้ไขวิดีโอ: ${v.title}`; setFileRequirement(false); $('videoEditor').scrollIntoView({behavior:'smooth'}); }
-  $('videoForm').addEventListener('submit',async e=>{e.preventDefault();const file=$('videoFile').files[0], isNew=!$('videoId').value;if(isNew&&!file){toast('กรุณาเลือกไฟล์วิดีโอ','error');return;}const f=new FormData();f.append('action','save_video');f.append('subject_id',subjectId);f.append('video_id',$('videoId').value);f.append('title',$('videoTitle').value.trim());f.append('description',$('videoDescription').value.trim());f.append('lesson_id',$('videoLesson').value);if(file)f.append('video_file',file);try{await request(f);toast('บันทึกวิดีโอเรียบร้อยแล้ว');reset();load();}catch(x){toast(x.message,'error');}});
+  $('videoForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const file = $('videoFile').files[0];
+    const isNew = !$('videoId').value;
+    if (isNew && !file) { toast('กรุณาเลือกไฟล์วิดีโอ MP4', 'error'); return; }
+
+    const form = new FormData();
+    form.append('action', 'save_video');
+    form.append('subject_id', subjectId);
+    form.append('video_id', $('videoId').value);
+    form.append('title', $('videoTitle').value.trim());
+    form.append('description', $('videoDescription').value.trim());
+    form.append('lesson_id', $('videoLesson').value);
+    if (file) form.append('video_file', file);
+
+    const submitButton = $('videoForm').querySelector('button[type="submit"]');
+    if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'กำลังบันทึก...'; }
+    try {
+      const result = await request(form);
+      toast(result.message || 'อัปโหลดและบันทึกวิดีโอสำเร็จ');
+      reset();
+      await load();
+    } catch (error) {
+      toast(error.message, 'error');
+    } finally {
+      if (submitButton) { submitButton.disabled = false; submitButton.textContent = 'บันทึกวิดีโอ'; }
+    }
+  });
   $('addVideoBtn').onclick=()=>{$('videoEditor').scrollIntoView({behavior:'smooth'});reset();}; $('clearVideoBtn').onclick=reset;
   $('videoTableBody').onclick=async e=>{const editBtn=e.target.closest('[data-edit]'), delBtn=e.target.closest('[data-delete]');if(editBtn)return edit(editBtn.dataset.edit);if(!delBtn||!confirm('ยืนยันการลบวิดีโอนี้?'))return;const f=new FormData();f.append('action','delete_video');f.append('subject_id',subjectId);f.append('video_id',delBtn.dataset.delete);try{await request(f);toast('ลบวิดีโอแล้ว');load();}catch(x){toast(x.message,'error');}};
   load();

@@ -1,21 +1,17 @@
 <?php
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-try {
-    require_once __DIR__ . '/db_connect.php';
-    require_once __DIR__ . '/learning_progress_lib.php';
-} catch (Throwable $e) {
-    error_log('Teacher API startup failed: ' . $e->getMessage());
-    http_response_code(503);
-    echo json_encode(['success' => false, 'message' => 'เชื่อมต่อฐานข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-const MAX_LESSONS_PER_SUBJECT = 3;
+set_error_handler(static function (int $severity, string $message, string $file, int $line): bool {
+    if (!(error_reporting() & $severity)) return false;
+    throw new ErrorException($message, 0, $severity, $file, $line);
+});
 
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'teacher') {
-    echo json_encode(['success' => false, 'message' => 'กรุณาล็อกอินใหม่']);
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'กรุณาล็อกอินใหม่'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -36,10 +32,23 @@ function phpSizeToBytes(string $size): int
 $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
 $postMaxBytes = phpSizeToBytes((string) ini_get('post_max_size'));
 if ($postMaxBytes > 0 && $contentLength > $postMaxBytes) {
+    http_response_code(413);
     $limitMegabytes = round($postMaxBytes / 1024 / 1024);
-    echo json_encode(['success' => false, 'message' => "ไฟล์ที่อัปโหลดมีขนาดเกิน {$limitMegabytes} MB ซึ่งเป็นขีดจำกัดของเซิร์ฟเวอร์"], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => false, 'message' => "ไฟล์ที่ส่งมามีขนาดเกิน {$limitMegabytes} MB ที่เซิร์ฟเวอร์รองรับ"], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+try {
+    require_once __DIR__ . '/db_connect.php';
+    require_once __DIR__ . '/learning_progress_lib.php';
+} catch (Throwable $e) {
+    error_log('Teacher API startup failed: ' . $e->getMessage());
+    http_response_code(503);
+    echo json_encode(['success' => false, 'message' => 'เชื่อมต่อฐานข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+const MAX_LESSONS_PER_SUBJECT = 3;
 
 $action = $_POST['action'] ?? '';
 $teacherId = (string) $_SESSION['user_id'];
@@ -138,28 +147,53 @@ function uploadLessonFile(string $fieldName, array $segments, string $prefix, bo
             UPLOAD_ERR_NO_FILE => 'กรุณาเลือกไฟล์วิดีโอ',
             UPLOAD_ERR_NO_TMP_DIR => 'ไม่พบโฟลเดอร์ชั่วคราวสำหรับอัปโหลด',
             UPLOAD_ERR_CANT_WRITE => 'เซิร์ฟเวอร์ไม่สามารถบันทึกไฟล์วิดีโอได้',
+            UPLOAD_ERR_EXTENSION => 'การตั้งค่า PHP หยุดการอัปโหลดไฟล์',
         ];
         throw new Exception($errors[$errorCode] ?? 'เกิดข้อผิดพลาดระหว่างอัปโหลดไฟล์วิดีโอ');
     }
 
+    $temporaryPath = (string) ($file['tmp_name'] ?? '');
+    if ($temporaryPath === '' || !is_uploaded_file($temporaryPath)) {
+        throw new Exception('ไฟล์อัปโหลดชั่วคราวไม่ถูกต้อง กรุณาเลือกไฟล์ใหม่');
+    }
+
     $relativeDir = 'uploads/' . implode('/', $segments);
     $uploadDir = __DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativeDir);
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
+    if (!is_dir($uploadDir) && !@mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
+        throw new RuntimeException('เซิร์ฟเวอร์สร้างโฟลเดอร์สำหรับเก็บวิดีโอไม่ได้');
+    }
+    if (!is_writable($uploadDir)) {
+        throw new RuntimeException('ไม่มีสิทธิ์เขียนไฟล์ในโฟลเดอร์เก็บวิดีโอ');
     }
 
     $originalName = trim((string) ($file['name'] ?? ''));
     $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
     if ($allowedExtensions !== null && !in_array($extension, $allowedExtensions, true)) {
-        throw new Exception('เอกสารบทเรียนต้องเป็นไฟล์ PDF เท่านั้น');
+        throw new Exception($prefix === 'video' ? 'รองรับไฟล์วิดีโอ MP4 เท่านั้น' : 'เอกสารบทเรียนต้องเป็นไฟล์ PDF เท่านั้น');
+    }
+    if ($prefix === 'video' && (int) ($file['size'] ?? 0) <= 0) {
+        throw new Exception('ไฟล์วิดีโอว่างเปล่าหรืออ่านไม่ได้');
+    }
+    if ($prefix === 'video' && (int) ($file['size'] ?? 0) > phpSizeToBytes((string) ini_get('upload_max_filesize'))) {
+        throw new Exception('ไฟล์วิดีโอมีขนาดเกินขีดจำกัดของเซิร์ฟเวอร์');
+    }
+    if ($prefix === 'video') {
+        $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file($temporaryPath);
+        if (!in_array($mimeType, ['video/mp4', 'application/mp4', 'application/octet-stream'], true)) {
+            throw new Exception('ไฟล์ที่เลือกไม่ใช่วิดีโอ MP4');
+        }
     }
     $safeName = preg_replace('/[^A-Za-z0-9._-]/', '_', basename($originalName));
     $safeName = $safeName !== '' ? $safeName : ($prefix . '_' . time());
-    $targetName = $prefix . '_' . time() . '_' . $safeName;
+    $targetName = $prefix . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(5)) . '_' . $safeName;
     $targetPath = $uploadDir . DIRECTORY_SEPARATOR . $targetName;
 
-    if (!move_uploaded_file((string) $file['tmp_name'], $targetPath)) {
+    if (!move_uploaded_file($temporaryPath, $targetPath)) {
         throw new Exception('เซิร์ฟเวอร์ไม่สามารถย้ายไฟล์วิดีโอไปยังโฟลเดอร์จัดเก็บได้');
+    }
+    if (!is_file($targetPath) || filesize($targetPath) !== (int) $file['size']) {
+        @unlink($targetPath);
+        throw new RuntimeException('ตรวจสอบไฟล์วิดีโอหลังบันทึกไม่ผ่าน');
     }
 
     return [
@@ -269,13 +303,13 @@ try {
         }
 
         $conn->beginTransaction();
-        $stmt = $conn->prepare('INSERT INTO public.lessons (course_id, title, content, study_hours, position) VALUES (:course_id, :title, :content, 1, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lessons WHERE course_id = :course_id)) RETURNING lesson_id');
-        $stmt->execute([':course_id' => $subjectId, ':title' => $lessonName, ':content' => $lessonContent]);
+        $stmt = $conn->prepare('INSERT INTO public.lessons (course_id, title, content, study_hours, position, updated_at, updated_by) VALUES (:course_id, :title, :content, 1, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lessons WHERE course_id = :course_id), clock_timestamp(), :updated_by) RETURNING lesson_id');
+        $stmt->execute([':course_id' => $subjectId, ':title' => $lessonName, ':content' => $lessonContent, ':updated_by' => $teacherId]);
         $lessonId = (string) $stmt->fetchColumn();
         $documentUpload = uploadLessonFile('lesson_document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc', false, ['pdf']);
         if ($documentUpload['path'] !== '') {
-            $resource = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position) VALUES (:lesson_id, 'document', :title, :url, 1)");
-            $resource->execute([':lesson_id' => $lessonId, ':title' => $documentUpload['name'], ':url' => $documentUpload['path']]);
+            $resource = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position, updated_at, updated_by) VALUES (:lesson_id, 'document', :title, :url, 1, clock_timestamp(), :updated_by)");
+            $resource->execute([':lesson_id' => $lessonId, ':title' => $documentUpload['name'], ':url' => $documentUpload['path'], ':updated_by' => $teacherId]);
         }
         $conn->commit();
 
@@ -332,13 +366,14 @@ try {
                 if ($resourceId !== false) {
                     $resource = $conn->prepare(
                         "UPDATE public.lesson_resources
-                         SET title = :title, url = :url, updated_at = NOW()
+                         SET title = :title, url = :url, updated_at = clock_timestamp(), updated_by = :updated_by
                          WHERE resource_id = :resource_id"
                     );
                     $resource->execute([
                         ':resource_id' => $resourceId,
                         ':title' => $documentUpload['name'],
                         ':url' => $documentUpload['path'],
+                        ':updated_by' => $teacherId,
                     ]);
                     $conn->prepare(
                         "DELETE FROM public.lesson_resources
@@ -346,22 +381,23 @@ try {
                     )->execute([':lesson_id' => $lessonId, ':resource_id' => $resourceId]);
                 } else {
                     $resource = $conn->prepare(
-                        "INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position)
+                        "INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position, updated_at, updated_by)
                          VALUES (:lesson_id, 'document', :title, :url,
                            (SELECT COALESCE(MAX(position), 0) + 1
-                            FROM public.lesson_resources WHERE lesson_id = :lesson_id))"
+                            FROM public.lesson_resources WHERE lesson_id = :lesson_id), clock_timestamp(), :updated_by)"
                     );
                     $resource->execute([
                         ':lesson_id' => $lessonId,
                         ':title' => $documentUpload['name'],
                         ':url' => $documentUpload['path'],
+                        ':updated_by' => $teacherId,
                     ]);
                 }
             }
         }
 
-        $conn->prepare('UPDATE public.lessons SET updated_at = NOW() WHERE lesson_id = :lesson_id')
-            ->execute([':lesson_id' => $lessonId]);
+        $conn->prepare('UPDATE public.lessons SET updated_at = clock_timestamp(), updated_by = :updated_by WHERE lesson_id = :lesson_id')
+            ->execute([':lesson_id' => $lessonId, ':updated_by' => $teacherId]);
         echo json_encode(['success' => true, 'message' => 'แก้ไขบทเรียนสำเร็จ']);
         exit;
     }
@@ -539,7 +575,7 @@ try {
         }
         $lessonStmt = $conn->prepare('SELECT lesson_id AS id, title FROM public.lessons WHERE course_id = :subject_id ORDER BY position LIMIT 3');
         $lessonStmt->execute([':subject_id' => $subjectId]);
-        $videoStmt = $conn->prepare("SELECT r.resource_id AS id, r.title, r.url, '' AS description, r.duration_seconds, r.position AS display_order, r.lesson_id AS lessons_id, l.title AS lesson_title, EXTRACT(EPOCH FROM COALESCE(r.updated_at, r.created_at)) AS last_modified_epoch FROM public.lesson_resources r INNER JOIN public.lessons l ON l.lesson_id = r.lesson_id WHERE l.course_id = :subject_id AND r.resource_type = 'video' ORDER BY r.lesson_id, r.position DESC, r.resource_id DESC");
+        $videoStmt = $conn->prepare("SELECT r.resource_id AS id, r.title, r.url, '' AS description, r.duration_seconds, r.position AS display_order, r.lesson_id AS lessons_id, l.title AS lesson_title, EXTRACT(EPOCH FROM COALESCE(r.updated_at, r.created_at)) AS last_modified_epoch, COALESCE(t.full_name, r.updated_by, 'ยังไม่มีข้อมูล') AS updated_by_name FROM public.lesson_resources r INNER JOIN public.lessons l ON l.lesson_id = r.lesson_id LEFT JOIN public.teachers t ON t.user_id = r.updated_by WHERE l.course_id = :subject_id AND r.resource_type = 'video' ORDER BY r.lesson_id, r.position DESC, r.resource_id DESC");
         $videoStmt->execute([':subject_id' => $subjectId]);
         echo json_encode(['success' => true, 'lessons' => $lessonStmt->fetchAll(PDO::FETCH_ASSOC), 'videos' => $videoStmt->fetchAll(PDO::FETCH_ASSOC)]);
         exit;
@@ -554,50 +590,100 @@ try {
         }
         $lessonId = trim((string) ($_POST['lesson_id'] ?? ''));
         if ($lessonId === '' || !teacherOwnsLesson($conn, $teacherId, $lessonId)) throw new Exception('บทเรียนที่เลือกไม่ถูกต้อง');
-        $hasNewFile = isset($_FILES['video_file']) && (int) ($_FILES['video_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+        $lessonCourseStmt = $conn->prepare('SELECT course_id FROM public.lessons WHERE lesson_id = :lesson_id');
+        $lessonCourseStmt->execute([':lesson_id' => $lessonId]);
+        if ((string) $lessonCourseStmt->fetchColumn() !== $subjectId) throw new Exception('บทเรียนที่เลือกไม่อยู่ในรายวิชานี้');
 
+        $filePresent = isset($_FILES['video_file']) && is_array($_FILES['video_file'])
+            && (int) ($_FILES['video_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+        $oldUrl = '';
+        if ($videoId !== '') {
+            $existingStmt = $conn->prepare(
+                "SELECT r.resource_id, r.url, r.title
+                 FROM public.lesson_resources r
+                 INNER JOIN public.lessons l ON l.lesson_id = r.lesson_id
+                 WHERE r.resource_id = :id AND l.course_id = :subject_id AND r.resource_type = 'video'
+                 LIMIT 1"
+            );
+            $existingStmt->execute([':id' => $videoId, ':subject_id' => $subjectId]);
+            $existingVideo = $existingStmt->fetch(PDO::FETCH_ASSOC);
+            if (!$existingVideo) throw new Exception('ไม่พบวิดีโอเดิมในรายวิชานี้');
+            $oldUrl = (string) $existingVideo['url'];
+            if ($title === '') $title = (string) $existingVideo['title'];
+        }
 
+        if ($title === '' && $filePresent) $title = pathinfo((string) ($_FILES['video_file']['name'] ?? ''), PATHINFO_FILENAME);
+        if ($title === '') throw new Exception('กรุณาระบุชื่อวิดีโอ');
+        if (!$filePresent && $videoId === '') throw new Exception('กรุณาเลือกไฟล์วิดีโอ MP4');
 
-        $activeVideo = $conn->prepare(
-            "SELECT resource_id, title
-             FROM public.lesson_resources
-             WHERE lesson_id = :lesson_id AND resource_type = 'video'
-             ORDER BY position DESC, resource_id DESC
-             LIMIT 1"
-        );
-        $activeVideo->execute([':lesson_id' => $lessonId]);
-        $currentVideo = $activeVideo->fetch(PDO::FETCH_ASSOC) ?: null;
-        if ($videoId === '' && $currentVideo) {
-            $videoId = (string) $currentVideo['resource_id'];
-        }
-        if ($title === '' && $currentVideo) {
-            $title = (string) $currentVideo['title'];
-        }
-        if ($title === '' && $hasNewFile) {
-            $title = pathinfo((string) ($_FILES['video_file']['name'] ?? ''), PATHINFO_FILENAME);
-        }
-        if ($title === '') $title = 'วิดีโอบทเรียน';
-        if ($videoId === '' && !$hasNewFile) throw new Exception('กรุณาเลือกไฟล์วิดีโอ');
-        if ($hasNewFile) {
-            $upload = uploadLessonFile('video_file', buildVideoMediaSegments($teacherId, $subjectId), 'video', true);
+        $newFilePath = '';
+        $newFileDiskPath = '';
+        if ($filePresent) {
+            $upload = uploadLessonFile('video_file', buildVideoMediaSegments($teacherId, $subjectId), 'video', true, ['mp4']);
             $url = $upload['path'];
+            $newFilePath = $url;
+            $newFileDiskPath = __DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $newFilePath);
         } else {
-            $current = $conn->prepare("SELECT r.url FROM public.lesson_resources r INNER JOIN public.lessons l ON l.lesson_id = r.lesson_id WHERE r.resource_id = :id AND l.course_id = :subject_id AND r.resource_type = 'video'");
-            $current->execute([':id' => $videoId, ':subject_id' => $subjectId]);
-            $url = (string) ($current->fetchColumn() ?: '');
-            if ($url === '') throw new Exception('ไม่พบไฟล์วิดีโอเดิม');
+            $url = $oldUrl;
         }
+<<<<<<< HEAD
+
+        try {
+            $conn->beginTransaction();
+            $params = [':title' => $title, ':url' => $url, ':lesson_id' => $lessonId];
+            if ($videoId === '') {
+                $stmt = $conn->prepare(
+                    "INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position)
+                     VALUES (:lesson_id, 'video', :title, :url,
+                       (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lesson_resources WHERE lesson_id = :position_lesson_id))
+                     RETURNING resource_id AS id, EXTRACT(EPOCH FROM COALESCE(updated_at, created_at)) AS last_modified_epoch"
+                );
+                $params[':position_lesson_id'] = $lessonId;
+            } else {
+                $params[':id'] = $videoId;
+                $stmt = $conn->prepare(
+                    "UPDATE public.lesson_resources
+                     SET title = :title, url = :url, lesson_id = :lesson_id, updated_at = clock_timestamp()
+                     WHERE resource_id = :id AND resource_type = 'video'
+                     RETURNING resource_id AS id, EXTRACT(EPOCH FROM COALESCE(updated_at, created_at)) AS last_modified_epoch"
+                );
+            }
+            $stmt->execute($params);
+            $savedVideo = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$savedVideo) throw new RuntimeException('Video resource was not saved.');
+            $conn->commit();
+        } catch (Throwable $saveError) {
+            if ($conn->inTransaction()) $conn->rollBack();
+            if ($newFileDiskPath !== '' && is_file($newFileDiskPath)) @unlink($newFileDiskPath);
+            throw $saveError;
+        }
+
+        if ($newFilePath !== '' && $oldUrl !== '' && $oldUrl !== $newFilePath && str_starts_with($oldUrl, 'uploads/')) {
+            $uploadsRoot = realpath(__DIR__ . '/uploads');
+            $oldDiskPath = realpath(__DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, strtok($oldUrl, '?')));
+            if ($uploadsRoot !== false && $oldDiskPath !== false && str_starts_with($oldDiskPath, $uploadsRoot . DIRECTORY_SEPARATOR) && is_file($oldDiskPath)) {
+                @unlink($oldDiskPath);
+            }
+        }
+
+        echo json_encode(['success' => true, 'message' => 'อัปโหลดวิดีโอสำเร็จและบันทึกเรียบร้อยแล้ว', 'video' => $savedVideo], JSON_UNESCAPED_UNICODE);
+=======
         $params = [':title' => $title, ':url' => $url, ':lesson_id' => $lessonId];
         if ($videoId === '') {
-            $stmt = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position) VALUES (:lesson_id, 'video', :title, :url, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lesson_resources WHERE lesson_id = :lesson_id)) RETURNING resource_id AS id, EXTRACT(EPOCH FROM COALESCE(updated_at, created_at)) AS last_modified_epoch");
+            $stmt = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position, updated_at, updated_by) VALUES (:lesson_id, 'video', :title, :url, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lesson_resources WHERE lesson_id = :lesson_id), clock_timestamp(), :updated_by) RETURNING resource_id AS id, updated_by, EXTRACT(EPOCH FROM COALESCE(updated_at, created_at)) AS last_modified_epoch");
         } else {
             $params[':id'] = $videoId;
-            $stmt = $conn->prepare("UPDATE public.lesson_resources SET title = :title, url = :url, lesson_id = :lesson_id, updated_at = clock_timestamp() WHERE resource_id = :id AND resource_type = 'video' RETURNING resource_id AS id, EXTRACT(EPOCH FROM COALESCE(updated_at, created_at)) AS last_modified_epoch");
+            $stmt = $conn->prepare("UPDATE public.lesson_resources SET title = :title, url = :url, lesson_id = :lesson_id, updated_at = clock_timestamp(), updated_by = :updated_by WHERE resource_id = :id AND resource_type = 'video' RETURNING resource_id AS id, updated_by, EXTRACT(EPOCH FROM COALESCE(updated_at, created_at)) AS last_modified_epoch");
         }
+        $params[':updated_by'] = $teacherId;
         $stmt->execute($params);
         $savedVideo = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$savedVideo) throw new Exception('ไม่พบวิดีโอที่บันทึก กรุณาเลือกวิดีโอใหม่แล้วลองอีกครั้ง');
+        $editorStmt = $conn->prepare('SELECT full_name FROM public.teachers WHERE user_id = :teacher_id');
+        $editorStmt->execute([':teacher_id' => $teacherId]);
+        $savedVideo['updated_by_name'] = $editorStmt->fetchColumn() ?: $teacherId;
         echo json_encode(['success' => true, 'message' => 'บันทึกวิดีโอสำเร็จ', 'video' => $savedVideo], JSON_UNESCAPED_UNICODE);
+>>>>>>> 530713fad3fdc1f013dc91178d3dc9aa06ceb89e
         exit;
     }
 
@@ -667,8 +753,12 @@ try {
     }
 
     throw new Exception('ไม่พบคำสั่งที่ต้องการ');
-} catch (Exception $e) {
+} catch (Throwable $e) {
     if ($conn->inTransaction()) $conn->rollBack();
-    echo json_encode(['success' => false, 'message' => 'DB Error: ' . $e->getMessage()]);
+    error_log('Teacher API request failed (' . $action . '): ' . $e->getMessage());
+    $userMessage = $e instanceof PDOException || $e instanceof ErrorException || $e instanceof TypeError
+        ? 'ระบบบันทึกข้อมูลขัดข้อง กรุณาลองใหม่อีกครั้ง'
+        : $e->getMessage();
+    echo json_encode(['success' => false, 'message' => $userMessage], JSON_UNESCAPED_UNICODE);
 }
 ?>
