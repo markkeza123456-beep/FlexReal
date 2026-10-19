@@ -182,6 +182,7 @@
   };
 
   document.querySelectorAll('.nav-item').forEach(item => {
+    if (!item.dataset.page) return;
     item.addEventListener('click', e => {
       e.preventDefault();
       goTo(item.dataset.page);

@@ -21,15 +21,43 @@ if (($_SESSION['role'] ?? '') !== 'staff' || empty($_SESSION['user_id'])) {
     permissionResponse(['status' => 'unauthorized', 'message' => 'เฉพาะเจ้าหน้าที่เท่านั้นที่ให้สิทธิ์ได้'], 403);
 }
 $staffId = (string) $_SESSION['user_id'];
+if (empty($_SESSION['csrf_token']) || !hash_equals((string) $_SESSION['csrf_token'], (string) ($_POST['csrf_token'] ?? ''))) {
+    permissionResponse(['status' => 'error', 'message' => 'คำขอหมดอายุ กรุณาโหลดหน้าใหม่'], 419);
+}
 session_write_close();
 
+$action = strtolower(trim((string) ($_POST['action'] ?? 'grant')));
 $teacherId = trim((string) ($_POST['instructor_id'] ?? $_POST['teacher_id'] ?? ''));
-if ($teacherId === '') {
+if ($teacherId === '' || !in_array($action, ['grant', 'revoke'], true)) {
     permissionResponse(['status' => 'error', 'message' => 'กรุณาระบุรหัสอาจารย์'], 400);
 }
 
 try {
     require_once __DIR__ . '/db_connect.php';
+    if ($action === 'revoke') {
+        $revokeStmt = $conn->prepare(
+            "UPDATE public.transfer_permissions AS p
+             SET is_active = FALSE, revoked_by = :staff_id, revoked_at = NOW()
+             WHERE p.instructor_id = :teacher_id
+               AND p.is_active = TRUE
+               AND EXISTS (
+                   SELECT 1 FROM public.users AS staff
+                   WHERE staff.user_id = :staff_check_id AND staff.role = 'staff'
+               )
+             RETURNING p.permission_id"
+        );
+        $revokeStmt->execute([
+            ':staff_id' => $staffId,
+            ':teacher_id' => $teacherId,
+            ':staff_check_id' => $staffId,
+        ]);
+        $permissionId = $revokeStmt->fetchColumn();
+        if ($permissionId === false) {
+            permissionResponse(['status' => 'error', 'message' => 'ไม่พบสิทธิ์ที่กำลังใช้งานของอาจารย์รายนี้'], 404);
+        }
+        permissionResponse(['status' => 'success', 'message' => 'ดึงสิทธิ์เรียบร้อยแล้ว', 'permission_id' => $permissionId]);
+    }
+
     $stmt = $conn->prepare(
         "INSERT INTO public.transfer_permissions (instructor_id, granted_by)
          SELECT teacher.user_id, staff.user_id
