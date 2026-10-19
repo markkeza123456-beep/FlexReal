@@ -391,6 +391,24 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('inlineVideoFileHint').textContent = 'เลือกไฟล์ใหม่เพื่อแทนที่วิดีโอเดิม; เว้นชื่อวิดีโอได้';
     }
 
+    function formatTeacherEditDate(value) {
+        const timestamp = Number(value);
+        if (!Number.isFinite(timestamp) || timestamp <= 0) return 'ยังไม่มีข้อมูลวันที่';
+        const date = new Date(timestamp * 1000);
+        if (Number.isNaN(date.getTime())) return 'ยังไม่มีข้อมูลวันที่';
+        return new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date);
+    }
+
+    function editInlineVideo(video) {
+        if (!video) return;
+        document.getElementById('inlineVideoId').value = String(video.id || '');
+        document.getElementById('inlineVideoTitle').value = video.title || 'วิดีโอบทเรียน';
+        const fileInput = document.getElementById('inlineVideoFile');
+        fileInput.required = false;
+        document.getElementById('inlineVideoFileRequired').textContent = '';
+        document.getElementById('inlineVideoFileHint').textContent = 'เลือกไฟล์ใหม่เมื่อต้องการแทนที่วิดีโอเดิม';
+    }
+
     function renderInlineVideos(data) {
         if (!inlineVideoList) return;
         inlineVideos = data.videos || [];
@@ -400,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         inlineVideoList.innerHTML = videosForLesson.length ? videosForLesson.map((video) => `
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
-                <div style="min-width:0"><strong style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(video.title)}</strong></div>
+                <div style="min-width:0"><strong style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(video.title)}</strong><span style="font-size:11px;color:var(--text-muted)">แก้ไขล่าสุด ${formatTeacherEditDate(video.last_modified_epoch)}</span></div>
                 <div style="display:flex;gap:5px;flex-shrink:0"><button type="button" class="action-icon-btn" data-inline-video-edit="${escapeHtml(video.id)}" title="แก้ไขวิดีโอ">แก้ไข</button><button type="button" class="action-icon-btn" data-inline-video-delete="${escapeHtml(video.id)}" title="ลบวิดีโอ" style="color:#ef4444">ลบ</button></div>
             </div>`).join('') : `<div style="padding:12px 0;color:var(--text-muted);font-size:13px">${managedLessonId ? 'ยังไม่มีวิดีโอในบทเรียนนี้' : 'บันทึกบทเรียนก่อน แล้วจึงเพิ่มวิดีโอได้'}</div>`;
     }
@@ -456,8 +474,20 @@ document.addEventListener('DOMContentLoaded', () => {
             videoForm.append('title', videoTitle.value.trim() || 'วิดีโอบทเรียน');
             videoForm.append('lesson_id', managedLessonId);
             if (videoFile.files[0]) videoForm.append('video_file', videoFile.files[0]);
-            await teacherRequest(videoForm);
-            window.location.reload();
+            const result = await teacherRequest(videoForm);
+            const savedVideo = {
+                id: String(result.video.id),
+                title: videoTitle.value.trim() || 'วิดีโอบทเรียน',
+                lessons_id: managedLessonId,
+                last_modified_epoch: result.video.last_modified_epoch,
+            };
+            const existingIndex = inlineVideos.findIndex(video => String(video.id) === savedVideo.id);
+            if (existingIndex >= 0) inlineVideos[existingIndex] = { ...inlineVideos[existingIndex], ...savedVideo };
+            else inlineVideos.unshift(savedVideo);
+            document.getElementById('inlineVideoId').value = savedVideo.id;
+            renderInlineVideos({ videos: inlineVideos });
+            saveButton.disabled = false;
+            saveButton.textContent = 'บันทึกวิดีโอ';
         } catch (error) { alert(error.message || 'บันทึกวิดีโอไม่สำเร็จ'); saveButton.disabled = false; saveButton.textContent = 'บันทึกวิดีโอ'; }
     }
 

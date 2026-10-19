@@ -33,6 +33,7 @@ const courseProgressRequests = new Map();
 let activeVideoProgressSaver = null;
 let activeVideoProgressBeacon = null;
 let pendingVideoProgressSave = Promise.resolve(true);
+let lastLearningProgressError = '';
 
 
 
@@ -862,7 +863,10 @@ function refreshCourseProgress(subjectId) {
 }
 
 async function recordLearningEvent(activityType, lessonIndex = 1, progressPercent = 0, resumePosition = 0, force = false, durationSeconds = 0) {
-    if (!currentSubjectId) return false;
+    if (!currentSubjectId) {
+        lastLearningProgressError = 'ไม่พบรหัสรายวิชา';
+        return false;
+    }
     const eventKey = `${currentSubjectId}:${lessonIndex}:${activityType}`;
     const now = Date.now();
     const previous = learningProgressRequests.get(eventKey);
@@ -887,15 +891,18 @@ async function recordLearningEvent(activityType, lessonIndex = 1, progressPercen
 
 
 
-        const response = await fetchJsonWithTimeout('student_learning_api.php', { method: 'POST', body: formData, credentials: 'same-origin' }, 10000);
+        lastLearningProgressError = '';
+        const response = await fetchJsonWithTimeout('student_learning_api.php', { method: 'POST', body: formData, credentials: 'same-origin' }, 15000);
         const result = await response.json();
         if (result.status === 'success') {
             learningProgressRequests.set(eventKey, { inFlight: false, savedAt: Date.now() });
             return true;
         }
-        console.warn('Learning progress was rejected:', result.message || 'unknown server error');
+        lastLearningProgressError = result.message || `HTTP ${response.status}`;
+        console.warn('Learning progress was rejected:', lastLearningProgressError);
         return false;
     } catch (error) {
+        lastLearningProgressError = error.name === 'AbortError' ? 'หมดเวลารอการบันทึก' : (error.message || 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');
         console.warn('Unable to save learning progress:', error);
         return false;
     }
@@ -1479,7 +1486,7 @@ function renderVideoModalBody(lessonIndex) {
             videoProgressSaveRequest = recordLearningEvent('video_progress', safeIndex, percent, resumePositionToSave, true, videoElement.duration)
                 .then((saved) => {
                     if (!saved) {
-                        progressSaveLabel = 'บันทึกไม่สำเร็จ';
+                        progressSaveLabel = `บันทึกไม่สำเร็จ: ${lastLearningProgressError}`;
                         updateVideoProgressStatus();
                         return false;
                     }

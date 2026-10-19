@@ -572,11 +572,12 @@ if (!empty($_SESSION['name'])) {
                 <th>เบอร์โทรศัพท์</th>
                 <th>บทบาท</th>
                 <th>สถานะ</th>
+                <th>วันที่สมัคร</th>
                 <th style="width:120px;">จัดการ</th>
               </tr>
             </thead>
             <tbody id="memberBody">
-              <tr><td colspan="5" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
+              <tr><td colspan="7" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
@@ -730,6 +731,6 @@ if (!empty($_SESSION['name'])) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="staffdash.js"></script>
+  <script src="staffdash.js?v=20261019-registration-date"></script>
 </body>
 </html>
