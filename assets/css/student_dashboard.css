@@ -314,9 +314,6 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .btn-graduation-request[hidden] { display:none; }
 .btn-graduation-download { display:inline-block; border-radius:9px; padding:.65rem 1rem; background:#254b67; color:#fff; font-size:.85rem; text-decoration:none; }
 .btn-graduation-download[hidden] { display:none; }
-.course-table-progress { min-width:150px; }
-.course-table-progress .progress-bar-bg { height:7px; margin:0 0 5px; }
-.course-table-progress > span { color:var(--text-muted); font-size:.78rem; white-space:nowrap; }
 .course-transfer-status { display:inline-block; padding:.3rem .6rem; border-radius:999px; background:rgba(34,197,94,.13); color:#15803d; font-size:.78rem; font-weight:600; }
 .course-passed-status { color:#15803d; font-weight:600; }
 
@@ -426,20 +423,16 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .lesson-breakdown { margin-top:16px; border-top:1px solid var(--border); padding-top:12px; }
 .lesson-breakdown summary { color:var(--orange); cursor:pointer; font-size:13px; font-weight:600; }
 .lesson-breakdown-list { display:grid; gap:10px; margin-top:12px; }
-.lesson-breakdown-row { display:flex; gap:10px; padding:10px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg3); }
+.lesson-breakdown-row { display:flex; align-items:center; gap:10px; min-height:80px; padding:12px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg3); }
 .lesson-number { width:28px; height:28px; flex:0 0 28px; display:grid; place-items:center; border-radius:50%; background:var(--bg2); color:var(--orange); font-weight:600; }
-.lesson-detail { flex:1; min-width:0; display:grid; gap:4px; font-size:12px; }
+.lesson-detail { flex:1; min-width:0; display:grid; gap:7px; font-size:12px; }
+.lesson-detail-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .lesson-detail strong { font-size:13px; }
-.lesson-detail span { color:var(--text-dim); }
-.lesson-detail .lesson-score-parts { color:var(--text); font-weight:500; }
+.lesson-short-status { color:var(--text-dim); }
 .lesson-score-status { width:fit-content; border-radius:999px; padding:2px 9px; font-size:11px; font-weight:600; }
 .lesson-score-status.pending { color:#a16207; background:rgba(234,179,8,.14); }
 .lesson-score-status.passed { color:#047857; background:rgba(16,185,129,.12); }
 .lesson-score-status.failed { color:#dc2626; background:rgba(239,68,68,.1); }
-.lesson-essay-answers { display:grid; gap:8px; margin-top:8px; }
-.lesson-essay-answer { display:grid; gap:4px; padding:10px; border-left:3px solid var(--orange); border-radius:6px; background:var(--bg2); }
-.lesson-essay-answer p { margin:2px 0; white-space:pre-wrap; overflow-wrap:anywhere; color:var(--text); }
-.lesson-essay-answer small { color:var(--text-dim); }
 .lesson-breakdown .progress-bar-bg { height:5px; margin:3px 0 0; }
 .btn-submit { border-radius:var(--radius-sm); font-family:'Kanit',sans-serif; font-size:13px; font-weight:500; }
 .subject-type-badge { background:var(--orange-dim); color:var(--orange); }
@@ -458,19 +451,19 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .report-action-btn.secondary { background:var(--bg2); border-color:var(--border); }
 .report-card { min-width:0; }
 .report-card .card-header { margin-bottom:10px; }
-.report-table { min-width:940px; }
-.course-report-table { min-width:820px; }
+.report-table { min-width:720px; }
+.course-report-table { min-width:720px; }
+.lesson-report-table { min-width:760px; }
 .report-table th { padding:10px 12px; }
 .report-table td { padding:12px; vertical-align:top; }
 .report-table td strong, .report-table td small { display:block; }
 .report-table td small { margin-top:3px; color:var(--text-muted); font-size:11px; white-space:normal; }
-.report-progress { display:grid; grid-template-columns:42px minmax(65px,1fr); align-items:center; gap:8px; }
-.report-progress .progress-bar-bg { margin:0; }
 .report-status { display:inline-flex; padding:3px 9px; border-radius:999px; background:var(--bg3); color:var(--text-dim); font-size:11px; white-space:nowrap; }
 .report-status.pending { color:#a16207; background:rgba(234,179,8,.14); }
 .report-status.passed { color:#047857; background:rgba(16,185,129,.12); }
 .report-status.failed { color:#dc2626; background:rgba(239,68,68,.1); }
 .report-status.none { color:var(--text-muted); background:#f1f5f9; }
+.report-transfer-cell { text-align:center; color:#047857; font-weight:600; background:rgba(16,185,129,.08); }
 .report-empty { padding:24px!important; color:var(--text-muted)!important; text-align:center; }
 .report-meta { color:var(--text-muted); font-size:12px; }
 .student-stats-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
