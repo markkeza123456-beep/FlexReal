@@ -1,7 +1,7 @@
 /* Page-specific transcript and review styles. Shared UI tokens live in theme.css. */
 
 /* Source: assets\css\transcript.css */
-:root { color-scheme: light; font-family: 'IBM Plex Sans Thai', 'Prompt', sans-serif; color: #263238; background: #A8D1E7; }
+:root { color-scheme: light; font-family: 'IBM Plex Sans Thai', 'Prompt', sans-serif; color: #263238; background: #E5F9FE; }
 * { box-sizing: border-box; }
 body { min-width: 320px; min-height: 100vh; margin: 0; }
 .transcript-page { width: min(100% - 32px, 820px); margin: 0 auto; padding: 32px 0 56px; }

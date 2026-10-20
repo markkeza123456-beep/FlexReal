@@ -2,7 +2,7 @@
 
 
 :root {
-  --bg:          #A8D1E7;
+  --bg:          #E5F9FE;
   --surface:     #ffffff;
   --card:        #ffffff;
   --border:      #f0dfd5;
@@ -53,7 +53,7 @@ body {
   position: fixed;
   inset: 0;
   background-image:
-    radial-gradient(circle, rgba(242,107,58,.08) 1.3px, transparent 1.5px);
+    radial-gradient(circle, rgba(192,228,246,.88) 1.3px, transparent 1.5px);
   background-size: 32px 32px;
   pointer-events: none;
   z-index: 0;
@@ -71,8 +71,8 @@ body {
   position: absolute;
   width: clamp(112px, 10vw, 180px);
   height: auto;
-  color: #f26b3a;
-  opacity: .08;
+  color: #C0E4F6;
+  opacity: .18;
   stroke: currentColor;
   stroke-width: 3.2;
   stroke-linecap: round;
@@ -91,7 +91,7 @@ body {
 }
 
 @media (max-width: 760px) {
-  .edu-illustration { opacity: .06; }
+  .edu-illustration { opacity: .14; }
   .network-one, .pencil-one { display: none; }
   .book-one { left: -8%; }
   .cap-one { right: -8%; }

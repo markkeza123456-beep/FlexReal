@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg: #A8D1E7;
-  --bg-dark: #A8D1E7;
+  --bg: #E5F9FE;
+  --bg-dark: #E5F9FE;
   --bg2: #ffffff;
   --bg3: #f5f6f8;
   --surface: #ffffff;
@@ -54,9 +54,9 @@
 html { color-scheme: light; }
 
 body {
-  background-color: #A8D1E7 !important;
+  background-color: #E5F9FE !important;
   background-image:
-    radial-gradient(circle, rgba(53, 110, 149, 0.10) 1.15px, transparent 1.45px),
+    radial-gradient(circle, rgba(192, 228, 246, 0.88) 1.15px, transparent 1.45px),
     radial-gradient(circle at 88% 8%, rgba(255, 255, 255, 0.28), transparent 28rem) !important;
   background-size: 32px 32px, auto !important;
   background-attachment: fixed !important;
@@ -75,7 +75,15 @@ body::after {
   background-repeat: repeat;
   background-size: 640px 480px;
   background-position: center top;
-  opacity: .075;
+  opacity: .20;
+}
+
+.bg-grid {
+  background-image: radial-gradient(circle, rgba(192, 228, 246, .88) 1.2px, transparent 1.5px) !important;
+}
+
+.edu-illustration {
+  color: #C0E4F6 !important;
 }
 
 .sidebar,

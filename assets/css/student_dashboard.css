@@ -1,5 +1,5 @@
 :root {
-    --bg-dark: #A8D1E7;
+    --bg-dark: #E5F9FE;
     --card-bg: #ffffff;
     --sidebar-bg: #ffffff;
     --accent-orange: #f26b3a;
@@ -368,7 +368,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 }
 
 /* Match the teacher portal's shared layout and card treatment. */
-:root { --sidebar-w:230px; --bg:#A8D1E7; --bg2:#ffffff; --bg3:#fff4ed; --orange:#f26b3a; --orange-dim:rgba(242,107,58,.12); --text:#2d3436; --text-dim:#636e72; --text-muted:#8a8f98; --border:#f3d2be; --radius:12px; --radius-sm:8px; }
+:root { --sidebar-w:230px; --bg:#E5F9FE; --bg2:#ffffff; --bg3:#fff4ed; --orange:#f26b3a; --orange-dim:rgba(242,107,58,.12); --text:#2d3436; --text-dim:#636e72; --text-muted:#8a8f98; --border:#f3d2be; --radius:12px; --radius-sm:8px; }
 .dashboard-container { display:block; width:100%; min-height:100vh; height:auto; }
 .sidebar { position:fixed; inset:0 auto 0 0; z-index:100; width:var(--sidebar-w); min-width:var(--sidebar-w); height:100vh; padding:24px 0 16px; }
 .logo-section { width:100%; padding:0 20px 28px; border-bottom:1px solid var(--border); }
