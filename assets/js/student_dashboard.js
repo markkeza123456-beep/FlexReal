@@ -189,6 +189,7 @@ function flattenReportLessons(courses) {
     return courses.flatMap((course) => (Array.isArray(course.lessons) ? course.lessons : []).map((lesson) => ({
         ...lesson,
         course_id: course.subject_id,
+        course_code: course.code,
         course_name: course.name,
         subject_type: course.subject_type,
         is_transferred: Boolean(course.is_transferred || lesson.is_transferred),
@@ -265,13 +266,22 @@ function renderReports(courses) {
     const countLabel = document.getElementById('reportLessonCount');
     if (countLabel) countLabel.textContent = `${rows.length} บทเรียน`;
     if (!rows.length) {
-        lessonBody.innerHTML = '<tr><td colspan="5" class="report-empty">ยังไม่มีข้อมูลบทเรียน</td></tr>';
+        lessonBody.innerHTML = '<tr><td colspan="6" class="report-empty">ยังไม่มีข้อมูลบทเรียน</td></tr>';
         return;
     }
-    lessonBody.innerHTML = rows.map((lesson) => {
-        const nameCell = `<strong>${escapeHtml(lesson.course_name)}</strong><small>บทที่ ${Number(lesson.position)} · ${escapeHtml(lesson.title)}</small>`;
+    const lessonRowsByCourse = new Map();
+    rows.forEach((lesson) => {
+        const courseKey = String(lesson.course_id);
+        if (!lessonRowsByCourse.has(courseKey)) lessonRowsByCourse.set(courseKey, []);
+        lessonRowsByCourse.get(courseKey).push(lesson);
+    });
+    lessonBody.innerHTML = [...lessonRowsByCourse.values()].map((courseLessons) => courseLessons.map((lesson, lessonIndex) => {
+        const courseCell = lessonIndex === 0
+            ? `<td class="report-course-group" rowspan="${courseLessons.length}"><strong>${escapeHtml(lesson.course_name)}</strong><small>รหัสวิชา ${escapeHtml(lesson.course_code || lesson.course_id)}</small></td>`
+            : '';
+        const lessonCell = `<td><strong>บทที่ ${Number(lesson.position)}</strong><small>${escapeHtml(lesson.title)}</small></td>`;
         if (lesson.is_transferred) {
-            return `<tr><td>${nameCell}</td><td colspan="3" class="report-transfer-cell">TR (ผ่านการเทียบโอน)</td><td>${reportQuizStatus(lesson)}</td></tr>`;
+            return `<tr>${courseCell}${lessonCell}<td colspan="3" class="report-transfer-cell"><span class="report-transfer-badge">TR (ผ่านการเทียบโอน)</span></td><td class="report-center">${reportQuizStatus(lesson)}</td></tr>`;
         }
         const objective = Number(lesson.objective_score_total) > 0
             ? `${fmt(lesson.objective_score_earned)}/${fmt(lesson.objective_score_total)}`
@@ -284,8 +294,8 @@ function renderReports(courses) {
         const total = lesson.has_attempt && Number(lesson.score_total) > 0
             ? `${fmt(lesson.score_earned)}/${fmt(lesson.score_total)}`
             : '—';
-        return `<tr><td>${nameCell}</td><td>${objective}</td><td>${essay}</td><td>${total}</td><td>${reportQuizStatus(lesson)}</td></tr>`;
-    }).join('');
+        return `<tr>${courseCell}${lessonCell}<td class="report-center">${objective}</td><td class="report-center">${essay}</td><td class="report-center">${total}</td><td class="report-center">${reportQuizStatus(lesson)}</td></tr>`;
+    }).join('')).join('');
 }
 
 function _applyAvatarUI(src) {
@@ -777,7 +787,12 @@ function togglePwd(id, btn) {
     if (!inp) return;
     const show = inp.type === 'password';
     inp.type = show ? 'text' : 'password';
-    btn.textContent = show ? 'ซ่อน' : 'แสดง';
+    const label = show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน';
+    btn.setAttribute('aria-label', label);
+    btn.title = label;
+    btn.innerHTML = show
+        ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.9 5.2A10.8 10.8 0 0112 5c6.4 0 10 7 10 7a14.7 14.7 0 01-3 3.8M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7c1.4 0 2.7-.3 3.8-.8"/></svg>'
+        : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
 }
 
 function checkPwdStrength(val) {

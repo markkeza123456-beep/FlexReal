@@ -37,18 +37,6 @@ function normalizeLessonSlots(array $lessons): array {
     return $normalized;
 }
 
-function scoreStatus(float $score): string {
-    if ($score >= 85) return 'excellent';
-    if ($score >= 70) return 'good';
-    if ($score >= 50) return 'average';
-    return 'needs-help';
-}
-
-function scoreLabel(string $status): string {
-    $labels = ['excellent' => 'ดีเยี่ยม', 'good' => 'ดี', 'average' => 'ปานกลาง', 'needs-help' => 'ต้องดูแล'];
-    return $labels[$status] ?? 'ยังไม่มีข้อมูล';
-}
-
 function formatTeacherEditDate(?string $value): string {
     if (!$value) return 'ยังไม่มีข้อมูลวันที่';
     try {
@@ -189,28 +177,105 @@ foreach ($subjectIds as $subjectId) {
 $studentStmt = $conn->prepare("
     SELECT st.user_id AS student_id, st.full_name AS student_name, st.student_level AS class_name,
            STRING_AGG(DISTINCT c.course_id::text, ',') AS subject_ids,
-           COALESCE(AVG(qa.score / NULLIF(qa.total_score, 0) * 100), 0) AS real_score,
+           COALESCE(AVG(qa.score) FILTER (WHERE qa.attempt_id IS NOT NULL), 0) AS real_score,
+           COALESCE(SUM(qa.score) FILTER (WHERE qa.attempt_id IS NOT NULL), 0) AS raw_score_sum,
+           COUNT(DISTINCT l.lesson_id) FILTER (WHERE qa.attempt_id IS NOT NULL) AS attempted_lessons,
            COUNT(DISTINCT l.lesson_id) AS total_lessons,
-           COUNT(DISTINCT l.lesson_id) FILTER (WHERE qa.score / NULLIF(qa.total_score, 0) >= 0.6) AS completed_lessons,
-           STRING_AGG(DISTINCT l.title, '||') FILTER (WHERE qa.score / NULLIF(qa.total_score, 0) >= 0.6) AS completed_lesson_names
+           COUNT(DISTINCT l.lesson_id) FILTER (WHERE
+               qa.attempt_id IS NOT NULL
+               OR qa.score IS NOT NULL
+               OR COALESCE(lp.is_transferred, FALSE)
+               OR UPPER(COALESCE(lp.grade, '')) = 'TR'
+               OR EXISTS (
+                   SELECT 1
+                   FROM public.transcript_request_lessons trl
+                   INNER JOIN public.transcript_requests tr ON tr.request_id = trl.request_id
+                   WHERE trl.lesson_id = l.lesson_id
+                     AND trl.is_approved = TRUE
+                     AND tr.student_id = st.user_id
+                     AND tr.status = 'approved'
+               )
+           ) AS completed_lessons,
+           STRING_AGG(DISTINCT l.title, '||') FILTER (WHERE
+               qa.attempt_id IS NOT NULL
+               OR qa.score IS NOT NULL
+               OR COALESCE(lp.is_transferred, FALSE)
+               OR UPPER(COALESCE(lp.grade, '')) = 'TR'
+               OR EXISTS (
+                   SELECT 1
+                   FROM public.transcript_request_lessons trl
+                   INNER JOIN public.transcript_requests tr ON tr.request_id = trl.request_id
+                   WHERE trl.lesson_id = l.lesson_id
+                     AND trl.is_approved = TRUE
+                     AND tr.student_id = st.user_id
+                     AND tr.status = 'approved'
+               )
+           ) AS completed_lesson_names
     FROM public.students st
     INNER JOIN public.student_courses sc ON sc.student_id = st.user_id AND sc.status = 'active'
     INNER JOIN public.courses c ON c.course_id = sc.course_id
     INNER JOIN public.course_teachers ct ON ct.course_id = c.course_id AND ct.teacher_id = :teacher_id
     LEFT JOIN public.lessons l ON l.course_id = c.course_id
-    LEFT JOIN LATERAL (SELECT score, total_score FROM public.quiz_attempts a WHERE a.student_id = st.user_id AND a.lesson_id = l.lesson_id ORDER BY a.submitted_at DESC LIMIT 1) qa ON true
+    LEFT JOIN public.lesson_progress lp ON lp.student_id = st.user_id AND lp.lesson_id = l.lesson_id
+    LEFT JOIN LATERAL (SELECT attempt_id, score, total_score, status FROM public.quiz_attempts a WHERE a.student_id = st.user_id AND a.lesson_id = l.lesson_id ORDER BY a.submitted_at DESC LIMIT 1) qa ON true
     GROUP BY st.user_id, st.full_name, st.student_level
     ORDER BY st.full_name ASC
 ");
 $studentStmt->execute([':teacher_id' => $teacherId]);
 
-$students = [];
-$sumScore = 0;
-foreach ($studentStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-    $realScore = round((float) $row['real_score'], 1);
-    $sumScore += $realScore;
+// Load each student's latest result per lesson across courses assigned to this teacher.
+$lessonScoreStmt = $conn->prepare("
+    SELECT st.user_id AS student_id, c.course_id, l.lesson_id, l.position, l.title AS lesson_title,
+           qa.score, qa.total_score, qa.attempt_id,
+           CASE WHEN COALESCE(lp.is_transferred, FALSE) OR UPPER(COALESCE(lp.grade, '')) = 'TR'
+                     OR EXISTS (
+                         SELECT 1 FROM public.transcript_request_lessons trl
+                         INNER JOIN public.transcript_requests tr ON tr.request_id = trl.request_id
+                         WHERE trl.lesson_id = l.lesson_id AND trl.is_approved = TRUE
+                           AND tr.student_id = st.user_id AND tr.status = 'approved'
+                     )
+                THEN TRUE ELSE FALSE END AS is_transferred
+    FROM public.students st
+    INNER JOIN public.student_courses sc ON sc.student_id = st.user_id AND sc.status = 'active'
+    INNER JOIN public.courses c ON c.course_id = sc.course_id
+    INNER JOIN public.course_teachers ct ON ct.course_id = c.course_id AND ct.teacher_id = :teacher_id
+    INNER JOIN public.lessons l ON l.course_id = c.course_id
+    LEFT JOIN public.lesson_progress lp ON lp.student_id = st.user_id AND lp.lesson_id = l.lesson_id
+    LEFT JOIN LATERAL (
+        SELECT attempt_id, score, total_score
+        FROM public.quiz_attempts a
+        WHERE a.student_id = st.user_id AND a.lesson_id = l.lesson_id
+        ORDER BY a.submitted_at DESC, a.attempt_number DESC
+        LIMIT 1
+    ) qa ON TRUE
+    ORDER BY st.user_id, c.name, l.position, l.lesson_id
+");
+$lessonScoreStmt->execute([':teacher_id' => $teacherId]);
+$lessonScoresByStudent = [];
+foreach ($lessonScoreStmt->fetchAll(PDO::FETCH_ASSOC) as $lessonScore) {
+    $lessonScoresByStudent[(string) $lessonScore['student_id']][] = [
+        'course_id' => (string) $lessonScore['course_id'],
+        'lesson_id' => (string) $lessonScore['lesson_id'],
+        'title' => (string) $lessonScore['lesson_title'],
+        'position' => (int) $lessonScore['position'],
+        'score' => $lessonScore['score'],
+        'total_score' => $lessonScore['total_score'],
+        'attempted' => $lessonScore['attempt_id'] !== null,
+        'transferred' => filter_var($lessonScore['is_transferred'], FILTER_VALIDATE_BOOLEAN),
+    ];
+}
 
-    $totalLessons = min((int) $row['total_lessons'], MAX_LESSONS_PER_SUBJECT);
+$students = [];
+$sumRawScores = 0;
+$studentsWithAttempts = 0;
+foreach ($studentStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    $realScore = (int) round((float) $row['real_score']);
+    if ((int) $row['attempted_lessons'] > 0) {
+        $sumRawScores += (float) $row['raw_score_sum'];
+        $studentsWithAttempts++;
+    }
+
+    $totalLessons = (int) $row['total_lessons'];
     $completedLessons = min((int) $row['completed_lessons'], $totalLessons);
     $progressPct = $totalLessons > 0 ? round(($completedLessons / $totalLessons) * 100) : 0;
 
@@ -221,16 +286,16 @@ foreach ($studentStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         'name' => $row['student_name'] ?: 'ไม่ระบุชื่อ',
         'class' => $row['class_name'] ?: '-',
         'score' => $realScore,
-        'status' => scoreStatus($realScore),
         'subject_ids' => $row['subject_ids'],
         'progress_pct' => $progressPct,
         'completed_lessons' => $completedLessons,
         'total_lessons' => $totalLessons,
-        'completed_names_json' => htmlspecialchars(json_encode($completedNames), ENT_QUOTES, 'UTF-8')
+        'completed_names_json' => htmlspecialchars(json_encode($completedNames), ENT_QUOTES, 'UTF-8'),
+        'lesson_scores' => $lessonScoresByStudent[(string) $row['student_id']] ?? []
     ];
 }
 
-$overallAvgScore = count($students) > 0 ? round($sumScore / count($students), 1) : 0;
+$overallAvgScore = $studentsWithAttempts > 0 ? (int) round($sumRawScores / $studentsWithAttempts) : 0;
 
 
 $quizzes = [];
@@ -283,7 +348,7 @@ $stats = [
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261019-sidebar-brand">
+    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261020-sidebar-brand-centered">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px;
@@ -332,6 +397,14 @@ $stats = [
         document.querySelectorAll('.nav-item').forEach(function (item) { item.classList.remove('active'); });
         var activeItem = document.querySelector('.nav-item[data-view="' + viewName + '"]');
         if (activeItem) activeItem.classList.add('active');
+        if (viewName === 'reports') {
+          var reportFrame = document.getElementById('teacherReportFrame');
+          if (reportFrame && reportFrame.contentWindow) {
+            requestAnimationFrame(function () {
+              reportFrame.style.height = (reportFrame.contentWindow.document.documentElement.scrollHeight + 20) + 'px';
+            });
+          }
+        }
         return false;
       };
     </script>
@@ -393,9 +466,9 @@ $stats = [
             </div>
             <div class="stat-card" style="--accent:#a855f7">
                 <div class="stat-icon"></div>
-                <div class="stat-value"><?= number_format($stats['avg_score'], 1) ?>%</div>
-                <div class="stat-label">คะแนนเฉลี่ย</div>
-                <div class="stat-trend">จากแบบทดสอบของนักเรียนทั้งหมด</div>
+                <div class="stat-value"><?= number_format($stats['avg_score'], 0) ?></div>
+                <div class="stat-label">คะแนนเฉลี่ยของข้อสอบ</div>
+                <div class="stat-trend">คะแนนดิบเฉลี่ยของนักเรียนที่ทำข้อสอบ</div>
             </div>
         </section>
 
@@ -412,14 +485,13 @@ $stats = [
                             <th>ชื่อ-นามสกุล</th>
                             <th>ระดับชั้น</th>
                             <th style="width: 25%">ความคืบหน้า</th>
-                            <th>คะแนนเฉลี่ย</th>
-                            <th>ระดับ</th>
+                            <th>คะแนนแยกตามบท</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if ($students === []): ?>
                         <tr class="lesson-row">
-                            <td colspan="6" style="text-align:center;color:var(--text-muted)">ยังไม่มีนักเรียนในการดูแล</td>
+                            <td colspan="5" style="text-align:center;color:var(--text-muted)">ยังไม่มีนักเรียนในการดูแล</td>
                         </tr>
                         <?php else: ?>
                         <?php foreach ($students as $index => $student): ?>
@@ -431,7 +503,6 @@ $stats = [
                                    data-name="<?= h($student['name']) ?>"
                                    data-class="<?= h($student['class']) ?>"
                                    data-score="<?= h($student['score']) ?>"
-                                   data-status="<?= h($student['status']) ?>"
                                    data-completed="<?= h($student['completed_lessons']) ?>"
                                    data-total="<?= h($student['total_lessons']) ?>"
                                    data-pct="<?= h($student['progress_pct']) ?>"
@@ -453,12 +524,23 @@ $stats = [
                                     สำเร็จ <?= $student['completed_lessons'] ?> / <?= $student['total_lessons'] ?> บทเรียน
                                 </div>
                             </td>
-                            <td class="mono score-cell"><?= number_format((float) $student['score'], 1) ?></td>
-                            <td><span class="badge badge-<?= h($student['status']) ?>"><?= h(scoreLabel($student['status'])) ?></span></td>
+                            <td>
+                                <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                                    <?php foreach ($student['lesson_scores'] as $lessonScore): ?>
+                                        <?php if ($lessonScore['transferred']): ?>
+                                            <span title="<?= h($lessonScore['title']) ?>" style="background:#e8f0fe;color:#1a73e8;padding:4px 8px;border-radius:6px;font-size:.85rem;">บท <?= (int) $lessonScore['position'] ?> : TR</span>
+                                        <?php elseif ($lessonScore['attempted']): ?>
+                                            <span title="<?= h($lessonScore['title']) ?>" style="background:#e6f4ea;color:#1e8e3e;padding:4px 8px;border-radius:6px;font-size:.85rem;">บท <?= (int) $lessonScore['position'] ?> : <?= h((string) $lessonScore['score']) ?>/<?= h((string) $lessonScore['total_score']) ?></span>
+                                        <?php else: ?>
+                                            <span title="<?= h($lessonScore['title']) ?>" style="background:#f1f3f4;color:#5f6368;padding:4px 8px;border-radius:6px;font-size:.85rem;">บท <?= (int) $lessonScore['position'] ?> : ยังไม่สอบ</span>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </div>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
                         <tr id="studentSearchEmpty" style="display:none">
-                            <td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">ไม่พบนักเรียนที่ค้นหา</td>
+                            <td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">ไม่พบนักเรียนที่ค้นหา</td>
                         </tr>
                         <?php endif; ?>
                     </tbody>
@@ -631,8 +713,7 @@ $stats = [
                                 <th>ชื่อ-นามสกุล</th>
                                 <th>ระดับชั้น</th>
                                 <th style="width: 25%">ความคืบหน้า</th>
-                                <th>คะแนนเฉลี่ย</th>
-                                <th>ระดับ</th>
+                                <th>คะแนนแยกตามบท</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -645,7 +726,6 @@ $stats = [
                                        data-name="<?= h($student['name']) ?>"
                                        data-class="<?= h($student['class']) ?>"
                                        data-score="<?= h($student['score']) ?>"
-                                       data-status="<?= h($student['status']) ?>"
                                        data-completed="<?= h($student['completed_lessons']) ?>"
                                        data-total="<?= h($student['total_lessons']) ?>"
                                        data-pct="<?= h($student['progress_pct']) ?>"
@@ -667,8 +747,20 @@ $stats = [
                                         สำเร็จ <?= $student['completed_lessons'] ?> / <?= $student['total_lessons'] ?> บทเรียน
                                     </div>
                                 </td>
-                                <td class="mono score-cell"><?= number_format((float) $student['score'], 1) ?></td>
-                                <td><span class="badge badge-<?= h($student['status']) ?>"><?= h(scoreLabel($student['status'])) ?></span></td>
+                                <td>
+                                    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                                        <?php foreach ($student['lesson_scores'] as $lessonScore): ?>
+                                            <?php if ($lessonScore['course_id'] !== $selectedSubjectId) continue; ?>
+                                            <?php if ($lessonScore['transferred']): ?>
+                                                <span title="<?= h($lessonScore['title']) ?>" style="background:#e8f0fe;color:#1a73e8;padding:4px 8px;border-radius:6px;font-size:.85rem;">บท <?= (int) $lessonScore['position'] ?> : TR</span>
+                                            <?php elseif ($lessonScore['attempted']): ?>
+                                                <span title="<?= h($lessonScore['title']) ?>" style="background:#e6f4ea;color:#1e8e3e;padding:4px 8px;border-radius:6px;font-size:.85rem;">บท <?= (int) $lessonScore['position'] ?> : <?= h((string) $lessonScore['score']) ?>/<?= h((string) $lessonScore['total_score']) ?></span>
+                                            <?php else: ?>
+                                                <span title="<?= h($lessonScore['title']) ?>" style="background:#f1f3f4;color:#5f6368;padding:4px 8px;border-radius:6px;font-size:.85rem;">บท <?= (int) $lessonScore['position'] ?> : ยังไม่สอบ</span>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -706,8 +798,8 @@ $stats = [
                                     $qLabel = $qType === 'essay' ? 'อัตนัย (ข้อเขียน)' : ($qType === 'truefalse' ? 'ถูก/ผิด' : 'ปรนัย (4 ตัวเลือก)');
                                 ?>
                                     <div class="quiz-item" style="border:1px solid var(--border);border-radius:8px;padding:13px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
-                                        <div style="display:flex;gap:10px;min-width:0;"><b class="mono" style="color:var(--orange);">Q<?= $i + 1 ?></b><div><div style="font-size:14px;color:var(--text);margin-bottom:5px;"><?= h($q['questions_text']) ?></div><span class="badge badge-draft" style="font-size:10.5px;"><?= $qLabel ?> · <?= h((string) $q['question_max_score']) ?> คะแนน</span><div style="color:var(--text-muted);font-size:11px;margin-top:5px;">แก้ไขล่าสุด <?= h(formatTeacherEditDate($q['last_modified_at'] ?? null)) ?></div></div></div>
-                                        <div style="display:flex;gap:4px;flex-shrink:0;"><button class="action-icon-btn btn-edit-quiz" data-id="<?= h($q['questions_id']) ?>" data-type="<?= $qType ?>" data-question="<?= h($q['questions_text']) ?>" data-ca="<?= h($q['choice_a']) ?>" data-cb="<?= h($q['choice_b']) ?>" data-cc="<?= h($q['choice_c']) ?>" data-cd="<?= h($q['choice_d']) ?>" data-answer="<?= h($q['correct_answer']) ?>" data-max-score="<?= h((string) $q['question_max_score']) ?>" title="แก้ไขคำถาม">แก้ไข</button><button class="action-icon-btn btn-del-quiz" data-id="<?= h($q['questions_id']) ?>" title="ลบคำถาม" style="color:#ef4444;">ลบ</button></div>
+                                        <div style="display:flex;gap:10px;min-width:0;"><b class="mono" style="color:var(--orange);">Q<?= $i + 1 ?></b><div><div style="font-size:14px;color:var(--text);margin-bottom:5px;"><?= h($q['questions_text']) ?></div><span class="badge badge-draft" style="font-size:10.5px;"><?= $qLabel ?> · <?= number_format((float) $q['question_max_score'], 0) ?> คะแนน</span><div style="color:var(--text-muted);font-size:11px;margin-top:5px;">แก้ไขล่าสุด <?= h(formatTeacherEditDate($q['last_modified_at'] ?? null)) ?></div></div></div>
+                                        <div style="display:flex;gap:4px;flex-shrink:0;"><button class="action-icon-btn btn-edit-quiz" data-id="<?= h($q['questions_id']) ?>" data-type="<?= $qType ?>" data-question="<?= h($q['questions_text']) ?>" data-ca="<?= h($q['choice_a']) ?>" data-cb="<?= h($q['choice_b']) ?>" data-cc="<?= h($q['choice_c']) ?>" data-cd="<?= h($q['choice_d']) ?>" data-answer="<?= h($q['correct_answer']) ?>" data-max-score="<?= number_format((float) $q['question_max_score'], 0, '.', '') ?>" title="แก้ไขคำถาม">แก้ไข</button><button class="action-icon-btn btn-del-quiz" data-id="<?= h($q['questions_id']) ?>" title="ลบคำถาม" style="color:#ef4444;">ลบ</button></div>
                                     </div>
                                 <?php endforeach; endif; ?>
                             </div>
@@ -799,7 +891,7 @@ $stats = [
                         <label>คำถาม</label>
                         <textarea class="form-input" id="quizQuestionAdd" rows="3" placeholder="พิมพ์คำถาม..."></textarea>
                     </div>
-                    <div class="form-group"><label for="quizMaxScoreAdd">คะแนนเต็มข้อนี้</label><input class="form-input" id="quizMaxScoreAdd" type="number" min="0.01" max="10000" step="0.01" value="1" required></div>
+                    <div class="form-group"><label for="quizMaxScoreAdd">คะแนนเต็มข้อนี้</label><input class="form-input" id="quizMaxScoreAdd" type="number" min="1" max="10000" step="1" value="1" required></div>
 
                     <div class="form-group" id="quizChoiceGroupAdd">
                         <label>ตัวเลือก (เลือกวงกลมหน้าข้อที่เป็นเฉลย)</label>
@@ -846,7 +938,7 @@ $stats = [
                         <label>คำถาม</label>
                         <textarea class="form-input" id="editQuizQuestion" rows="3"></textarea>
                     </div>
-                    <div class="form-group"><label for="editQuizMaxScore">คะแนนเต็มข้อนี้</label><input class="form-input" id="editQuizMaxScore" type="number" min="0.01" max="10000" step="0.01" required></div>
+                    <div class="form-group"><label for="editQuizMaxScore">คะแนนเต็มข้อนี้</label><input class="form-input" id="editQuizMaxScore" type="number" min="1" max="10000" step="1" required></div>
 
                     <div class="form-group" id="quizChoiceGroupEdit">
                         <label>ตัวเลือก (เลือกวงกลมหน้าข้อที่เป็นเฉลย)</label>
@@ -878,15 +970,12 @@ $stats = [
     <div id="view-reports" class="page-view" style="display:none">
         <header class="topbar">
             <div class="topbar-left">
-                <h1 class="page-title">ออกรายงาน</h1>
+                <h1 class="page-title">สรุปการทำงานและสถานะนักเรียน</h1>
             </div>
+            <button type="button" class="btn-add-lesson" onclick="document.getElementById('teacherReportFrame').contentWindow.print()">พิมพ์ / บันทึกเป็น PDF</button>
         </header>
-        <div class="content-grid" style="grid-template-columns: 1fr;">
-            <div class="card" style="text-align: center; padding: 60px 20px;">
-                <div style="font-size: 48px; margin-bottom: 20px;"></div>
-                <h2 style="color: var(--text); margin-bottom: 10px;">ระบบออกรายงานกำลังอยู่ระหว่างการพัฒนา</h2>
-                <button class="btn-add-lesson" style="margin: 0 auto; background: var(--bg3); color: var(--text-muted); cursor: not-allowed;"> ส่งออกรายงาน (เร็วๆ นี้)</button>
-            </div>
+        <div class="content-grid" style="grid-template-columns:1fr;">
+            <iframe id="teacherReportFrame" title="รายงานผลการสอนของอาจารย์" src="teacher_report.php?embed=1" onload="this.style.height=(this.contentWindow.document.documentElement.scrollHeight + 20)+'px'" style="display:block;width:100%;min-height:900px;border:0;border-radius:12px;background:transparent;"></iframe>
         </div>
     </div>
 
@@ -936,7 +1025,7 @@ $stats = [
                         <div style="display:flex;flex-direction:column;gap:6px;">
                             <label style="font-size:12px;color:var(--text-muted);font-weight:500;">เบอร์โทรศัพท์</label>
                             <div style="background:var(--bg3);padding:11px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);color:var(--text-dim);font-size:13px;">
-                                <?= h($teacherRow['tel'] ?? '-') ?>
+                                <?= h($teacherRow['phone'] ?? '-') ?>
                             </div>
                         </div>
                     </div>
@@ -967,15 +1056,15 @@ $stats = [
                 <div style="display:flex;flex-direction:column;gap:14px;">
                     <div style="display:flex;flex-direction:column;gap:6px;">
                         <label style="font-size:12px;color:var(--text-muted);font-weight:500;">รหัสผ่านปัจจุบัน</label>
-                        <input type="password" id="currentPassword" class="form-input" placeholder="ใส่รหัสผ่านปัจจุบัน" style="font-size:13px;">
+                        <div class="teacher-password-input-wrap"><input type="password" id="currentPassword" class="form-input" placeholder="ใส่รหัสผ่านปัจจุบัน" style="font-size:13px;"><button type="button" class="teacher-password-toggle" onclick="toggleTeacherPassword('currentPassword',this)" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:6px;">
                         <label style="font-size:12px;color:var(--text-muted);font-weight:500;">รหัสผ่านใหม่</label>
-                        <input type="password" id="newPassword" class="form-input" placeholder="อย่างน้อย 6 ตัวอักษร" style="font-size:13px;">
+                        <div class="teacher-password-input-wrap"><input type="password" id="newPassword" class="form-input" placeholder="อย่างน้อย 6 ตัวอักษร" style="font-size:13px;"><button type="button" class="teacher-password-toggle" onclick="toggleTeacherPassword('newPassword',this)" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:6px;">
                         <label style="font-size:12px;color:var(--text-muted);font-weight:500;">ยืนยันรหัสผ่านใหม่</label>
-                        <input type="password" id="confirmPassword" class="form-input" placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง" style="font-size:13px;">
+                        <div class="teacher-password-input-wrap"><input type="password" id="confirmPassword" class="form-input" placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง" style="font-size:13px;"><button type="button" class="teacher-password-toggle" onclick="toggleTeacherPassword('confirmPassword',this)" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                     </div>
                 </div>
 
@@ -1204,6 +1293,19 @@ async function saveTeacherProfile() {
     }
 }
 
+function toggleTeacherPassword(id, button) {
+    const input = document.getElementById(id);
+    if (!input || !button) return;
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    const label = show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน';
+    button.setAttribute('aria-label', label);
+    button.title = label;
+    button.innerHTML = show
+        ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.9 5.2A10.8 10.8 0 0112 5c6.4 0 10 7 10 7a14.7 14.7 0 01-3 3.8M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7c1.4 0 2.7-.3 3.8-.8"/></svg>'
+        : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+}
+
 async function saveTeacherPassword() {
     const current = document.getElementById('currentPassword').value;
     const newPw   = document.getElementById('newPassword').value;
@@ -1259,7 +1361,7 @@ function showMsg(id, msg, success) {
 
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;">
                 <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;">
-                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">คะแนนเฉลี่ย</div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">คะแนนเฉลี่ยของข้อสอบ</div>
                     <div id="sdm-score" style="font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;"></div>
                 </div>
                 <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;">
@@ -1300,25 +1402,15 @@ function showMsg(id, msg, success) {
 </div>
 
 <script>
-const statusColors = {
-    'excellent': { color: '#10b981', label: 'ดีเยี่ยม' },
-    'good':      { color: '#3b82f6', label: 'ดี' },
-    'average':   { color: '#f59e0b', label: 'ปานกลาง' },
-    'needs-help':{ color: '#ef4444', label: 'ต้องดูแล' },
-};
-
 async function openStudentModal(el) {
     const id       = el.dataset.id;
     const name     = el.dataset.name;
     const cls      = el.dataset.class;
     const score    = parseFloat(el.dataset.score);
-    const status   = el.dataset.status;
     const completed= parseInt(el.dataset.completed);
     const total    = parseInt(el.dataset.total);
     const pct      = parseInt(el.dataset.pct);
-
-    const sc = statusColors[status] || { color: '#f97316', label: '' };
-
+    window.currentDetailStudentId = id;
 
     document.getElementById('sdm-avatar').textContent = name.charAt(0).toUpperCase();
     document.getElementById('sdm-name').textContent   = name;
@@ -1326,8 +1418,8 @@ async function openStudentModal(el) {
 
 
     const scoreEl = document.getElementById('sdm-score');
-    scoreEl.textContent = score.toFixed(1);
-    scoreEl.style.color = sc.color;
+    scoreEl.textContent = String(Math.round(score));
+    scoreEl.style.color = '#60a5fa';
 
     document.getElementById('sdm-pct').textContent     = pct + '%';
     document.getElementById('sdm-lessons').textContent = completed + '/' + total;
@@ -1363,7 +1455,9 @@ function renderLessonScores(lessons) {
     }
 
     container.innerHTML = lessons.map((l, i) => {
-        const pct    = l.quiz_total_score > 0 ? Math.round((l.best_quiz_score / l.quiz_total_score) * 100) : 0;
+        const rawScore = Math.round(Number(l.best_quiz_score) || 0);
+        const rawTotal = Math.round(Number(l.quiz_total_score) || 0);
+        const pct    = rawTotal > 0 ? Math.round((rawScore / rawTotal) * 100) : 0;
         const passed = pct >= 60;
         const bar    = passed ? '#10b981' : (pct > 0 ? '#f59e0b' : '#374151');
         const badge  = passed
@@ -1383,7 +1477,7 @@ function renderLessonScores(lessons) {
                     </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
-                    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:${bar};font-weight:600;">${l.best_quiz_score}/${l.quiz_total_score}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:${bar};font-weight:600;">${rawScore}/${rawTotal}</span>
                     ${badge}
                 </div>
             </div>
@@ -1391,8 +1485,67 @@ function renderLessonScores(lessons) {
                 <div style="height:100%;width:${pct}%;background:${bar};border-radius:100px;transition:width .4s ease;"></div>
             </div>
             <div style="font-size:11px;color:var(--text-muted);margin-top:5px;text-align:right;">${pct}%</div>
+            <button type="button" class="student-answer-detail-button" data-lesson-id="${escHtml(l.lesson_id)}" style="margin-top:12px;border:1px solid var(--border);border-radius:7px;padding:7px 11px;background:var(--bg2);color:var(--text);cursor:pointer;font:inherit;font-size:12px;">ดูรายละเอียดคำตอบข้อกา</button>
+            <div class="student-answer-detail" hidden style="margin-top:12px;"></div>
         </div>`;
     }).join('');
+}
+
+document.getElementById('sdm-lesson-list').addEventListener('click', async (event) => {
+    const button = event.target.closest('.student-answer-detail-button');
+    if (!button) return;
+    const detail = button.nextElementSibling;
+    if (!detail.hidden) { detail.hidden = true; button.textContent = 'ดูรายละเอียดคำตอบข้อกา'; return; }
+    detail.hidden = false;
+    detail.innerHTML = '<div style="padding:12px;color:var(--text-muted);">กำลังโหลดรายละเอียดคำตอบ...</div>';
+    button.disabled = true;
+    try {
+        const url = `get_student_quiz_answers.php?student_id=${encodeURIComponent(window.currentDetailStudentId || '')}&lesson_id=${encodeURIComponent(button.dataset.lessonId)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (!response.ok || data.error) throw new Error(data.error || 'โหลดข้อมูลไม่สำเร็จ');
+        detail.innerHTML = renderAnswerDetails(data.questions || []);
+        button.textContent = 'ซ่อนรายละเอียดคำตอบข้อกา';
+    } catch (error) {
+        detail.innerHTML = `<div style="padding:12px;color:#dc2626;">${escHtml(error.message || 'โหลดรายละเอียดไม่สำเร็จ')}</div>`;
+    } finally { button.disabled = false; }
+});
+
+function renderAnswerDetails(questions) {
+    if (!questions.length) return '<div style="padding:12px;color:var(--text-muted);">บทเรียนนี้ไม่มีข้อสอบปรนัย</div>';
+    const maxWrong = Math.max(...questions.map(question => Number(question.class_incorrect_count) || 0));
+    const mostMissed = maxWrong > 0 ? questions.filter(question => Number(question.class_incorrect_count) === maxWrong) : [];
+    const hasClassAnswers = questions.some(question => Number(question.class_answered_count) > 0);
+    const summary = mostMissed.length
+        ? `<div style="padding:11px 13px;margin-bottom:12px;border-radius:8px;background:#fff7ed;color:#9a3412;font-size:12px;"><strong>ข้อที่ตอบผิดมากที่สุดในรายวิชา:</strong> ${mostMissed.map(question => `ข้อ ${question.question_id} (${question.class_incorrect_count}/${question.class_answered_count} คนตอบผิด)`).join(' · ')}</div>`
+        : `<div style="padding:11px 13px;margin-bottom:12px;border-radius:8px;background:var(--bg2);color:var(--text-muted);font-size:12px;">${hasClassAnswers ? 'ยังไม่มีข้อที่นักเรียนตอบผิดในบทเรียนนี้' : 'ยังไม่มีข้อมูลคำตอบจากนักเรียนในรายวิชา'}</div>`;
+    const rows = questions.map((question, index) => {
+        if (question.question_type === 'essay') {
+            const essaySubmitted = Boolean(question.answer_text);
+            const essayReviewed = question.review_status === 'graded';
+            const essayStatus = !essaySubmitted ? 'ยังไม่ตอบ' : !essayReviewed ? 'รอตรวจ' : question.result_status === 'passed' ? 'ตรวจแล้ว · ผ่าน' : 'ตรวจแล้ว · ไม่ผ่าน';
+            const essayColor = !essaySubmitted ? '#64748b' : !essayReviewed ? '#a16207' : question.result_status === 'passed' ? '#15803d' : '#b91c1c';
+            const essayScore = question.score === null ? '—' : String(Math.round(Number(question.score) || 0));
+            return `<article style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-top:10px;"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><strong style="font-size:12px;">ข้อ ${index + 1} · ข้อเขียน: ${escHtml(question.question_text)}</strong><span style="color:${essayColor};font-weight:700;font-size:12px;white-space:nowrap;">${essayStatus}</span></div><div style="white-space:pre-wrap;overflow-wrap:anywhere;padding:10px;margin-top:8px;border-radius:7px;background:var(--bg2);font-size:12px;">${essaySubmitted ? escHtml(question.answer_text) : 'นักเรียนยังไม่ได้ส่งคำตอบ'}</div><div style="margin-top:7px;color:var(--text-muted);font-size:11px;">คะแนน: ${essayReviewed ? `${essayScore}/${Math.round(Number(question.max_score) || 0)}` : `รอตรวจ · เต็ม ${Math.round(Number(question.max_score) || 0)} คะแนน`}</div></article>`;
+        }
+        const selected = question.selected_choice || '';
+        const correct = question.correct_choice || '';
+        const answered = Boolean(selected);
+        const isCorrect = answered && selected === correct;
+        const marker = !answered ? 'ยังไม่ตอบ' : isCorrect ? '✓ ตอบถูก' : '✗ ตอบผิด';
+        const markerColor = !answered ? '#64748b' : isCorrect ? '#15803d' : '#b91c1c';
+        const options = (question.options || []).map((option, optionIndex) => {
+            const letter = String.fromCharCode(65 + optionIndex);
+            const isAnswer = correct === letter;
+            const isSelected = selected === letter;
+            const background = isAnswer ? '#e6f4ea' : isSelected ? '#fef2f2' : 'var(--bg2)';
+            const color = isAnswer ? '#166534' : isSelected ? '#b91c1c' : 'var(--text)';
+            const tags = [isAnswer ? '✓ เฉลย' : '', isSelected ? (isCorrect ? '✓ นักเรียนเลือก' : '✗ นักเรียนเลือก') : ''].filter(Boolean).join(' · ');
+            return `<div style="padding:8px 10px;border-radius:7px;background:${background};color:${color};font-size:12px;margin-top:5px;"><strong>${letter}.</strong> ${escHtml(String(option))}${tags ? ` <strong style="margin-left:5px;">${tags}</strong>` : ''}</div>`;
+        }).join('');
+        return `<article style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-top:10px;"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><strong style="font-size:12px;">ข้อ ${index + 1}: ${escHtml(question.question_text)}</strong><span style="color:${markerColor};font-weight:700;font-size:12px;white-space:nowrap;">${marker}</span></div>${options}<div style="margin-top:7px;color:var(--text-muted);font-size:11px;">นักเรียนตอบ: ${answered ? escHtml(selected) : 'ยังไม่ตอบ'} · เฉลย: ${escHtml(correct || '-')} · ผิด ${Number(question.class_incorrect_count) || 0}/${Number(question.class_answered_count) || 0} คน</div></article>`;
+    }).join('');
+    return summary + rows;
 }
 
 function escHtml(str) {
@@ -1407,6 +1560,6 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-  <script src="assets/js/teacherdash.js?v=20261020-quiz-save-fix"></script>
+    <script src="assets/js/teacherdash.js?v=20261020-integer-question-scores"></script>
 </body>
 </html>

@@ -13,6 +13,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/theme.css">
+    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261020-sidebar-brand-centered">
     <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261020-course-certificates-v2">
 </head>
 <body>
@@ -147,7 +148,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                 </section>
                 <section class="content-card report-card">
                     <div class="card-header"><h2>ผลคะแนนแยกตามบทเรียน</h2><span id="reportLessonCount" class="report-meta"></span></div>
-                    <div class="table-responsive"><table class="data-table report-table lesson-report-table"><thead><tr><th>รายวิชา / บทเรียน</th><th>คะแนนปรนัย (กากบาท)</th><th>คะแนนข้อเขียน</th><th>คะแนนรวม</th><th>สถานะผลการเรียน</th></tr></thead><tbody id="lessonReportBody"></tbody></table></div>
+                    <div class="table-responsive"><table class="data-table report-table lesson-report-table"><thead><tr><th>รายวิชา</th><th>บทเรียน</th><th class="report-center">คะแนนปรนัย (กากบาท)</th><th class="report-center">คะแนนข้อเขียน</th><th class="report-center">คะแนนรวม</th><th class="report-center">สถานะผลการเรียน</th></tr></thead><tbody id="lessonReportBody"></tbody></table></div>
                 </section>
             </section>
 
@@ -208,14 +209,14 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                                     <label class="settings-label">รหัสผ่านปัจจุบัน</label>
                                     <div class="pwd-input-wrap">
                                         <input type="password" class="settings-input" id="pwdCurrent" placeholder="ใส่รหัสผ่านปัจจุบัน">
-                                        <button type="button" onclick="togglePwd('pwdCurrent',this)" class="pwd-toggle-btn">แสดง</button>
+                                        <button type="button" onclick="togglePwd('pwdCurrent',this)" class="pwd-toggle-btn" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
                                     </div>
                                 </div>
                                 <div class="settings-field">
                                     <label class="settings-label">รหัสผ่านใหม่</label>
                                     <div class="pwd-input-wrap">
                                         <input type="password" class="settings-input" id="pwdNew" placeholder="อย่างน้อย 6 ตัวอักษร" oninput="checkPwdStrength(this.value)">
-                                        <button type="button" onclick="togglePwd('pwdNew',this)" class="pwd-toggle-btn">แสดง</button>
+                                        <button type="button" onclick="togglePwd('pwdNew',this)" class="pwd-toggle-btn" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
                                     </div>
                                     <div id="pwdStrengthWrap" style="display:none;margin-top:8px">
                                         <div class="strength-bar-bg">
@@ -228,7 +229,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                                     <label class="settings-label">ยืนยันรหัสผ่านใหม่</label>
                                     <div class="pwd-input-wrap">
                                         <input type="password" class="settings-input" id="pwdConfirm" placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง" oninput="checkPwdMatch()">
-                                        <button type="button" onclick="togglePwd('pwdConfirm',this)" class="pwd-toggle-btn">แสดง</button>
+                                        <button type="button" onclick="togglePwd('pwdConfirm',this)" class="pwd-toggle-btn" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
                                     </div>
                                     <div id="pwdMatchMsg" class="pwd-match-msg"></div>
                                 </div>
@@ -245,6 +246,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
 
         </main>
     </div>
+    <script src="assets/js/student_dashboard.js?v=20261020-password-eye-icons"></script>
     <script src="assets/js/student_dashboard.js?v=20261020-course-certificate-issue-v3"></script>
 </body>
 </html>

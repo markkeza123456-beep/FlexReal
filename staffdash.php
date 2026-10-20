@@ -9,10 +9,33 @@ if (empty($_SESSION['user_id']) || $staffRole !== 'staff') {
 $displayName    = $_SESSION['name'] ?? 'บัญชีเจ้าหน้าที่';
 $displayRole    = 'เจ้าหน้าที่';
 $avatarInitials = 'ST';
+$staffAvatarUrl = '';
+$staffProfile = [];
+$profileFirstName = '';
+$profileLastName = '';
+try {
+    require_once __DIR__ . '/config/db.php';
+    $conn->exec('ALTER TABLE public.staff ADD COLUMN IF NOT EXISTS avatar_url TEXT');
+    $avatarStmt = $conn->prepare('SELECT first_name, last_name, email, phone, avatar_url FROM public.staff WHERE user_id = :id LIMIT 1');
+    $avatarStmt->execute([':id' => (string) $_SESSION['user_id']]);
+    $staffProfile = $avatarStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $staffAvatarUrl = (string) ($staffProfile['avatar_url'] ?? '');
+    $profileFirstName = trim((string) ($staffProfile['first_name'] ?? ''));
+    $profileLastName = trim((string) ($staffProfile['last_name'] ?? ''));
+    $profileName = trim((string) ($staffProfile['first_name'] ?? '') . ' ' . (string) ($staffProfile['last_name'] ?? ''));
+    if ($profileName !== '') $displayName = $profileName;
+} catch (Throwable $error) {
+    error_log('Staff avatar lookup failed: ' . $error->getMessage());
+}
 
 
-if (!empty($_SESSION['name'])) {
-    $parts    = preg_split('/\s+/u', trim($_SESSION['name']));
+if ($profileFirstName === '' && $profileLastName === '' && $displayName !== '') {
+    $nameParts = preg_split('/\s+/u', trim($displayName), 2) ?: [];
+    $profileFirstName = $nameParts[0] ?? '';
+    $profileLastName = $nameParts[1] ?? '';
+}
+if ($displayName !== '') {
+    $parts    = preg_split('/\s+/u', trim($displayName));
     $initials = '';
     foreach ($parts as $p) {
         $initials .= mb_strtoupper(mb_substr($p, 0, 1, 'UTF-8'), 'UTF-8');
@@ -30,7 +53,7 @@ if (!empty($_SESSION['name'])) {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261019-transfer-permissions" />
+  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261020-sidebar-brand-centered" />
   <link rel="stylesheet" href="assets/css/theme.css" />
 </head>
 <body>
@@ -134,19 +157,20 @@ if (!empty($_SESSION['name'])) {
       <span></span><span>ออกจากระบบ</span>
     </a>
 
-    <div class="sidebar-footer">
+    <div class="sidebar-footer staff-profile-trigger" role="button" tabindex="0" onclick="openStaffProfile()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openStaffProfile()}" title="ดูหรือแก้ไขโปรไฟล์">
       <input type="file" id="staffAvatarInput" accept="image/*" style="display:none" onchange="staffPreviewAvatar(this)">
-      <div class="user-avatar" id="staffAvatarCircle"
-           onclick="document.getElementById('staffAvatarInput').click()"
-           title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์"
-           style="cursor:pointer;overflow:hidden;padding:0;flex-shrink:0;">
-        <img id="staffAvatarImg" src="" alt=""
-             style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;">
-        <span id="staffAvatarInitial"><?= htmlspecialchars($avatarInitials) ?></span>
+      <div class="staff-avatar-wrap">
+        <div class="user-avatar" id="staffAvatarCircle" style="overflow:hidden;padding:0;flex-shrink:0;">
+          <img id="staffAvatarImg" src="<?= htmlspecialchars($staffAvatarUrl, ENT_QUOTES, 'UTF-8') ?>" alt=""
+               style="<?= $staffAvatarUrl !== '' ? 'display:block;' : 'display:none;' ?>width:100%;height:100%;object-fit:cover;border-radius:50%;">
+          <span id="staffAvatarInitial" style="<?= $staffAvatarUrl !== '' ? 'display:none;' : '' ?>"><?= htmlspecialchars($avatarInitials) ?></span>
+        </div>
+        <button type="button" class="staff-avatar-edit" aria-label="เปลี่ยนรูปโปรไฟล์" title="เปลี่ยนรูป"
+                onclick="event.stopPropagation();document.getElementById('staffAvatarInput').click()" onkeydown="event.stopPropagation()">✎</button>
       </div>
       <div class="user-detail">
-        <span class="user-name"><?= htmlspecialchars($displayName) ?></span>
-        <span class="user-role"><?= htmlspecialchars($displayRole) ?></span>
+        <span class="user-name"><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></span>
+        <span class="user-role"><?= htmlspecialchars($displayRole, ENT_QUOTES, 'UTF-8') ?></span>
       </div>
     </div>
   </nav>
@@ -771,6 +795,42 @@ if (!empty($_SESSION['name'])) {
         <div id="graduationRequestsMessage" class="form-card graduation-review-message" role="status" aria-live="polite">กำลังโหลดคำขอ...</div>
         <div id="graduationRequestsList" class="graduation-request-list"></div>
       </section>
+
+      <section class="page staff-profile-page" id="page-profile">
+        <div class="page-header staff-profile-page-header">
+          <div>
+            <div class="page-title">โปรไฟล์ของฉัน</div>
+            <div class="page-sub">ดูและแก้ไขข้อมูลบัญชีเจ้าหน้าที่</div>
+          </div>
+        </div>
+        <div class="form-card staff-profile-page-card">
+          <h2 class="staff-profile-card-title">👤 โปรไฟล์</h2>
+          <div class="staff-profile-identity">
+            <button type="button" class="staff-profile-avatar" onclick="document.getElementById('staffAvatarInput').click()" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์" aria-label="เปลี่ยนรูปโปรไฟล์">
+              <img id="staffProfileAvatarImg" src="<?= htmlspecialchars($staffAvatarUrl, ENT_QUOTES, 'UTF-8') ?>" alt="รูปโปรไฟล์"
+                   style="<?= $staffAvatarUrl !== '' ? 'display:block;' : 'display:none;' ?>">
+              <span id="staffProfileAvatarInitial" style="<?= $staffAvatarUrl !== '' ? 'display:none;' : '' ?>"><?= htmlspecialchars($avatarInitials, ENT_QUOTES, 'UTF-8') ?></span>
+            </button>
+            <div class="staff-profile-identity-info"><h2><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></h2><p>เจ้าหน้าที่ · รหัส <?= htmlspecialchars((string) $_SESSION['user_id'], ENT_QUOTES, 'UTF-8') ?></p><span>คลิกที่รูปเพื่อเปลี่ยน</span></div>
+          </div>
+          <form id="staffProfileForm">
+            <div class="form-grid-2">
+              <label class="form-field"><span class="form-label">ชื่อ</span><input class="staff-profile-input" name="first_name" required maxlength="100" value="<?= htmlspecialchars($profileFirstName, ENT_QUOTES, 'UTF-8') ?>"></label>
+              <label class="form-field"><span class="form-label">นามสกุล</span><input class="staff-profile-input" name="last_name" required maxlength="100" value="<?= htmlspecialchars($profileLastName, ENT_QUOTES, 'UTF-8') ?>"></label>
+            </div>
+            <label class="form-field"><span class="form-label">อีเมล</span><input class="staff-profile-input" name="email" type="email" maxlength="254" value="<?= htmlspecialchars((string) ($staffProfile['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></label>
+            <label class="form-field"><span class="form-label">เบอร์โทรศัพท์</span><input class="staff-profile-input" name="phone" type="tel" maxlength="30" value="<?= htmlspecialchars((string) ($staffProfile['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></label>
+            <div class="staff-password-section">
+              <div class="staff-password-title">🔐 เปลี่ยนรหัสผ่าน</div>
+              <label class="form-field"><span class="form-label">รหัสผ่านปัจจุบัน</span><span class="staff-password-input-wrap"><input class="staff-profile-input" id="staffPwdCurrent" name="pwd_current" type="password" autocomplete="current-password"><button type="button" class="staff-password-toggle" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน" onclick="toggleStaffPwd('staffPwdCurrent', this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></span></label>
+              <label class="form-field"><span class="form-label">รหัสผ่านใหม่</span><span class="staff-password-input-wrap"><input class="staff-profile-input" id="staffPwdNew" name="pwd_new" type="password" minlength="6" autocomplete="new-password" oninput="checkStaffPwdStrength(this.value)"><button type="button" class="staff-password-toggle" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน" onclick="toggleStaffPwd('staffPwdNew', this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></span><span id="staffPwdStrengthWrap" class="staff-password-strength" style="display:none"><span class="staff-password-strength-bg"><span id="staffPwdStrengthBar"></span></span><span id="staffPwdStrengthLabel"></span></span></label>
+              <label class="form-field"><span class="form-label">ยืนยันรหัสผ่านใหม่</span><span class="staff-password-input-wrap"><input class="staff-profile-input" id="staffPwdConfirm" name="pwd_confirm" type="password" minlength="6" autocomplete="new-password" oninput="checkStaffPwdMatch()"><button type="button" class="staff-password-toggle" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน" onclick="toggleStaffPwd('staffPwdConfirm', this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></span><span id="staffPwdMatchMsg" class="staff-password-match"></span></label>
+            </div>
+            <div class="staff-profile-message" id="staffProfileMessage" role="status" aria-live="polite"></div>
+            <div class="staff-profile-actions"><button type="button" class="btn-ghost" onclick="closeStaffProfile()">กลับ</button><button type="submit" class="btn-primary" id="saveStaffProfileBtn"><span class="btn-text">บันทึกข้อมูล</span></button></div>
+          </form>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -793,9 +853,8 @@ if (!empty($_SESSION['name'])) {
     </div>
   </div>
 
-
   <div class="toast" id="toast"></div>
 
-  <script src="assets/js/staffdash.js?v=20261019-transfer-permissions"></script>
+  <script src="assets/js/staffdash.js?v=20261020-password-eye-icons"></script>
 </body>
 </html>

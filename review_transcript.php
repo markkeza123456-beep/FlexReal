@@ -74,7 +74,7 @@ require __DIR__ . '/includes/header.php';
                 <?php endif; ?>
                 <dl class="audit-details">
                     <div><dt>วันที่นักเรียนอัปโหลด</dt><dd><?= hReview(formatReviewDate((string) ($selectedRequest['created_at'] ?? $selectedRequest['submitted_at'] ?? ''))) ?></dd></div>
-                    <?php if ($selectedRequest['status'] === 'approved'): ?>
+                    <?php if ($user_role === 'staff' && $selectedRequest['status'] === 'approved'): ?>
                         <div><dt>ผู้อนุมัติ</dt><dd><?= hReview((string) ($selectedRequest['approver_display'] ?? '-')) ?></dd></div>
                         <div><dt>วันที่อนุมัติ</dt><dd><?= hReview(formatReviewDate((string) ($selectedRequest['approved_at'] ?? $selectedRequest['reviewed_at'] ?? ''))) ?></dd></div>
                     <?php endif; ?>

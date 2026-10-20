@@ -61,8 +61,9 @@ function applyParentProfile(p) {
 
   const avatarImg     = fn('avatarImg');
   const avatarInitial = fn('avatarInitial');
-  if (p.photoDataUrl) {
-    if (avatarImg) { avatarImg.src = p.photoDataUrl; avatarImg.style.display = 'block'; }
+  const avatarUrl = p.avatar_url || p.photoDataUrl;
+  if (avatarUrl) {
+    if (avatarImg) { avatarImg.src = avatarUrl; avatarImg.style.display = 'block'; }
     if (avatarInitial) avatarInitial.style.display = 'none';
   } else {
     if (avatarImg) avatarImg.style.display = 'none';
@@ -76,9 +77,10 @@ function applyParentProfile(p) {
 function renderSidebarAvatar(p) {
   const el = document.getElementById('sidebarAvatar');
   if (!el) return;
-  if (p.photoDataUrl) {
+  const avatarUrl = p.avatar_url || p.photoDataUrl;
+  if (avatarUrl) {
     el.style.cssText += ';background:none;padding:0;overflow:hidden;';
-    el.innerHTML = `<img src="${p.photoDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    el.innerHTML = `<img src="${escapeHtml(avatarUrl)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
   } else {
     el.innerHTML = '';
     el.style.background = '';
@@ -177,8 +179,9 @@ function togglePwd(id, btn) {
   const label = show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน';
   btn.setAttribute('aria-label', label);
   btn.title = label;
-  const icon = btn.querySelector('i');
-  if (icon) icon.className = show ? 'ti ti-eye-off' : 'ti ti-eye';
+  btn.innerHTML = show
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.9 5.2A10.8 10.8 0 0112 5c6.4 0 10 7 10 7a14.7 14.7 0 01-3 3.8M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7c1.4 0 2.7-.3 3.8-.8"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
 }
 
 function checkPwdStrength(val) {
@@ -347,7 +350,7 @@ function _cropClose() {
   if (overlay) overlay.style.display = 'none';
 }
 
-function _cropConfirm() {
+async function _cropConfirm() {
   const { img, stageW, stageH, circleSize, imgX, imgY, imgW, imgH, zoom } = _crop;
   if (!img) return;
   const offscreen = document.createElement('canvas');
@@ -367,17 +370,30 @@ function _cropConfirm() {
   const dataURL = offscreen.toDataURL('image/png');
 
 
-  const avatarImg     = document.getElementById('avatarImg');
-  const avatarInitial = document.getElementById('avatarInitial');
-  if (avatarImg) { avatarImg.src = dataURL; avatarImg.style.display = 'block'; }
-  if (avatarInitial) avatarInitial.style.display = 'none';
-  renderSidebarAvatar({ photoDataUrl: dataURL });
+  try {
+    const response = await fetch('uploadavatar_parent.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ image: dataURL })
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.message || 'บันทึกรูปโปรไฟล์ไม่สำเร็จ');
 
-
-  const p = loadParent();
-  p.photoDataUrl = dataURL;
-  saveParent(p);
-  _cropClose();
+    const avatarImg = document.getElementById('avatarImg');
+    const avatarInitial = document.getElementById('avatarInitial');
+    if (avatarImg) { avatarImg.src = result.url; avatarImg.style.display = 'block'; }
+    if (avatarInitial) avatarInitial.style.display = 'none';
+    renderSidebarAvatar({ avatar_url: result.url });
+    const p = loadParent();
+    p.avatar_url = result.url;
+    p.photoDataUrl = null;
+    saveParent(p);
+    if (_parentData) _parentData.avatar_url = result.url;
+    _cropClose();
+  } catch (error) {
+    alert(error.message || 'บันทึกรูปโปรไฟล์ไม่สำเร็จ กรุณาลองใหม่');
+  }
 }
 
 
@@ -478,6 +494,7 @@ async function loadDashboardData() {
       p.email = _parentData.email || '';
       p.phone = _parentData.phone || '';
       p.avatarInitials = p.name.slice(0, 2);
+      p.avatar_url = _parentData.avatar_url || '';
       saveParent(p);
       if (!settingsOpen) applyParentProfile(p);
     }

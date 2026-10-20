@@ -59,12 +59,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const renderRows = (items, isReviewed) => items.length ? items.map(row => {
                 const reviewed = row.review_status === 'graded';
                 const status = !reviewed ? 'รอตรวจ' : row.result_status === 'passed' ? 'ผ่าน' : 'ไม่ผ่าน';
+                const maxScore = Math.round(Number(row.max_score) || 0);
+                const score = Math.round(Number(reviewed ? row.score : row.max_score) || 0);
                 const reviewDate = row.reviewed_at ? new Date(row.reviewed_at).toLocaleString('th-TH') : '';
                 return `<article style="padding:18px;border:1px solid var(--border);border-radius:12px;background:var(--bg3)">
                     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><strong>${escapeHtml(row.student_name)}</strong><span class="badge badge-${reviewed ? (row.result_status === 'passed' ? 'active' : 'needs-help') : 'draft'}">${reviewed ? `ตรวจแล้ว · ${status}` : status}</span></div>
                     <div style="font-size:12px;color:var(--text-muted);margin:5px 0 12px">${escapeHtml(row.student_id)} · ${escapeHtml(row.course_name)} · ${escapeHtml(row.lessons_name)} · ข้อ ${escapeHtml(row.question_id)} · ส่งเมื่อ ${escapeHtml(row.submitted_at)}</div>
                     <p style="font-weight:600;margin:12px 0 7px">คำถาม: ${escapeHtml(row.questions_text)}</p><div style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;border-radius:8px;background:#fff;border:1px solid var(--border)"><strong>คำตอบของนักเรียน</strong><br>${escapeHtml(row.answer_text || 'ไม่มีข้อความคำตอบ')}</div>
-                    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center"><label>คะแนน <input class="form-input essay-score" data-id="${row.submission_id}" type="number" min="0" max="${escapeHtml(row.max_score)}" step="0.01" value="${reviewed ? escapeHtml(row.score) : escapeHtml(row.max_score)}" style="width:110px"></label><span>/ ${escapeHtml(row.max_score)}</span><label>ผลสอบ <select class="form-input essay-result-status" data-id="${row.submission_id}"><option value="passed" ${!reviewed || row.result_status === 'passed' ? 'selected' : ''}>ผ่าน</option><option value="failed" ${reviewed && row.result_status === 'failed' ? 'selected' : ''}>ไม่ผ่าน</option></select></label><input class="form-input essay-comment" data-id="${row.submission_id}" value="${escapeHtml(row.teacher_comment || '')}" placeholder="ความเห็นหรือข้อเสนอแนะ" style="flex:1;min-width:220px"><button class="btn-save essay-review" data-id="${row.submission_id}">${reviewed ? 'บันทึกการแก้ไข' : 'บันทึกผลตรวจ'}</button></div>
+                    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center"><label>คะแนน <input class="form-input essay-score" data-id="${row.submission_id}" type="number" min="0" max="${maxScore}" step="1" value="${score}" style="width:110px"></label><span>/ ${maxScore}</span><label>ผลสอบ <select class="form-input essay-result-status" data-id="${row.submission_id}"><option value="passed" ${!reviewed || row.result_status === 'passed' ? 'selected' : ''}>ผ่าน</option><option value="failed" ${reviewed && row.result_status === 'failed' ? 'selected' : ''}>ไม่ผ่าน</option></select></label><input class="form-input essay-comment" data-id="${row.submission_id}" value="${escapeHtml(row.teacher_comment || '')}" placeholder="ความเห็นหรือข้อเสนอแนะ" style="flex:1;min-width:220px"><button class="btn-save essay-review" data-id="${row.submission_id}">${reviewed ? 'บันทึกการแก้ไข' : 'บันทึกผลตรวจ'}</button></div>
                     ${reviewed ? `<p style="margin-top:8px;font-size:12px;color:var(--text-muted)">ผู้ตรวจ: ${escapeHtml(row.reviewer_name || row.reviewer_id || '—')} · ตรวจเสร็จ ${escapeHtml(reviewDate)} · ผลสอบ ${status}</p>` : ''}
                 </article>`;
             }).join('') : `<div style="padding:30px;text-align:center;color:var(--text-muted)">ยังไม่มีข้อเขียน${isReviewed ? 'ที่ตรวจแล้ว' : 'รอตรวจ'}</div>`;
@@ -97,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const button = event.target.closest('.essay-review'); if (!button) return;
         const card = button.closest('article');
         const score = card.querySelector(`.essay-score[data-id="${button.dataset.id}"]`)?.value ?? '';
+        if (score.trim() === '' || !Number.isInteger(Number(score))) { alert('กรุณากรอกคะแนนเป็นจำนวนเต็ม'); return; }
         const resultStatus = card.querySelector(`.essay-result-status[data-id="${button.dataset.id}"]`)?.value ?? '';
         const comment = card.querySelector(`.essay-comment[data-id="${button.dataset.id}"]`)?.value || '';
         card.querySelectorAll('button, input').forEach(control => { control.disabled = true; });
@@ -272,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxScore = document.getElementById('quizMaxScoreAdd').value;
 
         if (!question) { document.getElementById('quizQuestionAdd').style.borderColor = '#ef4444'; return; }
-        if (!(Number(maxScore) > 0) || Number(maxScore) > 10000) { alert('กรุณากำหนดคะแนนเต็มระหว่าง 0.01 ถึง 10,000'); return; }
+        if (!Number.isInteger(Number(maxScore)) || Number(maxScore) < 1 || Number(maxScore) > 10000) { alert('กรุณากำหนดคะแนนเต็มเป็นจำนวนเต็มระหว่าง 1 ถึง 10,000'); return; }
 
         let chA = '', chB = '', chC = '', chD = '', ans = '';
         if (type === 'choice') {
@@ -350,7 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxScore = document.getElementById('editQuizMaxScore').value;
         let chA = '', chB = '', chC = '', chD = '', ans = '';
 
-        if (!(Number(maxScore) > 0) || Number(maxScore) > 10000) { alert('กรุณากำหนดคะแนนเต็มระหว่าง 0.01 ถึง 10,000'); return; }
+        if (!Number.isInteger(Number(maxScore)) || Number(maxScore) < 1 || Number(maxScore) > 10000) { alert('กรุณากำหนดคะแนนเต็มเป็นจำนวนเต็มระหว่าง 1 ถึง 10,000'); return; }
 
         if (type === 'choice') {
             chA = document.getElementById('chA_Edit').value.trim(); chB = document.getElementById('chB_Edit').value.trim();

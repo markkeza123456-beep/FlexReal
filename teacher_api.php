@@ -513,11 +513,12 @@ try {
         $lessonId = trim((string) ($_POST['lesson_id'] ?? ''));
         $type = trim((string) ($_POST['type'] ?? 'choice'));
         $question = trim((string) ($_POST['question'] ?? ''));
-        $maxScore = filter_var($_POST['max_score'] ?? 1, FILTER_VALIDATE_FLOAT);
+        $maxScore = filter_var($_POST['max_score'] ?? 1, FILTER_VALIDATE_INT);
         if ($lessonId === '' || $question === '') {
             throw new Exception('ข้อมูลคำถามไม่ครบ');
         }
-        if ($maxScore === false || $maxScore <= 0 || $maxScore > 10000) throw new Exception('คะแนนเต็มต้องอยู่ระหว่าง 0.01 ถึง 10,000');
+        if ($maxScore === false || $maxScore < 1 || $maxScore > 10000) throw new Exception('คะแนนเต็มต้องเป็นจำนวนเต็มระหว่าง 1 ถึง 10,000');
+        $maxScore = intval($maxScore);
         if (!teacherOwnsLesson($conn, $teacherId, $lessonId)) {
             throw new Exception('คุณไม่มีสิทธิ์เพิ่มข้อสอบในบทเรียนนี้');
         }
@@ -576,11 +577,12 @@ try {
         $quizId = trim((string) ($_POST['quiz_id'] ?? ''));
         $type = trim((string) ($_POST['type'] ?? 'choice'));
         $question = trim((string) ($_POST['question'] ?? ''));
-        $maxScore = filter_var($_POST['max_score'] ?? 1, FILTER_VALIDATE_FLOAT);
+        $maxScore = filter_var($_POST['max_score'] ?? 1, FILTER_VALIDATE_INT);
         if ($quizId === '' || $question === '') {
             throw new Exception('ข้อมูลไม่ครบถ้วน');
         }
-        if ($maxScore === false || $maxScore <= 0 || $maxScore > 10000) throw new Exception('คะแนนเต็มต้องอยู่ระหว่าง 0.01 ถึง 10,000');
+        if ($maxScore === false || $maxScore < 1 || $maxScore > 10000) throw new Exception('คะแนนเต็มต้องเป็นจำนวนเต็มระหว่าง 1 ถึง 10,000');
+        $maxScore = intval($maxScore);
         if (!teacherOwnsQuiz($conn, $teacherId, $quizId)) {
             throw new Exception('คุณไม่มีสิทธิ์แก้ไขข้อสอบนี้');
         }
@@ -816,7 +818,7 @@ try {
         if (!$row) throw new Exception('ไม่พบคำตอบข้อเขียนหรือคุณไม่มีสิทธิ์ตรวจ');
         $maxScore = (float) $row['max_score'];
         $score = $submittedScore === null ? ($decision === 'pass' ? $maxScore : 0.0) : filter_var($submittedScore, FILTER_VALIDATE_FLOAT);
-        if ($score === false || $score < 0 || $score > $maxScore) throw new Exception('คะแนนต้องอยู่ระหว่าง 0 ถึงคะแนนเต็ม');
+        if ($score === false || $score < 0 || $score > $maxScore || floor((float) $score) !== (float) $score) throw new Exception('คะแนนต้องเป็นจำนวนเต็มระหว่าง 0 ถึงคะแนนเต็ม');
         if (!in_array($row['review_status'], ['pending', 'graded'], true)) throw new Exception('สถานะคำตอบไม่ถูกต้อง');
         if ($submittedResultStatus !== '' && !in_array($submittedResultStatus, ['passed', 'failed'], true)) throw new Exception('สถานะผลสอบไม่ถูกต้อง');
         $resultStatus = $submittedResultStatus !== '' ? $submittedResultStatus : ((float) $score >= $maxScore ? 'passed' : 'failed');
