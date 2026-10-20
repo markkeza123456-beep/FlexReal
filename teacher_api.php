@@ -683,7 +683,8 @@ try {
         if ($subjectId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) throw new Exception('คุณไม่มีสิทธิ์จัดการรายวิชานี้');
         $stmt = $conn->prepare(
             "SELECT aa.attempt_answer_id AS submission_id, a.attempt_id AS test_id, aa.answer_text,
-                    CASE WHEN aa.review_status = 'pending' THEN 'pending' WHEN COALESCE(aa.score, 0) > 0 THEN 'pass' ELSE 'fail' END AS review_status,
+                    CASE WHEN aa.review_status = 'pending' THEN 'pending' WHEN aa.score >= q.max_score THEN 'pass' ELSE 'fail' END AS review_status,
+                    aa.score, q.max_score,
                     aa.reviewer_comment AS teacher_comment, a.submitted_at,
                     s.full_name AS student_name, l.title AS lessons_name, q.question_text AS questions_text
              FROM public.quiz_attempt_answers aa
