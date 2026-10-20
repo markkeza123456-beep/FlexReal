@@ -140,12 +140,12 @@ try {
                  SELECT COUNT(*) AS answer_count,
                         COALESCE(SUM(aa.score) FILTER (WHERE q.question_type <> 'essay'), 0) AS objective_score,
                         COALESCE(SUM(q.max_score) FILTER (WHERE q.question_type <> 'essay'), 0) AS objective_total,
-                        COALESCE(SUM(aa.score) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'reviewed'), 0) AS essay_score,
+                        COALESCE(SUM(aa.score) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'graded'), 0) AS essay_score,
                         COALESCE(SUM(q.max_score) FILTER (WHERE q.question_type = 'essay'), 0) AS essay_total,
                         COUNT(*) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'pending') AS essay_pending_count,
-                        COUNT(*) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'reviewed') AS essay_reviewed_count,
+                        COUNT(*) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'graded') AS essay_reviewed_count,
                         COUNT(*) FILTER (WHERE q.question_type = 'essay') AS essay_question_count,
-                        STRING_AGG(DISTINCT NULLIF(BTRIM(aa.reviewer_comment), ''), ' · ') FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'reviewed') AS essay_feedback
+                        STRING_AGG(DISTINCT NULLIF(BTRIM(aa.reviewer_comment), ''), ' · ') FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'graded') AS essay_feedback
                  FROM public.quiz_attempt_answers aa
                  INNER JOIN public.questions q ON q.question_id = aa.question_id
                  WHERE aa.attempt_id = qa.attempt_id
@@ -156,12 +156,14 @@ try {
         $lessonStmt->execute([':student_id' => $studentId, ':course_id' => (string) $row['course_id']]);
         $essayAnswersStmt = $conn->prepare(
             "SELECT q.question_id, q.question_text AS question, aa.answer_text AS answer,
-                    CASE WHEN aa.review_status = 'pending' THEN 'pending' WHEN aa.score >= q.max_score THEN 'pass' ELSE 'fail' END AS status,
-                    aa.score, q.max_score, aa.reviewer_comment AS feedback, a.submitted_at
+                    aa.review_status, aa.result_status AS status,
+                    aa.score, q.max_score, aa.reviewer_comment AS feedback, a.submitted_at, aa.reviewed_at,
+                    aa.reviewer_id, t.full_name AS reviewer_name
              FROM public.quiz_attempt_answers aa
              INNER JOIN public.quiz_attempts a ON a.attempt_id = aa.attempt_id
              INNER JOIN public.questions q ON q.question_id = aa.question_id
-             WHERE aa.attempt_id = :attempt_id AND a.student_id = :student_id AND q.question_type = 'essay'
+             LEFT JOIN public.teachers t ON t.user_id = aa.reviewer_id
+             WHERE aa.attempt_id = :attempt_id AND a.student_id = :student_id AND q.question_type = 'essay' AND aa.review_status IN ('pending', 'graded')
              ORDER BY q.question_id"
         );
         $lessons = [];

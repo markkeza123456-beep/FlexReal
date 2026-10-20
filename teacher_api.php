@@ -682,17 +682,21 @@ try {
         $subjectId = trim((string) ($_POST['subject_id'] ?? ''));
         if ($subjectId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) throw new Exception('คุณไม่มีสิทธิ์จัดการรายวิชานี้');
         $stmt = $conn->prepare(
-            "SELECT aa.attempt_answer_id AS submission_id, a.attempt_id AS test_id, aa.answer_text,
-                    CASE WHEN aa.review_status = 'pending' THEN 'pending' WHEN aa.score >= q.max_score THEN 'pass' ELSE 'fail' END AS review_status,
+            "SELECT aa.attempt_answer_id AS submission_id, a.attempt_id AS test_id, a.student_id,
+                    l.course_id, a.lesson_id, aa.question_id, aa.reviewer_id, aa.answer_text,
+                    aa.review_status, aa.result_status,
                     aa.score, q.max_score,
-                    aa.reviewer_comment AS teacher_comment, a.submitted_at,
-                    s.full_name AS student_name, l.title AS lessons_name, q.question_text AS questions_text
+                    aa.reviewer_comment AS teacher_comment, a.submitted_at, aa.reviewed_at,
+                    s.full_name AS student_name, l.title AS lessons_name, c.name AS course_name, q.question_text AS questions_text,
+                    t.full_name AS reviewer_name
              FROM public.quiz_attempt_answers aa
              INNER JOIN public.quiz_attempts a ON a.attempt_id = aa.attempt_id
              INNER JOIN public.questions q ON q.question_id = aa.question_id
              INNER JOIN public.lessons l ON l.lesson_id = a.lesson_id
+             INNER JOIN public.courses c ON c.course_id = l.course_id
              INNER JOIN public.students s ON s.user_id = a.student_id
-             WHERE l.course_id = :subject_id AND q.question_type = 'essay'
+             LEFT JOIN public.teachers t ON t.user_id = aa.reviewer_id
+             WHERE l.course_id = :subject_id AND q.question_type = 'essay' AND aa.review_status IN ('pending', 'graded')
              ORDER BY CASE WHEN aa.review_status = 'pending' THEN 0 ELSE 1 END, a.submitted_at DESC"
         );
         $stmt->execute([':subject_id' => $subjectId]);
@@ -703,7 +707,9 @@ try {
     if ($action === 'review_essay_submission') {
         $submissionId = (int) ($_POST['submission_id'] ?? 0);
         $decision = trim((string) ($_POST['decision'] ?? ''));
-        if ($submissionId <= 0 || !in_array($decision, ['pass', 'fail'], true)) throw new Exception('ข้อมูลการตรวจไม่ถูกต้อง');
+        $submittedScore = $_POST['score'] ?? null;
+        $submittedResultStatus = trim((string) ($_POST['result_status'] ?? ''));
+        if ($submissionId <= 0 || ($submittedScore === null && !in_array($decision, ['pass', 'fail'], true))) throw new Exception('ข้อมูลการตรวจไม่ถูกต้อง');
         $conn->beginTransaction();
         $lookup = $conn->prepare(
             'SELECT aa.attempt_id, aa.review_status, q.max_score
@@ -712,15 +718,20 @@ try {
              INNER JOIN public.quiz_attempts a ON a.attempt_id = aa.attempt_id
              INNER JOIN public.lessons l ON l.lesson_id = a.lesson_id
              INNER JOIN public.course_teachers ct ON ct.course_id = l.course_id
-             WHERE aa.attempt_answer_id = :id AND ct.teacher_id = :teacher_id AND q.question_type = \'essay\'
+             WHERE aa.attempt_answer_id = :id AND ct.teacher_id = :teacher_id AND q.question_type = \'essay\' AND aa.review_status IN (\'pending\', \'graded\')
              FOR UPDATE'
         );
         $lookup->execute([':id' => $submissionId, ':teacher_id' => $teacherId]);
         $row = $lookup->fetch(PDO::FETCH_ASSOC);
         if (!$row) throw new Exception('ไม่พบคำตอบข้อเขียนหรือคุณไม่มีสิทธิ์ตรวจ');
-        if ($row['review_status'] !== 'pending') throw new Exception('คำตอบข้อนี้ถูกตรวจแล้ว');
-        $conn->prepare("UPDATE public.quiz_attempt_answers SET score = :score, review_status = 'reviewed', reviewer_id = :teacher_id, reviewer_comment = :comment, reviewed_at = CURRENT_TIMESTAMP WHERE attempt_answer_id = :id")
-            ->execute([':score' => $decision === 'pass' ? $row['max_score'] : 0, ':teacher_id' => $teacherId, ':comment' => trim((string) ($_POST['comment'] ?? '')), ':id' => $submissionId]);
+        $maxScore = (float) $row['max_score'];
+        $score = $submittedScore === null ? ($decision === 'pass' ? $maxScore : 0.0) : filter_var($submittedScore, FILTER_VALIDATE_FLOAT);
+        if ($score === false || $score < 0 || $score > $maxScore) throw new Exception('คะแนนต้องอยู่ระหว่าง 0 ถึงคะแนนเต็ม');
+        if (!in_array($row['review_status'], ['pending', 'graded'], true)) throw new Exception('สถานะคำตอบไม่ถูกต้อง');
+        if ($submittedResultStatus !== '' && !in_array($submittedResultStatus, ['passed', 'failed'], true)) throw new Exception('สถานะผลสอบไม่ถูกต้อง');
+        $resultStatus = $submittedResultStatus !== '' ? $submittedResultStatus : ((float) $score >= $maxScore ? 'passed' : 'failed');
+        $conn->prepare("UPDATE public.quiz_attempt_answers SET score = :score, review_status = 'graded', result_status = :result_status, reviewer_id = :teacher_id, reviewer_comment = :comment, reviewed_at = CURRENT_TIMESTAMP WHERE attempt_answer_id = :id")
+            ->execute([':score' => $score, ':result_status' => $resultStatus, ':teacher_id' => $teacherId, ':comment' => trim((string) ($_POST['comment'] ?? '')), ':id' => $submissionId]);
         $attemptId = (int) $row['attempt_id'];
         $summary = $conn->prepare("SELECT COALESCE(SUM(score), 0) AS score, COUNT(*) FILTER (WHERE review_status = 'pending') AS pending FROM public.quiz_attempt_answers WHERE attempt_id = :attempt_id");
         $summary->execute([':attempt_id' => $attemptId]);
@@ -731,7 +742,7 @@ try {
         $testStatus = (int) $result['pending'] > 0 ? 'pending_review' : ((float) $result['score'] >= $totalScore ? 'passed' : 'failed');
         $conn->prepare('UPDATE public.quiz_attempts SET score = :score, status = :status WHERE attempt_id = :attempt_id')->execute([':score' => $result['score'], ':status' => $testStatus, ':attempt_id' => $attemptId]);
         $conn->commit();
-        echo json_encode(['success' => true, 'message' => $testStatus === 'pending_review' ? 'บันทึกผลแล้ว ยังมีข้อเขียนรอตรวจ' : 'บันทึกผลการตรวจแล้ว']);
+        echo json_encode(['success' => true, 'message' => 'บันทึกคะแนนและผลตรวจลงฐานข้อมูลแล้ว', 'score' => (float) $score, 'result_status' => $resultStatus, 'quiz_status' => $testStatus, 'reviewed_at' => date(DATE_ATOM)], JSON_UNESCAPED_UNICODE);
         exit;
     }
 

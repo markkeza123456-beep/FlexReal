@@ -85,9 +85,12 @@ function renderLessonBreakdown(course) {
         const attemptLabel = lesson.is_transferred ? 'ผ่านจากการเทียบโอนหน่วยกิต' : (lesson.has_attempt ? `ครั้งที่ ${Number(lesson.latest_attempt_number)} · ทำแล้ว ${Number(lesson.attempt_count)} ครั้ง` : 'ยังไม่เคยทำแบบทดสอบ');
         const essayAnswers = Array.isArray(lesson.essay_answers) ? lesson.essay_answers : [];
         const essayDetails = essayAnswers.length ? `<div class="lesson-essay-answers">${essayAnswers.map((item) => {
-            const answerStatus = item.status === 'pending' ? 'รอตรวจ' : item.status === 'pass' ? 'ผ่าน' : 'ไม่ผ่าน';
-            const answerScore = item.status === 'pending' ? 'รอคะแนน' : `${fmt(item.score)}/${fmt(item.max_score)} คะแนน`;
-            return `<article class="lesson-essay-answer"><strong>คำตอบข้อเขียน · ${answerStatus}</strong><small>ส่งเมื่อ ${escapeHtml(formatReportDate(item.submitted_at))} · ${answerScore}</small><p>${escapeHtml(item.answer || '')}</p>${item.feedback ? `<small>ข้อเสนอแนะจากอาจารย์: ${escapeHtml(item.feedback)}</small>` : ''}</article>`;
+            const pending = item.review_status === 'pending';
+            const answerStatus = pending ? 'รอตรวจ' : item.status === 'passed' ? 'ผ่าน' : 'ไม่ผ่าน';
+            const answerScore = pending ? 'รอคะแนน' : `${fmt(item.score)}/${fmt(item.max_score)} คะแนน`;
+            const reviewedAt = item.reviewed_at ? ` · ตรวจเสร็จ ${escapeHtml(formatReportDate(item.reviewed_at))}` : '';
+            const reviewer = item.reviewer_name || item.reviewer_id;
+            return `<article class="lesson-essay-answer"><strong>คำตอบข้อเขียน · ${pending ? answerStatus : `ตรวจแล้ว · ${answerStatus}`}</strong><small>ส่งเมื่อ ${escapeHtml(formatReportDate(item.submitted_at))} · ${answerScore}${reviewedAt}${reviewer ? ` · ผู้ตรวจ ${escapeHtml(reviewer)}` : ''}</small><p>${escapeHtml(item.answer || '')}</p>${item.feedback ? `<small>ข้อเสนอแนะจากอาจารย์: ${escapeHtml(item.feedback)}</small>` : ''}</article>`;
         }).join('')}</div>` : '';
         return `<div class="lesson-breakdown-row"><div class="lesson-number">${Number(lesson.position)}</div><div class="lesson-detail"><strong>${escapeHtml(lesson.title)}</strong><span>${attemptLabel}</span><span>คะแนนรวม: ${quizScore}</span><span class="lesson-score-parts">${parts.join(' · ')}</span>${status}<span>ความคืบหน้า ${progress}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%"></div></div>${essayDetails}</div></div>`;
     }).join('');
