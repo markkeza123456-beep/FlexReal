@@ -1,16 +1,16 @@
 :root {
     --primary-orange: #f26b3a;
-    --dark-orange: #d85615;
+    --dark-orange: #c2410c;
     --soft-orange: rgba(242, 107, 58, .10);
     --deep-blue: #1f2937;
     --text-gray: #4b5563;
-    --shadow: 0 4px 20px rgba(31,41,55,0.04);
+    --shadow: 0 10px 30px rgba(242,107,58,0.08);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'IBM Plex Sans Thai', sans-serif; }
 html { overflow-x: hidden; }
 body {
-    background: #fff3e8;
+    background: #A8D1E7;
     color: var(--text-gray);
     margin-top: 0;
     min-width: 320px;
@@ -792,7 +792,7 @@ body.learning-guide-open { min-width: 0; overflow-x: hidden; }
 
 .btn-enroll.is-enrolled {
     background: #fff6f0;
-    color: #d85615;
+    color: #c2410c;
     border: 1px solid #f5d7c8;
     cursor: default;
 }

@@ -12,8 +12,8 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261020-soft-orange-theme">
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261020-soft-orange-theme">
+    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261020-pastel-blue">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261020-pastel-blue">
 </head>
 <body>
     <div class="dashboard-container">
@@ -147,7 +147,16 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                 </section>
                 <section class="content-card report-card">
                     <div class="card-header"><h2>ผลคะแนนแยกตามบทเรียน</h2><span id="reportLessonCount" class="report-meta"></span></div>
-                    <div class="table-responsive"><table class="data-table report-table lesson-report-table"><thead><tr><th>รายวิชา</th><th>บทเรียน</th><th class="report-center">คะแนนปรนัย (กากบาท)</th><th class="report-center">คะแนนข้อเขียน</th><th class="report-center">คะแนนรวม</th><th class="report-center">สถานะผลการเรียน</th></tr></thead><tbody id="lessonReportBody"></tbody></table></div>
+                    <div class="table-responsive">
+                        <table class="data-table report-table lesson-report-table">
+                            <colgroup>
+                                <col style="width:22%"><col style="width:24%"><col style="width:15%">
+                                <col style="width:13%"><col style="width:12%"><col style="width:14%">
+                            </colgroup>
+                            <thead><tr><th>รายวิชา</th><th>บทเรียน</th><th class="report-center">คะแนนปรนัย (กากบาท)</th><th class="report-center">คะแนนข้อเขียน</th><th class="report-center">คะแนนรวม</th><th class="report-center">สถานะผลการเรียน</th></tr></thead>
+                            <tbody id="lessonReportBody"></tbody>
+                        </table>
+                    </div>
                 </section>
             </section>
 

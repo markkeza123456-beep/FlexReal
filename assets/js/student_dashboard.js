@@ -265,37 +265,43 @@ function renderReports(courses) {
 
     const countLabel = document.getElementById('reportLessonCount');
     if (countLabel) countLabel.textContent = `${rows.length} บทเรียน`;
-    if (!rows.length) {
-        lessonBody.innerHTML = '<tr><td colspan="6" class="report-empty">ยังไม่มีข้อมูลบทเรียน</td></tr>';
-        return;
-    }
     const lessonRowsByCourse = new Map();
     rows.forEach((lesson) => {
         const courseKey = String(lesson.course_id);
         if (!lessonRowsByCourse.has(courseKey)) lessonRowsByCourse.set(courseKey, []);
         lessonRowsByCourse.get(courseKey).push(lesson);
     });
-    lessonBody.innerHTML = [...lessonRowsByCourse.values()].map((courseLessons) => courseLessons.map((lesson, lessonIndex) => {
-        const courseCell = lessonIndex === 0
-            ? `<td class="report-course-group" rowspan="${courseLessons.length}"><strong>${escapeHtml(lesson.course_name)}</strong><small>รหัสวิชา ${escapeHtml(lesson.course_code || lesson.course_id)}</small></td>`
-            : '';
-        const lessonCell = `<td><strong>บทที่ ${Number(lesson.position)}</strong><small>${escapeHtml(lesson.title)}</small></td>`;
-        if (lesson.is_transferred) {
-            return `<tr>${courseCell}${lessonCell}<td colspan="3" class="report-transfer-cell"><span class="report-transfer-badge">TR (ผ่านการเทียบโอน)</span></td><td class="report-center">${reportQuizStatus(lesson)}</td></tr>`;
+    lessonBody.innerHTML = visibleCourses.map((course) => {
+        const courseLessons = lessonRowsByCourse.get(String(course.subject_id)) || [];
+        if (!courseLessons.length) {
+            if (!course.is_transferred) return '';
+            const courseName = escapeHtml(course.name);
+            const courseCode = escapeHtml(course.code || course.subject_id);
+            return `<tr><td class="report-course-group"><strong>${courseName}</strong><small>รหัสวิชา ${courseCode}</small></td><td class="report-lesson-cell"><strong class="report-lesson-title">เทียบโอนทั้งรายวิชา</strong></td><td colspan="3" class="report-transfer-cell"><span class="report-transfer-badge">TR (ผ่านการเทียบโอน)</span></td><td class="report-center">${reportQuizStatus({ is_transferred: true })}</td></tr>`;
         }
-        const objective = Number(lesson.objective_score_total) > 0
-            ? `${fmt(lesson.objective_score_earned)}/${fmt(lesson.objective_score_total)}`
-            : '—';
-        const essay = Number(lesson.essay_pending_count) > 0
-            ? '<span class="report-status pending">รอตรวจ</span>'
-            : Number(lesson.essay_score_total) > 0
-                ? `${fmt(lesson.essay_score_earned)}/${fmt(lesson.essay_score_total)}`
+        return courseLessons.map((lesson, lessonIndex) => {
+            const courseCell = lessonIndex === 0
+                ? `<td class="report-course-group" rowspan="${courseLessons.length}"><strong>${escapeHtml(lesson.course_name)}</strong><small>รหัสวิชา ${escapeHtml(lesson.course_code || lesson.course_id)}</small></td>`
+                : '';
+            const lessonTitle = String(lesson.title || '').trim();
+            const lessonCell = `<td class="report-lesson-cell"><strong class="report-lesson-title">บทที่ ${Number(lesson.position)}</strong>${lessonTitle ? `<small class="report-lesson-subtitle">${escapeHtml(lessonTitle)}</small>` : ''}</td>`;
+            if (lesson.is_transferred) {
+                return `<tr>${courseCell}${lessonCell}<td colspan="3" class="report-transfer-cell"><span class="report-transfer-badge">TR (ผ่านการเทียบโอน)</span></td><td class="report-center">${reportQuizStatus(lesson)}</td></tr>`;
+            }
+            const objective = Number(lesson.objective_score_total) > 0
+                ? `${fmt(lesson.objective_score_earned)}/${fmt(lesson.objective_score_total)}`
                 : '—';
-        const total = lesson.has_attempt && Number(lesson.score_total) > 0
-            ? `${fmt(lesson.score_earned)}/${fmt(lesson.score_total)}`
-            : '—';
-        return `<tr>${courseCell}${lessonCell}<td class="report-center">${objective}</td><td class="report-center">${essay}</td><td class="report-center">${total}</td><td class="report-center">${reportQuizStatus(lesson)}</td></tr>`;
-    }).join('')).join('');
+            const essay = Number(lesson.essay_pending_count) > 0
+                ? '<span class="report-status pending">รอตรวจ</span>'
+                : Number(lesson.essay_score_total) > 0
+                    ? `${fmt(lesson.essay_score_earned)}/${fmt(lesson.essay_score_total)}`
+                    : '—';
+            const total = lesson.has_attempt && Number(lesson.score_total) > 0
+                ? `${fmt(lesson.score_earned)}/${fmt(lesson.score_total)}`
+                : '—';
+            return `<tr>${courseCell}${lessonCell}<td class="report-center">${objective}</td><td class="report-center">${essay}</td><td class="report-center">${total}</td><td class="report-center">${reportQuizStatus(lesson)}</td></tr>`;
+        }).join('');
+    }).join('') || '<tr><td colspan="6" class="report-empty">ยังไม่มีข้อมูลบทเรียน</td></tr>';
 }
 
 function _applyAvatarUI(src) {

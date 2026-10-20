@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>ลืมรหัสผ่าน - NEXORA</title>
-  <link rel="stylesheet" href="assets/css/login.css?v=20261020-soft-orange-theme" />
+  <link rel="stylesheet" href="assets/css/login.css?v=20261020-pastel-blue" />
   <style>
     .step-2, .step-3 { display: none; }
   </style>

@@ -1,5 +1,5 @@
 :root {
-    --bg-dark: #fff3e8;
+    --bg-dark: #A8D1E7;
     --card-bg: #ffffff;
     --sidebar-bg: #ffffff;
     --accent-orange: #f26b3a;
@@ -368,7 +368,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 }
 
 /* Match the teacher portal's shared layout and card treatment. */
-:root { --sidebar-w:230px; --bg:#fff3e8; --bg2:#ffffff; --bg3:#fff4ed; --orange:#f26b3a; --orange-dim:rgba(242,107,58,.12); --text:#2d3436; --text-dim:#636e72; --text-muted:#8a8f98; --border:#f3d2be; --radius:12px; --radius-sm:8px; }
+:root { --sidebar-w:230px; --bg:#A8D1E7; --bg2:#ffffff; --bg3:#fff4ed; --orange:#f26b3a; --orange-dim:rgba(242,107,58,.12); --text:#2d3436; --text-dim:#636e72; --text-muted:#8a8f98; --border:#f3d2be; --radius:12px; --radius-sm:8px; }
 .dashboard-container { display:block; width:100%; min-height:100vh; height:auto; }
 .sidebar { position:fixed; inset:0 auto 0 0; z-index:100; width:var(--sidebar-w); min-width:var(--sidebar-w); height:100vh; padding:24px 0 16px; }
 .logo-section { width:100%; padding:0 20px 28px; border-bottom:1px solid var(--border); }
@@ -420,7 +420,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .course-description { color:var(--text-dim); font-size:13px; margin:8px 0 12px; }
 .course-progress-label { display:flex; justify-content:space-between; color:var(--text-dim); font-size:12px; margin-top:18px; }
 .progress-bar-bg { height:7px; background:var(--bg3); border-radius:99px; border:1px solid var(--border); }
-.progress-bar-fill { background:linear-gradient(90deg,#f97316,#fb923c); border-radius:99px; }
+.progress-bar-fill { background:linear-gradient(90deg,#F26B3A,#fb923c); border-radius:99px; }
 .lesson-breakdown { margin-top:16px; border-top:1px solid var(--border); padding-top:12px; }
 .lesson-breakdown summary { color:var(--orange); cursor:pointer; font-size:13px; font-weight:600; }
 .lesson-breakdown-list { display:grid; gap:10px; margin-top:12px; }
@@ -454,11 +454,17 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .report-card .card-header { margin-bottom:10px; }
 .report-table { min-width:720px; }
 .course-report-table { min-width:720px; }
-.lesson-report-table { min-width:760px; }
+.lesson-report-table { width:100%; min-width:1040px; table-layout:fixed; }
+.lesson-report-table th:nth-child(2), .lesson-report-table td:nth-child(2),
+.lesson-report-table th:nth-child(3), .lesson-report-table td:nth-child(3) { width:auto; padding-left:12px; padding-right:12px; }
 .report-table th { padding:10px 12px; }
 .report-table td { padding:12px; vertical-align:top; }
 .report-table td strong, .report-table td small { display:block; }
 .report-table td small { margin-top:3px; color:var(--text-muted); font-size:11px; white-space:normal; }
+.lesson-report-table .report-course-group { padding:16px; overflow-wrap:anywhere; }
+.lesson-report-table .report-lesson-cell { vertical-align:middle; overflow-wrap:anywhere; }
+.lesson-report-table .report-lesson-title { color:var(--text); font-size:13px; font-weight:600; line-height:1.4; }
+.lesson-report-table .report-lesson-subtitle { margin-top:5px; color:var(--text-muted); font-size:11px; font-weight:400; line-height:1.45; }
 .report-status { display:inline-flex; padding:3px 9px; border-radius:999px; background:var(--bg3); color:var(--text-dim); font-size:11px; white-space:nowrap; }
 .report-status.pending { color:#a16207; background:rgba(234,179,8,.14); }
 .report-status.passed { color:#047857; background:rgba(16,185,129,.12); }
@@ -466,7 +472,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .report-status.none { color:var(--text-muted); background:#f1f5f9; }
 .report-transfer-cell { text-align:center; color:#475569; font-weight:600; background:transparent; }
 .report-center { text-align:center!important; vertical-align:middle!important; }
-.report-course-group { vertical-align:middle!important; background:#f8fafc; }
+.report-course-group { vertical-align:middle!important; background:#ffffff; }
 .report-transfer-badge { display:inline-block; padding:4px 9px; border:1px solid #dbe3ef; border-radius:999px; background:#f8fafc; color:#475569; font-size:.85em; white-space:nowrap; }
 .report-empty { padding:24px!important; color:var(--text-muted)!important; text-align:center; }
 .report-meta { color:var(--text-muted); font-size:12px; }
