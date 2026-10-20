@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" fill="none">
-  <g stroke="#C0E4F6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity=".82">
+  <g stroke="#1E3A8A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity=".82">
     <!-- Open book -->
     <g transform="translate(55 42) rotate(-8 62 50)">
       <path d="M10 18h37c13 0 23 10 23 23v52c0-13-10-23-23-23H10zM116 18H79c-13 0-23 10-23 23v52c0-13 10-23 23-23h37z"/>
