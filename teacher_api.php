@@ -196,10 +196,84 @@ function uploadLessonFile(string $fieldName, array $segments, string $prefix, bo
         throw new RuntimeException('ตรวจสอบไฟล์วิดีโอหลังบันทึกไม่ผ่าน');
     }
 
+    $localPath = $relativeDir . '/' . $targetName;
+    $mime = (new finfo(FILEINFO_MIME_TYPE))->file($targetPath) ?: 'application/octet-stream';
+    try {
+        $sharedUrl = publishLessonMedia($localPath, $mime);
+    } catch (Throwable $e) {
+        @unlink($targetPath);
+        throw $e;
+    }
+    @unlink($targetPath);
     return [
-        'path' => $relativeDir . '/' . $targetName,
+        'path' => $sharedUrl,
         'name' => $originalName !== '' ? $originalName : $targetName,
     ];
+}
+
+/** Publish teacher uploads to shared Supabase Storage so every app server can serve them. */
+function publishLessonMedia(string $localPath, string $mimeType): string
+{
+    global $env, $supabaseUrl;
+    static $bucketReady = false;
+    $url = rtrim((string) ($env['SUPABASE_URL'] ?? $supabaseUrl ?? ''), '/');
+    $key = trim((string) ($env['SUPABASE_SERVICE_ROLE_KEY'] ?? ''));
+    $bucket = trim((string) ($env['SUPABASE_LESSON_BUCKET'] ?? 'lesson-media'));
+    if ($url === '' || $key === '') throw new RuntimeException('ยังไม่ได้ตั้งค่าไฟล์ส่วนกลาง: กรุณาเพิ่ม SUPABASE_SERVICE_ROLE_KEY ใน flexreal.env ซึ่งอยู่นอกโฟลเดอร์เว็บ แล้วรีสตาร์ต Apache');
+    // New Supabase secret keys (sb_secret_...) are API keys, not JWTs, so send
+    // them only through the apikey header. Legacy service_role JWTs need both.
+    $headers = ['apikey: ' . $key, 'Content-Type: application/json'];
+    if (!str_starts_with($key, 'sb_secret_')) $headers[] = 'Authorization: Bearer ' . $key;
+    $storageErrorDetail = static function ($body): string {
+        if (!is_string($body) || $body === '') return '';
+        $decoded = json_decode($body, true);
+        $detail = is_array($decoded) ? ($decoded['message'] ?? $decoded['error'] ?? $decoded['msg'] ?? '') : '';
+        if (!is_string($detail) || $detail === '') $detail = $body;
+        $detail = trim(preg_replace('/[\x00-\x1F\x7F]+/', ' ', $detail));
+        return $detail !== '' ? ': ' . substr($detail, 0, 220) : '';
+    };
+    if (!$bucketReady) {
+        $check = curl_init($url . '/storage/v1/bucket/' . rawurlencode($bucket));
+        curl_setopt_array($check, [CURLOPT_HTTPHEADER => $headers, CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 10, CURLOPT_TIMEOUT => 20]);
+        $checkBody = curl_exec($check); $checkStatus = (int) curl_getinfo($check, CURLINFO_RESPONSE_CODE); curl_close($check);
+        $bucketMissing = $checkStatus === 404 || (is_string($checkBody) && stripos($checkBody, 'bucket not found') !== false);
+        if ($bucketMissing) {
+            $create = curl_init($url . '/storage/v1/bucket');
+            curl_setopt_array($create, [CURLOPT_POST => true, CURLOPT_HTTPHEADER => $headers, CURLOPT_POSTFIELDS => json_encode(['id' => $bucket, 'name' => $bucket, 'public' => true]), CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 10, CURLOPT_TIMEOUT => 20]);
+            $createBody = curl_exec($create); $createStatus = (int) curl_getinfo($create, CURLINFO_RESPONSE_CODE); curl_close($create);
+            if ($createStatus < 200 || $createStatus >= 300) throw new RuntimeException('สร้างพื้นที่เก็บไฟล์บทเรียนไม่สำเร็จ (HTTP ' . $createStatus . ')' . $storageErrorDetail($createBody));
+        } elseif ($checkStatus < 200 || $checkStatus >= 300) {
+            throw new RuntimeException('ตรวจสอบพื้นที่เก็บไฟล์บทเรียนไม่สำเร็จ (HTTP ' . $checkStatus . ')' . $storageErrorDetail($checkBody));
+        }
+        $makePublic = curl_init($url . '/storage/v1/bucket/' . rawurlencode($bucket));
+        curl_setopt_array($makePublic, [CURLOPT_CUSTOMREQUEST => 'PUT', CURLOPT_HTTPHEADER => $headers, CURLOPT_POSTFIELDS => json_encode(['public' => true]), CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 10, CURLOPT_TIMEOUT => 20]);
+        $publicBody = curl_exec($makePublic); $publicStatus = (int) curl_getinfo($makePublic, CURLINFO_RESPONSE_CODE); curl_close($makePublic);
+        if ($publicStatus < 200 || $publicStatus >= 300) throw new RuntimeException('ตั้งค่าการอ่านไฟล์สำหรับผู้เรียนไม่สำเร็จ (HTTP ' . $publicStatus . ')' . $storageErrorDetail($publicBody));
+        $bucketReady = true;
+    }
+    $objectPath = preg_replace('/^uploads\//', '', str_replace('\\', '/', $localPath));
+    $body = file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $localPath));
+    if ($body === false) throw new RuntimeException('อ่านไฟล์อัปโหลดไม่สำเร็จ');
+    $upload = curl_init($url . '/storage/v1/object/' . rawurlencode($bucket) . '/' . implode('/', array_map('rawurlencode', explode('/', $objectPath))));
+    $uploadHeaders = ['apikey: ' . $key, 'Content-Type: ' . $mimeType, 'x-upsert: true'];
+    if (!str_starts_with($key, 'sb_secret_')) $uploadHeaders[] = 'Authorization: Bearer ' . $key;
+    curl_setopt_array($upload, [CURLOPT_POST => true, CURLOPT_HTTPHEADER => $uploadHeaders, CURLOPT_POSTFIELDS => $body, CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 10, CURLOPT_TIMEOUT => 300]);
+    $uploadBody = curl_exec($upload); $uploadStatus = (int) curl_getinfo($upload, CURLINFO_RESPONSE_CODE); $uploadError = curl_error($upload); curl_close($upload);
+    if ($uploadBody === false || $uploadStatus < 200 || $uploadStatus >= 300) throw new RuntimeException('บันทึกไฟล์ส่วนกลางไม่สำเร็จ' . ($uploadStatus ? ' (HTTP ' . $uploadStatus . ')' . $storageErrorDetail($uploadBody) : ': ' . $uploadError));
+    return $url . '/storage/v1/object/public/' . rawurlencode($bucket) . '/' . implode('/', array_map('rawurlencode', explode('/', $objectPath)));
+}
+
+function shareLegacyLessonMedia(string $storedPath): string
+{
+    if (!str_starts_with($storedPath, 'uploads/')) return $storedPath;
+    $relativePath = strtok($storedPath, '?');
+    $root = realpath(__DIR__ . '/uploads');
+    $localPath = realpath(__DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath));
+    if ($root === false || $localPath === false || !str_starts_with($localPath, $root . DIRECTORY_SEPARATOR) || !is_file($localPath)) {
+        throw new RuntimeException('ไม่พบไฟล์เดิม กรุณาอัปโหลดไฟล์นี้ใหม่');
+    }
+    $mime = (new finfo(FILEINFO_MIME_TYPE))->file($localPath) ?: 'application/octet-stream';
+    return publishLessonMedia($relativePath, $mime);
 }
 
 function teacherOwnsSubject(PDO $conn, string $teacherId, string $subjectId): bool
@@ -343,6 +417,11 @@ try {
             $currentDocumentPath = (string) ($currentDocument->fetchColumn() ?: '');
             if ($currentDocumentPath !== '' && strtolower(pathinfo($currentDocumentPath, PATHINFO_EXTENSION)) !== 'pdf') {
                 throw new Exception('เอกสารเดิมไม่ใช่ PDF กรุณาเลือกไฟล์ PDF ใหม่ก่อนบันทึก');
+            }
+            if ($currentDocumentPath !== '' && str_starts_with($currentDocumentPath, 'uploads/')) {
+                $sharedDocumentUrl = shareLegacyLessonMedia($currentDocumentPath);
+                $conn->prepare("UPDATE public.lesson_resources SET url = :url, updated_at = clock_timestamp(), updated_by = :updated_by WHERE lesson_id = :lesson_id AND resource_type = 'document'")
+                    ->execute([':url' => $sharedDocumentUrl, ':updated_by' => $teacherId, ':lesson_id' => $lessonId]);
             }
         }
         if ($hasDocumentUpload) {
@@ -625,6 +704,7 @@ try {
             $newFileDiskPath = __DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $newFilePath);
         } else {
             $url = $oldUrl;
+            if (str_starts_with($oldUrl, 'uploads/')) $url = shareLegacyLessonMedia($oldUrl);
         }
         try {
             $conn->beginTransaction();
@@ -650,6 +730,9 @@ try {
             $stmt->execute($params);
             $savedVideo = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$savedVideo) throw new RuntimeException('Video resource was not saved.');
+            $teacherNameStmt = $conn->prepare("SELECT COALESCE(NULLIF(full_name, ''), user_id) FROM public.teachers WHERE user_id = :teacher_id");
+            $teacherNameStmt->execute([':teacher_id' => $teacherId]);
+            $savedVideo['updated_by_name'] = (string) ($teacherNameStmt->fetchColumn() ?: 'ไม่ทราบชื่อ');
             $conn->commit();
         } catch (Throwable $saveError) {
             if ($conn->inTransaction()) $conn->rollBack();

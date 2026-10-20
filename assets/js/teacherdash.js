@@ -482,13 +482,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (videoFile.files[0]) videoForm.append('video_file', videoFile.files[0]);
             const result = await teacherRequest(videoForm);
             const videoModifiedAt = document.getElementById(`lessonVideoModified-${managedLessonId}`);
-            if (videoModifiedAt) videoModifiedAt.textContent = `วิดีโอแก้ไขล่าสุด ${formatTeacherEditDate(result.video.last_modified_epoch)} · โดย ${result.video.updated_by_name}`;
+            const videoEditorName = result.video.updated_by_name || 'ยังไม่มีข้อมูล';
+            if (videoModifiedAt) videoModifiedAt.textContent = `วิดีโอแก้ไขล่าสุด ${formatTeacherEditDate(result.video.last_modified_epoch)} · โดย ${videoEditorName}`;
             const savedVideo = {
                 id: String(result.video.id),
                 title: videoTitle.value.trim() || 'วิดีโอบทเรียน',
                 lessons_id: managedLessonId,
                 last_modified_epoch: result.video.last_modified_epoch,
-                updated_by_name: result.video.updated_by_name,
+                updated_by_name: videoEditorName,
             };
             const existingIndex = inlineVideos.findIndex(video => String(video.id) === savedVideo.id);
             if (existingIndex >= 0) inlineVideos[existingIndex] = { ...inlineVideos[existingIndex], ...savedVideo };
