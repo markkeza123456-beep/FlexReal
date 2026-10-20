@@ -22,7 +22,7 @@ function graduationSummary(PDO $conn, string $studentId): array
         ), course_progress AS (
             SELECT c.course_id,
                    COALESCE(c.credits, 0)::numeric AS credits,
-                   COALESCE(c.subject_type, CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' ELSE 'elective' END, 'elective') AS subject_type,
+                   COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' END, c.subject_type, 'elective') AS subject_type,
                    sc.status AS enrollment_status,
                    COUNT(l.lesson_id)::integer AS lesson_count,
                    COUNT(l.lesson_id) FILTER (

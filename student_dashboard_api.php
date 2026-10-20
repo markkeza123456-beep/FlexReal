@@ -81,7 +81,7 @@ try {
     $courseStmt = $conn->prepare(
         "SELECT DISTINCT c.course_id, c.name, COALESCE(c.description, '') AS description,
                 COALESCE(sc.status, 'active') AS enrollment_status,
-                COALESCE(c.subject_type, CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' ELSE 'elective' END, 'elective') AS subject_type
+                COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' END, c.subject_type, 'elective') AS subject_type
          FROM public.student_courses sc
          INNER JOIN public.courses c ON c.course_id = sc.course_id
          LEFT JOIN LATERAL (
