@@ -324,10 +324,21 @@ $stats = [
         </div>
     </a>
 
+    <script>
+      window.activateTeacherView = function (viewName) {
+        document.querySelectorAll('.page-view').forEach(function (view) { view.style.display = 'none'; });
+        var target = document.getElementById('view-' + viewName);
+        if (target) target.style.display = 'flex';
+        document.querySelectorAll('.nav-item').forEach(function (item) { item.classList.remove('active'); });
+        var activeItem = document.querySelector('.nav-item[data-view="' + viewName + '"]');
+        if (activeItem) activeItem.classList.add('active');
+        return false;
+      };
+    </script>
     <nav class="sidebar-nav">
-        <a href="#" class="nav-item active" data-view="dashboard"><span class="nav-icon"></span><span>แดชบอร์ด</span></a>
-        <a href="#" class="nav-item" data-view="lessons"><span class="nav-icon"></span><span>บทเรียน</span></a>
-        <a href="#" class="nav-item" data-view="reports"><span class="nav-icon"></span><span>ออกรายงาน</span></a>
+        <a href="#" onclick="return window.activateTeacherView('dashboard')" class="nav-item active" data-view="dashboard"><span class="nav-icon"></span><span>แดชบอร์ด</span></a>
+        <a href="#" onclick="return window.activateTeacherView('lessons')" class="nav-item" data-view="lessons"><span class="nav-icon"></span><span>บทเรียน</span></a>
+        <a href="#" onclick="return window.activateTeacherView('reports')" class="nav-item" data-view="reports"><span class="nav-icon"></span><span>ออกรายงาน</span></a>
         <?php if ($canAccessTransferApproval): ?>
         <a href="review_transcript.php" class="nav-item"><span class="nav-icon"></span><span>ตรวจทรานสคริปต์</span></a>
         <?php endif; ?>
@@ -337,7 +348,7 @@ $stats = [
         <span></span><span>ออกจากระบบ</span>
     </a>
 
-    <a href="#" class="sidebar-profile nav-item" data-view="settings" style="text-decoration:none">
+    <a href="#" onclick="return window.activateTeacherView('settings')" class="sidebar-profile nav-item" data-view="settings" style="text-decoration:none">
         <div class="profile-avatar" id="sidebarAvatarWrap" style="overflow:hidden;padding:0">
             <?php if (!empty($teacher['avatar_url'])): ?>
             <img src="<?= h($teacher['avatar_url']) ?>" style="width:100%;height:100%;object-fit:cover;border-radius:50%" id="sidebarAvatarImg">
@@ -1396,6 +1407,6 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-  <script src="assets/js/teacherdash.js?v=20261020-essay-review-tabs"></script>
+  <script src="assets/js/teacherdash.js?v=20261020-quiz-save-fix"></script>
 </body>
 </html>

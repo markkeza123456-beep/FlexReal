@@ -57,15 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!data.success) throw new Error(data.message || 'โหลดข้อมูลไม่สำเร็จ');
             const rows = data.submissions || [];
             const renderRows = (items, isReviewed) => items.length ? items.map(row => {
-<<<<<<< HEAD
-                const reviewed = row.review_status !== 'pending';
-                const status = row.review_status === 'pass' ? 'ได้เต็ม' : row.review_status === 'partial' ? 'ได้บางส่วน' : row.review_status === 'fail' ? 'ไม่ได้คะแนน' : 'รอตรวจ';
-                return `<article style="padding:18px;border:1px solid var(--border);border-radius:12px;background:var(--bg3)">
-                    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><strong>${escapeHtml(row.student_name)}</strong><span class="badge badge-${reviewed ? (row.review_status === 'pass' ? 'active' : 'needs-help') : 'draft'}">${status}</span></div>
-                    <div style="font-size:12px;color:var(--text-muted);margin:5px 0 12px">${escapeHtml(row.lessons_name)} · ส่งเมื่อ ${escapeHtml(row.submitted_at)}</div>
-                    <p style="font-weight:600;margin-bottom:7px">คำถาม: ${escapeHtml(row.questions_text)}</p><div style="white-space:pre-wrap;padding:12px;border-radius:8px;background:#fff;border:1px solid var(--border)">${escapeHtml(row.answer_text)}</div>
-                    ${isReviewed ? `<p style="margin-top:12px;font-size:13px">คะแนน: <b>${escapeHtml(row.score ?? 0)}/${escapeHtml(row.max_score)}</b> · ${status}${row.teacher_comment ? ` · ${escapeHtml(row.teacher_comment)}` : ''}</p>` : `<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center"><label>คะแนน <input class="form-input essay-score" data-id="${row.submission_id}" type="number" min="0" max="${Number(row.max_score)}" step="0.1" value="0" style="width:110px"></label><span>/ ${escapeHtml(row.max_score)} คะแนน</span><input class="form-input essay-comment" data-id="${row.submission_id}" placeholder="ความเห็นถึงนักเรียน (ไม่บังคับ)" style="flex:1;min-width:220px"><button class="btn-save essay-review" data-id="${row.submission_id}">บันทึกคะแนน</button></div>`}
-=======
                 const reviewed = row.review_status === 'graded';
                 const status = !reviewed ? 'รอตรวจ' : row.result_status === 'passed' ? 'ผ่าน' : 'ไม่ผ่าน';
                 const reviewDate = row.reviewed_at ? new Date(row.reviewed_at).toLocaleString('th-TH') : '';
@@ -75,7 +66,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <details><summary style="cursor:pointer;font-weight:600;margin-bottom:7px">คำถาม: ${escapeHtml(row.questions_text)} · ดูคำตอบ</summary><div style="white-space:pre-wrap;padding:12px;border-radius:8px;background:#fff;border:1px solid var(--border)">${escapeHtml(row.answer_text)}</div></details>
                     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center"><label>คะแนน <input class="form-input essay-score" data-id="${row.submission_id}" type="number" min="0" max="${escapeHtml(row.max_score)}" step="0.01" value="${reviewed ? escapeHtml(row.score) : escapeHtml(row.max_score)}" style="width:110px"></label><span>/ ${escapeHtml(row.max_score)}</span><label>ผลสอบ <select class="form-input essay-result-status" data-id="${row.submission_id}"><option value="passed" ${!reviewed || row.result_status === 'passed' ? 'selected' : ''}>ผ่าน</option><option value="failed" ${reviewed && row.result_status === 'failed' ? 'selected' : ''}>ไม่ผ่าน</option></select></label><input class="form-input essay-comment" data-id="${row.submission_id}" value="${escapeHtml(row.teacher_comment || '')}" placeholder="ความเห็นหรือข้อเสนอแนะ" style="flex:1;min-width:220px"><button class="btn-save essay-review" data-id="${row.submission_id}">${reviewed ? 'บันทึกการแก้ไข' : 'บันทึกผลตรวจ'}</button></div>
                     ${reviewed ? `<p style="margin-top:8px;font-size:12px;color:var(--text-muted)">ผู้ตรวจ: ${escapeHtml(row.reviewer_name || row.reviewer_id || '—')} · ตรวจเสร็จ ${escapeHtml(reviewDate)} · ผลสอบ ${status}</p>` : ''}
->>>>>>> 4f904c5262a2a238f6b8dc5f9417561b3e56c6d9
                 </article>`;
             }).join('') : `<div style="padding:30px;text-align:center;color:var(--text-muted)">ยังไม่มีข้อเขียน${isReviewed ? 'ที่ตรวจแล้ว' : 'รอตรวจ'}</div>`;
             const pending = rows.filter(row => row.review_status === 'pending');
@@ -105,13 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('lessonTab-essay')?.addEventListener('click', async (event) => {
         const button = event.target.closest('.essay-review'); if (!button) return;
-<<<<<<< HEAD
-        const comment = document.querySelector(`.essay-comment[data-id="${button.dataset.id}"]`)?.value || '';
-        button.disabled = true;
-        const score = document.querySelector(`.essay-score[data-id="${button.dataset.id}"]`)?.value ?? '';
-        const form = new FormData(); form.append('action', 'review_essay_submission'); form.append('submission_id', button.dataset.id); form.append('score', score); form.append('comment', comment);
-        try { const data = await (await fetch('teacher_api.php', { method: 'POST', body: form })).json(); if (!data.success) throw new Error(data.message); await loadEssaySubmissions(); } catch (error) { alert(error.message || 'บันทึกผลการตรวจไม่สำเร็จ'); button.disabled = false; }
-=======
         const card = button.closest('article');
         const score = card.querySelector(`.essay-score[data-id="${button.dataset.id}"]`)?.value ?? '';
         const resultStatus = card.querySelector(`.essay-result-status[data-id="${button.dataset.id}"]`)?.value ?? '';
@@ -119,7 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
         card.querySelectorAll('button, input').forEach(control => { control.disabled = true; });
         const form = new FormData(); form.append('action', 'review_essay_submission'); form.append('submission_id', button.dataset.id); form.append('score', score); form.append('result_status', resultStatus); form.append('comment', comment);
         try { const response = await fetch('teacher_api.php', { method: 'POST', body: form }); const data = await response.json(); if (!response.ok || !data.success) throw new Error(data.message || 'บันทึกผลตรวจไม่สำเร็จ'); alert(data.message || 'บันทึกผลตรวจสำเร็จ'); await loadEssaySubmissions(); showEssayFilter('reviewed'); } catch (error) { alert(error.message || 'บันทึกผลการตรวจไม่สำเร็จ'); card.querySelectorAll('button, input').forEach(control => { control.disabled = false; }); }
->>>>>>> 4f904c5262a2a238f6b8dc5f9417561b3e56c6d9
     });
 
 
@@ -303,21 +285,29 @@ document.addEventListener('DOMContentLoaded', () => {
             ans = '-';
         }
 
+        const originalButtonText = btn.textContent;
         btn.textContent = '⏳ กำลังบันทึก...'; btn.disabled = true;
         const fd = new FormData();
         fd.append('action', 'add_quiz'); fd.append('lesson_id', lessonId); fd.append('type', type);
         fd.append('question', question); fd.append('choice_a', chA); fd.append('choice_b', chB);
         fd.append('choice_c', chC); fd.append('choice_d', chD); fd.append('answer', ans); fd.append('max_score', maxScore);
 
-        fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
-            if(d.success) {
+        const controller = new AbortController();
+        const requestTimeout = window.setTimeout(() => controller.abort(), 30000);
+        fetch('teacher_api.php', { method: 'POST', body: fd, signal: controller.signal })
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || `บันทึกไม่สำเร็จ (HTTP ${response.status})`);
                 location.reload();
-            } else {
-                alert(d.message);
-                if(d.message.includes('เธฅเนเธญเธเธญเธดเธ')) window.location.href = 'login.php';
-                else { btn.disabled = false; btn.textContent = '➕ เพิ่มคำถาม'; }
-            }
-        });
+            })
+            .catch(error => {
+                console.error('add_quiz failed:', error);
+                if (error.name === 'AbortError') alert('ระบบใช้เวลาบันทึกนานเกินไป กรุณาลองอีกครั้ง');
+                else alert(error.message || 'บันทึกข้อสอบไม่สำเร็จ กรุณาลองอีกครั้ง');
+                if (String(error.message || '').includes('กรุณาล็อกอิน')) window.location.href = 'login.php';
+                else { btn.disabled = false; btn.textContent = originalButtonText; }
+            })
+            .finally(() => window.clearTimeout(requestTimeout));
     });
 
     const editQuizModal = document.getElementById('editQuizModal');
