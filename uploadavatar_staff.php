@@ -1,72 +1,43 @@
 <?php
 session_start();
 header('Content-Type: application/json; charset=utf-8');
-error_reporting(0);
+header('Cache-Control: no-store');
 
 try {
-    if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'staff') {
-        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    if (empty($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? '')) !== 'staff') {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'กรุณาล็อกอินใหม่'], JSON_UNESCAPED_UNICODE);
         exit;
     }
-
     $body = json_decode(file_get_contents('php://input'), true);
-    $dataURL = $body['image'] ?? '';
-
-    if (!$dataURL || !str_starts_with($dataURL, 'data:image/')) {
-        echo json_encode(['success' => false, 'message' => 'ข้อมูลรูปไม่ถูกต้อง']);
+    $dataUrl = is_array($body) ? (string) ($body['image'] ?? '') : '';
+    if (!preg_match('/^data:image\/png;base64,([A-Za-z0-9+\/]+={0,2})$/', $dataUrl, $matches)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'ข้อมูลรูปภาพไม่ถูกต้อง'], JSON_UNESCAPED_UNICODE);
         exit;
     }
-
-
-    $base64 = preg_replace('/^data:image\/\w+;base64,/', '', $dataURL);
-    $imageData = base64_decode($base64);
-    if (!$imageData) {
-        echo json_encode(['success' => false, 'message' => 'แปลงรูปไม่สำเร็จ']);
+    $png = base64_decode($matches[1], true);
+    if ($png === false || strlen($png) > 5 * 1024 * 1024 || !str_starts_with($png, "\x89PNG\r\n\x1a\n")) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'ไฟล์รูปต้องเป็น PNG และมีขนาดไม่เกิน 5MB'], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
     require_once __DIR__ . '/config/db.php';
-
-
-
-
-
-
-    $userId   = $_SESSION['user_id'];
-    $fileName = 'staff_' . $userId . '_' . time() . '.png';
-    $bucket   = 'avatars';
-
-
-    $uploadUrl = rtrim($supabaseUrl, '/') . '/storage/v1/object/' . $bucket . '/' . $fileName;
-    $ch = curl_init($uploadUrl);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CUSTOMREQUEST  => 'POST',
-        CURLOPT_POSTFIELDS     => $imageData,
-        CURLOPT_HTTPHEADER     => [
-            'Authorization: Bearer ' . $supabaseKey,
-            'Content-Type: image/png',
-            'x-upsert: true',
-        ],
-    ]);
-    $result = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    if ($httpCode < 200 || $httpCode >= 300) {
-        echo json_encode(['success' => false, 'message' => 'Supabase upload failed: ' . $result]);
-        exit;
-    }
-
-
-    $publicUrl = rtrim($supabaseUrl, '/') . '/storage/v1/object/public/' . $bucket . '/' . $fileName;
-
-
+    require_once __DIR__ . '/avatar_storage.php';
+    $conn->exec('ALTER TABLE public.staff ADD COLUMN IF NOT EXISTS avatar_url TEXT');
+    $userId = (string) $_SESSION['user_id'];
+    $url = uploadPublicAvatar('staff', $userId, $png);
     $stmt = $conn->prepare('UPDATE public.staff SET avatar_url = :url WHERE user_id = :id');
-    $stmt->execute([':url' => $publicUrl, ':id' => $userId]);
-
-    echo json_encode(['success' => true, 'url' => $publicUrl]);
-
-} catch (Throwable $e) {
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    $stmt->execute([':url' => $url, ':id' => $userId]);
+    if ($stmt->rowCount() === 0) {
+        $check = $conn->prepare('SELECT 1 FROM public.staff WHERE user_id = :id');
+        $check->execute([':id' => $userId]);
+        if (!$check->fetchColumn()) throw new RuntimeException('ไม่พบข้อมูลเจ้าหน้าที่');
+    }
+    echo json_encode(['success' => true, 'url' => $url], JSON_UNESCAPED_UNICODE);
+} catch (Throwable $error) {
+    error_log('Staff avatar save failed: ' . $error->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'บันทึกรูปไม่สำเร็จ กรุณาลองใหม่'], JSON_UNESCAPED_UNICODE);
 }

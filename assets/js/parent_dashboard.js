@@ -61,8 +61,9 @@ function applyParentProfile(p) {
 
   const avatarImg     = fn('avatarImg');
   const avatarInitial = fn('avatarInitial');
-  if (p.photoDataUrl) {
-    if (avatarImg) { avatarImg.src = p.photoDataUrl; avatarImg.style.display = 'block'; }
+  const avatarUrl = p.avatar_url || p.photoDataUrl;
+  if (avatarUrl) {
+    if (avatarImg) { avatarImg.src = avatarUrl; avatarImg.style.display = 'block'; }
     if (avatarInitial) avatarInitial.style.display = 'none';
   } else {
     if (avatarImg) avatarImg.style.display = 'none';
@@ -76,9 +77,10 @@ function applyParentProfile(p) {
 function renderSidebarAvatar(p) {
   const el = document.getElementById('sidebarAvatar');
   if (!el) return;
-  if (p.photoDataUrl) {
+  const avatarUrl = p.avatar_url || p.photoDataUrl;
+  if (avatarUrl) {
     el.style.cssText += ';background:none;padding:0;overflow:hidden;';
-    el.innerHTML = `<img src="${p.photoDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    el.innerHTML = `<img src="${escapeHtml(avatarUrl)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
   } else {
     el.innerHTML = '';
     el.style.background = '';
@@ -347,7 +349,7 @@ function _cropClose() {
   if (overlay) overlay.style.display = 'none';
 }
 
-function _cropConfirm() {
+async function _cropConfirm() {
   const { img, stageW, stageH, circleSize, imgX, imgY, imgW, imgH, zoom } = _crop;
   if (!img) return;
   const offscreen = document.createElement('canvas');
@@ -367,17 +369,30 @@ function _cropConfirm() {
   const dataURL = offscreen.toDataURL('image/png');
 
 
-  const avatarImg     = document.getElementById('avatarImg');
-  const avatarInitial = document.getElementById('avatarInitial');
-  if (avatarImg) { avatarImg.src = dataURL; avatarImg.style.display = 'block'; }
-  if (avatarInitial) avatarInitial.style.display = 'none';
-  renderSidebarAvatar({ photoDataUrl: dataURL });
+  try {
+    const response = await fetch('uploadavatar_parent.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ image: dataURL })
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.message || 'บันทึกรูปโปรไฟล์ไม่สำเร็จ');
 
-
-  const p = loadParent();
-  p.photoDataUrl = dataURL;
-  saveParent(p);
-  _cropClose();
+    const avatarImg = document.getElementById('avatarImg');
+    const avatarInitial = document.getElementById('avatarInitial');
+    if (avatarImg) { avatarImg.src = result.url; avatarImg.style.display = 'block'; }
+    if (avatarInitial) avatarInitial.style.display = 'none';
+    renderSidebarAvatar({ avatar_url: result.url });
+    const p = loadParent();
+    p.avatar_url = result.url;
+    p.photoDataUrl = null;
+    saveParent(p);
+    if (_parentData) _parentData.avatar_url = result.url;
+    _cropClose();
+  } catch (error) {
+    alert(error.message || 'บันทึกรูปโปรไฟล์ไม่สำเร็จ กรุณาลองใหม่');
+  }
 }
 
 
@@ -478,6 +493,7 @@ async function loadDashboardData() {
       p.email = _parentData.email || '';
       p.phone = _parentData.phone || '';
       p.avatarInitials = p.name.slice(0, 2);
+      p.avatar_url = _parentData.avatar_url || '';
       saveParent(p);
       if (!settingsOpen) applyParentProfile(p);
     }

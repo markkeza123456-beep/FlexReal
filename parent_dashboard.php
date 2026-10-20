@@ -387,6 +387,6 @@
   </div>
 </div>
 
-  <script src="assets/js/parent_dashboard.js?v=20261019-parent-avatar-per-account"></script>
+  <script src="assets/js/parent_dashboard.js?v=20261020-shared-avatars"></script>
 </body>
 </html>

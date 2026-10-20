@@ -9,10 +9,33 @@ if (empty($_SESSION['user_id']) || $staffRole !== 'staff') {
 $displayName    = $_SESSION['name'] ?? 'บัญชีเจ้าหน้าที่';
 $displayRole    = 'เจ้าหน้าที่';
 $avatarInitials = 'ST';
+$staffAvatarUrl = '';
+$staffProfile = [];
+$profileFirstName = '';
+$profileLastName = '';
+try {
+    require_once __DIR__ . '/config/db.php';
+    $conn->exec('ALTER TABLE public.staff ADD COLUMN IF NOT EXISTS avatar_url TEXT');
+    $avatarStmt = $conn->prepare('SELECT first_name, last_name, email, phone, avatar_url FROM public.staff WHERE user_id = :id LIMIT 1');
+    $avatarStmt->execute([':id' => (string) $_SESSION['user_id']]);
+    $staffProfile = $avatarStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $staffAvatarUrl = (string) ($staffProfile['avatar_url'] ?? '');
+    $profileFirstName = trim((string) ($staffProfile['first_name'] ?? ''));
+    $profileLastName = trim((string) ($staffProfile['last_name'] ?? ''));
+    $profileName = trim((string) ($staffProfile['first_name'] ?? '') . ' ' . (string) ($staffProfile['last_name'] ?? ''));
+    if ($profileName !== '') $displayName = $profileName;
+} catch (Throwable $error) {
+    error_log('Staff avatar lookup failed: ' . $error->getMessage());
+}
 
 
-if (!empty($_SESSION['name'])) {
-    $parts    = preg_split('/\s+/u', trim($_SESSION['name']));
+if ($profileFirstName === '' && $profileLastName === '' && $displayName !== '') {
+    $nameParts = preg_split('/\s+/u', trim($displayName), 2) ?: [];
+    $profileFirstName = $nameParts[0] ?? '';
+    $profileLastName = $nameParts[1] ?? '';
+}
+if ($displayName !== '') {
+    $parts    = preg_split('/\s+/u', trim($displayName));
     $initials = '';
     foreach ($parts as $p) {
         $initials .= mb_strtoupper(mb_substr($p, 0, 1, 'UTF-8'), 'UTF-8');
@@ -30,7 +53,7 @@ if (!empty($_SESSION['name'])) {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261019-transfer-permissions" />
+  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261020-staff-profile" />
   <link rel="stylesheet" href="assets/css/theme.css" />
 </head>
 <body>
@@ -134,19 +157,20 @@ if (!empty($_SESSION['name'])) {
       <span></span><span>ออกจากระบบ</span>
     </a>
 
-    <div class="sidebar-footer">
+    <div class="sidebar-footer staff-profile-trigger" role="button" tabindex="0" onclick="openStaffProfile()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openStaffProfile()}" title="ดูหรือแก้ไขโปรไฟล์">
       <input type="file" id="staffAvatarInput" accept="image/*" style="display:none" onchange="staffPreviewAvatar(this)">
-      <div class="user-avatar" id="staffAvatarCircle"
-           onclick="document.getElementById('staffAvatarInput').click()"
-           title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์"
-           style="cursor:pointer;overflow:hidden;padding:0;flex-shrink:0;">
-        <img id="staffAvatarImg" src="" alt=""
-             style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;">
-        <span id="staffAvatarInitial"><?= htmlspecialchars($avatarInitials) ?></span>
+      <div class="staff-avatar-wrap">
+        <div class="user-avatar" id="staffAvatarCircle" style="overflow:hidden;padding:0;flex-shrink:0;">
+          <img id="staffAvatarImg" src="<?= htmlspecialchars($staffAvatarUrl, ENT_QUOTES, 'UTF-8') ?>" alt=""
+               style="<?= $staffAvatarUrl !== '' ? 'display:block;' : 'display:none;' ?>width:100%;height:100%;object-fit:cover;border-radius:50%;">
+          <span id="staffAvatarInitial" style="<?= $staffAvatarUrl !== '' ? 'display:none;' : '' ?>"><?= htmlspecialchars($avatarInitials) ?></span>
+        </div>
+        <button type="button" class="staff-avatar-edit" aria-label="เปลี่ยนรูปโปรไฟล์" title="เปลี่ยนรูป"
+                onclick="event.stopPropagation();document.getElementById('staffAvatarInput').click()" onkeydown="event.stopPropagation()">✎</button>
       </div>
       <div class="user-detail">
-        <span class="user-name"><?= htmlspecialchars($displayName) ?></span>
-        <span class="user-role"><?= htmlspecialchars($displayRole) ?></span>
+        <span class="user-name"><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></span>
+        <span class="user-role"><?= htmlspecialchars($displayRole, ENT_QUOTES, 'UTF-8') ?></span>
       </div>
     </div>
   </nav>
@@ -793,9 +817,33 @@ if (!empty($_SESSION['name'])) {
     </div>
   </div>
 
+  <div class="modal-overlay" id="staffProfileModal" aria-hidden="true">
+    <div class="modal staff-profile-modal" role="dialog" aria-modal="true" aria-labelledby="staffProfileTitle">
+      <button type="button" class="staff-profile-close" onclick="closeStaffProfile()" aria-label="ปิด">×</button>
+      <h2 class="staff-profile-title" id="staffProfileTitle">โปรไฟล์เจ้าหน้าที่</h2>
+      <p class="staff-profile-id">รหัสผู้ใช้: <?= htmlspecialchars((string) $_SESSION['user_id'], ENT_QUOTES, 'UTF-8') ?></p>
+      <form id="staffProfileForm">
+        <div class="form-grid-2">
+          <label class="form-field"><span class="form-label">ชื่อ</span><input class="staff-profile-input" name="first_name" required maxlength="100" value="<?= htmlspecialchars($profileFirstName, ENT_QUOTES, 'UTF-8') ?>"></label>
+          <label class="form-field"><span class="form-label">นามสกุล</span><input class="staff-profile-input" name="last_name" required maxlength="100" value="<?= htmlspecialchars($profileLastName, ENT_QUOTES, 'UTF-8') ?>"></label>
+        </div>
+        <label class="form-field"><span class="form-label">อีเมล</span><input class="staff-profile-input" name="email" type="email" maxlength="254" value="<?= htmlspecialchars((string) ($staffProfile['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></label>
+        <label class="form-field"><span class="form-label">เบอร์โทรศัพท์</span><input class="staff-profile-input" name="phone" type="tel" maxlength="30" value="<?= htmlspecialchars((string) ($staffProfile['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></label>
+        <details class="staff-password-details">
+          <summary>เปลี่ยนรหัสผ่าน</summary>
+          <label class="form-field"><span class="form-label">รหัสผ่านปัจจุบัน</span><input class="staff-profile-input" name="pwd_current" type="password" autocomplete="current-password"></label>
+          <label class="form-field"><span class="form-label">รหัสผ่านใหม่</span><input class="staff-profile-input" name="pwd_new" type="password" minlength="6" autocomplete="new-password"></label>
+          <label class="form-field"><span class="form-label">ยืนยันรหัสผ่านใหม่</span><input class="staff-profile-input" name="pwd_confirm" type="password" minlength="6" autocomplete="new-password"></label>
+        </details>
+        <div class="staff-profile-message" id="staffProfileMessage" role="status" aria-live="polite"></div>
+        <div class="staff-profile-actions"><button type="button" class="btn-ghost" onclick="closeStaffProfile()">ปิด</button><button type="submit" class="btn-primary" id="saveStaffProfileBtn"><span class="btn-text">บันทึกข้อมูล</span></button></div>
+      </form>
+    </div>
+  </div>
+
 
   <div class="toast" id="toast"></div>
 
-  <script src="assets/js/staffdash.js?v=20261019-transfer-permissions"></script>
+  <script src="assets/js/staffdash.js?v=20261020-staff-profile"></script>
 </body>
 </html>

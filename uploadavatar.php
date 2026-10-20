@@ -29,19 +29,10 @@ if ($binary === false || strlen($binary) > 5 * 1024 * 1024 || !str_starts_with($
 
 try {
     require_once __DIR__ . '/config/db.php';
+    require_once __DIR__ . '/avatar_storage.php';
 
     $userId = (string) $_SESSION['user_id'];
-    $avatarDirectory = __DIR__ . '/uploads/avatars';
-    if (!is_dir($avatarDirectory) && !mkdir($avatarDirectory, 0755, true) && !is_dir($avatarDirectory)) {
-        throw new RuntimeException('Unable to create avatar upload directory.');
-    }
-
-    $fileName = 'teacher_' . hash('sha256', $userId) . '.png';
-    if (file_put_contents($avatarDirectory . '/' . $fileName, $binary, LOCK_EX) === false) {
-        throw new RuntimeException('Unable to write teacher avatar file.');
-    }
-
-    $publicUrl = 'uploads/avatars/' . $fileName . '?t=' . time();
+    $publicUrl = uploadPublicAvatar('teacher', $userId, $binary);
     $stmt = $conn->prepare('UPDATE public.teachers SET avatar_url = :url WHERE user_id = :uid');
     $stmt->execute([':url' => $publicUrl, ':uid' => $userId]);
     if ($stmt->rowCount() === 0) {
