@@ -1,14 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap');
 
 :root {
-  --bg: #f9ba87;
+  --bg: #fff3e8;
   --surface: #fffaf6;
   --card: #fffaf6;
   --border: #f3d2be;
-  --orange: #ff6b1a;
+  --orange: #f26b3a;
   --orange-light: #ff8c45;
-  --orange-dim: rgba(255, 107, 26, 0.12);
-  --orange-glow: rgba(255, 107, 26, 0.22);
+  --orange-dim: rgba(242, 107, 58, 0.12);
+  --orange-glow: rgba(242, 107, 58, 0.22);
   --blue: #3b82f6;
   --blue-dim: rgba(59, 130, 246, 0.12);
   --green: #22c55e;
@@ -130,7 +130,7 @@ body {
 }
 
 .hero-card {
-  background: #ff6b1a !important;
+  background: #f26b3a !important;
   border-color: rgba(255, 255, 255, 0.45);
   box-shadow: 0 18px 50px rgba(198, 79, 12, 0.28);
 }
@@ -411,7 +411,7 @@ body {
 }
 
 .data-table tbody tr:hover td {
-  background: rgba(255, 107, 26, 0.04);
+  background: rgba(242, 107, 58, 0.04);
 }
 
 .empty-cell {
@@ -517,9 +517,9 @@ body {
 }
 
 .resource-link.video {
-  background: rgba(255, 107, 26, 0.1);
+  background: rgba(242, 107, 58, 0.1);
   color: var(--orange);
-  border-color: rgba(255, 107, 26, 0.16);
+  border-color: rgba(242, 107, 58, 0.16);
 }
 
 .resource-empty {
@@ -540,7 +540,7 @@ body {
   border-radius: 18px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 250, 246, 0.98));
   padding: 18px;
-  box-shadow: 0 10px 26px rgba(255, 107, 26, 0.08);
+  box-shadow: 0 10px 26px rgba(242, 107, 58, 0.08);
 }
 
 .resource-head {
@@ -577,7 +577,7 @@ body {
 }
 
 .resource-icon.video {
-  background: rgba(255, 107, 26, 0.12);
+  background: rgba(242, 107, 58, 0.12);
 }
 
 .resource-preview {
@@ -585,7 +585,7 @@ body {
   padding: 12px 14px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 107, 26, 0.12);
+  border: 1px solid rgba(242, 107, 58, 0.12);
   display: flex;
   flex-wrap: wrap;
   gap: 10px;

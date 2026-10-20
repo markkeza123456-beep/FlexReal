@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Orbitron:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-  <link rel="stylesheet" href="assets/css/parent_dashboard.css?v=20261020-sidebar-brand-centered" />
+  <link rel="stylesheet" href="assets/css/parent_dashboard.css?v=20261020-quiz-details" />
   <style>
 
     .settings-wrapper { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.2rem; align-items: start; max-width: 850px; }
@@ -85,7 +85,7 @@
     .parent-profile { transition: background .2s; padding: 8px; margin: -8px; border-radius: 10px; }
     .parent-profile:hover { background: rgba(255,255,255,0.05); }
   </style>
-  <link rel="stylesheet" href="assets/css/theme.css" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261020-soft-orange-theme" />
 </head>
 <body>
 
@@ -161,8 +161,8 @@
         </div>
         <div class="overview-course-table-wrap">
           <table class="overview-course-table">
-            <thead><tr><th>ลำดับ</th><th>วิชาเรียน</th><th>แบบทดสอบในรายวิชา</th><th>คะแนนสะสม</th></tr></thead>
-            <tbody id="overviewCourseBody"><tr><td colspan="4" class="overview-course-empty">กำลังโหลดข้อมูลรายวิชา...</td></tr></tbody>
+            <thead><tr><th>ลำดับ</th><th>วิชาเรียน</th><th>แบบทดสอบในรายวิชา</th><th>คะแนนสะสม</th><th>รายละเอียด</th></tr></thead>
+            <tbody id="overviewCourseBody"><tr><td colspan="5" class="overview-course-empty">กำลังโหลดข้อมูลรายวิชา...</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -369,6 +369,18 @@
 </div>
 
 
+<div class="overlay quiz-detail-overlay" id="quizDetailOverlay" aria-hidden="true">
+  <section class="quiz-detail-modal" role="dialog" aria-modal="true" aria-labelledby="quizDetailTitle">
+    <header class="quiz-detail-header">
+      <div><span class="quiz-detail-eyebrow">ผลการทำแบบทดสอบ</span><h2 id="quizDetailTitle">รายละเอียดคำตอบ</h2><p id="quizDetailSubtitle">กำลังโหลดข้อมูล...</p></div>
+      <button type="button" class="msg-detail-close" data-close-quiz-details aria-label="ปิดหน้าต่าง">×</button>
+    </header>
+    <div class="quiz-detail-content" id="quizDetailContent"><div class="quiz-detail-loading">กำลังโหลดรายละเอียดคำตอบ...</div></div>
+    <footer class="quiz-detail-footer"><span><i class="ti ti-lock" aria-hidden="true"></i> แสดงผลแบบอ่านอย่างเดียว</span><button type="button" class="quiz-detail-close-button" data-close-quiz-details>ปิด</button></footer>
+  </section>
+</div>
+
+
 <div class="overlay" id="msgOverlay" onclick="closeMsg(event)">
   <div class="msg-detail" id="msgDetail">
     <div class="msg-detail-header">
@@ -388,6 +400,6 @@
   </div>
 </div>
 
-  <script src="assets/js/parent_dashboard.js?v=20261020-password-eye-icons"></script>
+  <script src="assets/js/parent_dashboard.js?v=20261020-quiz-details"></script>
 </body>
 </html>

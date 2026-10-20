@@ -1,52 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg: #f9ba87;
-  --bg-dark: #f9ba87;
-  --bg2: #fffaf6;
-  --bg3: #fff4ed;
-  --surface: #fffaf6;
-  --surface-muted: #fff4ed;
-  --card: #fffaf6;
-  --card-bg: #fffaf6;
-  --sidebar-bg: #fffaf6;
-  --paper: #fffaf6;
+  --bg: #fff3e8;
+  --bg-dark: #fff3e8;
+  --bg2: #ffffff;
+  --bg3: #f5f6f8;
+  --surface: #ffffff;
+  --surface-muted: #f8f9fb;
+  --card: #ffffff;
+  --card-bg: #ffffff;
+  --sidebar-bg: #ffffff;
+  --paper: #ffffff;
 
-  --border: #f3d2be;
-  --border-color: #f3d2be;
-  --border-hover: #ff6b1a;
-  --line: #f3d2be;
+  --border: #e7e9ee;
+  --border-color: #e7e9ee;
+  --border-hover: #f26b3a;
+  --line: #e7e9ee;
 
-  --orange: #ff6b1a;
-  --orange-light: #ff8c45;
-  --orange-dark: #d85615;
-  --orange-dim: rgba(255, 107, 26, 0.12);
-  --orange-glow: rgba(255, 107, 26, 0.22);
-  --primary: #ff6b1a;
-  --primary-orange: #ff6b1a;
-  --primary-soft: rgba(255, 107, 26, 0.14);
-  --accent: #ff6b1a;
-  --accent-light: #fff0e6;
-  --accent-mid: #ff9d5c;
-  --accent-dark: #b8430b;
-  --accent-dim: rgba(255, 107, 26, 0.14);
-  --soft: #fff0e6;
-  --soft-orange: #fff0e6;
-  --dark-orange: #d85615;
+  --orange: #f26b3a;
+  --orange-light: #ff946e;
+  --orange-dark: #d95526;
+  --orange-dim: rgba(242, 107, 58, 0.12);
+  --orange-glow: rgba(242, 107, 58, 0.18);
+  --primary: #f26b3a;
+  --primary-color: #f26b3a;
+  --primary-orange: #f26b3a;
+  --primary-soft: rgba(242, 107, 58, 0.12);
+  --accent: #f26b3a;
+  --accent-light: #fff0e9;
+  --accent-mid: #ff946e;
+  --accent-dark: #c94d23;
+  --accent-dim: rgba(242, 107, 58, 0.12);
+  --soft: #fff0e9;
+  --soft-orange: #fff0e9;
+  --dark-orange: #d95526;
 
   --text: #2d3436;
   --text-main: #2d3436;
   --text-primary: #2d3436;
   --deep-blue: #2d3436;
   --ink: #2d3436;
-  --text-secondary: #526067;
-  --text-soft: #526067;
-  --text-dim: #526067;
-  --text-gray: #526067;
-  --text-muted: #667176;
-  --muted: #667176;
+  --text-secondary: #4b5563;
+  --text-soft: #4b5563;
+  --text-dim: #4b5563;
+  --text-gray: #4b5563;
+  --text-muted: #9ca3af;
+  --muted: #9ca3af;
 
-  --shadow: 0 14px 32px rgba(115, 71, 35, 0.16);
-  --shadow-md: 0 18px 38px rgba(115, 71, 35, 0.18);
+  --shadow: 0 8px 24px rgba(242, 107, 58, 0.08);
+  --shadow-md: 0 12px 30px rgba(242, 107, 58, 0.11);
 }
 
 html { color-scheme: light; }
@@ -54,19 +56,34 @@ html { color-scheme: light; }
 body {
   background-color: var(--bg) !important;
   background-image:
-    radial-gradient(circle at 86% 10%, rgba(255, 140, 69, 0.24), transparent 28rem),
-    linear-gradient(rgba(255, 107, 26, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 107, 26, 0.045) 1px, transparent 1px) !important;
-  background-size: auto, 48px 48px, 48px 48px !important;
+    radial-gradient(circle, rgba(242, 107, 58, 0.075) 1.15px, transparent 1.45px),
+    radial-gradient(circle at 88% 8%, rgba(242, 107, 58, 0.055), transparent 28rem) !important;
+  background-size: 32px 32px, auto !important;
   background-attachment: fixed !important;
   color: var(--text-primary) !important;
+  font-family: 'IBM Plex Sans Thai', 'Kanit', sans-serif !important;
+  isolation: isolate;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: url('../education-doodles.svg');
+  background-repeat: repeat;
+  background-size: 640px 480px;
+  background-position: center top;
+  opacity: .075;
 }
 
 .sidebar,
 .navbar,
 .quiz-nav {
   background-color: var(--surface) !important;
-  border-color: var(--border) !important;
+  border-color: transparent !important;
+  box-shadow: var(--shadow);
 }
 
 
@@ -93,6 +110,10 @@ body {
 .assignment-item,
 .lesson-card,
 .msg-item,
+.msg-detail,
+.search-modal-box,
+.quiz-detail-modal,
+[role="dialog"],
 .child-tab,
 .lesson-item,
 .question-card,
@@ -102,7 +123,20 @@ body {
 .modal-box {
   background-color: var(--card) !important;
   border-color: var(--border) !important;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
 }
+
+.sidebar,.navbar,.quiz-nav { background-color:#fff!important; }
+
+table { background: #ffffff; }
+th, td { padding:11px 13px; border-color: #eaecf0 !important; }
+tbody tr:nth-child(even) { background-color: #fcfcfd; }
+.hero { background:transparent!important; color:var(--text-primary)!important; border-bottom:0; }
+.hero h1,.hero h2,.hero h3,.hero p,.hero .hero-title,.hero .hero-subtitle { color:var(--text-primary)!important; }
+#page-guide .content-header,#page-contact .content-header { background:transparent!important; border-bottom:0; }
+#page-guide .content-header h1,#page-contact .content-header h1 { color:var(--text-primary)!important; }
+.prog-fill,.progress-line span,.progress-bar-fill,.course-chart-fill { background:linear-gradient(90deg,var(--orange),var(--orange-light))!important; }
 
 main,
 .main,
@@ -163,14 +197,15 @@ input:focus,
 textarea:focus,
 select:focus {
   border-color: var(--orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 26, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(242, 107, 58, 0.14) !important;
 }
 
 .menu-item.active,
 .nav-item.active,
 .child-tab.active {
   background-color: var(--accent-dim) !important;
-  color: var(--text-primary) !important;
+  color: var(--orange) !important;
+  border-color: rgba(242, 107, 58, 0.18) !important;
 }
 
 .btn-submit,
@@ -179,30 +214,21 @@ select:focus {
 .btn-save,
 .btn-enroll,
 .btn-action,
-.action-button {
+.action-button,
+.button.primary,
+button.primary,
+.primary-btn,
+.btn-login {
   background: linear-gradient(135deg, var(--orange), var(--orange-light)) !important;
   border-color: var(--orange) !important;
   color: #ffffff !important;
 }
 
 .footer {
-  background-color: var(--text-primary) !important;
-  color: #ffffff;
+  background-color: #ffffff !important;
+  color: var(--text-secondary);
+  border-top:1px solid var(--border);
 }
 
 
-.hero > h1,
-.hero > h2,
-.hero > h3,
-.hero > p,
-.hero .hero-title,
-.hero .hero-subtitle,
-.footer,
-.footer * {
-  color: #ffffff !important;
-}
-
-#page-guide .content-header h1,
-#page-contact .content-header h1 {
-  color: #ffffff !important;
-}
+.footer * { color:inherit; }

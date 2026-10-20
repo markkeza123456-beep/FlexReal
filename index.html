@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="assets/css/web.css">
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/web.css?v=20261020-minimal-landing">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261020-soft-orange-theme">
 </head>
 <body>
 
@@ -16,7 +16,7 @@
     <a href="index.html" class="logo" onclick="return goHome(event)">Flexible Learning Hub</a>
     <div class="nav-links">
         <input type="text" id="searchInput" class="nav-search-input" onfocus="showPage('home')" onkeyup="filterCourses()" placeholder="ค้นหาบทเรียนที่คุณสนใจ...">
-        <a href="index.html" onclick="return goHome(event)" style="text-decoration:none; color:inherit; font-weight:500;">หน้าหลัก</a>
+        <a href="index.html" class="nav-home-link" onclick="return goHome(event)">หน้าหลัก</a>
         
         <div class="dropdown">
             <button class="dropbtn">หมวดหมู่ ▾</button>
@@ -41,8 +41,8 @@
             </div> 
         </div>
 
-        <a href="login.php" id="loginBtn" class="btn-orange" style="text-decoration: none; padding: 8px 20px; background: var(--primary-orange); color: white; border: none; border-radius: 5px; cursor: pointer; display: inline-block;">Login</a>
-        <div id="userProfile" class="user-profile-wrap" style="display:none;">
+        <a href="login.php" id="loginBtn" class="btn-orange">Login</a>
+<div id="userProfile" class="user-profile-wrap">
             <button type="button" id="userProfileBtn" class="user-profile">
                 <div class="user-avatar" id="userAvatar">U</div>
                 <span id="userName">ผู้ใช้งาน</span>
@@ -58,18 +58,18 @@
 <div id="home" class="page active">
     <div class="hero">
         <h1>Learning Hub</h1>
-        <p style="margin-top:10px; opacity:0.9;">ค้นพบรายวิชาออนไลน์ที่ตอบโจทย์ชีวิตคุณ</p>
+        <p class="hero-subtitle">ค้นพบรายวิชาออนไลน์ที่ตอบโจทย์ชีวิตคุณ</p>
     </div>
 
     <div class="container">
         <div id="public-course-section">
             <h2 class="section-title">รายวิชาทั้งหมด</h2>
             <div class="grid" id="course-grid">
-                <p style="text-align: center; color: gray;">กำลังโหลดข้อมูลวิชา...</p>
+                <p class="course-loading">กำลังโหลดข้อมูลวิชา...</p>
             </div>
         </div>
 
-        <div id="student-course-sections" style="display:none;">
+        <div id="student-course-sections">
             <div class="course-section-block">
                 <div class="section-head-row">
                     <h2 class="section-title">วิชาที่เรียน</h2>
@@ -97,8 +97,8 @@
         
 
     <div class="steps-bg">
-        <h2 class="section-title" style="text-align:center; border:none;">เรียนรู้ง่ายๆ ใน 5 ขั้นตอน</h2>
-        <div class="steps-grid" style="margin-top:40px;">
+        <h2 class="section-title steps-title">เรียนรู้ง่ายๆ ใน 5 ขั้นตอน</h2>
+        <div class="steps-grid">
             <div><div class="step-icon">1</div><h4>สมัครสมาชิก</h4></div>
             <div><div class="step-icon">2</div><h4>ค้นหารายวิชา</h4></div>
             <div><div class="step-icon">3</div><h4>เรียนออนไลน์</h4></div>
@@ -113,9 +113,9 @@
         <div class="course-layout-grid">
             
             <div class="course-main-content">
-    <h1 id="detail-title" style="font-size: 32px; margin-bottom: 5px;">ชื่อวิชา</h1>
+    <h1 id="detail-title" class="course-page-title">ชื่อวิชา</h1>
     
-    <p id="detail-desc-top" style="color:var(--text-gray); margin-bottom: 25px;">รายละเอียดเบื้องต้นของวิชา...</p>
+    <p id="detail-desc-top" class="course-page-subtitle">รายละเอียดเบื้องต้นของวิชา...</p>
     
                 <div class="tabs">
                     <button class="tab-btn active" onclick="openTab(event, 'overview')">รายละเอียด</button>
@@ -124,27 +124,27 @@
                 </div>
 
                 <div id="overview" class="tab-content active">
-                    <div class="info-card" style="margin-top: 25px;">
-                        <h3 class="section-title" style="border-left: 4px solid var(--primary-orange); padding-left: 10px; font-size: 20px; margin-bottom: 20px;">คำอธิบายรายวิชา</h3>
+                    <div class="info-card section-info-card">
+                        <h3 class="section-title subsection-title">คำอธิบายรายวิชา</h3>
                         <p id="detail-desc">เริ่มต้นเรียนรู้และพัฒนาทักษะไปกับหลักสูตรคุณภาพจากผู้เชี่ยวชาญ</p>
                     </div>
                 </div>
 
     <div id="curriculum" class="tab-content">
     <div class="info-card">
-        <p id="curriculum-locked-msg" style="color:var(--text-gray);">กรุณาลงทะเบียนรายวิชาก่อน เพื่อปลดล็อกสื่อการสอนและแบบทดสอบ</p>
-        <div id="course-curriculum-lesson-list" class="lesson-accordion-list" style="display:none;"></div>
+        <p id="curriculum-locked-msg" class="curriculum-locked-message">กรุณาลงทะเบียนรายวิชาก่อน เพื่อปลดล็อกสื่อการสอนและแบบทดสอบ</p>
+        <div id="course-curriculum-lesson-list" class="lesson-accordion-list"></div>
     </div>
 </div>
 
                 <div id="instructor" class="tab-content">
-                    <div class="info-card" style="margin-top: 25px;">
-                        <h3 class="section-title" style="border-left: 4px solid var(--primary-orange); padding-left: 10px; font-size: 20px; margin-bottom: 20px;">อาจารย์ผู้สอน</h3>
-                        <div style="display:flex; gap:20px; align-items:center;">
-                            <div style="width:80px; height:80px; background:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px;">‍</div>
+                    <div class="info-card section-info-card">
+                        <h3 class="section-title subsection-title">อาจารย์ผู้สอน</h3>
+                        <div class="instructor-profile">
+                            <div class="instructor-avatar">‍</div>
                             <div>
                                 <b id="detail-instructor-name">อาจารย์ผู้เชี่ยวชาญประจำหลักสูตร</b>
-                                <p id="detail-instructor-role" style="color:var(--text-gray); font-size:14px;">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
+                                <p id="detail-instructor-role" class="instructor-role">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
                             </div>
                         </div>
                     </div>
@@ -172,8 +172,8 @@
     <div class="container">
         <div class="course-layout-grid">
             <div class="course-main-content">
-                <h1 id="learning-title" style="font-size: 32px; margin-bottom: 5px;">ชื่อวิชา</h1>
-                <p id="learning-desc-top" style="color:var(--text-gray); margin-bottom: 25px;">เริ่มเรียนรายวิชา</p>
+                <h1 id="learning-title" class="course-page-title">ชื่อวิชา</h1>
+                <p id="learning-desc-top" class="course-page-subtitle">เริ่มเรียนรายวิชา</p>
 
                 <div class="tabs">
                     <button class="tab-btn" onclick="openLearningTab(event, 'learning-overview')">รายละเอียด</button>
@@ -182,8 +182,8 @@
                 </div>
 
                 <div id="learning-overview" class="learning-tab-content">
-                    <div class="info-card" style="margin-top: 25px;">
-                        <h3 class="section-title" style="border-left: 4px solid var(--primary-orange); padding-left: 10px; font-size: 20px; margin-bottom: 20px;">คำอธิบายรายวิชา</h3>
+                    <div class="info-card section-info-card">
+                        <h3 class="section-title subsection-title">คำอธิบายรายวิชา</h3>
                         <p id="learning-desc">เริ่มต้นเรียนรู้และพัฒนาทักษะไปกับหลักสูตรคุณภาพจากผู้เชี่ยวชาญ</p>
                     </div>
                 </div>
@@ -195,13 +195,13 @@
                 </div>
 
                 <div id="learning-instructor" class="learning-tab-content">
-                    <div class="info-card" style="margin-top: 25px;">
-                        <h3 class="section-title" style="border-left: 4px solid var(--primary-orange); padding-left: 10px; font-size: 20px; margin-bottom: 20px;">อาจารย์ผู้สอน</h3>
-                        <div style="display:flex; gap:20px; align-items:center;">
-                            <div style="width:80px; height:80px; background:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px;">‍</div>
+                    <div class="info-card section-info-card">
+                        <h3 class="section-title subsection-title">อาจารย์ผู้สอน</h3>
+                        <div class="instructor-profile">
+                            <div class="instructor-avatar">‍</div>
                             <div>
                                 <b id="learning-instructor-name">อาจารย์ผู้เชี่ยวชาญประจำหลักสูตร</b>
-                                <p id="learning-instructor-role" style="color:var(--text-gray); font-size:14px;">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
+                                <p id="learning-instructor-role" class="instructor-role">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
                             </div>
                         </div>
                     </div>

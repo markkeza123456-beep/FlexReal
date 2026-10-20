@@ -2,12 +2,12 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --accent:       #ff6b1a;
+    --accent:       #f26b3a;
     --accent-light: #fff0e6;
     --accent-mid:   #ff9d5c;
     --accent-dark:  #b8430b;
     --blue:         #3b82f6;
-    --bg:           #f9ba87;
+    --bg:           #fff3e8;
     --surface:      #fffaf6;
     --surface2:     #fff4ed;
     --border:       #f3d2be;

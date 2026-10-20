@@ -635,7 +635,7 @@ function renderOverviewCourseTable() {
   const query = (document.getElementById('overviewCourseSearch')?.value || '').trim().toLocaleLowerCase('th');
   const subjects = _overviewSubjects.filter(subject => String(subject.subject_name || '').toLocaleLowerCase('th').includes(query));
   if (!subjects.length) {
-    tbody.innerHTML = `<tr><td colspan="4" class="overview-course-empty">${_overviewSubjects.length ? 'ไม่พบรายวิชาที่ค้นหา' : 'ยังไม่มีรายวิชาที่ลงทะเบียน'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="overview-course-empty">${_overviewSubjects.length ? 'ไม่พบรายวิชาที่ค้นหา' : 'ยังไม่มีรายวิชาที่ลงทะเบียน'}</td></tr>`;
     return;
   }
   tbody.innerHTML = subjects.map(subject => {
@@ -651,6 +651,7 @@ function renderOverviewCourseTable() {
       <td><span class="overview-course-name">${escapeHtml(subject.subject_name)}</span><span class="overview-course-tag">${subjectType}</span></td>
       <td>ทำแล้ว ${attempted}/${total} บท</td>
       <td>${score}</td>
+      <td><button type="button" class="view-quiz-details-btn" data-course-id="${escapeHtml(subject.course_id)}" data-course-name="${escapeHtml(subject.subject_name)}"><i class="ti ti-search" aria-hidden="true"></i> ดูรายละเอียด</button></td>
     </tr>`;
   }).join('');
 }
@@ -773,9 +774,82 @@ function renderLearningProgress(subjects) {
   }).join('');
 }
 
+function closeQuizDetails() {
+  const overlay = document.getElementById('quizDetailOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('open');
+  overlay.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('modal-open');
+}
+
+async function openQuizDetails(button) {
+  const overlay = document.getElementById('quizDetailOverlay');
+  const content = document.getElementById('quizDetailContent');
+  const child = _children[_activeChild];
+  if (!overlay || !content || !child) return;
+  const courseId = button.dataset.courseId || '';
+  const courseName = button.dataset.courseName || 'รายวิชา';
+  document.getElementById('quizDetailTitle').textContent = `รายละเอียดคำตอบ · ${courseName}`;
+  document.getElementById('quizDetailSubtitle').textContent = `นักเรียน: ${child.student_name}`;
+  content.innerHTML = '<div class="quiz-detail-loading">กำลังโหลดรายละเอียดคำตอบ...</div>';
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
+  try {
+    const params = new URLSearchParams({ student_id: child.student_id, course_id: courseId });
+    const response = await fetch(`parent_quiz_details_api.php?${params}`, { credentials: 'same-origin', cache: 'no-store' });
+    const result = await response.json();
+    if (!response.ok || result.status !== 'success') throw new Error(result.message || 'ไม่สามารถโหลดรายละเอียดคำตอบได้');
+    content.innerHTML = renderQuizDetails(result.lessons || []);
+  } catch (error) {
+    content.innerHTML = `<div class="quiz-detail-error">${escapeHtml(error.message || 'โหลดรายละเอียดคำตอบไม่สำเร็จ')}</div>`;
+  }
+}
+
+function renderQuizDetails(lessons) {
+  const attemptedLessons = lessons.filter(lesson => lesson.has_attempt);
+  if (!attemptedLessons.length) return '<div class="quiz-detail-empty">นักเรียนยังไม่ได้ทำแบบทดสอบในรายวิชานี้</div>';
+  return attemptedLessons.map(lesson => {
+    const questions = Array.isArray(lesson.questions) ? lesson.questions : [];
+    const questionHtml = questions.length ? questions.map((question, index) => {
+      const essay = question.question_type === 'essay';
+      const statusClass = essay ? (question.review_status === 'graded' || question.review_status === 'reviewed' ? 'reviewed' : 'waiting') : (question.is_correct ? 'correct' : 'wrong');
+      const statusLabel = essay
+        ? (statusClass === 'reviewed' ? 'ตรวจแล้ว' : 'รอตรวจ')
+        : (question.is_correct ? '✓ ตอบถูก' : '✕ ตอบผิด');
+      const optionsHtml = essay ? '' : `<div class="quiz-detail-options">${(question.options || []).map((option, optionIndex) => {
+        const label = String.fromCharCode(65 + optionIndex);
+        const correct = label === question.correct_choice;
+        const selected = label === question.selected_choice;
+        const classes = [correct ? 'is-correct' : '', selected ? 'is-selected' : ''].filter(Boolean).join(' ');
+        const marker = correct ? 'เฉลย' : (selected ? 'นักเรียนเลือก' : '');
+        return `<div class="quiz-detail-option ${classes}"><span class="quiz-detail-option-letter">${label}</span><span class="quiz-detail-option-text">${escapeHtml(option)}</span>${marker ? `<small>${marker}</small>` : ''}</div>`;
+      }).join('')}</div>`;
+      const answerText = essay
+        ? `<div class="quiz-detail-answer-text"><strong>คำตอบที่พิมพ์</strong><p>${escapeHtml(question.answer_text || 'ไม่มีคำตอบ')}</p>${question.score !== null ? `<small>คะแนน ${escapeHtml(question.score)}/${escapeHtml(question.max_score)}</small>` : ''}</div>`
+        : `<div class="quiz-detail-answer-line">คำตอบที่เลือก: <strong>${question.selected_choice ? `${escapeHtml(question.selected_choice)} · ${escapeHtml(question.selected_option || '')}` : 'ไม่ได้ตอบ'}</strong></div>`;
+      return `<article class="quiz-detail-question"><div class="quiz-detail-question-head"><h4>ข้อ ${index + 1}</h4><span class="quiz-detail-result ${statusClass}">${statusLabel}</span></div><p class="quiz-detail-question-text">${escapeHtml(question.question_text)}</p>${optionsHtml}${answerText}</article>`;
+    }).join('') : '<div class="quiz-detail-empty">ไม่พบข้อมูลคำตอบของแบบทดสอบครั้งล่าสุด</div>';
+    return `<section class="quiz-detail-lesson"><div class="quiz-detail-lesson-head"><div><span>บทที่ ${Number(lesson.position)}</span><h3>${escapeHtml(lesson.title)}</h3></div><small>${lesson.submitted_at ? `ส่งเมื่อ ${escapeHtml(formatActivityDate(lesson.submitted_at))}` : ''}</small></div>${questionHtml}</section>`;
+  }).join('');
+}
+
+function formatActivityDate(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   applyParentProfile(loadParent());
   document.getElementById('overviewCourseSearch')?.addEventListener('input', renderOverviewCourseTable);
+  document.getElementById('overviewCourseBody')?.addEventListener('click', event => {
+    const button = event.target.closest('.view-quiz-details-btn');
+    if (button) openQuizDetails(button);
+  });
+  document.getElementById('quizDetailOverlay')?.addEventListener('click', event => {
+    if (event.target.id === 'quizDetailOverlay' || event.target.closest('[data-close-quiz-details]')) closeQuizDetails();
+  });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') closeQuizDetails(); });
   loadDashboardData();
   window.setInterval(() => {
     if (document.visibilityState === 'visible') loadDashboardData();

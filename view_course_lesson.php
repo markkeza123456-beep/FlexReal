@@ -130,6 +130,7 @@ header('Content-Type: text/html; charset=utf-8');
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title>
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261020-soft-orange-theme">
   <style>
     body { margin: 0; color: #24303b; font-family: "IBM Plex Sans Thai", system-ui, sans-serif; background: #f7f8fa; }
     header { display:flex; gap:12px; align-items:center; justify-content:space-between; padding: 12px 20px; background: #fff; border-bottom: 1px solid #e8eaed; font-weight: 700; }
@@ -144,7 +145,7 @@ header('Content-Type: text/html; charset=utf-8');
   </style>
 </head>
 <body>
-  <header><div class="header-title"><span><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span><span id="reading-status" class="reading-status"></span></div></header>
+  <header class="reader-header"><div class="header-title"><span><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span><span id="reading-status" class="reading-status"></span></div></header>
 <?php if ($extension === 'pdf'): ?>
   <main class="pdf-reader" id="pdf-reader" aria-label="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>"><div id="pdf-pages" class="pdf-pages"><div class="pdf-loading">กำลังเปิดเอกสาร…</div></div></main>
 <?php elseif (in_array($extension, $officeExtensions, true)): ?>

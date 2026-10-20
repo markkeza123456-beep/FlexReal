@@ -5,11 +5,11 @@
   --surface:        #ffffff;
   --card:           #fffaf6;
   --border:         #efcbb5;
-  --border-hover:   #ff6b1a;
-  --orange:         #ff6b1a;
+  --border-hover:   #f26b3a;
+  --orange:         #f26b3a;
   --orange-light:   #ff8c45;
-  --orange-dim:     rgba(255, 107, 26, 0.12);
-  --orange-glow:    rgba(255, 107, 26, 0.22);
+  --orange-dim:     rgba(242, 107, 58, 0.12);
+  --orange-glow:    rgba(242, 107, 58, 0.22);
   --text-primary:   #2d3436;
   --text-secondary: #526067;
   --text-muted:     #667176;
@@ -65,7 +65,7 @@ body {
   position: absolute;
   width: clamp(112px, 10vw, 180px);
   height: auto;
-  color: #ff6b1a;
+  color: #f26b3a;
   opacity: .16;
   stroke: currentColor;
   stroke-width: 3.2;

@@ -144,6 +144,7 @@ try {
             $percent = $scorePossible > 0 ? round(($scoreEarned / $scorePossible) * 100, 1) : 0.0;
             $lastActivities = array_filter(array_column($lessons, 'last_activity_at'));
             $subjects[] = [
+                'course_id' => (string) $course['course_id'],
                 'subject_name' => $course['subject_name'], 'subject_type' => $course['subject_type'] ?? 'elective', 'score_mid' => 0, 'score_final' => $percent,
                 'total_score' => $percent, 'grade' => gradeFromScore($percent),
                 'score_earned' => $scoreEarned,

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" fill="none">
+  <g stroke="#f26b3a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity=".82">
+    <!-- Open book -->
+    <g transform="translate(55 42) rotate(-8 62 50)">
+      <path d="M10 18h37c13 0 23 10 23 23v52c0-13-10-23-23-23H10zM116 18H79c-13 0-23 10-23 23v52c0-13 10-23 23-23h37z"/>
+      <path d="M24 37h24M24 52h19M102 37H78M102 52H83"/>
+    </g>
+    <!-- Graduation cap -->
+    <g transform="translate(440 45) rotate(7 70 48)">
+      <path d="m9 34 61-26 61 26-61 27zM31 44v23c21 18 48 18 78 0V44M131 36v39"/>
+      <path d="M131 75c0 7-11 7-11 0 0-6 11-6 11 0zM70 61v34M53 95h34"/>
+    </g>
+    <!-- Light bulb -->
+    <g transform="translate(250 165) rotate(-7 65 65)">
+      <path d="M65 8c-25 0-44 19-44 43 0 16 8 29 21 37 5 4 7 9 7 15h32c0-6 2-11 7-15 13-8 21-21 21-37 0-24-19-43-44-43zM49 105h32M52 117h26"/>
+      <path d="M65 0v-10M23 11l-8-8M107 11l8-8M5 53h-10M125 53h10"/>
+    </g>
+    <!-- Pencil -->
+    <g transform="translate(55 320) rotate(-12 72 54)">
+      <path d="m24 75 10-29L91-11l24 24-57 57zM79 1l24 24M24 75l25-14-11-11zM20 92h93M30 103h72"/>
+    </g>
+    <!-- Globe -->
+    <g transform="translate(435 300) rotate(5 72 70)">
+      <circle cx="70" cy="55" r="42"/><path d="M28 55h84M70 13c16 12 24 27 24 42s-8 30-24 42C54 85 46 70 46 55s8-30 24-42zM44 112h52M70 97v23M45 120h50"/>
+    </g>
+  </g>
+</svg>

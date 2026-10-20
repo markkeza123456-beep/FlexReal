@@ -1,8 +1,8 @@
-﻿:root {
-    --bg-dark: #f9ba87;
+:root {
+    --bg-dark: #fff3e8;
     --card-bg: #ffffff;
     --sidebar-bg: #ffffff;
-    --accent-orange: #ff6b1a;
+    --accent-orange: #f26b3a;
     --text-main: #2d3436;
     --text-muted: #636e72;
     --border-color: #f3d2be;
@@ -306,7 +306,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .graduation-tracker-message { color:var(--text-muted); font-size:.85rem; }
 .graduation-credits-label { color:var(--text-main); white-space:nowrap; }
 .graduation-progress-track { height:12px; margin:.9rem 0 .55rem; overflow:hidden; border-radius:999px; background:#f3d2be; }
-.graduation-progress-fill { width:0; height:100%; border-radius:inherit; background:linear-gradient(90deg,#ff6b1a,#ff9b54); transition:width .35s ease; }
+.graduation-progress-fill { width:0; height:100%; border-radius:inherit; background:linear-gradient(90deg,#f26b3a,#ff9b54); transition:width .35s ease; }
 .graduation-tracker-footer { color:var(--text-muted); font-size:.8rem; }
 .btn-graduation-request { border:0; border-radius:9px; padding:.65rem 1rem; background:var(--accent-orange); color:#fff; font:inherit; font-size:.85rem; cursor:pointer; }
 .btn-graduation-request:hover:not(:disabled) { filter:brightness(.94); }
@@ -368,7 +368,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 }
 
 /* Match the teacher portal's shared layout and card treatment. */
-:root { --sidebar-w:230px; --bg:#f9ba87; --bg2:#ffffff; --bg3:#fff4ed; --orange:#ff6b1a; --orange-dim:rgba(255,107,26,.12); --text:#2d3436; --text-dim:#636e72; --text-muted:#8a8f98; --border:#f3d2be; --radius:12px; --radius-sm:8px; }
+:root { --sidebar-w:230px; --bg:#fff3e8; --bg2:#ffffff; --bg3:#fff4ed; --orange:#f26b3a; --orange-dim:rgba(242,107,58,.12); --text:#2d3436; --text-dim:#636e72; --text-muted:#8a8f98; --border:#f3d2be; --radius:12px; --radius-sm:8px; }
 .dashboard-container { display:block; width:100%; min-height:100vh; height:auto; }
 .sidebar { position:fixed; inset:0 auto 0 0; z-index:100; width:var(--sidebar-w); min-width:var(--sidebar-w); height:100vh; padding:24px 0 16px; }
 .logo-section { width:100%; padding:0 20px 28px; border-bottom:1px solid var(--border); }
@@ -377,7 +377,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .menu { display:flex; flex:1; flex-direction:column; gap:2px; padding:20px 12px; margin:0; overflow-y:auto; }
 .menu-item { gap:10px; padding:10px 12px; margin:0; border-radius:var(--radius-sm); color:var(--text-dim); font-size:14px; font-weight:500; transition:background .18s,color .18s; }
 .menu-item.active { background:var(--orange-dim); color:var(--orange); font-weight:600; }
-.menu-item:focus-visible, .user-profile:focus-visible, .btn-logout:focus-visible, .btn-submit:focus-visible { outline:3px solid rgba(255,107,26,.35); outline-offset:2px; }
+.menu-item:focus-visible, .user-profile:focus-visible, .btn-logout:focus-visible, .btn-submit:focus-visible { outline:3px solid rgba(242,107,58,.35); outline-offset:2px; }
 .menu-item .icon { width:22px; text-align:center; }
 #btn-dashboard .icon::before { content:'⌂'; }
 #btn-lessons .icon::before { content:'▤'; }
@@ -394,7 +394,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .content-section { display:flex; flex-direction:column; gap:24px; }
 .stats-grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin:0; }
 .stat-card { position:relative; overflow:hidden; padding:20px; border:1px solid var(--border); border-radius:var(--radius); border-left:1px solid var(--border); transition:transform .2s,border-color .2s; }
-.stat-card::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,107,26,.06),transparent 60%); pointer-events:none; }
+.stat-card::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(242,107,58,.06),transparent 60%); pointer-events:none; }
 .stat-card::after { content:''; position:absolute; inset:0 0 auto; height:2px; background:var(--accent-orange); }
 .stat-card.blue::after { background:var(--blue); }
 .stat-card.green::after { background:var(--green); }
