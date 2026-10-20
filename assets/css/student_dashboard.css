@@ -464,7 +464,10 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .report-status.passed { color:#047857; background:rgba(16,185,129,.12); }
 .report-status.failed { color:#dc2626; background:rgba(239,68,68,.1); }
 .report-status.none { color:var(--text-muted); background:#f1f5f9; }
-.report-transfer-cell { text-align:center; color:#047857; font-weight:600; background:rgba(16,185,129,.08); }
+.report-transfer-cell { text-align:center; color:#475569; font-weight:600; background:transparent; }
+.report-center { text-align:center!important; vertical-align:middle!important; }
+.report-course-group { vertical-align:middle!important; background:#f8fafc; }
+.report-transfer-badge { display:inline-block; padding:4px 9px; border:1px solid #dbe3ef; border-radius:999px; background:#f8fafc; color:#475569; font-size:.85em; white-space:nowrap; }
 .report-empty { padding:24px!important; color:var(--text-muted)!important; text-align:center; }
 .report-meta { color:var(--text-muted); font-size:12px; }
 .student-stats-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }

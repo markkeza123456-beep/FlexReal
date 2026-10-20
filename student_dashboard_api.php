@@ -79,7 +79,7 @@ try {
     $student = $studentStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
     $courseStmt = $conn->prepare(
-        "SELECT DISTINCT c.course_id, c.name, COALESCE(c.description, '') AS description,
+        "SELECT DISTINCT c.course_id, c.code, c.name, COALESCE(c.description, '') AS description,
                 COALESCE(sc.status, 'active') AS enrollment_status,
                 COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' END, c.subject_type, 'elective') AS subject_type
          FROM public.student_courses sc
@@ -251,6 +251,7 @@ try {
         $courses[] = [
             'id' => str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT),
             'subject_id' => (string) ($row['course_id'] ?? ''),
+            'code' => (string) ($row['code'] ?? ''),
             'name' => (string) ($row['name'] ?? 'ไม่ระบุชื่อวิชา'),
             'description' => (string) ($row['description'] ?? ''),
             'subject_type' => (string) ($row['subject_type'] ?? 'elective'),

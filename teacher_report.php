@@ -188,6 +188,9 @@ if ($courseIds !== []) {
             'lesson_name' => (string) $row['lesson_name'],
             'objective_display' => $objectiveDisplay,
             'essay_display' => $essayDisplay,
+            'total_display' => $attempted
+                ? number_format(($objectiveScore ?? 0) + ($essayScore ?? 0), 0) . ' / ' . number_format(($objectiveTotal ?? 0) + ($essayTotal ?? 0), 0)
+                : '—',
             'essay_pending' => $attempted && $essayPendingCount > 0,
             'assessment_status' => $assessmentStatus,
         ];
@@ -269,6 +272,7 @@ function teacherReportEscape(mixed $value): string { return htmlspecialchars((st
         @media(max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:18px}.embed .wrap{padding:8px}}
         @media(max-width:560px){.wrap{padding:12px}.top{align-items:flex-start}.top h1{font-size:21px}.kpis{gap:8px}.kpi{padding:13px}.kpi-value{font-size:23px}.identity{grid-template-columns:1fr;gap:12px;padding:14px}.actions{flex-direction:column}}
         .student-group-cell{vertical-align:middle;background:#f8fafc}.student-group-start td{border-top:2px solid #cbd5e1}
+        .report-table th,.report-table td{padding:12px 14px;border-bottom:1px solid #eaeaea}.report-table thead th{background:#f8fafc}.report-table tbody tr:nth-child(even){background:#fcfcfd}.report-table .center{text-align:center!important;vertical-align:middle}.course-group-cell{vertical-align:middle;background:#f8fafc;font-weight:500}.tr-score-cell{text-align:center!important;vertical-align:middle;color:#475569;background:transparent!important}.transfer-note{display:inline-block;padding:4px 9px;border:1px solid #dbe3ef;border-radius:999px;background:#f8fafc;color:#475569;font-size:11px;font-weight:500;white-space:nowrap}.total-subnote{display:block;color:var(--muted);font-size:10px;white-space:nowrap}
         @media print{ @page{size:A4 landscape;margin:12mm}body{background:#fff;color:#111;font-size:10pt}.wrap{width:100%;padding:0}.top{margin-bottom:10px}.top h1{font-size:19pt}.actions{display:none}.identity,.panel,.kpi{box-shadow:none;border-color:#cbd5e1;break-inside:avoid}.identity{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.kpis{gap:8px;margin:8px 0}.kpi{padding:10px}.kpi-value{font-size:20pt}.panel{padding:12px;margin:9px 0}.table-wrap{overflow:visible}table{min-width:0;font-size:8pt}th,td{padding:6px 7px}.badge-list{min-width:0}.badge{font-size:7pt;padding:2px 5px}.student-group-cell{background:transparent}.panel table{break-inside:auto}tr{break-inside:avoid;break-after:auto}thead{display:table-header-group}a{color:inherit;text-decoration:none}}
     </style>
 </head>
@@ -293,23 +297,25 @@ function teacherReportEscape(mixed $value): string { return htmlspecialchars((st
 
     <section class="panel">
         <div class="panel-head"><div><h2>ผลการเรียนแยกตามบทเรียน</h2><p class="panel-description">คะแนนดิบเฉลี่ยจากผลสอบครั้งล่าสุดของนักเรียนที่มีผลในบทนั้น</p></div></div>
-        <div class="table-wrap"><table><thead><tr><th>รายวิชา</th><th>บทเรียน</th><th class="num">คะแนนเฉลี่ย</th><th class="num">ผู้ทำข้อสอบ</th><th>ข้อสังเกต</th></tr></thead><tbody>
-        <?php foreach ($lessonStats as $lesson): ?><tr><td><?= teacherReportEscape($lesson['course']) ?></td><td>บท <?= (int) $lesson['position'] ?> · <?= teacherReportEscape($lesson['name']) ?></td><td class="num"><?= $lesson['average'] === null ? '—' : number_format((int) $lesson['average'], 0) . ' / ' . number_format((int) $lesson['average_max_score'], 0) ?></td><td class="num"><?= (int) $lesson['attempts'] ?></td><td><?= $lesson['average'] === null ? '<span class="muted">ยังไม่มีผลสอบ</span>' : ($lesson['average_percent'] < 60 ? '<span style="color:#b91c1c">ควรทบทวน</span>' : '<span style="color:#15803d">ผลการเรียนอยู่ในเกณฑ์</span>') ?></td></tr><?php endforeach; ?>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>รายวิชา</th><th>บทเรียน</th><th class="center">คะแนนเฉลี่ย</th><th class="center">ผู้ทำข้อสอบ</th><th class="center">ข้อสังเกต</th></tr></thead><tbody>
+        <?php $lessonStatsByCourse = []; foreach ($lessonStats as $lesson) $lessonStatsByCourse[$lesson['course']][] = $lesson; foreach ($lessonStatsByCourse as $courseName => $courseLessons): foreach ($courseLessons as $lessonIndex => $lesson): ?><tr><?php if ($lessonIndex === 0): ?><td class="course-group-cell" rowspan="<?= count($courseLessons) ?>"><?= teacherReportEscape($courseName) ?></td><?php endif; ?><td>บท <?= (int) $lesson['position'] ?> · <?= teacherReportEscape($lesson['name']) ?></td><td class="center mono"><?= $lesson['average'] === null ? '—' : number_format((int) $lesson['average'], 0) . ' / ' . number_format((int) $lesson['average_max_score'], 0) ?></td><td class="center mono"><?= (int) $lesson['attempts'] ?></td><td class="center"><?= $lesson['average'] === null ? '<span class="muted">ยังไม่มีผลสอบ</span>' : ($lesson['average_percent'] < 60 ? '<span style="color:#b91c1c">ควรทบทวน</span>' : '<span style="color:#15803d">ผลการเรียนอยู่ในเกณฑ์</span>') ?></td></tr><?php endforeach; endforeach; ?>
         <?php if (!$lessonStats): ?><tr><td class="empty" colspan="5">ยังไม่มีบทเรียนในรายวิชาที่รับผิดชอบ</td></tr><?php endif; ?></tbody></table></div>
     </section>
 
     <section class="panel">
         <div class="panel-head"><div><h2>สรุปคะแนนและสถานะการตรวจรายบุคคล</h2><p class="panel-description">แสดงคะแนนข้อกา/ข้อเขียนจากการสอบครั้งล่าสุด พร้อมความคืบหน้าที่นับบทส่งข้อสอบแล้วและ TR</p></div></div>
-        <div class="table-wrap"><table><thead><tr><th>ชื่อ-นามสกุล / รหัส</th><th>บทเรียน</th><th>คะแนนข้อกา (ปรนัย)</th><th>คะแนนข้อเขียน (อัตนัย)</th><th>สถานะการประเมิน</th><th>ความคืบหน้า</th></tr></thead><tbody>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>ชื่อ-นามสกุล / รหัส</th><th>บทเรียน</th><th class="center">คะแนนข้อกา (ปรนัย)</th><th class="center">คะแนนข้อเขียน (อัตนัย)</th><th class="center">คะแนนรวม</th><th class="center">สถานะการประเมิน</th><th class="center">ความคืบหน้า</th></tr></thead><tbody>
         <?php foreach ($gradingRowsByStudent as $studentId => $studentRows): $student = $students[$studentId]; $rowspan = count($studentRows); foreach ($studentRows as $rowIndex => $row): $statusClass = match (true) { str_starts_with($row['assessment_status'], 'รอครูตรวจ') => 'pending', $row['assessment_status'] === 'ตรวจครบเรียบร้อย' => 'complete', $row['assessment_status'] === 'ต้องซ่อมเสริม (คะแนนต่ำ)' => 'remedial', $row['assessment_status'] === 'เทียบโอน (TR)' => 'transfer', default => 'not-started' }; ?><tr class="<?= $rowIndex === 0 ? 'student-group-start' : '' ?>">
             <?php if ($rowIndex === 0): ?><td class="student-group-cell" rowspan="<?= $rowspan ?>"><strong><?= teacherReportEscape($student['name']) ?></strong><br><span class="muted"><?= teacherReportEscape($student['id']) ?> · <?= teacherReportEscape($student['class']) ?></span></td><?php endif; ?>
             <td><strong>บท <?= (int) $row['position'] ?> · <?= teacherReportEscape($row['lesson_name']) ?></strong><br><span class="muted"><?= teacherReportEscape($row['course_name']) ?></span></td>
-            <td class="num"><?= teacherReportEscape($row['objective_display']) ?></td>
-            <td class="num"><?php if ($row['essay_pending'] && $row['essay_display'] !== 'รอตรวจ'): ?><?= teacherReportEscape($row['essay_display']) ?><br><?php endif; ?><?php if ($row['essay_pending']): ?><span class="status-badge pending">รอตรวจ</span><?php else: ?><?= teacherReportEscape($row['essay_display']) ?><?php endif; ?></td>
-            <td><span class="status-badge <?= $statusClass ?>"><?= teacherReportEscape($row['assessment_status']) ?></span></td>
+            <?php if ($row['assessment_status'] === 'เทียบโอน (TR)'): ?><td colspan="3" class="tr-score-cell"><span class="transfer-note">TR (ผ่านการเทียบโอน)</span></td><?php else: ?>
+            <td class="center mono"><?= teacherReportEscape($row['objective_display']) ?></td>
+            <td class="center mono"><?php if ($row['essay_pending'] && $row['essay_display'] !== 'รอตรวจ'): ?><?= teacherReportEscape($row['essay_display']) ?><br><?php endif; ?><?php if ($row['essay_pending']): ?><span class="status-badge pending">รอตรวจ</span><?php else: ?><?= teacherReportEscape($row['essay_display']) ?><?php endif; ?></td>
+            <td class="center mono"><?= teacherReportEscape($row['total_display']) ?><?php if ($row['essay_pending']): ?><span class="total-subnote">ยังไม่รวมข้อเขียนที่รอตรวจ</span><?php endif; ?></td><?php endif; ?>
+            <td class="center"><span class="status-badge <?= $statusClass ?>"><?= teacherReportEscape($row['assessment_status']) ?></span></td>
             <?php if ($rowIndex === 0): ?><td class="student-group-cell" rowspan="<?= $rowspan ?>"><strong><?= (int) $student['progress'] ?>%</strong><br><span class="muted">สำเร็จ <?= (int) $student['completed'] ?> / <?= (int) $student['total'] ?> บท</span></td><?php endif; ?>
         </tr><?php endforeach; endforeach; ?>
-        <?php if (!$gradingRows): ?><tr><td class="empty" colspan="6">ยังไม่มีนักเรียนหรือบทเรียนในรายวิชาที่รับผิดชอบ</td></tr><?php endif; ?></tbody></table></div>
+        <?php if (!$gradingRows): ?><tr><td class="empty" colspan="7">ยังไม่มีนักเรียนหรือบทเรียนในรายวิชาที่รับผิดชอบ</td></tr><?php endif; ?></tbody></table></div>
     </section>
     <p class="footnote">คะแนนเฉลี่ยของนักเรียนคำนวณเป็นเปอร์เซ็นต์จากผลสอบล่าสุดรายบท · TR นับเป็นบทเรียนสำเร็จ</p>
 </main>

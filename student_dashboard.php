@@ -147,7 +147,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                 </section>
                 <section class="content-card report-card">
                     <div class="card-header"><h2>ผลคะแนนแยกตามบทเรียน</h2><span id="reportLessonCount" class="report-meta"></span></div>
-                    <div class="table-responsive"><table class="data-table report-table lesson-report-table"><thead><tr><th>รายวิชา / บทเรียน</th><th>คะแนนปรนัย (กากบาท)</th><th>คะแนนข้อเขียน</th><th>คะแนนรวม</th><th>สถานะผลการเรียน</th></tr></thead><tbody id="lessonReportBody"></tbody></table></div>
+                    <div class="table-responsive"><table class="data-table report-table lesson-report-table"><thead><tr><th>รายวิชา</th><th>บทเรียน</th><th class="report-center">คะแนนปรนัย (กากบาท)</th><th class="report-center">คะแนนข้อเขียน</th><th class="report-center">คะแนนรวม</th><th class="report-center">สถานะผลการเรียน</th></tr></thead><tbody id="lessonReportBody"></tbody></table></div>
                 </section>
             </section>
 
