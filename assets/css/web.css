@@ -124,7 +124,7 @@ body {
 .dropdown:hover .dropdown-content { display: block; }
 
 
-.hero { background: transparent; padding: 48px 8% 28px; text-align: center; color: var(--deep-blue); border-bottom: 0; }
+.hero { background: transparent; padding: 72px 8% 4px; text-align: center; color: var(--deep-blue); border-bottom: 0; }
 .hero h1 { font-size: clamp(38px, 5vw, 60px); font-weight: 700; line-height: 1.12; color: var(--deep-blue); letter-spacing: -.025em; }
 .hero-subtitle { margin-top: 10px; color: #6b7280; font-size: 1rem; }
 .search-box { width: 100%; max-width: 600px; padding: 18px 30px; border-radius: 50px; border: none; margin-top: 20px; outline: none; box-shadow: var(--shadow); }
@@ -984,7 +984,7 @@ body.learning-guide-open { min-width: 0; overflow-x: hidden; }
     .logo { font-size:20px; }
     .nav-links { align-items:stretch; }
     .nav-search-input { flex-basis:100%; width:100%; }
-    .hero { padding:40px 20px 24px; }
+    .hero { padding:56px 20px 8px; }
     .hero h1 { font-size:40px; }
     .container { padding:28px 16px; }
     .steps-bg { padding:36px 16px; }
