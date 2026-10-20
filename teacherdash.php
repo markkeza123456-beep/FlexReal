@@ -182,8 +182,8 @@ $studentStmt = $conn->prepare("
            COUNT(DISTINCT l.lesson_id) FILTER (WHERE qa.attempt_id IS NOT NULL) AS attempted_lessons,
            COUNT(DISTINCT l.lesson_id) AS total_lessons,
            COUNT(DISTINCT l.lesson_id) FILTER (WHERE
-               qa.status = 'passed'
-               OR qa.score / NULLIF(qa.total_score, 0) >= 0.6
+               qa.attempt_id IS NOT NULL
+               OR qa.score IS NOT NULL
                OR COALESCE(lp.is_transferred, FALSE)
                OR UPPER(COALESCE(lp.grade, '')) = 'TR'
                OR EXISTS (
@@ -197,8 +197,8 @@ $studentStmt = $conn->prepare("
                )
            ) AS completed_lessons,
            STRING_AGG(DISTINCT l.title, '||') FILTER (WHERE
-               qa.status = 'passed'
-               OR qa.score / NULLIF(qa.total_score, 0) >= 0.6
+               qa.attempt_id IS NOT NULL
+               OR qa.score IS NOT NULL
                OR COALESCE(lp.is_transferred, FALSE)
                OR UPPER(COALESCE(lp.grade, '')) = 'TR'
                OR EXISTS (
@@ -397,6 +397,14 @@ $stats = [
         document.querySelectorAll('.nav-item').forEach(function (item) { item.classList.remove('active'); });
         var activeItem = document.querySelector('.nav-item[data-view="' + viewName + '"]');
         if (activeItem) activeItem.classList.add('active');
+        if (viewName === 'reports') {
+          var reportFrame = document.getElementById('teacherReportFrame');
+          if (reportFrame && reportFrame.contentWindow) {
+            requestAnimationFrame(function () {
+              reportFrame.style.height = (reportFrame.contentWindow.document.documentElement.scrollHeight + 20) + 'px';
+            });
+          }
+        }
         return false;
       };
     </script>
@@ -964,13 +972,10 @@ $stats = [
             <div class="topbar-left">
                 <h1 class="page-title">ออกรายงาน</h1>
             </div>
+            <button type="button" class="btn-add-lesson" onclick="document.getElementById('teacherReportFrame').contentWindow.print()">พิมพ์ / บันทึกเป็น PDF</button>
         </header>
-        <div class="content-grid" style="grid-template-columns: 1fr;">
-            <div class="card" style="text-align: center; padding: 60px 20px;">
-                <div style="font-size: 48px; margin-bottom: 20px;"></div>
-                <h2 style="color: var(--text); margin-bottom: 10px;">ระบบออกรายงานกำลังอยู่ระหว่างการพัฒนา</h2>
-                <button class="btn-add-lesson" style="margin: 0 auto; background: var(--bg3); color: var(--text-muted); cursor: not-allowed;"> ส่งออกรายงาน (เร็วๆ นี้)</button>
-            </div>
+        <div class="content-grid" style="grid-template-columns:1fr;">
+            <iframe id="teacherReportFrame" title="รายงานผลการสอนของอาจารย์" src="teacher_report.php?embed=1" onload="this.style.height=(this.contentWindow.document.documentElement.scrollHeight + 20)+'px'" style="display:block;width:100%;min-height:900px;border:0;border-radius:12px;background:transparent;"></iframe>
         </div>
     </div>
 
