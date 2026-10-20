@@ -67,7 +67,7 @@ function loadLessons(PDO $conn, string $subjectId): array
 function loadFromTestQuestions(PDO $conn, string $lessonId): array
 {
     $stmt = $conn->prepare(
-        "SELECT question_id AS questions_id, question_text AS questions_text,
+        "SELECT question_id AS questions_id, question_text AS questions_text, question_type, max_score,
                 COALESCE(options->>0, '') AS choice_a, COALESCE(options->>1, '') AS choice_b,
                 COALESCE(options->>2, '') AS choice_c, COALESCE(options->>3, '') AS choice_d,
                 COALESCE(correct_choice, '') AS correct_answer
@@ -119,14 +119,16 @@ try {
 
         $options = [$a, $b, $c, $d];
         $correctAnswer = (string) ($q['correct_answer'] ?? '');
-        $questionType = inferQuestionType($options, $correctAnswer);
+        $questionType = strtolower((string) ($q['question_type'] ?? inferQuestionType($options, $correctAnswer)));
         $answerIndex = $questionType === 'essay' ? -1 : resolveAnswerIndex($correctAnswer, $options);
 
         $formatted[] = [
+            'question_id' => (int) $q['questions_id'],
             'question' => $questionText,
             'options' => $options,
             'answer' => $answerIndex,
             'type' => $questionType,
+            'max_score' => (float) ($q['max_score'] ?? 1),
             'answer_text' => $questionType === 'essay' ? $correctAnswer : '',
         ];
     }

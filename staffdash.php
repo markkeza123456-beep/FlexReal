@@ -275,11 +275,13 @@ if (!empty($_SESSION['name'])) {
                 <th>ชื่อหลักสูตร</th>
                 <th>ระดับ</th>
                 <th>สถานะ</th>
+                <th>สร้างเมื่อ</th>
+                <th>แก้ไขล่าสุด</th>
                 <th style="width:140px;">จัดการ</th>
               </tr>
             </thead>
             <tbody id="curriculumBody">
-              <tr><td colspan="6" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
+              <tr><td colspan="7" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
@@ -407,11 +409,13 @@ if (!empty($_SESSION['name'])) {
                 <th>หน่วยกิต</th>
                 <th>ประเภท</th>
                 <th>อาจารย์ผู้ดูแล</th>
+                <th>สร้างเมื่อ</th>
+                <th>แก้ไขล่าสุด</th>
                 <th style="width:140px;">จัดการ</th>
               </tr>
             </thead>
             <tbody id="subjectBody">
-              <tr><td colspan="6" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
+              <tr><td colspan="8" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
@@ -508,11 +512,13 @@ if (!empty($_SESSION['name'])) {
                 <th style="width:90px;">รูปภาพ</th>
                 <th>ชื่อบทเรียน</th>
                 <th>วิดีโอ</th>
+                <th>สร้างเมื่อ</th>
+                <th>แก้ไขล่าสุด</th>
                 <th style="width:120px;">จัดการ</th>
               </tr>
             </thead>
             <tbody id="lessonBody">
-              <tr><td colspan="4" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
+              <tr><td colspan="6" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
@@ -591,11 +597,12 @@ if (!empty($_SESSION['name'])) {
                 <th>บทบาท</th>
                 <th>สถานะ</th>
                 <th>วันที่สมัคร</th>
+                <th>แก้ไขล่าสุด</th>
                 <th style="width:120px;">จัดการ</th>
               </tr>
             </thead>
             <tbody id="memberBody">
-              <tr><td colspan="7" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
+              <tr><td colspan="8" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
@@ -612,6 +619,7 @@ if (!empty($_SESSION['name'])) {
         </div>
         <form class="form-card" id="memberForm">
           <input type="hidden" id="mf-id" />
+          <div class="form-field"><label class="form-label" for="mf-user-id">รหัสประจำตัว</label><div class="input-wrap"><input type="text" id="mf-user-id" readonly /></div></div>
           <div class="form-section-label">ข้อมูลสมาชิก</div>
           <div class="form-grid-2">
             <div class="form-field">
@@ -635,6 +643,10 @@ if (!empty($_SESSION['name'])) {
               <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
               <input type="email" id="mf-email" placeholder="email@example.com" />
             </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="mf-phone">เบอร์โทรศัพท์</label>
+            <div class="input-wrap"><input type="tel" id="mf-phone" placeholder="เบอร์โทรศัพท์" /></div>
           </div>
           <div class="form-grid-2">
             <div class="form-field">
@@ -703,6 +715,10 @@ if (!empty($_SESSION['name'])) {
             </div>
           </div>
           <div class="form-grid-2">
+            <div class="form-field"><label class="form-label" for="stf-email">อีเมล</label><div class="input-wrap"><input type="email" id="stf-email" placeholder="email@example.com" /></div></div>
+            <div class="form-field"><label class="form-label" for="stf-phone">เบอร์โทรศัพท์</label><div class="input-wrap"><input type="tel" id="stf-phone" placeholder="เบอร์โทรศัพท์" /></div></div>
+          </div>
+          <div class="form-grid-2">
             <div class="form-field">
               <label class="form-label" for="stf-password">รหัสผ่าน <span class="req">*</span></label>
               <div class="input-wrap">
@@ -729,10 +745,10 @@ if (!empty($_SESSION['name'])) {
           <div class="table-wrap">
             <table class="data-table">
               <thead>
-                <tr><th>ชื่อ-นามสกุล</th><th>เลขสมาชิก</th><th>สถานะ</th><th>วันที่สมัคร</th><th style="width:100px;">จัดการ</th></tr>
+                <tr><th>ชื่อ-นามสกุล</th><th>เลขสมาชิก</th><th>สถานะ</th><th>วันที่สมัคร</th><th>แก้ไขล่าสุด</th><th style="width:100px;">จัดการ</th></tr>
               </thead>
               <tbody id="staffListBody">
-                <tr><td colspan="5" style="text-align:center;padding:24px;">กำลังโหลด...</td></tr>
+                <tr><td colspan="6" style="text-align:center;padding:24px;">กำลังโหลด...</td></tr>
               </tbody>
             </table>
           </div>
