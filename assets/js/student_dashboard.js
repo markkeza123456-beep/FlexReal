@@ -73,7 +73,9 @@ function renderLessonBreakdown(course) {
         const fmt = (value) => Number(value || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
         const quizScore = lesson.is_transferred ? 'ผ่านโดยการเทียบโอน' : (lesson.has_attempt ? `${fmt(lesson.score_earned)}/${fmt(lesson.score_total)} คะแนน` : 'ยังไม่มีผลสอบ');
         const parts = [];
-        if (Number(lesson.objective_score_total) > 0) parts.push(`ปรนัย ${fmt(lesson.objective_score_earned)}/${fmt(lesson.objective_score_total)}`);
+        if (Number(lesson.objective_question_count) > 0) {
+            parts.push(`ปรนัยถูก ${Number(lesson.objective_correct_count)}/${Number(lesson.objective_question_count)} ข้อ · ${fmt(lesson.objective_score_earned)}/${fmt(lesson.objective_score_total)} คะแนน`);
+        }
         if (Number(lesson.essay_question_count) > 0) {
             parts.push(`ข้อเขียน ${fmt(lesson.essay_score_earned)}/${fmt(lesson.essay_score_total)}`);
         }

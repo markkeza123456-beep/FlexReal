@@ -153,6 +153,7 @@ try {
                 GROUP BY c.course_id, c.code, c.name, c.credits, c.subject_type, c.created_at, c.updated_at
                 ORDER BY c.course_id ASC
             ");
+            $curriculumSubjectsStmt = $conn->query('SELECT curriculum_id, course_id, requirement_type FROM public.curriculum_courses');
             $teachersStmt = $conn->query("SELECT user_id AS id, full_name AS name FROM public.teachers ORDER BY full_name ASC");
 
             jsonResponse([
@@ -160,6 +161,7 @@ try {
                 'members' => fetchAllRows($membersStmt),
                 'curricula' => fetchAllRows($curriculaStmt),
                 'subjects' => fetchAllRows($subjectsStmt),
+                'curriculum_subjects' => fetchAllRows($curriculumSubjectsStmt),
                 'teachers' => fetchAllRows($teachersStmt)
             ]);
             break;
@@ -316,8 +318,6 @@ try {
                     $assignment->execute([':course_id' => $savedSubjectId, ':teacher_id' => $teacherId]);
                 }
             }
-            $conn->prepare("UPDATE public.curriculum_courses SET requirement_type = :requirement_type WHERE course_id = :course_id")
-                ->execute([':requirement_type' => $subjectType === 'compulsory' ? 'required' : 'elective', ':course_id' => $savedSubjectId]);
             $conn->commit();
             jsonResponse(['status' => 'success']);
             break;
@@ -333,26 +333,41 @@ try {
             $curriculumId = $_GET['curriculum_id'] ?? '';
             if (empty($curriculumId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
             $allSubjectsStmt = $conn->query("SELECT course_id AS id, code, name, subject_type AS type FROM public.courses ORDER BY course_id ASC");
-            $selectedStmt = $conn->prepare("SELECT course_id FROM public.curriculum_courses WHERE curriculum_id = :id");
+            $selectedStmt = $conn->prepare("SELECT course_id, requirement_type FROM public.curriculum_courses WHERE curriculum_id = :id");
             $selectedStmt->execute([':id' => $curriculumId]);
+            $selectedRows = $selectedStmt->fetchAll(PDO::FETCH_ASSOC);
+            $selectedTypes = [];
+            foreach ($selectedRows as $selectedRow) $selectedTypes[(string) $selectedRow['course_id']] = $selectedRow['requirement_type'] === 'required' ? 'compulsory' : 'elective';
             jsonResponse([
                 'status' => 'success',
                 'subjects' => fetchAllRows($allSubjectsStmt),
-                'selected' => $selectedStmt->fetchAll(PDO::FETCH_COLUMN) ?: []
+                'selected' => array_column($selectedRows, 'course_id'),
+                'selected_types' => $selectedTypes
             ]);
             break;
 
         case 'saveCurriculumSubjects':
-            $curriculumId = $_POST['curriculum_id'] ?? '';
+            $curriculumId = trim((string) ($_POST['curriculum_id'] ?? ''));
             $subjectIds = isset($_POST['subjects']) ? json_decode($_POST['subjects'], true) : [];
-            if (empty($curriculumId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
+            if ($curriculumId === '' || !ctype_digit($curriculumId) || !is_array($subjectIds)) { jsonResponse(['status' => 'error', 'message' => 'ข้อมูลหลักสูตรหรือรายวิชาไม่ถูกต้อง'], 400); }
             $conn->beginTransaction();
             try {
                 $delStmt = $conn->prepare("DELETE FROM public.curriculum_courses WHERE curriculum_id = :id");
                 $delStmt->execute([':id' => $curriculumId]);
                 if (!empty($subjectIds) && is_array($subjectIds)) {
-                    $insertStmt = $conn->prepare("INSERT INTO public.curriculum_courses (curriculum_id, course_id, requirement_type) SELECT :cid, course_id, CASE WHEN subject_type = 'compulsory' THEN 'required' ELSE 'elective' END FROM public.courses WHERE course_id = :sid");
-                    foreach ($subjectIds as $sid) { $insertStmt->execute([':cid' => $curriculumId, ':sid' => $sid]); }
+                    $insertStmt = $conn->prepare("INSERT INTO public.curriculum_courses (curriculum_id, course_id, requirement_type) SELECT :cid, course_id, :requirement_type FROM public.courses WHERE course_id = :sid");
+                    foreach ($subjectIds as $selection) {
+                        if (is_array($selection)) {
+                            $sid = trim((string) ($selection['id'] ?? ''));
+                            $type = strtolower(trim((string) ($selection['type'] ?? 'elective')));
+                        } else {
+                            $sid = trim((string) $selection);
+                            $type = 'elective';
+                        }
+                        if ($sid === '' || !ctype_digit($sid) || !in_array($type, ['compulsory', 'elective'], true)) throw new RuntimeException('ประเภทวิชาในหลักสูตรไม่ถูกต้อง');
+                        $insertStmt->execute([':cid' => $curriculumId, ':sid' => $sid, ':requirement_type' => $type === 'compulsory' ? 'required' : 'elective']);
+                        if ($insertStmt->rowCount() !== 1) throw new RuntimeException('ไม่พบรายวิชาที่ต้องการบันทึก');
+                    }
                 }
                 $conn->commit();
                 jsonResponse(['status' => 'success']);

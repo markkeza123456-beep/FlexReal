@@ -70,7 +70,7 @@ function loadFromTestQuestions(PDO $conn, string $lessonId): array
         "SELECT question_id AS questions_id, question_text AS questions_text, question_type, max_score,
                 COALESCE(options->>0, '') AS choice_a, COALESCE(options->>1, '') AS choice_b,
                 COALESCE(options->>2, '') AS choice_c, COALESCE(options->>3, '') AS choice_d,
-                COALESCE(correct_choice, '') AS correct_answer
+                COALESCE(correct_choice, '') AS correct_answer, max_score
          FROM public.questions
          WHERE lesson_id = ? AND is_active = true
          ORDER BY question_id ASC"

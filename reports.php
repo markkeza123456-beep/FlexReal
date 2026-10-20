@@ -25,16 +25,22 @@ $studentRows = $conn->query("WITH active_curricula AS (
     LEFT JOIN LATERAL (SELECT status,score,total_score FROM public.quiz_attempts a WHERE a.student_id=sc.student_id AND a.lesson_id=l.lesson_id ORDER BY submitted_at DESC,attempt_number DESC LIMIT 1) qa ON TRUE
     GROUP BY sc.student_id,c.course_id,c.subject_type,sc.status
 ), assigned AS (
-    SELECT s.user_id AS student_id, c.course_id, c.subject_type, COALESCE(cp.passed,FALSE) AS passed, COALESCE(cp.transferred,FALSE) AS transferred
+    SELECT s.user_id AS student_id, c.course_id,
+        COALESCE(CASE WHEN cc.requirement_type='required' THEN 'compulsory' WHEN cc.requirement_type='elective' THEN 'elective' END,c.subject_type,'elective') AS subject_type,
+        COALESCE(cp.passed,FALSE) AS passed, COALESCE(cp.transferred,FALSE) AS transferred
     FROM public.students s
     LEFT JOIN active_curricula ac ON ac.student_id=s.user_id
     LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id=ac.curriculum_id
     LEFT JOIN public.courses c ON c.course_id=cc.course_id
     LEFT JOIN course_progress cp ON cp.student_id=s.user_id AND cp.course_id=c.course_id
     UNION
-    SELECT s.user_id, c.course_id, c.subject_type, COALESCE(cp.passed,FALSE), COALESCE(cp.transferred,FALSE)
+    SELECT s.user_id, c.course_id,
+        COALESCE(CASE WHEN cc.requirement_type='required' THEN 'compulsory' WHEN cc.requirement_type='elective' THEN 'elective' END,c.subject_type,'elective'),
+        COALESCE(cp.passed,FALSE), COALESCE(cp.transferred,FALSE)
     FROM public.students s JOIN public.student_courses sc ON sc.student_id=s.user_id
     JOIN public.courses c ON c.course_id=sc.course_id
+    LEFT JOIN active_curricula ac ON ac.student_id=s.user_id
+    LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id=ac.curriculum_id AND cc.course_id=c.course_id
     LEFT JOIN course_progress cp ON cp.student_id=s.user_id AND cp.course_id=c.course_id
 ), totals AS (
     SELECT student_id, COUNT(course_id)::int AS total_courses,

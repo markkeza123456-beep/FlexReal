@@ -241,7 +241,8 @@ if ($defaultSubjectId) {
                COALESCE(q.updated_at, q.created_at) AS last_modified_at,
                COALESCE(q.options->>0, '') AS choice_a, COALESCE(q.options->>1, '') AS choice_b,
                COALESCE(q.options->>2, '') AS choice_c, COALESCE(q.options->>3, '') AS choice_d,
-               COALESCE(q.correct_choice, '-') AS correct_answer, q.lesson_id AS lessons_id, l.title AS lessons_name
+               COALESCE(q.correct_choice, '-') AS correct_answer, q.max_score AS question_max_score,
+               q.lesson_id AS lessons_id, l.title AS lessons_name
         FROM public.questions q
         INNER JOIN public.lessons l ON q.lesson_id = l.lesson_id
         WHERE l.course_id = :subject_id
@@ -694,8 +695,8 @@ $stats = [
                                     $qLabel = $qType === 'essay' ? 'อัตนัย (ข้อเขียน)' : ($qType === 'truefalse' ? 'ถูก/ผิด' : 'ปรนัย (4 ตัวเลือก)');
                                 ?>
                                     <div class="quiz-item" style="border:1px solid var(--border);border-radius:8px;padding:13px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
-                                        <div style="display:flex;gap:10px;min-width:0;"><b class="mono" style="color:var(--orange);">Q<?= $i + 1 ?></b><div><div style="font-size:14px;color:var(--text);margin-bottom:5px;"><?= h($q['questions_text']) ?></div><span class="badge badge-draft" style="font-size:10.5px;"><?= $qLabel ?></span><div style="color:var(--text-muted);font-size:11px;margin-top:5px;">แก้ไขล่าสุด <?= h(formatTeacherEditDate($q['last_modified_at'] ?? null)) ?></div></div></div>
-                                        <div style="display:flex;gap:4px;flex-shrink:0;"><button class="action-icon-btn btn-edit-quiz" data-id="<?= h($q['questions_id']) ?>" data-type="<?= $qType ?>" data-question="<?= h($q['questions_text']) ?>" data-ca="<?= h($q['choice_a']) ?>" data-cb="<?= h($q['choice_b']) ?>" data-cc="<?= h($q['choice_c']) ?>" data-cd="<?= h($q['choice_d']) ?>" data-answer="<?= h($q['correct_answer']) ?>" title="แก้ไขคำถาม">แก้ไข</button><button class="action-icon-btn btn-del-quiz" data-id="<?= h($q['questions_id']) ?>" title="ลบคำถาม" style="color:#ef4444;">ลบ</button></div>
+                                        <div style="display:flex;gap:10px;min-width:0;"><b class="mono" style="color:var(--orange);">Q<?= $i + 1 ?></b><div><div style="font-size:14px;color:var(--text);margin-bottom:5px;"><?= h($q['questions_text']) ?></div><span class="badge badge-draft" style="font-size:10.5px;"><?= $qLabel ?> · <?= h((string) $q['question_max_score']) ?> คะแนน</span><div style="color:var(--text-muted);font-size:11px;margin-top:5px;">แก้ไขล่าสุด <?= h(formatTeacherEditDate($q['last_modified_at'] ?? null)) ?></div></div></div>
+                                        <div style="display:flex;gap:4px;flex-shrink:0;"><button class="action-icon-btn btn-edit-quiz" data-id="<?= h($q['questions_id']) ?>" data-type="<?= $qType ?>" data-question="<?= h($q['questions_text']) ?>" data-ca="<?= h($q['choice_a']) ?>" data-cb="<?= h($q['choice_b']) ?>" data-cc="<?= h($q['choice_c']) ?>" data-cd="<?= h($q['choice_d']) ?>" data-answer="<?= h($q['correct_answer']) ?>" data-max-score="<?= h((string) $q['question_max_score']) ?>" title="แก้ไขคำถาม">แก้ไข</button><button class="action-icon-btn btn-del-quiz" data-id="<?= h($q['questions_id']) ?>" title="ลบคำถาม" style="color:#ef4444;">ลบ</button></div>
                                     </div>
                                 <?php endforeach; endif; ?>
                             </div>
@@ -706,7 +707,7 @@ $stats = [
 
             <div class="lesson-tab-content card" id="lessonTab-essay" style="display:none">
                 <div class="card-header">
-                    <div><h3 class="card-title" style="font-size:14px">คำตอบข้อเขียนของนักเรียน</h3><p style="font-size:12px;color:var(--text-muted);margin-top:4px">ตรวจผ่านหรือไม่ผ่าน ระบบจะบันทึกผลแยกตามรายวิชาและบทเรียน</p></div>
+                    <div><h3 class="card-title" style="font-size:14px">ตรวจและให้คะแนนข้อเขียน</h3><p style="font-size:12px;color:var(--text-muted);margin-top:4px">ข้อกาได้คะแนนอัตโนมัติตามเฉลย ส่วนข้อเขียนให้คะแนนรายข้อได้ถึงคะแนนเต็มที่กำหนดไว้</p></div>
                 </div>
                 <div style="display:flex;gap:8px;margin:16px 0;border-bottom:1px solid var(--border);padding-bottom:12px">
                     <button type="button" class="essay-filter-btn active" data-essay-filter="pending">รอตรวจ <span id="essayPendingCount">0</span></button>
@@ -787,6 +788,7 @@ $stats = [
                         <label>คำถาม</label>
                         <textarea class="form-input" id="quizQuestionAdd" rows="3" placeholder="พิมพ์คำถาม..."></textarea>
                     </div>
+                    <div class="form-group"><label for="quizMaxScoreAdd">คะแนนเต็มข้อนี้</label><input class="form-input" id="quizMaxScoreAdd" type="number" min="0.01" max="10000" step="0.01" value="1" required></div>
 
                     <div class="form-group" id="quizChoiceGroupAdd">
                         <label>ตัวเลือก (เลือกวงกลมหน้าข้อที่เป็นเฉลย)</label>
@@ -833,6 +835,7 @@ $stats = [
                         <label>คำถาม</label>
                         <textarea class="form-input" id="editQuizQuestion" rows="3"></textarea>
                     </div>
+                    <div class="form-group"><label for="editQuizMaxScore">คะแนนเต็มข้อนี้</label><input class="form-input" id="editQuizMaxScore" type="number" min="0.01" max="10000" step="0.01" required></div>
 
                     <div class="form-group" id="quizChoiceGroupEdit">
                         <label>ตัวเลือก (เลือกวงกลมหน้าข้อที่เป็นเฉลย)</label>

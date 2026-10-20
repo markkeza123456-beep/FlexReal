@@ -40,6 +40,7 @@ if (!empty($_SESSION['name'])) {
   <div class="glow-orb orb-1"></div>
   <div class="glow-orb orb-2"></div>
 
+  <div class="dashboard-container">
 
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
@@ -400,13 +401,18 @@ if (!empty($_SESSION['name'])) {
             <span class="btn-text">เพิ่มรายวิชาใหม่</span>
           </button>
         </div>
+        <div style="display:flex;align-items:center;gap:12px;margin:0 0 16px;flex-wrap:wrap;">
+          <label for="subjectCurriculumFilter" style="font-weight:600;color:var(--text);">กรองตามหลักสูตร</label>
+          <select id="subjectCurriculumFilter" class="form-input" style="width:min(420px,100%);">
+            <option value="">รายวิชาทั้งหมด</option>
+          </select>
+        </div>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
                 <th>รหัสวิชา</th>
                 <th>ชื่อวิชา</th>
-                <th>หน่วยกิต</th>
                 <th>ประเภท</th>
                 <th>อาจารย์ผู้ดูแล</th>
                 <th>สร้างเมื่อ</th>
@@ -415,7 +421,7 @@ if (!empty($_SESSION['name'])) {
               </tr>
             </thead>
             <tbody id="subjectBody">
-              <tr><td colspan="8" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
+              <tr><td colspan="7" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
@@ -761,7 +767,6 @@ if (!empty($_SESSION['name'])) {
             <div class="page-title">อนุมัติจบการศึกษา</div>
             <div class="page-sub">ตรวจสอบผลการเรียนและอนุมัติพร้อมออกใบสรุปผลการเรียน PDF</div>
           </div>
-          <button type="button" class="page-btn" id="graduationRefreshBtn">โหลดรายการใหม่</button>
         </div>
         <div id="graduationRequestsMessage" class="form-card graduation-review-message" role="status" aria-live="polite">กำลังโหลดคำขอ...</div>
         <div id="graduationRequestsList" class="graduation-request-list"></div>
@@ -769,6 +774,7 @@ if (!empty($_SESSION['name'])) {
     </main>
   </div>
 
+  </div>
 
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
