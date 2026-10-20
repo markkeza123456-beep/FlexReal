@@ -60,8 +60,9 @@ function statusLabel(score) {
 
 function subjectTypeBadge(subjectType) {
     const type = String(subjectType || 'elective').toLowerCase();
-    const label = type === 'required' ? 'วิชาบังคับ' : 'วิชาเลือก';
-    return '<span class="subject-type-badge ' + (type === 'required' ? 'required' : 'elective') + '">' + label + '</span>';
+    const compulsory = type === 'required' || type === 'compulsory';
+    const label = compulsory ? 'วิชาบังคับ' : 'วิชาเลือก';
+    return '<span class="subject-type-badge ' + (compulsory ? 'required' : 'elective') + '">' + label + '</span>';
 }
 
 function renderLessonBreakdown(course) {
@@ -102,8 +103,8 @@ function renderTable(courses) {
             ? '<span class="course-transfer-status">ผ่านการเทียบโอน</span>'
             : `<div class="course-table-progress"><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%"></div></div><span>${progress}% · ผ่าน ${passedLessons}/${lessonCount} บท</span></div>`;
         const resultCell = item.is_transferred
-            ? '<span class="course-transfer-status">TR · ไม่แสดงคะแนนกิจกรรม</span>'
-            : `${item.is_passed ? '<span class="course-passed-status">ผ่าน</span> · ' : ''}${item.score_total > 0 ? `${fmtDashboardNumber(item.score_earned)}/${fmtDashboardNumber(item.score_total)} คะแนน` : 'ยังไม่มีคะแนน'}`;
+            ? '<span class="course-transfer-status">TR</span>'
+            : item.is_passed ? '<span class="course-passed-status">ผ่าน</span>' : '<span>กำลังศึกษา</span>';
         return `<tr><td style="color:#888">${escapeHtml(item.id)}</td><td>${escapeHtml(item.name)} ${subjectTypeBadge(item.subject_type)}</td><td>${progressCell}</td><td>${resultCell}</td></tr>`;
     }).join('');
 }
@@ -306,7 +307,11 @@ function renderGraduationTracker(graduation) {
     const downloadLink = document.getElementById('graduationDownloadLink');
     if (!message || !countLabel || !fill || !track || !percentLabel || !button) return;
 
-    countLabel.textContent = `${completed} / ${total} วิชา`;
+    const requiredDone = Number(graduation?.completed_compulsory_courses || 0);
+    const requiredTotal = Number(graduation?.compulsory_courses || 0);
+    const electiveDone = Number(graduation?.completed_elective_courses || 0);
+    const electiveTotal = Number(graduation?.elective_courses || 0);
+    countLabel.textContent = `วิชาบังคับ ${requiredDone}/${requiredTotal} · วิชาเลือก ${electiveDone}/${electiveTotal}`;
     fill.style.width = `${percent}%`;
     track.setAttribute('aria-valuenow', String(percent));
     percentLabel.textContent = `${percent}%`;
@@ -328,11 +333,14 @@ function renderGraduationTracker(graduation) {
         button.hidden = false;
         button.disabled = true;
     } else if (graduation.eligible) {
-        message.textContent = 'ผ่านครบทุกวิชาตามหลักสูตรแล้ว สามารถยื่นขอจบการศึกษาได้';
+        message.textContent = 'ผ่านวิชาบังคับครบทุกวิชาแล้ว สามารถยื่นขอจบการศึกษาได้';
         button.textContent = 'ยื่นขอจบการศึกษา';
         button.hidden = false;
     } else {
-        message.textContent = 'ความคืบหน้ารวมจากรายวิชาที่ผ่านและรายวิชาที่เทียบโอน';
+        message.textContent = 'ต้องเรียนหรือเทียบโอนวิชาบังคับให้ครบทุกวิชาก่อน จึงจะสามารถกดส่งคำขอจบได้';
+        button.textContent = 'ยื่นขอจบการศึกษา';
+        button.hidden = false;
+        button.disabled = true;
     }
 }
 

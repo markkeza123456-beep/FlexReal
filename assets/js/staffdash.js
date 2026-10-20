@@ -140,7 +140,11 @@
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-    }).format(date);
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      timeZone: 'Asia/Bangkok',
+    }).format(date) + ' น.';
   }
 
   window.goTo = function goTo(page) {
@@ -401,6 +405,7 @@
           <td><span class="badge ${member.role === 'Staff' ? 'required' : 'draft'}">${roleName[member.role] || member.role}</span></td>
           <td><span class="badge ${member.status === 'active' ? 'active' : 'draft'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
           <td>${formatRegistrationDate(member.registered_at)}</td>
+          <td>${formatRegistrationDate(member.updated_at)}</td>
           <td>
             <div class="action-btns">
               <button type="button" class="btn-icon edit" onclick="editMember('${member.id}')">แก้ไข</button>
@@ -409,7 +414,7 @@
           </td>
         </tr>
       `).join('')
-      : '<tr><td colspan="7" style="text-align:center; padding:30px;">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>';
+      : '<tr><td colspan="8" style="text-align:center; padding:30px;">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>';
   }
 
   function renderStaffList() {
@@ -423,10 +428,11 @@
           <td>${escapeHtml(member.id)}</td>
           <td><span class="badge ${member.status === 'active' ? 'active' : 'draft'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
           <td>${formatRegistrationDate(member.registered_at)}</td>
+          <td>${formatRegistrationDate(member.updated_at)}</td>
           <td><button type="button" class="btn-icon edit" onclick="editMember('${escapeHtml(member.id)}')">แก้ไข</button></td>
         </tr>
       `).join('')
-      : '<tr><td colspan="5" style="text-align:center;padding:24px;">ยังไม่มีบัญชีเจ้าหน้าที่</td></tr>';
+      : '<tr><td colspan="6" style="text-align:center;padding:24px;">ยังไม่มีบัญชีเจ้าหน้าที่</td></tr>';
   }
 
   window.editMember = id => {
@@ -436,9 +442,11 @@
     }
 
     document.getElementById('mf-id').value = member.id;
+    document.getElementById('mf-user-id').value = member.id;
     document.getElementById('mf-firstname').value = member.firstname || '';
     document.getElementById('mf-lastname').value = member.lastname || '';
     document.getElementById('mf-email').value = member.email;
+    document.getElementById('mf-phone').value = member.phone;
     document.getElementById('mf-role').value = member.roleValue || 'student';
     document.getElementById('mf-status').value = member.status;
     goTo('member-edit');
@@ -453,6 +461,7 @@
     formData.append('firstname', document.getElementById('mf-firstname').value);
     formData.append('lastname', document.getElementById('mf-lastname').value);
     formData.append('email', document.getElementById('mf-email').value);
+    formData.append('phone', document.getElementById('mf-phone').value);
     formData.append('role', document.getElementById('mf-role').value);
     formData.append('status', document.getElementById('mf-status').value);
 
@@ -497,6 +506,8 @@
           <td>${curriculum.name}</td>
           <td>${curriculum.level || 'ม.ปลาย'}</td>
           <td><span class="badge ${curriculum.status === 'active' ? 'active' : 'draft'}">${curriculum.status || 'active'}</span></td>
+          <td>${formatRegistrationDate(curriculum.created_at)}</td>
+          <td>${formatRegistrationDate(curriculum.updated_at)}</td>
           <td>
             <div class="action-btns">
               <button type="button" class="btn-icon" style="color:var(--blue); border-color:var(--border);" onclick="manageCurriculumSubjects('${curriculum.id}', '${curriculum.name}')" title="จัดการวิชาเข้าหลักสูตร">จัดการ</button>
@@ -584,8 +595,10 @@
           <td class="mono">${subject.code}</td>
           <td>${subject.name}</td>
           <td>${formatPlainNumber(subject.credit)}</td>
-          <td><span class="badge ${subject.type === 'required' ? 'required' : 'elective'}">${subject.type === 'required' ? 'บังคับ' : 'วิชาเลือก'}</span></td>
+          <td><span class="badge ${['required', 'compulsory'].includes(subject.type) ? 'compulsory' : 'elective'}">${['required', 'compulsory'].includes(subject.type) ? 'วิชาบังคับ' : 'วิชาเลือก'}</span></td>
           <td style="color:var(--orange); font-weight:500;">${subject.teacher_name || 'ยังไม่มีผู้ดูแล'}</td>
+          <td>${formatRegistrationDate(subject.created_at)}</td>
+          <td>${formatRegistrationDate(subject.updated_at)}</td>
           <td>
             <div class="action-btns">
               <button type="button" class="btn-icon" style="color:var(--blue); border-color:var(--border);" onclick="manageLessons('${subject.id}')" title="จัดการบทเรียน">บทเรียน</button>
@@ -595,7 +608,7 @@
           </td>
         </tr>
       `).join('')
-      : '<tr><td colspan="6" style="text-align:center;">ไม่มีข้อมูลรายวิชา</td></tr>';
+      : '<tr><td colspan="8" style="text-align:center;">ไม่มีข้อมูลรายวิชา</td></tr>';
   }
 
   document.querySelector('[data-goto="subject-add"]')?.addEventListener('click', () => {
@@ -617,7 +630,7 @@
     document.getElementById('sf-code').value = subject.code || '';
     document.getElementById('sf-name').value = subject.name || '';
     document.getElementById('sf-credit').value = subject.credit || 0;
-    document.getElementById('sf-type').value = subject.type || 'required';
+    document.getElementById('sf-type').value = subject.type === 'elective' ? 'elective' : 'required';
 
     populateTeacherSelect(subject.teacher_ids || '');
     goTo('subject-add');
@@ -693,6 +706,8 @@
           <td>${lesson.image_path ? `<img src="${lesson.image_path}" style="height:40px; border-radius:4px; object-fit:cover;">` : '<div style="height:40px;width:60px;background:#222;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;">ไม่มีรูป</div>'}</td>
           <td>${lesson.title}</td>
           <td>${lesson.video_url ? `<a href="${lesson.video_url}" target="_blank" style="color:var(--blue);text-decoration:none;">ลิงก์วิดีโอ</a>` : '-'}</td>
+          <td>${formatRegistrationDate(lesson.created_at)}</td>
+          <td>${formatRegistrationDate(lesson.updated_at)}</td>
           <td>
             <div class="action-btns">
               <button type="button" class="btn-icon edit" onclick="editLesson('${lesson.id}')">แก้ไข</button>
@@ -701,7 +716,7 @@
           </td>
         </tr>
       `).join('')
-      : '<tr><td colspan="4" style="text-align:center; padding:30px;">ยังไม่มีบทเรียนในวิชานี้</td></tr>';
+      : '<tr><td colspan="6" style="text-align:center; padding:30px;">ยังไม่มีบทเรียนในวิชานี้</td></tr>';
   }
 
   window.openAddLesson = () => {
@@ -817,6 +832,8 @@
     formData.append('password', password);
     formData.append('firstname', firstname);
     formData.append('lastname', lastname);
+    formData.append('email', document.getElementById('stf-email').value);
+    formData.append('phone', document.getElementById('stf-phone').value);
 
     try {
       const result = await fetchJson('api_staff.php', { method: 'POST', body: formData });
@@ -846,7 +863,7 @@
             return `
               <label class="curriculum-subject-row" style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px; border-radius:10px; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,107,26,0.05)'" onmouseout="this.style.background='transparent'">
                 <input type="checkbox" name="curriculum_subjects[]" value="${sub.id}" ${isChecked} style="width:18px; height:18px; accent-color:var(--orange); cursor:pointer;">
-                <span><strong style="color:var(--orange);">${sub.code || sub.id}</strong> - ${sub.name}</span>
+                <span><strong style="color:var(--orange);">${sub.code || sub.id}</strong> - ${sub.name} <small class="badge ${['required','compulsory'].includes(sub.type) ? 'compulsory' : 'elective'}">${['required','compulsory'].includes(sub.type) ? 'วิชาบังคับ' : 'วิชาเลือก'}</small></span>
               </label>
             `;
          }).join('');

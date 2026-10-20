@@ -111,7 +111,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                                     <th>ลำดับ</th>
                                     <th>รายวิชาตามหลักสูตร</th>
                                     <th>ความคืบหน้า</th>
-                                    <th>สถานะ / คะแนนกิจกรรม</th>
+                                    <th>สถานะผลการเรียน</th>
                                 </tr>
                             </thead>
                             <tbody id="courseTableBody"></tbody>

@@ -130,9 +130,10 @@ try {
                     u.role,
                     u.account_status as status_account,
                     u.created_at as registered_at,
+                    u.updated_at,
                     COALESCE(s.full_name, t.full_name, p.full_name, NULLIF(TRIM(stf.first_name || \' \' || stf.last_name), \'\'), \'-\') as name,
-                    COALESCE(s.email, t.email, p.email, \'-\') as email,
-                    COALESCE(s.phone, t.phone, p.phone, \'-\') as phone
+                    COALESCE(s.email, t.email, p.email, stf.email, \'-\') as email,
+                    COALESCE(s.phone, t.phone, p.phone, stf.phone, \'-\') as phone
                 FROM public.users u
                 LEFT JOIN public.students s ON s.user_id = u.user_id
                 LEFT JOIN public.teachers t ON t.user_id = u.user_id
@@ -140,16 +141,16 @@ try {
                 LEFT JOIN public.staff stf ON u.user_id = stf.user_id
                 ORDER BY u.user_id DESC
             ');
-            $curriculaStmt = $conn->query("SELECT curriculum_id AS id, code, name, level, status FROM public.curricula ORDER BY curriculum_id ASC");
+            $curriculaStmt = $conn->query("SELECT curriculum_id AS id, code, name, level, status, created_at, updated_at FROM public.curricula ORDER BY curriculum_id ASC");
             $subjectsStmt = $conn->query("
                 SELECT c.course_id AS id, c.code, c.name, c.credits AS credit,
                        COALESCE(STRING_AGG(DISTINCT ct.teacher_id::text, ','), '') AS teacher_ids,
                        COALESCE(STRING_AGG(DISTINCT t.full_name, ', '), 'ยังไม่มีผู้ดูแล') AS teacher_name,
-                       COALESCE((SELECT cc.requirement_type FROM public.curriculum_courses cc WHERE cc.course_id = c.course_id ORDER BY cc.curriculum_id LIMIT 1), 'elective') AS type
+                       c.subject_type AS type, c.created_at, c.updated_at
                 FROM public.courses c
                 LEFT JOIN public.course_teachers ct ON ct.course_id = c.course_id
                 LEFT JOIN public.teachers t ON t.user_id = ct.teacher_id
-                GROUP BY c.course_id, c.code, c.name, c.credits
+                GROUP BY c.course_id, c.code, c.name, c.credits, c.subject_type, c.created_at, c.updated_at
                 ORDER BY c.course_id ASC
             ");
             $teachersStmt = $conn->query("SELECT user_id AS id, full_name AS name FROM public.teachers ORDER BY full_name ASC");
@@ -168,16 +169,21 @@ try {
             $password = (string) ($_POST['password'] ?? '');
             $firstName = postValue('firstname');
             $lastName = postValue('lastname');
+            $email = postValue('email');
+            $phone = postValue('phone');
 
             if (strlen($memberId) !== 13 || $password === '' || $firstName === '' || $lastName === '') {
                 jsonResponse(['status' => 'error', 'message' => 'ข้อมูลเจ้าหน้าที่ไม่ครบถ้วน'], 400);
+            }
+            if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                jsonResponse(['status' => 'error', 'message' => 'รูปแบบอีเมลไม่ถูกต้อง'], 400);
             }
 
             $conn->beginTransaction();
             $conn->prepare('INSERT INTO public.users (user_id, password_hash, role) VALUES (:id, :password_hash, \'staff\')')
                 ->execute([':id' => $memberId, ':password_hash' => password_hash($password, PASSWORD_DEFAULT)]);
-            $conn->prepare('INSERT INTO public.staff (user_id, first_name, last_name) VALUES (:id, :first_name, :last_name)')
-                ->execute([':id' => $memberId, ':first_name' => $firstName, ':last_name' => $lastName]);
+            $conn->prepare('INSERT INTO public.staff (user_id, first_name, last_name, email, phone) VALUES (:id, :first_name, :last_name, :email, :phone)')
+                ->execute([':id' => $memberId, ':first_name' => $firstName, ':last_name' => $lastName, ':email' => $email !== '' ? $email : null, ':phone' => $phone !== '' ? $phone : null]);
             $conn->commit();
             jsonResponse(['status' => 'success']);
             break;
@@ -187,6 +193,7 @@ try {
             $firstName = postValue('firstname');
             $lastName = postValue('lastname');
             $email = postValue('email');
+            $phone = postValue('phone');
             $requestedRole = strtolower(postValue('role'));
             $accountStatus = strtolower(postValue('status', 'active'));
 
@@ -219,44 +226,44 @@ try {
                     $profile = $conn->prepare('SELECT 1 FROM public.students WHERE user_id = :id');
                     $profile->execute([':id' => $memberId]);
                     if ($profile->fetchColumn()) {
-                        $statement = $conn->prepare('UPDATE public.students SET full_name = :name, email = :email, updated_at = NOW() WHERE user_id = :id');
+                        $statement = $conn->prepare('UPDATE public.students SET full_name = :name, email = :email, phone = :phone, updated_at = NOW() WHERE user_id = :id');
                     } else {
-                        $statement = $conn->prepare('INSERT INTO public.students (user_id, full_name, email) VALUES (:id, :name, :email)');
+                        $statement = $conn->prepare('INSERT INTO public.students (user_id, full_name, email, phone) VALUES (:id, :name, :email, :phone)');
                     }
-                    $statement->execute([':id' => $memberId, ':name' => $fullName, ':email' => $email !== '' ? $email : null]);
+                    $statement->execute([':id' => $memberId, ':name' => $fullName, ':email' => $email !== '' ? $email : null, ':phone' => $phone !== '' ? $phone : null]);
                     break;
 
                 case 'teacher':
                     $profile = $conn->prepare('SELECT 1 FROM public.teachers WHERE user_id = :id');
                     $profile->execute([':id' => $memberId]);
                     if ($profile->fetchColumn()) {
-                        $statement = $conn->prepare('UPDATE public.teachers SET full_name = :name, email = :email, updated_at = NOW() WHERE user_id = :id');
+                        $statement = $conn->prepare('UPDATE public.teachers SET full_name = :name, email = :email, phone = :phone, updated_at = NOW() WHERE user_id = :id');
                     } else {
-                        $statement = $conn->prepare('INSERT INTO public.teachers (user_id, full_name, email) VALUES (:id, :name, :email)');
+                        $statement = $conn->prepare('INSERT INTO public.teachers (user_id, full_name, email, phone) VALUES (:id, :name, :email, :phone)');
                     }
-                    $statement->execute([':id' => $memberId, ':name' => $fullName, ':email' => $email !== '' ? $email : null]);
+                    $statement->execute([':id' => $memberId, ':name' => $fullName, ':email' => $email !== '' ? $email : null, ':phone' => $phone !== '' ? $phone : null]);
                     break;
 
                 case 'parent':
                     $profile = $conn->prepare('SELECT 1 FROM public.parents WHERE user_id = :id');
                     $profile->execute([':id' => $memberId]);
                     if ($profile->fetchColumn()) {
-                        $statement = $conn->prepare('UPDATE public.parents SET full_name = :name, email = :email, updated_at = NOW() WHERE user_id = :id');
+                        $statement = $conn->prepare('UPDATE public.parents SET full_name = :name, email = :email, phone = :phone, updated_at = NOW() WHERE user_id = :id');
                     } else {
-                        $statement = $conn->prepare('INSERT INTO public.parents (user_id, full_name, email) VALUES (:id, :name, :email)');
+                        $statement = $conn->prepare('INSERT INTO public.parents (user_id, full_name, email, phone) VALUES (:id, :name, :email, :phone)');
                     }
-                    $statement->execute([':id' => $memberId, ':name' => $fullName, ':email' => $email !== '' ? $email : null]);
+                    $statement->execute([':id' => $memberId, ':name' => $fullName, ':email' => $email !== '' ? $email : null, ':phone' => $phone !== '' ? $phone : null]);
                     break;
 
                 case 'staff':
                     $profile = $conn->prepare('SELECT 1 FROM public.staff WHERE user_id = :id');
                     $profile->execute([':id' => $memberId]);
                     if ($profile->fetchColumn()) {
-                        $statement = $conn->prepare('UPDATE public.staff SET first_name = :firstname, last_name = :lastname, updated_at = NOW() WHERE user_id = :id');
+                        $statement = $conn->prepare('UPDATE public.staff SET first_name = :firstname, last_name = :lastname, email = :email, phone = :phone, updated_at = NOW() WHERE user_id = :id');
                     } else {
-                        $statement = $conn->prepare('INSERT INTO public.staff (user_id, first_name, last_name) VALUES (:id, :firstname, :lastname)');
+                        $statement = $conn->prepare('INSERT INTO public.staff (user_id, first_name, last_name, email, phone) VALUES (:id, :firstname, :lastname, :email, :phone)');
                     }
-                    $statement->execute([':id' => $memberId, ':firstname' => $firstName, ':lastname' => $lastName]);
+                    $statement->execute([':id' => $memberId, ':firstname' => $firstName, ':lastname' => $lastName, ':email' => $email !== '' ? $email : null, ':phone' => $phone !== '' ? $phone : null]);
                     break;
             }
 
@@ -284,17 +291,19 @@ try {
             }
             $primaryTeacherId = $teacherIds[0] ?? null;
 
-            $params = [':code' => postValue('code'), ':name' => postValue('name'), ':credit' => (int) postValue('credit', '0')];
+            $requestedType = strtolower(postValue('type', 'compulsory'));
+            $subjectType = in_array($requestedType, ['required', 'compulsory'], true) ? 'compulsory' : 'elective';
+            $params = [':code' => postValue('code'), ':name' => postValue('name'), ':credit' => (int) postValue('credit', '0'), ':subject_type' => $subjectType];
 
             if (!empty($subjectId)) {
                 $params[':id'] = $subjectId;
                 $statement = $conn->prepare("
-                    UPDATE public.courses SET code = :code, name = :name, credits = :credit, updated_at = NOW() WHERE course_id = :id
+                    UPDATE public.courses SET code = :code, name = :name, credits = :credit, subject_type = :subject_type, updated_at = NOW() WHERE course_id = :id
                 ");
             } else {
                 $params[':created_by'] = (string) $_SESSION['user_id'];
                 $statement = $conn->prepare("
-                    INSERT INTO public.courses (code, name, credits, created_by) VALUES (:code, :name, :credit, :created_by) RETURNING course_id
+                    INSERT INTO public.courses (code, name, credits, subject_type, created_by) VALUES (:code, :name, :credit, :subject_type, :created_by) RETURNING course_id
                 ");
             }
             $conn->beginTransaction();
@@ -307,6 +316,8 @@ try {
                     $assignment->execute([':course_id' => $savedSubjectId, ':teacher_id' => $teacherId]);
                 }
             }
+            $conn->prepare("UPDATE public.curriculum_courses SET requirement_type = :requirement_type WHERE course_id = :course_id")
+                ->execute([':requirement_type' => $subjectType === 'compulsory' ? 'required' : 'elective', ':course_id' => $savedSubjectId]);
             $conn->commit();
             jsonResponse(['status' => 'success']);
             break;
@@ -321,7 +332,7 @@ try {
         case 'getCurriculumSubjects':
             $curriculumId = $_GET['curriculum_id'] ?? '';
             if (empty($curriculumId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
-            $allSubjectsStmt = $conn->query("SELECT course_id AS id, code, name FROM public.courses ORDER BY course_id ASC");
+            $allSubjectsStmt = $conn->query("SELECT course_id AS id, code, name, subject_type AS type FROM public.courses ORDER BY course_id ASC");
             $selectedStmt = $conn->prepare("SELECT course_id FROM public.curriculum_courses WHERE curriculum_id = :id");
             $selectedStmt->execute([':id' => $curriculumId]);
             jsonResponse([
@@ -340,7 +351,7 @@ try {
                 $delStmt = $conn->prepare("DELETE FROM public.curriculum_courses WHERE curriculum_id = :id");
                 $delStmt->execute([':id' => $curriculumId]);
                 if (!empty($subjectIds) && is_array($subjectIds)) {
-                    $insertStmt = $conn->prepare("INSERT INTO public.curriculum_courses (curriculum_id, course_id) VALUES (:cid, :sid)");
+                    $insertStmt = $conn->prepare("INSERT INTO public.curriculum_courses (curriculum_id, course_id, requirement_type) SELECT :cid, course_id, CASE WHEN subject_type = 'compulsory' THEN 'required' ELSE 'elective' END FROM public.courses WHERE course_id = :sid");
                     foreach ($subjectIds as $sid) { $insertStmt->execute([':cid' => $curriculumId, ':sid' => $sid]); }
                 }
                 $conn->commit();
@@ -382,7 +393,7 @@ try {
             if (empty($subjectId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
             $lessonStmt = $conn->prepare("
                 SELECT
-                    l.lesson_id AS id, l.title, l.content,
+                    l.lesson_id AS id, l.title, l.content, l.created_at, l.updated_at,
                     COALESCE(d.url, '') AS document_path, COALESCE(d.title, '') AS document_name
                 FROM public.lessons
                 l LEFT JOIN LATERAL (
@@ -402,7 +413,7 @@ try {
             if (empty($subjectId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
             $subjectStmt = $conn->prepare("
                 SELECT
-                    course_id AS id, code, name, credits AS credit, 'elective' AS type
+                    course_id AS id, code, name, credits AS credit, subject_type AS type
                 FROM public.courses
                 WHERE course_id = :id
                 LIMIT 1
@@ -415,7 +426,7 @@ try {
 
             $lessonStmt = $conn->prepare("
                 SELECT
-                    l.lesson_id AS id, l.title, l.content,
+                    l.lesson_id AS id, l.title, l.content, l.created_at, l.updated_at,
                     COALESCE(d.url, '') AS document_path, COALESCE(d.title, '') AS document_name
                 FROM public.lessons l LEFT JOIN LATERAL (
                     SELECT title, url FROM public.lesson_resources WHERE lesson_id = l.lesson_id AND resource_type = 'document' ORDER BY position LIMIT 1

@@ -64,7 +64,7 @@ function escapeHtml(text) {
 }
 
 function normalizeSubjectType(value) {
-    return String(value || '').trim().toLowerCase() === 'required' ? 'required' : 'elective';
+    return ['required', 'compulsory'].includes(String(value || '').trim().toLowerCase()) ? 'required' : 'elective';
 }
 
 function isTruthy(value) {
@@ -1023,7 +1023,7 @@ function createCourseCardMarkup(course) {
     const subjectDesc = pick(course, 'subjects_description', 'Subjects_Description') || 'คลิกเพื่อดูรายละเอียด';
     const subjectType = normalizeSubjectType(pick(course, 'subject_type', 'type'));
     const isEnrolled = isTruthy(pick(course, 'is_enrolled', 'Is_Enrolled'));
-    const tagText = subjectType === 'required' ? 'บังคับ' : 'วิชาเลือก';
+    const tagText = subjectType === 'required' ? 'วิชาบังคับ' : 'วิชาเลือก';
     const statusText = isEnrolled ? 'ลงทะเบียนแล้ว' : 'ยังไม่ลงทะเบียน';
     const imageUrl = getSubjectImage(subjectId, subjectName);
     const fallbackImageUrl = getSubjectFallbackImage(subjectId, subjectName);
