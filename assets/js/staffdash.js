@@ -24,6 +24,7 @@
     'member-edit': 'แก้ไขข้อมูลสมาชิก',
     'staff-add': 'เพิ่มเจ้าหน้าที่',
     'graduation-requests': 'อนุมัติจบการศึกษา',
+    'profile': 'โปรไฟล์ของฉัน',
   };
   let graduationReviewCsrf = '';
 
@@ -153,6 +154,7 @@
       page = 'dashboard';
     }
 
+    if (page === 'profile' && currentPage !== 'profile') window._staffProfileReturnPage = currentPage;
     currentPage = page;
     document.querySelectorAll('.page').forEach(section => section.classList.remove('active'));
     document.getElementById(`page-${page}`)?.classList.add('active');
@@ -163,6 +165,7 @@
 
     if (topbarTitle) {
       topbarTitle.textContent = pageNames[page] || '';
+      topbarTitle.hidden = page === 'profile';
     }
     const pageUrl = new URL(window.location.href);
     pageUrl.searchParams.set('page', page);
@@ -946,6 +949,10 @@ function _staffApplyAvatarUI(src) {
   const text = document.getElementById('staffAvatarInitial');
   if (img)  { img.src = src; img.style.display = 'block'; }
   if (text) { text.style.display = 'none'; }
+  const profileImg = document.getElementById('staffProfileAvatarImg');
+  const profileInitial = document.getElementById('staffProfileAvatarInitial');
+  if (profileImg) { profileImg.src = src; profileImg.style.display = 'block'; }
+  if (profileInitial) profileInitial.style.display = 'none';
 }
 
 function _staffCropInjectModal() {
@@ -1098,26 +1105,68 @@ function staffPreviewAvatar(input) {
 }
 
 function openStaffProfile() {
-  const modal = document.getElementById('staffProfileModal');
-  if (!modal) return;
-  modal.classList.add('show');
-  modal.setAttribute('aria-hidden', 'false');
-  modal.querySelector('input[name="first_name"]')?.focus();
+  if (typeof window.goTo === 'function') window.goTo('profile');
 }
 
 function closeStaffProfile() {
-  const modal = document.getElementById('staffProfileModal');
-  if (!modal) return;
-  modal.classList.remove('show');
-  modal.setAttribute('aria-hidden', 'true');
+  if (typeof window.goTo === 'function') window.goTo(window._staffProfileReturnPage || 'dashboard');
 }
 
-document.getElementById('staffProfileModal')?.addEventListener('click', event => {
-  if (event.target.id === 'staffProfileModal') closeStaffProfile();
-});
-document.addEventListener('keydown', event => {
-  if (event.key === 'Escape') closeStaffProfile();
-});
+function toggleStaffPwd(id, button) {
+  const input = document.getElementById(id);
+  if (!input || !button) return;
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  const label = show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน';
+  button.setAttribute('aria-label', label);
+  button.title = label;
+  button.innerHTML = staffPasswordEyeIcon(show);
+}
+
+function staffPasswordEyeIcon(showing) {
+  return showing
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.9 5.2A10.8 10.8 0 0112 5c6.4 0 10 7 10 7a14.7 14.7 0 01-3 3.8M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7c1.4 0 2.7-.3 3.8-.8"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+}
+
+function checkStaffPwdStrength(value) {
+  const wrap = document.getElementById('staffPwdStrengthWrap');
+  const bar = document.getElementById('staffPwdStrengthBar');
+  const label = document.getElementById('staffPwdStrengthLabel');
+  if (!wrap || !bar || !label) return;
+  if (!value) { wrap.style.display = 'none'; checkStaffPwdMatch(); return; }
+  wrap.style.display = 'block';
+  let score = 0;
+  if (value.length >= 8) score++;
+  if (value.length >= 12) score++;
+  if (/[A-Z]/.test(value)) score++;
+  if (/[0-9]/.test(value)) score++;
+  if (/[^A-Za-z0-9]/.test(value)) score++;
+  const levels = [
+    { pct: '20%', color: '#ef4444', text: 'อ่อนมาก' },
+    { pct: '40%', color: '#f97316', text: 'อ่อน' },
+    { pct: '60%', color: '#eab308', text: 'ปานกลาง' },
+    { pct: '80%', color: '#3b82f6', text: 'ดี' },
+    { pct: '100%', color: '#10b981', text: 'แข็งแกร่งมาก' }
+  ];
+  const level = levels[Math.min(Math.max(score - 1, 0), 4)];
+  bar.style.width = level.pct;
+  bar.style.background = level.color;
+  label.style.color = level.color;
+  label.textContent = `ความแข็งแกร่ง: ${level.text}`;
+  checkStaffPwdMatch();
+}
+
+function checkStaffPwdMatch() {
+  const confirm = document.getElementById('staffPwdConfirm')?.value || '';
+  const message = document.getElementById('staffPwdMatchMsg');
+  const newPassword = document.getElementById('staffPwdNew')?.value || '';
+  if (!message) return;
+  if (!confirm) { message.textContent = ''; return; }
+  message.textContent = newPassword === confirm ? 'รหัสผ่านตรงกัน' : 'รหัสผ่านไม่ตรงกัน';
+  message.style.color = newPassword === confirm ? '#10b981' : '#ef4444';
+}
+
 document.getElementById('staffProfileForm')?.addEventListener('submit', async event => {
   event.preventDefault();
   const form = event.currentTarget;
@@ -1138,7 +1187,15 @@ document.getElementById('staffProfileForm')?.addEventListener('submit', async ev
     if (!response.ok || !result.success) throw new Error(result.message || 'บันทึกข้อมูลไม่สำเร็จ');
     const name = document.querySelector('.user-name');
     if (name) name.textContent = result.name;
+    const profileName = document.querySelector('.staff-profile-identity h2');
+    if (profileName) profileName.textContent = result.name;
     ['pwd_current', 'pwd_new', 'pwd_confirm'].forEach(field => { const input = form.elements.namedItem(field); if (input) input.value = ''; });
+    document.querySelectorAll('.staff-password-toggle').forEach(toggle => { toggle.innerHTML = staffPasswordEyeIcon(false); toggle.setAttribute('aria-label', 'แสดงรหัสผ่าน'); toggle.title = 'แสดงรหัสผ่าน'; });
+    ['staffPwdCurrent', 'staffPwdNew', 'staffPwdConfirm'].forEach(id => { const input = document.getElementById(id); if (input) input.type = 'password'; });
+    const strength = document.getElementById('staffPwdStrengthWrap');
+    if (strength) strength.style.display = 'none';
+    const match = document.getElementById('staffPwdMatchMsg');
+    if (match) match.textContent = '';
     message.textContent = result.message || 'บันทึกข้อมูลโปรไฟล์แล้ว';
     message.style.color = 'var(--green, #16a34a)';
   } catch (error) {
