@@ -195,6 +195,20 @@ body {
   border-top: 1px solid var(--border);
   display: flex; align-items: center; gap: 10px;
 }
+.staff-profile-trigger { cursor: pointer; transition: background .18s; }
+.staff-profile-trigger:hover, .staff-profile-trigger:focus-visible { background: rgba(255,107,26,.08); outline: none; }
+.staff-avatar-wrap { position: relative; flex-shrink: 0; }
+.staff-avatar-edit { position: absolute; right: -4px; bottom: -4px; width: 19px; height: 19px; padding: 0; border: 1px solid var(--card); border-radius: 50%; background: var(--orange); color: #fff; font-size: 12px; line-height: 17px; cursor: pointer; }
+.staff-profile-modal { position: relative; max-width: 560px; max-height: 90vh; overflow-y: auto; text-align: left; padding: 30px; }
+.staff-profile-title { margin: 0 35px 4px 0; font-size: 1.25rem; }
+.staff-profile-id { margin: 0 0 22px; color: var(--text-muted); font-size: .8rem; }
+.staff-profile-close { position: absolute; top: 16px; right: 18px; border: 0; background: transparent; color: var(--text-muted); font-size: 26px; cursor: pointer; }
+.staff-profile-input { width: 100%; min-width: 0; padding: 11px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text-primary); font: inherit; }
+.staff-profile-input:focus { outline: 2px solid rgba(255,107,26,.3); border-color: var(--orange); }
+.staff-password-details { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.staff-password-details summary { margin-bottom: 14px; color: var(--text-secondary); cursor: pointer; }
+.staff-profile-message { min-height: 1.25em; margin-top: 12px; color: var(--red); font-size: .82rem; }
+.staff-profile-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
 .user-avatar {
   width: 36px; height: 36px; border-radius: 50%;
   background: var(--orange-dim);

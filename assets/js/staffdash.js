@@ -1070,8 +1070,14 @@ function _staffCropConfirm() {
     credentials: 'same-origin',
     body: JSON.stringify({ image: dataURL })
   }).then(r => r.json())
-    .then(d => { if (!d.success) console.warn('อัปโหลดรูปไม่สำเร็จ:', d.message); })
-    .catch(err => console.warn('Avatar upload error:', err));
+    .then(d => {
+      if (!d.success) throw new Error(d.message || 'อัปโหลดรูปไม่สำเร็จ');
+      _staffApplyAvatarUI(d.url);
+    })
+    .catch(err => {
+      console.warn('Avatar upload error:', err);
+      alert(err.message || 'บันทึกรูปโปรไฟล์ไม่สำเร็จ');
+    });
 }
 function staffPreviewAvatar(input) {
   if (!input.files || !input.files[0]) return;
@@ -1090,3 +1096,55 @@ function staffPreviewAvatar(input) {
   reader.readAsDataURL(file);
   input.value = '';
 }
+
+function openStaffProfile() {
+  const modal = document.getElementById('staffProfileModal');
+  if (!modal) return;
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden', 'false');
+  modal.querySelector('input[name="first_name"]')?.focus();
+}
+
+function closeStaffProfile() {
+  const modal = document.getElementById('staffProfileModal');
+  if (!modal) return;
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+document.getElementById('staffProfileModal')?.addEventListener('click', event => {
+  if (event.target.id === 'staffProfileModal') closeStaffProfile();
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeStaffProfile();
+});
+document.getElementById('staffProfileForm')?.addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = document.getElementById('saveStaffProfileBtn');
+  const message = document.getElementById('staffProfileMessage');
+  const body = new FormData(form);
+  if (body.get('pwd_new') && body.get('pwd_new') !== body.get('pwd_confirm')) {
+    message.textContent = 'รหัสผ่านใหม่และการยืนยันไม่ตรงกัน';
+    message.style.color = 'var(--red)';
+    return;
+  }
+  button.disabled = true;
+  message.textContent = 'กำลังบันทึก...';
+  message.style.color = 'var(--text-muted)';
+  try {
+    const response = await fetch('update_staff_profile.php', { method: 'POST', body, credentials: 'same-origin' });
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.message || 'บันทึกข้อมูลไม่สำเร็จ');
+    const name = document.querySelector('.user-name');
+    if (name) name.textContent = result.name;
+    ['pwd_current', 'pwd_new', 'pwd_confirm'].forEach(field => { const input = form.elements.namedItem(field); if (input) input.value = ''; });
+    message.textContent = result.message || 'บันทึกข้อมูลโปรไฟล์แล้ว';
+    message.style.color = 'var(--green, #16a34a)';
+  } catch (error) {
+    message.textContent = error.message || 'บันทึกข้อมูลไม่สำเร็จ กรุณาลองอีกครั้ง';
+    message.style.color = 'var(--red)';
+  } finally {
+    button.disabled = false;
+  }
+});
