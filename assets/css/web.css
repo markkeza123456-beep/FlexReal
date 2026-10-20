@@ -12,6 +12,7 @@ html { overflow-x: hidden; }
 body {
     background: #fff3e8;
     color: var(--text-gray);
+    margin-top: 0;
     min-width: 320px;
     overflow-x: hidden;
 }
@@ -27,10 +28,12 @@ body {
 
 
 .navbar {
-    background: white; padding: 15px 8%; display: flex;
+    background: rgba(255,255,255,.78); padding: 15px 8%; display: flex;
     align-items: center; justify-content: space-between;
-    box-shadow: 0 4px 18px rgba(31,41,55,0.04);
-    position: sticky; top: 0; z-index: 1000;
+    box-shadow: 0 6px 22px rgba(242,107,58,.07);
+    position: sticky; top: 0; z-index: 1000; margin-top: 0;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 .nav-home-link { text-decoration:none; color:inherit; font-weight:500; }
 #loginBtn { text-decoration:none; padding:8px 20px; border-radius:9px; display:inline-flex; align-items:center; justify-content:center; }

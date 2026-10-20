@@ -12,12 +12,8 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261020-sidebar-brand-centered">
-<<<<<<< HEAD
+    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261020-soft-orange-theme">
     <link rel="stylesheet" href="assets/css/theme.css?v=20261020-soft-orange-theme">
-=======
-    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261020-course-certificates-v2">
->>>>>>> 7be339030c231cec761684d90bd101e385f61dda
 </head>
 <body>
     <div class="dashboard-container">

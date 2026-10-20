@@ -81,9 +81,18 @@ body::after {
 .sidebar,
 .navbar,
 .quiz-nav {
-  background-color: var(--surface) !important;
+  background-color: rgba(255, 255, 255, 0.78) !important;
   border-color: transparent !important;
   box-shadow: var(--shadow);
+}
+
+.navbar {
+  position: sticky;
+  top: 0;
+  margin-top: 0;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 
@@ -127,7 +136,7 @@ body::after {
   box-shadow: var(--shadow);
 }
 
-.sidebar,.navbar,.quiz-nav { background-color:#fff!important; }
+.sidebar,.quiz-nav { background-color:#fff!important; }
 
 table { background: #ffffff; }
 th, td { padding:11px 13px; border-color: #eaecf0 !important; }
