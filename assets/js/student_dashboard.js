@@ -70,31 +70,16 @@ function renderLessonBreakdown(course) {
     if (!lessons.length) return '<p class="empty-state">รายวิชานี้ยังไม่มีบทเรียน</p>';
     const rows = lessons.map((lesson) => {
         const progress = Math.max(0, Math.min(100, Number(lesson.progress) || 0));
-        const fmt = (value) => Number(value || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
-        const quizScore = lesson.is_transferred ? 'ผ่านโดยการเทียบโอน' : (lesson.has_attempt ? `${fmt(lesson.score_earned)}/${fmt(lesson.score_total)} คะแนน` : 'ยังไม่มีผลสอบ');
-        const parts = [];
-        if (Number(lesson.objective_question_count) > 0) {
-            parts.push(`ปรนัยถูก ${Number(lesson.objective_correct_count)}/${Number(lesson.objective_question_count)} ข้อ · ${fmt(lesson.objective_score_earned)}/${fmt(lesson.objective_score_total)} คะแนน`);
-        }
-        if (Number(lesson.essay_question_count) > 0) {
-            parts.push(`ข้อเขียน ${fmt(lesson.essay_score_earned)}/${fmt(lesson.essay_score_total)}`);
-        }
-        if (parts.length === 0) parts.push('ยังไม่มีรายละเอียดคะแนน');
-        const status = lesson.quiz_status === 'pending_review'
-            ? `<span class="lesson-score-status pending">รอตรวจข้อเขียน ${Number(lesson.essay_pending_count)} ข้อ</span>`
-            : lesson.quiz_status === 'passed' ? '<span class="lesson-score-status passed">ผ่าน</span>'
-                : lesson.quiz_status === 'failed' ? '<span class="lesson-score-status failed">ยังไม่ผ่าน</span>' : '';
-        const attemptLabel = lesson.is_transferred ? 'ผ่านจากการเทียบโอนหน่วยกิต' : (lesson.has_attempt ? `ครั้งที่ ${Number(lesson.latest_attempt_number)} · ทำแล้ว ${Number(lesson.attempt_count)} ครั้ง` : 'ยังไม่เคยทำแบบทดสอบ');
-        const essayAnswers = Array.isArray(lesson.essay_answers) ? lesson.essay_answers : [];
-        const essayDetails = essayAnswers.length ? `<div class="lesson-essay-answers">${essayAnswers.map((item) => {
-            const pending = item.review_status === 'pending';
-            const answerStatus = pending ? 'รอตรวจ' : item.status === 'passed' ? 'ผ่าน' : 'ไม่ผ่าน';
-            const answerScore = pending ? 'รอคะแนน' : `${fmt(item.score)}/${fmt(item.max_score)} คะแนน`;
-            const reviewedAt = item.reviewed_at ? ` · ตรวจเสร็จ ${escapeHtml(formatReportDate(item.reviewed_at))}` : '';
-            const reviewer = item.reviewer_name || item.reviewer_id;
-            return `<article class="lesson-essay-answer"><strong>คำตอบข้อเขียน · ${pending ? answerStatus : `ตรวจแล้ว · ${answerStatus}`}</strong><small>ส่งเมื่อ ${escapeHtml(formatReportDate(item.submitted_at))} · ${answerScore}${reviewedAt}${reviewer ? ` · ผู้ตรวจ ${escapeHtml(reviewer)}` : ''}</small><p>${escapeHtml(item.answer || '')}</p>${item.feedback ? `<small>ข้อเสนอแนะจากอาจารย์: ${escapeHtml(item.feedback)}</small>` : ''}</article>`;
-        }).join('')}</div>` : '';
-        return `<div class="lesson-breakdown-row"><div class="lesson-number">${Number(lesson.position)}</div><div class="lesson-detail"><strong>${escapeHtml(lesson.title)}</strong><span>${attemptLabel}</span><span>คะแนนรวม: ${quizScore}</span><span class="lesson-score-parts">${parts.join(' · ')}</span>${status}<span>ความคืบหน้า ${progress}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%"></div></div>${essayDetails}</div></div>`;
+        const isTransferred = Boolean(lesson.is_transferred);
+        const description = isTransferred
+            ? 'ผ่านจากการเทียบโอนหน่วยกิต'
+            : lesson.has_attempt ? 'ทำแบบทดสอบแล้ว' : progress > 0 ? 'กำลังเรียน' : 'ยังไม่เริ่มเรียน';
+        const statusClassName = lesson.quiz_status === 'pending_review'
+            ? 'pending'
+            : (isTransferred || lesson.quiz_status === 'passed') ? 'passed' : 'failed';
+        const statusLabelText = statusClassName === 'pending' ? 'รอตรวจ'
+            : statusClassName === 'passed' ? 'ผ่าน' : 'ยังไม่ผ่าน';
+        return `<div class="lesson-breakdown-row"><div class="lesson-number">${Number(lesson.position)}</div><div class="lesson-detail"><div class="lesson-detail-heading"><strong>${escapeHtml(lesson.title)}</strong><span class="lesson-score-status ${statusClassName}">${statusLabelText}</span></div><span class="lesson-short-status">${description}</span><div class="progress-bar-bg" role="progressbar" aria-label="ความคืบหน้า ${escapeHtml(lesson.title)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><div class="progress-bar-fill" style="width:${progress}%"></div></div></div></div>`;
     }).join('');
     return `<details class="lesson-breakdown"><summary>ดูรายการบทเรียนย่อย (${lessons.length})</summary><div class="lesson-breakdown-list">${rows}</div></details>`;
 }
@@ -108,11 +93,9 @@ function renderTable(courses) {
 
     tbody.innerHTML = courses.map((item) => {
         const progress = Math.max(0, Math.min(100, Number(item.progress) || 0));
-        const lessonCount = Number(item.lesson_count) || 0;
-        const passedLessons = Number(item.passed_lessons) || 0;
         const progressCell = item.is_transferred
             ? '<span class="course-transfer-status">ผ่านการเทียบโอน</span>'
-            : `<div class="course-table-progress"><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%"></div></div><span>${progress}% · ผ่าน ${passedLessons}/${lessonCount} บท</span></div>`;
+            : `<span>${progress}%</span>`;
         const resultCell = item.is_transferred
             ? '<span class="course-transfer-status">TR</span>'
             : item.is_passed ? '<span class="course-passed-status">ผ่าน</span>' : '<span>กำลังศึกษา</span>';
@@ -148,7 +131,13 @@ function renderLessons(courses) {
 }
 
 function flattenReportLessons(courses) {
-    return courses.flatMap((course) => (Array.isArray(course.lessons) ? course.lessons : []).map((lesson) => ({ ...lesson, course_id: course.subject_id, course_name: course.name, subject_type: course.subject_type })));
+    return courses.flatMap((course) => (Array.isArray(course.lessons) ? course.lessons : []).map((lesson) => ({
+        ...lesson,
+        course_id: course.subject_id,
+        course_name: course.name,
+        subject_type: course.subject_type,
+        is_transferred: Boolean(course.is_transferred || lesson.is_transferred),
+    })));
 }
 
 function formatReportDate(value) {
@@ -158,11 +147,11 @@ function formatReportDate(value) {
 }
 
 function reportQuizStatus(lesson) {
-    if (!lesson.has_attempt) return '<span class="report-status none">ยังไม่ทำ</span>';
+    if (lesson.is_transferred) return '<span class="report-status passed">เทียบโอน</span>';
     if (lesson.quiz_status === 'pending_review') return '<span class="report-status pending">รอตรวจข้อเขียน</span>';
-    if (lesson.quiz_status === 'passed') return '<span class="report-status passed">ผ่าน</span>';
-    if (lesson.quiz_status === 'failed') return '<span class="report-status failed">ยังไม่ผ่าน</span>';
-    return '<span class="report-status">ส่งแล้ว</span>';
+    return lesson.is_passed
+        ? '<span class="report-status passed">ผ่าน</span>'
+        : '<span class="report-status failed">ไม่ผ่าน</span>';
 }
 
 function renderReports(courses) {
@@ -203,28 +192,44 @@ function renderReports(courses) {
         <div class="stat-card red"><strong class="report-stat-heading">ข้อเขียนรอตรวจ</strong><p class="value">${pendingEssays}</p><span class="sub-value">ข้อที่ยังรอครูตรวจ</span></div>`;
 
     if (!visibleCourses.length) {
-        courseBody.innerHTML = '<tr><td colspan="8" class="report-empty">ยังไม่มีรายวิชาที่ลงทะเบียน</td></tr>';
+        courseBody.innerHTML = '<tr><td colspan="6" class="report-empty">ยังไม่มีรายวิชาที่ลงทะเบียน</td></tr>';
     } else {
         courseBody.innerHTML = visibleCourses.map((course) => {
             const courseLessons = Array.isArray(course.lessons) ? course.lessons : [];
-            const attempts = courseLessons.reduce((sum, lesson) => sum + (Number(lesson.attempt_count) || 0), 0);
             const pending = courseLessons.reduce((sum, lesson) => sum + (Number(lesson.essay_pending_count) || 0), 0);
-            const score = Number(course.score_total) > 0 ? `${fmt(course.score_earned)}/${fmt(course.score_total)} (${fmt(course.score)}%)` : 'ยังไม่มีคะแนน';
-            return `<tr><td><strong>${escapeHtml(course.name)}</strong><small>${escapeHtml(course.description || 'ไม่มีคำอธิบาย')}</small></td><td>${subjectTypeBadge(course.subject_type)}</td><td>${Number(course.attempted_lessons)}/${Number(course.lesson_count)} บท</td><td><div class="report-progress"><span>${fmt(course.progress)}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${Math.max(0, Math.min(100, Number(course.progress) || 0))}%"></div></div></div></td><td>${score}</td><td>${attempts} ครั้ง</td><td>${pending ? `<span class="report-status pending">${pending} ข้อ</span>` : 'ไม่มี'}</td><td>${formatReportDate(course.last_activity_at)}</td></tr>`;
+            const description = String(course.description || '').trim();
+            const hasDescription = description && !['ไม่มีคำอธิบาย', 'ไม่มีคำอธิบายรายวิชา'].includes(description);
+            const score = course.is_transferred
+                ? 'TR (ผ่านการเทียบโอน)'
+                : Number(course.score_total) > 0 ? `${fmt(course.score_earned)}/${fmt(course.score_total)}` : '—';
+            const courseName = `<strong>${escapeHtml(course.name)}</strong>${hasDescription ? `<small>${escapeHtml(description)}</small>` : ''}`;
+            return `<tr><td>${courseName}</td><td>${subjectTypeBadge(course.subject_type)}</td><td>${course.is_transferred ? 'ไม่ต้องสอบ' : `${Number(course.attempted_lessons)}/${Number(course.lesson_count)} บท`}</td><td>${fmt(course.progress)}%</td><td>${score}</td><td>${pending ? `<span class="report-status pending">${pending} ข้อ</span>` : '—'}</td></tr>`;
         }).join('');
     }
 
     const countLabel = document.getElementById('reportLessonCount');
     if (countLabel) countLabel.textContent = `${rows.length} บทเรียน`;
     if (!rows.length) {
-        lessonBody.innerHTML = '<tr><td colspan="8" class="report-empty">ยังไม่มีข้อมูลบทเรียน</td></tr>';
+        lessonBody.innerHTML = '<tr><td colspan="5" class="report-empty">ยังไม่มีข้อมูลบทเรียน</td></tr>';
         return;
     }
     lessonBody.innerHTML = rows.map((lesson) => {
-        const quiz = lesson.is_transferred ? 'เทียบโอน' : (lesson.has_attempt ? `${fmt(lesson.score_earned)}/${fmt(lesson.score_total)}` : '—');
-        const objective = lesson.objective_score_total > 0 ? `${fmt(lesson.objective_score_earned)}/${fmt(lesson.objective_score_total)}` : '—';
-        const essay = lesson.essay_question_count > 0 ? `${fmt(lesson.essay_score_earned)}/${fmt(lesson.essay_score_total)}` : 'ไม่มี';
-        return `<tr><td><strong>${escapeHtml(lesson.course_name)}</strong><small>บทที่ ${Number(lesson.position)} · ${escapeHtml(lesson.title)}</small></td><td>${reportQuizStatus(lesson)}</td><td>${quiz}</td><td>${objective}</td><td>${essay}</td><td>${Number(lesson.attempt_count)} ครั้ง</td><td>${formatReportDate(lesson.last_activity_at)}</td><td>${escapeHtml(lesson.essay_feedback || '—')}</td></tr>`;
+        const nameCell = `<strong>${escapeHtml(lesson.course_name)}</strong><small>บทที่ ${Number(lesson.position)} · ${escapeHtml(lesson.title)}</small>`;
+        if (lesson.is_transferred) {
+            return `<tr><td>${nameCell}</td><td colspan="3" class="report-transfer-cell">TR (ผ่านการเทียบโอน)</td><td>${reportQuizStatus(lesson)}</td></tr>`;
+        }
+        const objective = Number(lesson.objective_score_total) > 0
+            ? `${fmt(lesson.objective_score_earned)}/${fmt(lesson.objective_score_total)}`
+            : '—';
+        const essay = Number(lesson.essay_pending_count) > 0
+            ? '<span class="report-status pending">รอตรวจ</span>'
+            : Number(lesson.essay_score_total) > 0
+                ? `${fmt(lesson.essay_score_earned)}/${fmt(lesson.essay_score_total)}`
+                : '—';
+        const total = lesson.has_attempt && Number(lesson.score_total) > 0
+            ? `${fmt(lesson.score_earned)}/${fmt(lesson.score_total)}`
+            : '—';
+        return `<tr><td>${nameCell}</td><td>${objective}</td><td>${essay}</td><td>${total}</td><td>${reportQuizStatus(lesson)}</td></tr>`;
     }).join('');
 }
 

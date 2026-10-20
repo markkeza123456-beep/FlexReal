@@ -13,7 +13,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/theme.css">
-    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261020-essay-results">
+    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261020-minimal-report-tables">
 </head>
 <body>
     <div class="dashboard-container">
@@ -143,11 +143,11 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                 <div class="report-summary" id="reportSummary"></div>
                 <section class="content-card report-card">
                     <div class="card-header"><h2>สรุปรายวิชา</h2></div>
-                    <div class="table-responsive"><table class="data-table report-table course-report-table"><thead><tr><th>รายวิชา</th><th>ประเภท</th><th>แบบทดสอบ</th><th>ความคืบหน้า</th><th>คะแนนรวม</th><th>ครั้งที่ทำ</th><th>ข้อเขียนรอตรวจ</th><th>ทำล่าสุด</th></tr></thead><tbody id="courseReportBody"></tbody></table></div>
+                    <div class="table-responsive"><table class="data-table report-table course-report-table"><thead><tr><th>รายวิชา</th><th>ประเภท</th><th>แบบทดสอบ</th><th>ความคืบหน้า</th><th>คะแนนรวม</th><th>ข้อเขียนรอตรวจ</th></tr></thead><tbody id="courseReportBody"></tbody></table></div>
                 </section>
                 <section class="content-card report-card">
                     <div class="card-header"><h2>ผลคะแนนแยกตามบทเรียน</h2><span id="reportLessonCount" class="report-meta"></span></div>
-                    <div class="table-responsive"><table class="data-table report-table lesson-report-table"><thead><tr><th>รายวิชา / บทเรียน</th><th>สถานะแบบทดสอบ</th><th>คะแนนรวม</th><th>ปรนัย</th><th>ข้อเขียน</th><th>จำนวนครั้ง</th><th>ทำล่าสุด</th><th>ข้อเสนอแนะจากครู</th></tr></thead><tbody id="lessonReportBody"></tbody></table></div>
+                    <div class="table-responsive"><table class="data-table report-table lesson-report-table"><thead><tr><th>รายวิชา / บทเรียน</th><th>คะแนนปรนัย (กากบาท)</th><th>คะแนนข้อเขียน</th><th>คะแนนรวม</th><th>สถานะผลการเรียน</th></tr></thead><tbody id="lessonReportBody"></tbody></table></div>
                 </section>
             </section>
 
@@ -245,6 +245,6 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
 
         </main>
     </div>
-    <script src="assets/js/student_dashboard.js?v=20261020-graduation-status"></script>
+    <script src="assets/js/student_dashboard.js?v=20261020-minimal-report-tables"></script>
 </body>
 </html>
