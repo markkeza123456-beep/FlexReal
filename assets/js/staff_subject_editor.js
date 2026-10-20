@@ -102,7 +102,7 @@
     document.getElementById('subjectCode').value = subject.code || '';
     document.getElementById('subjectName').value = subject.name || '';
     document.getElementById('subjectCredit').value = subject.credit || 0;
-    document.getElementById('subjectType').value = subject.type || 'required';
+    document.getElementById('subjectType').value = subject.type === 'elective' ? 'elective' : 'required';
   }
 
   function renderLessons() {
