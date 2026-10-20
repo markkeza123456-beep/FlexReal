@@ -272,7 +272,7 @@ body {
     position: relative;
     padding: 24px 8% 28px;
     overflow: hidden;
-    text-align: left;
+    text-align: center;
     background: linear-gradient(120deg, #f76707 0%, #ff8a00 56%, #ff9f43 100%);
 }
 #page-guide.register-guide-page .content-header::before {
@@ -291,7 +291,7 @@ body {
     box-shadow: 0 0 0 28px rgba(255,255,255,.06), 0 0 0 58px rgba(255,255,255,.05);
     pointer-events: none;
 }
-#page-guide.register-guide-page .content-header h1 { font-size: clamp(27px, 4vw, 38px); text-align: left; }
+#page-guide.register-guide-page .content-header h1 { font-size: clamp(27px, 4vw, 38px); text-align: center; }
 #page-guide.register-guide-page .container {
     display: flex;
     width: 90%;
@@ -303,7 +303,7 @@ body {
     padding: 30px 0 56px;
     box-sizing: border-box;
 }
-#page-guide .register-guide { width: 100%; color: #263445; line-height: 1.75; animation: register-guide-in .45s ease-out both; }
+#page-guide .register-guide { width: 100%; max-width: 1400px; margin: 0 auto; color: #263445; line-height: 1.75; animation: register-guide-in .45s ease-out both; }
 @keyframes register-guide-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 #page-guide .register-guide-step p { margin: 0; color: #657386; font-size: 14px; font-weight: 400; }
 #page-guide .register-guide-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); align-items: stretch; gap: 20px; }
