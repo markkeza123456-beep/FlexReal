@@ -970,7 +970,7 @@ $stats = [
     <div id="view-reports" class="page-view" style="display:none">
         <header class="topbar">
             <div class="topbar-left">
-                <h1 class="page-title">ออกรายงาน</h1>
+                <h1 class="page-title">สรุปการทำงานและสถานะนักเรียน</h1>
             </div>
             <button type="button" class="btn-add-lesson" onclick="document.getElementById('teacherReportFrame').contentWindow.print()">พิมพ์ / บันทึกเป็น PDF</button>
         </header>
