@@ -81,15 +81,19 @@ try {
     lessonViewerError('ไม่สามารถเปิดเอกสารได้ในขณะนี้', 500);
 }
 
-$relativePath = ltrim(str_replace('\\', '/', (string) $document['url']), '/');
-$root = realpath(__DIR__);
-$file = realpath(__DIR__ . DIRECTORY_SEPARATOR . $relativePath);
-if (!$root || !$file || !str_starts_with($file, $root . DIRECTORY_SEPARATOR) || !is_file($file)) {
-    lessonViewerError('ไม่พบไฟล์เอกสาร');
+$storedUrl = trim((string) $document['url']);
+$isRemote = filter_var($storedUrl, FILTER_VALIDATE_URL) !== false && in_array(strtolower((string) parse_url($storedUrl, PHP_URL_SCHEME)), ['http', 'https'], true);
+$relativePath = $isRemote ? $storedUrl : ltrim(str_replace('\\', '/', $storedUrl), '/');
+$file = null;
+if (!$isRemote) {
+    $root = realpath(__DIR__);
+    $candidate = realpath(__DIR__ . DIRECTORY_SEPARATOR . $relativePath);
+    if (!$root || !$candidate || !str_starts_with($candidate, $root . DIRECTORY_SEPARATOR) || !is_file($candidate)) lessonViewerError('ไม่พบไฟล์เอกสาร');
+    $file = $candidate;
 }
 
 $title = (string) ($document['title'] ?: $document['lesson_title']);
-$extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+$extension = strtolower(pathinfo((string) parse_url($relativePath, PHP_URL_PATH), PATHINFO_EXTENSION));
 $officeExtensions = ['doc', 'docx', 'odt', 'rtf', 'ppt', 'pptx', 'xls', 'xlsx'];
 $imageExtensions = ['avif', 'gif', 'jpeg', 'jpg', 'png', 'webp'];
 
@@ -97,6 +101,7 @@ $imageExtensions = ['avif', 'gif', 'jpeg', 'jpg', 'png', 'webp'];
 
 if (($_GET['preview'] ?? '') === 'pdf') {
     if (!in_array($extension, $officeExtensions, true)) lessonViewerError('ไฟล์นี้ไม่รองรับการแปลงเป็นหน้าหนังสือ', 415);
+    if ($file === null) lessonViewerError('ไฟล์เอกสารนี้ไม่รองรับการแปลงเป็นหน้าหนังสือ', 415);
     $preview = officePreviewPdf($file);
     if ($preview === null) lessonViewerError('ยังไม่สามารถแปลงเอกสารเป็นหน้าหนังสือได้ กรุณาติดตั้ง LibreOffice บนเครื่องเซิร์ฟเวอร์', 503);
     header('Content-Type: application/pdf');

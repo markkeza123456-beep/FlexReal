@@ -435,6 +435,10 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .lesson-score-status.pending { color:#a16207; background:rgba(234,179,8,.14); }
 .lesson-score-status.passed { color:#047857; background:rgba(16,185,129,.12); }
 .lesson-score-status.failed { color:#dc2626; background:rgba(239,68,68,.1); }
+.lesson-essay-answers { display:grid; gap:8px; margin-top:8px; }
+.lesson-essay-answer { display:grid; gap:4px; padding:10px; border-left:3px solid var(--orange); border-radius:6px; background:var(--bg2); }
+.lesson-essay-answer p { margin:2px 0; white-space:pre-wrap; overflow-wrap:anywhere; color:var(--text); }
+.lesson-essay-answer small { color:var(--text-dim); }
 .lesson-breakdown .progress-bar-bg { height:5px; margin:3px 0 0; }
 .btn-submit { border-radius:var(--radius-sm); font-family:'Kanit',sans-serif; font-size:13px; font-weight:500; }
 .subject-type-badge { background:var(--orange-dim); color:var(--orange); }

@@ -81,7 +81,7 @@ try {
              SELECT COUNT(*) AS answer_count,
                     COUNT(*) FILTER (WHERE q.question_type = 'essay') AS essay_count,
                     COALESCE(SUM(aa.score) FILTER (WHERE q.question_type <> 'essay'), 0) AS objective_score,
-                    COALESCE(SUM(aa.score) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'reviewed'), 0) AS essay_score,
+                    COALESCE(SUM(aa.score) FILTER (WHERE q.question_type = 'essay' AND aa.review_status IN ('reviewed', 'graded')), 0) AS essay_score,
                     COALESCE(SUM(q.max_score) FILTER (WHERE q.question_type = 'essay'), 0) AS essay_score_possible,
                     COUNT(*) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'pending') AS pending_essays
              FROM public.quiz_attempt_answers aa

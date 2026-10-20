@@ -1396,6 +1396,6 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-  <script src="assets/js/teacherdash.js?v=20261019-content-editor-attribution-no-seconds"></script>
+  <script src="assets/js/teacherdash.js?v=20261020-essay-review-tabs"></script>
 </body>
 </html>

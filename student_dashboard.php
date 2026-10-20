@@ -13,7 +13,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/theme.css">
-    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261019-course-progress">
+    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261020-essay-results">
 </head>
 <body>
     <div class="dashboard-container">
@@ -88,9 +88,9 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                         <span class="sub-value">รายวิชาที่เปิดเรียนอยู่</span>
                     </div>
                     <div class="stat-card blue">
-                        <p class="label">แบบทดสอบที่ทำแล้ว</p>
+                        <p class="label">ครั้งที่ส่งข้อสอบ</p>
                         <p class="value" id="statAvgProgress">0/0</p>
-                        <span class="sub-value">รวมบทเรียนของวิชาที่ลงทะเบียน</span>
+                        <span class="sub-value" id="statQuizAttemptCoverage">รวมบทเรียนของวิชาที่ลงทะเบียน</span>
                     </div>
                     <div class="stat-card green">
                         <p class="label">คะแนนสะสม</p>
@@ -245,6 +245,6 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
 
         </main>
     </div>
-    <script src="assets/js/student_dashboard.js?v=20261019-course-progress"></script>
+    <script src="assets/js/student_dashboard.js?v=20261020-essay-results"></script>
 </body>
 </html>

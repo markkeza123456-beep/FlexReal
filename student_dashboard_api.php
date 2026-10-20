@@ -99,6 +99,7 @@ try {
 
     $courses = [];
     $attemptedLessons = 0;
+    $quizAttempts = 0;
     $totalLessons = 0;
     $scoreEarned = 0.0;
     $scoreTotal = 0.0;
@@ -139,13 +140,18 @@ try {
                  SELECT COUNT(*) AS answer_count,
                         COALESCE(SUM(aa.score) FILTER (WHERE q.question_type <> 'essay'), 0) AS objective_score,
                         COALESCE(SUM(q.max_score) FILTER (WHERE q.question_type <> 'essay'), 0) AS objective_total,
+<<<<<<< HEAD
                         COUNT(*) FILTER (WHERE q.question_type <> 'essay') AS objective_question_count,
                         COUNT(*) FILTER (WHERE q.question_type <> 'essay' AND aa.score >= q.max_score) AS objective_correct_count,
                         COALESCE(SUM(aa.score) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'reviewed'), 0) AS essay_score,
+=======
+                        COALESCE(SUM(aa.score) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'graded'), 0) AS essay_score,
+>>>>>>> 4f904c5262a2a238f6b8dc5f9417561b3e56c6d9
                         COALESCE(SUM(q.max_score) FILTER (WHERE q.question_type = 'essay'), 0) AS essay_total,
                         COUNT(*) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'pending') AS essay_pending_count,
+                        COUNT(*) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'graded') AS essay_reviewed_count,
                         COUNT(*) FILTER (WHERE q.question_type = 'essay') AS essay_question_count,
-                        STRING_AGG(DISTINCT NULLIF(BTRIM(aa.reviewer_comment), ''), ' · ') FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'reviewed') AS essay_feedback
+                        STRING_AGG(DISTINCT NULLIF(BTRIM(aa.reviewer_comment), ''), ' · ') FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'graded') AS essay_feedback
                  FROM public.quiz_attempt_answers aa
                  INNER JOIN public.questions q ON q.question_id = aa.question_id
                  WHERE aa.attempt_id = qa.attempt_id
@@ -154,6 +160,18 @@ try {
              ORDER BY l.position ASC"
         );
         $lessonStmt->execute([':student_id' => $studentId, ':course_id' => (string) $row['course_id']]);
+        $essayAnswersStmt = $conn->prepare(
+            "SELECT q.question_id, q.question_text AS question, aa.answer_text AS answer,
+                    aa.review_status, aa.result_status AS status,
+                    aa.score, q.max_score, aa.reviewer_comment AS feedback, a.submitted_at, aa.reviewed_at,
+                    aa.reviewer_id, t.full_name AS reviewer_name
+             FROM public.quiz_attempt_answers aa
+             INNER JOIN public.quiz_attempts a ON a.attempt_id = aa.attempt_id
+             INNER JOIN public.questions q ON q.question_id = aa.question_id
+             LEFT JOIN public.teachers t ON t.user_id = aa.reviewer_id
+             WHERE aa.attempt_id = :attempt_id AND a.student_id = :student_id AND q.question_type = 'essay' AND aa.review_status IN ('pending', 'graded')
+             ORDER BY q.question_id"
+        );
         $lessons = [];
         foreach ($lessonStmt->fetchAll(PDO::FETCH_ASSOC) as $lessonRow) {
             $hasAttempt = $lessonRow['attempt_id'] !== null;
@@ -199,12 +217,18 @@ try {
                 'essay_score_earned' => $essayScore,
                 'essay_score_total' => $essayTotal,
                 'essay_pending_count' => (int) ($lessonRow['essay_pending_count'] ?? 0),
+                'essay_reviewed_count' => (int) ($lessonRow['essay_reviewed_count'] ?? 0),
                 'essay_question_count' => (int) ($lessonRow['essay_question_count'] ?? 0),
                 'essay_feedback' => (string) ($lessonRow['essay_feedback'] ?? ''),
+                'essay_answers' => [],
                 'quiz_status' => $isTransferred ? 'passed' : ($hasAttempt ? (string) ($lessonRow['quiz_status'] ?? 'submitted') : null),
                 'latest_attempt_number' => $hasAttempt ? (int) $lessonRow['attempt_number'] : null,
                 'last_activity_at' => $lessonRow['last_activity_at'] ?? null,
             ];
+            if ($hasAttempt && (int) ($lessonRow['essay_question_count'] ?? 0) > 0) {
+                $essayAnswersStmt->execute([':attempt_id' => $lessonRow['attempt_id'], ':student_id' => $studentId]);
+                $lessons[array_key_last($lessons)]['essay_answers'] = $essayAnswersStmt->fetchAll(PDO::FETCH_ASSOC);
+            }
         }
         // The lesson list is the source of truth for both sides of the
         // completed/total figure. This keeps the denominator in sync with the
@@ -221,6 +245,7 @@ try {
         $progress = $isCoursePassed ? 100 : ($lessonCount > 0 ? round(array_sum(array_column($lessons, 'progress')) / $lessonCount, 1) : 0);
         $score = $possible > 0 ? round(($earned / $possible) * 100, 1) : 0;
         $attemptedLessons += $attempted;
+        $quizAttempts += array_sum(array_column($lessons, 'attempt_count'));
         $totalLessons += $lessonCount;
         $scoreEarned += $earned;
         $scoreTotal += $possible;
@@ -265,6 +290,7 @@ try {
             'completed_courses' => $completedCourses,
             'course_progress_percent' => $courseCount > 0 ? round(($completedCourses / $courseCount) * 100, 1) : 0,
             'attempted_lessons' => $attemptedLessons,
+            'quiz_attempts' => $quizAttempts,
             'total_lessons' => $totalLessons,
             'score_earned' => $scoreEarned,
             'score_total' => $scoreTotal,

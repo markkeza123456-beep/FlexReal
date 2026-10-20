@@ -58,10 +58,14 @@ try {
         $totalScore += $maxScore;
         if ($question['question_type'] === 'essay') {
             $hasEssay = true;
+            $essayText = trim((string) ($answers[$index] ?? ''));
+            if ($essayText === '') {
+                throw new RuntimeException('กรุณาตอบข้อเขียนให้ครบก่อนส่งข้อสอบ');
+            }
             $savedAnswers[] = [
                 'question_id' => (int) $question['question_id'],
                 'selected_choice' => null,
-                'answer_text' => trim((string) ($answers[$index] ?? '')) ?: null,
+                'answer_text' => $essayText,
                 'score' => null,
                 'review_status' => 'pending',
             ];

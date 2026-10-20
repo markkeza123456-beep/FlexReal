@@ -85,7 +85,16 @@ function renderLessonBreakdown(course) {
             : lesson.quiz_status === 'passed' ? '<span class="lesson-score-status passed">ผ่าน</span>'
                 : lesson.quiz_status === 'failed' ? '<span class="lesson-score-status failed">ยังไม่ผ่าน</span>' : '';
         const attemptLabel = lesson.is_transferred ? 'ผ่านจากการเทียบโอนหน่วยกิต' : (lesson.has_attempt ? `ครั้งที่ ${Number(lesson.latest_attempt_number)} · ทำแล้ว ${Number(lesson.attempt_count)} ครั้ง` : 'ยังไม่เคยทำแบบทดสอบ');
-        return `<div class="lesson-breakdown-row"><div class="lesson-number">${Number(lesson.position)}</div><div class="lesson-detail"><strong>${escapeHtml(lesson.title)}</strong><span>${attemptLabel}</span><span>คะแนนรวม: ${quizScore}</span><span class="lesson-score-parts">${parts.join(' · ')}</span>${status}<span>ความคืบหน้า ${progress}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%"></div></div></div></div>`;
+        const essayAnswers = Array.isArray(lesson.essay_answers) ? lesson.essay_answers : [];
+        const essayDetails = essayAnswers.length ? `<div class="lesson-essay-answers">${essayAnswers.map((item) => {
+            const pending = item.review_status === 'pending';
+            const answerStatus = pending ? 'รอตรวจ' : item.status === 'passed' ? 'ผ่าน' : 'ไม่ผ่าน';
+            const answerScore = pending ? 'รอคะแนน' : `${fmt(item.score)}/${fmt(item.max_score)} คะแนน`;
+            const reviewedAt = item.reviewed_at ? ` · ตรวจเสร็จ ${escapeHtml(formatReportDate(item.reviewed_at))}` : '';
+            const reviewer = item.reviewer_name || item.reviewer_id;
+            return `<article class="lesson-essay-answer"><strong>คำตอบข้อเขียน · ${pending ? answerStatus : `ตรวจแล้ว · ${answerStatus}`}</strong><small>ส่งเมื่อ ${escapeHtml(formatReportDate(item.submitted_at))} · ${answerScore}${reviewedAt}${reviewer ? ` · ผู้ตรวจ ${escapeHtml(reviewer)}` : ''}</small><p>${escapeHtml(item.answer || '')}</p>${item.feedback ? `<small>ข้อเสนอแนะจากอาจารย์: ${escapeHtml(item.feedback)}</small>` : ''}</article>`;
+        }).join('')}</div>` : '';
+        return `<div class="lesson-breakdown-row"><div class="lesson-number">${Number(lesson.position)}</div><div class="lesson-detail"><strong>${escapeHtml(lesson.title)}</strong><span>${attemptLabel}</span><span>คะแนนรวม: ${quizScore}</span><span class="lesson-score-parts">${parts.join(' · ')}</span>${status}<span>ความคืบหน้า ${progress}%</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${progress}%"></div></div>${essayDetails}</div></div>`;
     }).join('');
     return `<details class="lesson-breakdown"><summary>ดูรายการบทเรียนย่อย (${lessons.length})</summary><div class="lesson-breakdown-list">${rows}</div></details>`;
 }
@@ -181,15 +190,19 @@ function renderReports(courses) {
     const earned = rows.reduce((sum, lesson) => sum + (Number(lesson.score_earned) || 0), 0);
     const possible = rows.reduce((sum, lesson) => sum + (Number(lesson.score_total) || 0), 0);
     const pendingEssays = rows.reduce((sum, lesson) => sum + (Number(lesson.essay_pending_count) || 0), 0);
+    const reviewedEssays = rows.reduce((sum, lesson) => sum + (Number(lesson.essay_reviewed_count) || 0), 0);
+    const quizAttempts = rows.reduce((sum, lesson) => sum + (Number(lesson.attempt_count) || 0), 0);
     const progress = lessonTotal ? Math.round(attempted / lessonTotal * 100) : 0;
     const fmt = (value) => Number(value || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
 
     summary.innerHTML = `
         <div class="stat-card orange"><strong class="report-stat-heading">วิชาที่ลงทะเบียน</strong><p class="value">${visibleCourses.length}</p><span class="sub-value">เฉพาะวิชาของนักเรียน</span></div>
         <div class="stat-card blue"><strong class="report-stat-heading">บทเรียนที่มีผล</strong><p class="value">${attempted}/${lessonTotal}</p><span class="sub-value">รวมผลสอบและผลเทียบโอน</span></div>
+        <div class="stat-card blue"><strong class="report-stat-heading">ครั้งที่ส่งข้อสอบ</strong><p class="value">${quizAttempts}</p><span class="sub-value">รวมทุกครั้งในรายวิชาที่เลือก</span></div>
         <div class="stat-card green"><strong class="report-stat-heading">ความคืบหน้า</strong><p class="value">${progress}%</p><span class="sub-value">สัดส่วนบทที่ส่งแบบทดสอบ</span></div>
         <div class="stat-card purple"><strong class="report-stat-heading">คะแนนรวม</strong><p class="value">${fmt(earned)}/${fmt(possible)}</p><span class="sub-value">รวมคะแนนข้อเขียนที่ตรวจแล้ว</span></div>
-        <div class="stat-card red"><strong class="report-stat-heading">ข้อเขียนรอตรวจ</strong><p class="value">${pendingEssays}</p><span class="sub-value">ข้อที่ยังรอครูตรวจ</span></div>`;
+        <div class="stat-card red"><strong class="report-stat-heading">ข้อเขียนรอตรวจ</strong><p class="value">${pendingEssays}</p><span class="sub-value">ข้อที่ยังรอครูตรวจ</span></div>
+        <div class="stat-card green"><strong class="report-stat-heading">ข้อเขียนตรวจแล้ว</strong><p class="value">${reviewedEssays}</p><span class="sub-value">นับจากผลสอบครั้งล่าสุดของแต่ละบท</span></div>`;
 
     if (!visibleCourses.length) {
         courseBody.innerHTML = '<tr><td colspan="8" class="report-empty">ยังไม่มีรายวิชาที่ลงทะเบียน</td></tr>';
@@ -280,6 +293,7 @@ function updateProfile(student) {
 function updateStats(stats, courses) {
     const courseCount = Number(stats?.course_count || 0);
     const attemptedLessons = Number(stats?.attempted_lessons || 0);
+    const quizAttempts = Number(stats?.quiz_attempts || 0);
     const totalLessons = Number(stats?.total_lessons || 0);
     const scoreEarned = Number(stats?.score_earned || 0);
     const scoreTotal = Number(stats?.score_total || 0);
@@ -289,7 +303,8 @@ function updateStats(stats, courses) {
         if (el) el.textContent = value;
     };
     setText('statCourseCount', String(courseCount));
-    setText('statAvgProgress', `${attemptedLessons}/${totalLessons}`);
+    setText('statAvgProgress', String(quizAttempts));
+    setText('statQuizAttemptCoverage', `ครอบคลุม ${attemptedLessons}/${totalLessons} บทเรียน`);
     setText('statAvgScore', `${scoreEarned}/${scoreTotal}`);
 
     renderTable(courses);
