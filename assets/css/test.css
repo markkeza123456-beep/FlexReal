@@ -1,11 +1,11 @@
 :root {
-    --orange: #f4511e;
-    --orange-dark: #e65a00;
+    --orange: #324860;
+    --orange-dark: #223850;
     --ink: #263033;
     --muted: #68777c;
     --paper: #ffffff;
     --line: #ececec;
-    --soft: #fff3ea;
+    --soft: #EEF4F8;
     --violet: #5b567d;
 }
 
@@ -136,8 +136,8 @@ body {
     margin: -8px 0 16px;
     padding: 6px 10px;
     border-radius: 999px;
-    color: #9a3412;
-    background: #fff1e6;
+    color: #223850;
+    background: #EEF4F8;
     font-size: 13px;
     font-weight: 600;
 }
@@ -174,7 +174,7 @@ body {
     padding: 18px;
     border: 1px solid var(--line);
     border-radius: 14px;
-    background: #fffdfb;
+    background: #EEF4F8;
 }
 
 .essay-label {
@@ -186,7 +186,7 @@ body {
     width: 100%;
     min-height: 180px;
     resize: vertical;
-    border: 1px solid #e7d8cc;
+    border: 1px solid #EEF4F8;
     border-radius: 12px;
     padding: 14px 16px;
     font: inherit;
@@ -199,7 +199,7 @@ body {
 
 .essay-input:focus {
     border-color: var(--orange);
-    box-shadow: 0 0 0 3px rgba(244, 81, 30, 0.12);
+    box-shadow: 0 0 0 3px rgba(50, 72, 96, 0.12);
 }
 
 .essay-note {
@@ -251,7 +251,7 @@ body {
     padding: 22px;
     border-radius: 14px;
     background: var(--soft);
-    border: 1px solid #ffd4b8;
+    border: 1px solid #EEF4F8;
     margin-top: 18px;
 }
 

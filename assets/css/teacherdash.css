@@ -6,10 +6,10 @@
 :root {
     --bg:         #E5F9FE;
     --bg2:        #ffffff;
-    --bg3:        #fff4ed;
-    --border:     #f3d2be;
-    --orange:     #f26b3a;
-    --orange-dim: rgba(242,107,58,.12);
+    --bg3:        #EEF4F8;
+    --border:     #EEF4F8;
+    --orange:     #324860;
+    --orange-dim: rgba(50, 72, 96,.12);
     --text:       #2d3436;
     --text-dim:   #636e72;
     --text-muted: #8a8f98;
@@ -178,7 +178,7 @@ html, body {
     cursor: pointer;
     transition: background .18s, transform .15s;
 }
-.btn-add-lesson:hover { background: #ea6c0a; transform: translateY(-1px); }
+.btn-add-lesson:hover { background: #324860; transform: translateY(-1px); }
 .btn-add-lesson .plus { font-size: 18px; line-height: 1; }
 
 .stats-grid {
@@ -325,9 +325,9 @@ html, body {
 }
 .badge-active    { background: rgba(16,185,129,.15);  color: #10b981; }
 .badge-draft     { background: rgba(100,100,100,.18); color: #aaa; }
-.badge-excellent { background: rgba(244,81,30,.15);  color: var(--orange); }
+.badge-excellent { background: rgba(50, 72, 96,.15);  color: var(--orange); }
 .badge-good      { background: rgba(59,130,246,.15);  color: #60a5fa; }
-.badge-average   { background: rgba(234,179,8,.15);   color: #facc15; }
+.badge-average   { background: rgba(50, 72, 96,.15);   color: #324860; }
 .badge-needs-help{ background: rgba(239,68,68,.15);   color: #f87171; }
 
 
@@ -415,20 +415,20 @@ html, body {
 
 
 .content-manager-overlay {
-    background-color: #fffaf6;
+    background-color: #EEF4F8;
     background-image: radial-gradient(circle, rgba(50,72,96,.12) 1.2px, transparent 1.4px), linear-gradient(135deg, rgba(50,72,96,.08), transparent 42%);
     background-size: 28px 28px, 100% 100%;
     backdrop-filter: none;
     z-index: 1200;
 }
 .content-manager-modal { width: 100%; max-width: none; height: 100vh; max-height: none; border: 0; border-radius: 0; padding: 30px clamp(20px, 5vw, 80px) 44px; overflow-y: auto; box-sizing: border-box; background: transparent; }
-.content-manager-header { position: sticky; top: -30px; z-index: 2; padding: 18px 0; margin: 0 auto 26px; width: min(1180px, 100%); background: rgba(255,250,246,.94); border-bottom: 1px solid var(--border); backdrop-filter: blur(12px); }
+.content-manager-header { position: sticky; top: -30px; z-index: 2; padding: 18px 0; margin: 0 auto 26px; width: min(1180px, 100%); background: rgba(238, 244, 248,.94); border-bottom: 1px solid var(--border); backdrop-filter: blur(12px); }
 .content-manager-header .modal-title { font-size: 22px; }
 .content-manager-header::after { display: none; }
 .course-content-editor { width: min(1180px, 100%); margin: 0 auto; display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; align-items: start; }
-.course-content-editor > section { min-height: 100%; padding: 26px !important; border: 1px solid rgba(243,210,190,.9) !important; border-radius: 16px !important; background: rgba(255,250,246,.9) !important; box-shadow: 0 16px 40px rgba(112,58,28,.08); }
+.course-content-editor > section { min-height: 100%; padding: 26px !important; border: 1px solid rgba(238, 244, 248,.9) !important; border-radius: 16px !important; background: rgba(238, 244, 248,.9) !important; box-shadow: 0 16px 40px rgba(34, 56, 80,.08); }
 .course-content-editor > section:first-child { border-top: 3px solid var(--orange) !important; }
-.course-content-editor > section:nth-child(2) { border-top: 3px solid #d97706 !important; }
+.course-content-editor > section:nth-child(2) { border-top: 3px solid #324860 !important; }
 .course-content-editor > div:last-child { grid-column: 1 / -1; padding-top: 22px !important; }
 .course-content-editor .form-input { background: #fff; min-height: 44px; }
 .course-content-editor .btn-save { min-width: 180px; padding: 12px 22px; }
@@ -536,7 +536,7 @@ html, body {
     cursor: pointer;
     transition: background .18s;
 }
-.btn-save:hover { background: #ea6c0a; }
+.btn-save:hover { background: #324860; }
 
 
 @media (max-width: 1200px) {
@@ -601,8 +601,8 @@ html, body {
     align-items: flex-start;
     justify-content: center;
     gap: 4px;
-    background: #fffaf6;
-    border-bottom: 1px solid #f7c8aa;
+    background: #EEF4F8;
+    border-bottom: 1px solid #324860;
 }
 .sidebar-logo .logo-icon { display: none; }
 .sidebar-logo .logo-name,

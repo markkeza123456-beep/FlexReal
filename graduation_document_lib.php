@@ -117,9 +117,9 @@ function generateGraduationTranscriptPdf(array $student, array $courseRows, floa
         .courses th{background:#234a67;color:#fff;font-weight:bold;padding:8px 6px;border:1px solid #234a67}
         .courses td{padding:7px 6px;border:1px solid #d7e0e9}
         .center{text-align:center}.right{text-align:right}
-        .grade-tr{color:#9a3412;background:#fff1e7;font-weight:bold}
+        .grade-tr{color:#223850;background:#EEF4F8;font-weight:bold}
         .grade-pass{color:#166534;font-weight:bold}.grade-fail{color:#b91c1c;font-weight:bold}
-        .summary{margin-top:14px;padding:10px 12px;background:#fff7ed;border-left:4px solid #f97316;font-size:13pt}
+        .summary{margin-top:14px;padding:10px 12px;background:#EEF4F8;border-left:4px solid #324860;font-size:13pt}
         .signatures{margin-top:40px;width:100%}.signatures td{text-align:center;width:50%;padding-top:22px}
         .signature-line{border-top:1px solid #64748b;margin:0 30px;padding-top:5px}
         .note{font-size:9pt;color:#64748b;margin-top:20px}

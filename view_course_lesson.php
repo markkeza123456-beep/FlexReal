@@ -130,7 +130,7 @@ header('Content-Type: text/html; charset=utf-8');
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261020-tropical-doodle-icons">
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme">
   <style>
     body { margin: 0; color: #24303b; font-family: "IBM Plex Sans Thai", system-ui, sans-serif; background: #f7f8fa; }
     header { display:flex; gap:12px; align-items:center; justify-content:space-between; padding: 12px 20px; background: #fff; border-bottom: 1px solid #e8eaed; font-weight: 700; }
@@ -141,7 +141,7 @@ header('Content-Type: text/html; charset=utf-8');
     .pdf-page { display:block; max-width:100%; height:auto; background:#fff; box-shadow:0 2px 12px rgba(15,23,42,.3); }
     .pdf-loading { padding:28px; color:#fff; text-align:center; }
     .book-image { display:block; max-width:100%; max-height:calc(100vh - 120px); margin:auto; box-shadow:0 8px 26px rgba(15,23,42,.16); background:#fff; }
-    .notice { padding: 18px; border-radius: 10px; background: #fff7ed; color: #9a3412; }
+    .notice { padding: 18px; border-radius: 10px; background: #EEF4F8; color: #223850; }
   </style>
 </head>
 <body>

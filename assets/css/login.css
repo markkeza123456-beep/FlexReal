@@ -5,20 +5,20 @@
   --bg:          #E5F9FE;
   --surface:     #ffffff;
   --card:        #ffffff;
-  --border:      #f0dfd5;
-  --border-hover:#f26b3a;
+  --border:      #EEF4F8;
+  --border-hover:#324860;
 
-  --orange:      #f26b3a;
-  --orange-light:#ff8c45;
-  --orange-dim:  rgba(242, 107, 58, 0.12);
-  --orange-glow: rgba(242, 107, 58, 0.22);
+  --orange:      #324860;
+  --orange-light:#58718C;
+  --orange-dim:  rgba(50, 72, 96, 0.12);
+  --orange-glow: rgba(50, 72, 96, 0.22);
 
   --text-primary:   #2d3436;
   --text-secondary: #636e72;
   --text-muted:     #8a8f98;
 
   --error: #ff4444;
-  --success: #ff8c45;
+  --success: #324860;
 
   --radius: 12px;
   --radius-sm: 8px;
@@ -71,8 +71,8 @@ body {
   position: absolute;
   width: clamp(112px, 10vw, 180px);
   height: auto;
-  color: #C0E4F6;
-  opacity: .82;
+  color: #324860;
+  opacity: .12;
   stroke: currentColor;
   stroke-width: 3.2;
   stroke-linecap: round;
@@ -91,7 +91,7 @@ body {
 }
 
 @media (max-width: 760px) {
-  .edu-illustration { opacity: .82; }
+  .edu-illustration { opacity: .12; }
   .network-one, .pencil-one { display: none; }
   .book-one { left: -8%; }
   .cap-one { right: -8%; }
@@ -132,9 +132,9 @@ body {
   position: relative;
   overflow: hidden;
   box-shadow:
-    0 0 0 1px rgba(242,107,58,.06),
-    0 12px 36px rgba(93,53,32,.10),
-    0 0 80px rgba(242,107,58,.04);
+    0 0 0 1px rgba(50, 72, 96,.06),
+    0 12px 36px rgba(34, 56, 80,.10),
+    0 0 80px rgba(50, 72, 96,.04);
   animation: cardIn .6s cubic-bezier(0.22,1,0.36,1) both;
 }
 @keyframes cardIn {
@@ -250,7 +250,7 @@ body {
 
 .role-tab:hover {
   color: var(--text-secondary);
-  background: rgba(242,107,58,.06);
+  background: rgba(50, 72, 96,.06);
 }
 .role-tab:hover .role-icon {
   filter: grayscale(0) opacity(1);
@@ -260,7 +260,7 @@ body {
 .role-tab.active {
   background: linear-gradient(135deg, var(--orange), var(--orange-light));
   color: #fff;
-  box-shadow: 0 2px 12px rgba(242,107,58,.4);
+  box-shadow: 0 2px 12px rgba(50, 72, 96,.4);
 }
 .role-tab.active .role-icon {
   filter: grayscale(0) opacity(1);
@@ -311,7 +311,7 @@ body {
 }
 
 .pin-digit.filled {
-  border-color: rgba(242,107,58,.5);
+  border-color: rgba(50, 72, 96,.5);
 }
 
 .pin-digit.pin-error {
@@ -364,8 +364,8 @@ body {
 .input-wrap input:focus,
 .input-wrap input:focus-visible {
   border-color: var(--orange);
-  background: #fffdfb;
-  box-shadow: 0 0 0 4px rgba(242, 107, 58, .24), 0 0 20px var(--orange-dim);
+  background: #EEF4F8;
+  box-shadow: 0 0 0 4px rgba(50, 72, 96, .24), 0 0 20px var(--orange-dim);
 }
 
 
@@ -509,7 +509,7 @@ body {
   position: relative;
   overflow: hidden;
   transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
-  box-shadow: 0 4px 20px rgba(242,107,58,.4);
+  box-shadow: 0 4px 20px rgba(50, 72, 96,.4);
   animation: fadeSlideUp .5s .4s both;
 }
 .btn-submit::before {
@@ -520,7 +520,7 @@ body {
   opacity: 0;
   transition: opacity var(--transition);
 }
-.btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(242,107,58,.55); }
+.btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(50, 72, 96,.55); }
 .btn-submit:hover::before { opacity: 1; }
 .btn-submit:active { transform: translateY(0); }
 .btn-submit:disabled { opacity: .6; cursor: not-allowed; transform: none; }

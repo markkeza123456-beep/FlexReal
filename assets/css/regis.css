@@ -2,16 +2,16 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --accent:       #f26b3a;
-    --accent-light: #fff0e6;
-    --accent-mid:   #ff9d5c;
-    --accent-dark:  #b8430b;
+    --accent:       #324860;
+    --accent-light: #EEF4F8;
+    --accent-mid:   #58718C;
+    --accent-dark:  #223850;
     --blue:         #3b82f6;
     --bg:           #E5F9FE;
-    --surface:      #fffaf6;
-    --surface2:     #fff4ed;
-    --border:       #f3d2be;
-    --border-med:   #e9b997;
+    --surface:      #ffffff;
+    --surface2:     #ffffff;
+    --border:       #EEF4F8;
+    --border-med:   #324860;
     --text:         #2d3436;
     --text2:        #526067;
     --text3:        #667176;
@@ -243,7 +243,7 @@
   .stat-icon svg { width: 16px; height: 16px; }
   .stat-icon.green { background: var(--accent-light); color: var(--accent); }
   .stat-icon.blue  { background: #E6F1FB; color: #185FA5; }
-  .stat-icon.amber { background: #FAEEDA; color: #854F0B; }
+  .stat-icon.amber { background: #EEF4F8; color: #223850; }
   .stat-icon.teal  { background: #E1F5EE; color: var(--accent-dark); }
   .stat-label { font-size: 11px; color: var(--text3); }
   .stat-value { font-size: 24px; font-weight: 600; color: var(--text); line-height: 1.1; }
@@ -318,7 +318,7 @@
   }
   .activity-type svg { width: 15px; height: 15px; }
   .at-read  { background: #E6F1FB; color: #185FA5; }
-  .at-test  { background: #FAEEDA; color: #854F0B; }
+  .at-test  { background: #EEF4F8; color: #223850; }
   .at-proj  { background: var(--accent-light); color: var(--accent-dark); }
   .at-vid   { background: #FBEAF0; color: #993556; }
   .activity-detail { flex: 1; }
@@ -402,7 +402,7 @@
     border-radius: 20px; font-size: 11px; font-weight: 500;
   }
   .pill-green  { background: #EAF3DE; color: #27500A; }
-  .pill-amber  { background: #FAEEDA; color: #633806; }
+  .pill-amber  { background: #EEF4F8; color: #223850; }
   .pill-blue   { background: #E6F1FB; color: #0C447C; }
   .pill-red    { background: #FCEBEB; color: #791F1F; }
   .pill-teal   { background: var(--accent-light); color: var(--accent-dark); }
@@ -436,7 +436,7 @@
   }
   .g-a { background: #EAF3DE; color: #27500A; }
   .g-b { background: #E6F1FB; color: #0C447C; }
-  .g-c { background: #FAEEDA; color: #633806; }
+  .g-c { background: #EEF4F8; color: #223850; }
   .g-d { background: #FCEBEB; color: #791F1F; }
 
 

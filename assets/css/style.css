@@ -14,8 +14,8 @@ h2 { font-size: 20px; }
 .transcript-form { display: grid; gap: 12px; }
 .transcript-form label { font-weight: 600; }
 .transcript-form input[type=file] { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; font: inherit; }
-.transcript-form button { min-height: 46px; padding: 10px 18px; border: 0; border-radius: 8px; background: #f26b3a; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
-.transcript-form button:hover { background: #e95c0f; }
+.transcript-form button { min-height: 46px; padding: 10px 18px; border: 0; border-radius: 8px; background: #324860; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.transcript-form button:hover { background: #324860; }
 .notice { padding: 12px 14px; margin: 0 0 18px; border-radius: 8px; line-height: 1.6; }
 .notice-success { color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; }
 .notice-error { color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; }
@@ -25,7 +25,7 @@ h2 { font-size: 20px; }
 .history-row > div { display: grid; gap: 3px; }
 .history-row > div span, .muted { color: #64748b; font-size: 13px; }
 .request-status { padding: 5px 10px; border-radius: 99px; font-size: 13px; font-weight: 600; }
-.status-pending { color: #92400e; background: #fef3c7; }
+.status-pending { color: #223850; background: #EEF4F8; }
 .status-approved { color: #166534; background: #dcfce7; }
 .status-rejected { color: #991b1b; background: #fee2e2; }
 .review-note { flex-basis: 100%; margin: 0; color: #475569; }
@@ -37,15 +37,15 @@ h2 { font-size: 20px; }
 .review-header h1 { font-size: clamp(24px, 3vw, 32px); }
 .review-header p { margin: 4px 0 0; color: #64748b; }
 .current-request-picker { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-width: min(560px, 100%); }
-.current-request-card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 2px 10px; min-width: 0; padding: 9px 12px; border: 1px solid #fed7aa; border-radius: 10px; background: #fff7ed; color: #475569; font-size: 12px; }
+.current-request-card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 2px 10px; min-width: 0; padding: 9px 12px; border: 1px solid #324860; border-radius: 10px; background: #EEF4F8; color: #475569; font-size: 12px; }
 .current-request-card strong { overflow: hidden; color: #1f2937; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-.current-request-number { color: #9a3412; font-weight: 700; }
+.current-request-number { color: #223850; font-weight: 700; }
 .request-status-pill { width: fit-content; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
-.request-status-pill.status-pending { background: #ffedd5; color: #9a3412; }
+.request-status-pill.status-pending { background: #EEF4F8; color: #223850; }
 .request-status-pill.status-approved { background: #dcfce7; color: #166534; }
 .request-status-pill.status-rejected { background: #fee2e2; color: #991b1b; }
-.open-request-modal, .select-request-button { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 8px 12px; border: 1px solid #f26b3a; border-radius: 8px; background: #F26B3A; color: #fff; font: inherit; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; cursor: pointer; }
-.open-request-modal:hover, .select-request-button:hover { background: #f26b3a; }
+.open-request-modal, .select-request-button { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 8px 12px; border: 1px solid #324860; border-radius: 8px; background: #324860; color: #fff; font: inherit; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; cursor: pointer; }
+.open-request-modal:hover, .select-request-button:hover { background: #324860; }
 .open-request-modal:disabled { opacity: .55; cursor: not-allowed; }
 .current-request-empty { display: block; }
 .search-modal-overlay { display: none !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0,0,0,.6) !important; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 99999 !important; justify-content: center !important; align-items: center !important; }
@@ -58,18 +58,18 @@ body.modal-open { overflow: hidden; }
 .close-btn { flex: 0 0 auto; width: 36px; height: 36px; border: 0; border-radius: 9px; background: #f1f5f9; color: #334155; font-size: 16px; font-weight: 700; cursor: pointer; }
 .close-btn:hover { background: #fee2e2; color: #b91c1c; }
 .request-modal-search { width: 100%; min-height: 46px; box-sizing: border-box; padding: 12px 16px; margin-bottom: 14px; border: 1px solid #e2e8f0; border-radius: 10px; font: inherit; font-size: 1rem; outline: none; }
-.request-modal-search:focus { border-color: #fb923c; box-shadow: 0 0 0 3px rgba(251,146,60,.16); }
+.request-modal-search:focus { border-color: #324860; box-shadow: 0 0 0 3px rgba(50, 72, 96,.16); }
 .search-modal-content { max-height: 400px; overflow-y: auto; margin-top: 15px; }
 .request-modal-table-wrap { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 10px; }
 .request-modal-table { width: 100%; min-width: 600px; border-collapse: collapse; }
 .request-modal-table th, .request-modal-table td { padding: 10px 12px; border-bottom: 1px solid #e8edf3; text-align: left; font-size: 13px; }
-.request-modal-table th { position: sticky; top: 0; background: #fff1e6; color: #334155; font-weight: 600; }
+.request-modal-table th { position: sticky; top: 0; background: #EEF4F8; color: #334155; font-weight: 600; }
 .request-modal-table tbody tr:last-child td { border-bottom: 0; }
 .request-modal-table #requestModalEmpty td { padding: 28px; color: #64748b; text-align: center; }
-.select-request-button { padding: 6px 14px; border-radius: 6px; background: #ff7a00; color: #fff; text-decoration: none; }
-.select-request-button:hover { background: #ea6c00; }
+.select-request-button { padding: 6px 14px; border-radius: 6px; background: #324860; color: #fff; text-decoration: none; }
+.select-request-button:hover { background: #324860; }
 .request-modal-table [hidden] { display: none !important; }
-.review-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 12px 16px; margin-bottom: 14px; border: 1px solid #fed7aa; border-radius: 10px; background: #fff7ed; color: #475569; }
+.review-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 12px 16px; margin-bottom: 14px; border: 1px solid #324860; border-radius: 10px; background: #EEF4F8; color: #475569; }
 .review-meta strong { color: #1f2937; }
 .review-columns { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr); gap: 16px; align-items: stretch; }
 .document-pane, .checklist-pane, .review-empty { min-width: 0; padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; box-shadow: 0 8px 24px rgb(31 41 55 / 5%); }
@@ -80,12 +80,12 @@ body.modal-open { overflow: hidden; }
 .transcript-viewer iframe, .transcript-viewer embed { display:block; width:100%; height:650px; flex:0 0 650px; border:0; background:#f8fafc; }
 .transcript-file-error { display:grid; flex:1; min-height:300px; place-items:center; padding:24px; color:#b91c1c; text-align:center; }
 .transcript-file-error[hidden] { display:none; }
-.transcript-open-link { align-self:flex-start; margin-top:10px; color:#c2410c; font-size:13px; }
+.transcript-open-link { align-self:flex-start; margin-top:10px; color:#324860; font-size:13px; }
 .checklist-pane { display: flex; flex-direction: column; max-height: 760px; }
 .audit-pane { max-height: 760px; gap: 10px; overflow-y: auto; }
 .audit-status { width: fit-content; padding: 7px 11px; border-radius: 999px; font-size: 13px; font-weight: 700; }
 .audit-status-approved { color: #166534; background: #dcfce7; }
-.audit-status-pending { color: #9a3412; background: #ffedd5; }
+.audit-status-pending { color: #223850; background: #EEF4F8; }
 .audit-status-rejected { color: #991b1b; background: #fee2e2; }
 .audit-details { display: grid; gap: 8px; margin: 0; }
 .audit-details > div { display: grid; grid-template-columns: minmax(135px, .8fr) minmax(0, 1.2fr); gap: 12px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
@@ -99,10 +99,10 @@ body.modal-open { overflow: hidden; }
 .checklist-help { margin: -4px 0 10px; color: #64748b; font-size: 13px; }
 .lesson-checklist { flex: 1; overflow-y: auto; padding-right: 4px; }
 .course-group { min-width: 0; padding: 10px 12px 12px; margin: 0 0 10px; border: 1px solid #e5e7eb; border-radius: 9px; }
-.course-group legend { padding: 0 5px; color: #9a3412; font-weight: 600; }
+.course-group legend { padding: 0 5px; color: #223850; font-weight: 600; }
 .lesson-option { display: flex; align-items: flex-start; gap: 10px; padding: 9px 5px; border-radius: 6px; cursor: pointer; }
-.lesson-option:hover { background: #fff7ed; }
-.lesson-option input { width: 18px; height: 18px; margin-top: 2px; accent-color: #F26B3A; flex: 0 0 auto; }
+.lesson-option:hover { background: #EEF4F8; }
+.lesson-option input { width: 18px; height: 18px; margin-top: 2px; accent-color: #324860; flex: 0 0 auto; }
 .lesson-option span { display: grid; gap: 3px; }
 .lesson-option strong { font-size: 13px; font-weight: 500; }
 .lesson-option small { color: #64748b; line-height: 1.45; }
@@ -110,8 +110,8 @@ body.modal-open { overflow: hidden; }
 .checklist-pane textarea { width: 100%; padding: 9px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; resize: vertical; }
 .review-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .approve-button, .reject-button { min-height: 44px; margin-top: 12px; border: 0; border-radius: 8px; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
-.approve-button { background: #F26B3A; }
-.approve-button:hover:not(:disabled) { background: #f26b3a; }
+.approve-button { background: #324860; }
+.approve-button:hover:not(:disabled) { background: #324860; }
 .reject-button { background: #b91c1c; }
 .reject-button:hover:not(:disabled) { background: #991b1b; }
 .approve-button:disabled, .reject-button:disabled { opacity: .6; cursor: not-allowed; }

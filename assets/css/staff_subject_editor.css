@@ -2,13 +2,13 @@
 
 :root {
   --bg: #E5F9FE;
-  --surface: #fffaf6;
-  --card: #fffaf6;
-  --border: #f3d2be;
-  --orange: #f26b3a;
-  --orange-light: #ff8c45;
-  --orange-dim: rgba(242, 107, 58, 0.12);
-  --orange-glow: rgba(242, 107, 58, 0.22);
+  --surface: #ffffff;
+  --card: #ffffff;
+  --border: #EEF4F8;
+  --orange: #324860;
+  --orange-light: #58718C;
+  --orange-dim: rgba(50, 72, 96, 0.12);
+  --orange-glow: rgba(50, 72, 96, 0.22);
   --blue: #3b82f6;
   --blue-dim: rgba(59, 130, 246, 0.12);
   --green: #22c55e;
@@ -130,9 +130,9 @@ body {
 }
 
 .hero-card {
-  background: #f26b3a !important;
+  background: #324860 !important;
   border-color: rgba(255, 255, 255, 0.45);
-  box-shadow: 0 18px 50px rgba(198, 79, 12, 0.28);
+  box-shadow: 0 18px 50px rgba(50, 72, 96, 0.28);
 }
 
 .hero-card h2 {
@@ -162,7 +162,7 @@ body {
 .meta-pill {
   display: inline-flex;
   align-items: center;
-  border: 1px solid rgba(244, 81, 30, 0.22);
+  border: 1px solid rgba(50, 72, 96, 0.22);
   background: var(--orange-dim);
   color: var(--orange-light);
   border-radius: 999px;
@@ -173,7 +173,7 @@ body {
 
 .hero-card .meta-pill {
   border-color: rgba(255, 255, 255, 0.34);
-  background: rgba(125, 48, 0, 0.18);
+  background: rgba(34, 56, 80, 0.18);
   color: #ffffff;
 }
 
@@ -318,12 +318,12 @@ body {
   padding: 11px 20px;
   color: #2d3436;
   background: linear-gradient(135deg, var(--orange), var(--orange-light));
-  box-shadow: 0 10px 24px rgba(244, 81, 30, 0.22);
+  box-shadow: 0 10px 24px rgba(50, 72, 96, 0.22);
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 26px rgba(244, 81, 30, 0.3);
+  box-shadow: 0 12px 26px rgba(50, 72, 96, 0.3);
 }
 
 .btn-ghost {
@@ -342,11 +342,11 @@ body {
 .btn-ghost.btn-back {
   background: #ffffff;
   color: var(--text-primary);
-  border-color: #efcbb5;
+  border-color: #324860;
 }
 
 .btn-ghost.btn-back:hover {
-  background: #fffaf6;
+  background: #EEF4F8;
   border-color: var(--orange);
   color: var(--orange);
 }
@@ -392,7 +392,7 @@ body {
 .data-table th,
 .data-table td {
   padding: 14px 18px;
-  border-bottom: 1px solid rgba(216, 86, 21, 0.42);
+  border-bottom: 1px solid rgba(50, 72, 96, 0.42);
   text-align: left;
   vertical-align: middle;
 }
@@ -403,7 +403,7 @@ body {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  border-bottom: 1px solid rgba(216, 86, 21, 0.58);
+  border-bottom: 1px solid rgba(50, 72, 96, 0.58);
 }
 
 .data-table tbody tr:nth-child(even) td {
@@ -411,7 +411,7 @@ body {
 }
 
 .data-table tbody tr:hover td {
-  background: rgba(242, 107, 58, 0.04);
+  background: rgba(50, 72, 96, 0.04);
 }
 
 .empty-cell {
@@ -517,9 +517,9 @@ body {
 }
 
 .resource-link.video {
-  background: rgba(242, 107, 58, 0.1);
+  background: rgba(50, 72, 96, 0.1);
   color: var(--orange);
-  border-color: rgba(242, 107, 58, 0.16);
+  border-color: rgba(50, 72, 96, 0.16);
 }
 
 .resource-empty {
@@ -538,9 +538,9 @@ body {
 .resource-card {
   border: 1px solid var(--border);
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 250, 246, 0.98));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(238, 244, 248, 0.98));
   padding: 18px;
-  box-shadow: 0 10px 26px rgba(242, 107, 58, 0.08);
+  box-shadow: 0 10px 26px rgba(50, 72, 96, 0.08);
 }
 
 .resource-head {
@@ -577,7 +577,7 @@ body {
 }
 
 .resource-icon.video {
-  background: rgba(242, 107, 58, 0.12);
+  background: rgba(50, 72, 96, 0.12);
 }
 
 .resource-preview {
@@ -585,7 +585,7 @@ body {
   padding: 12px 14px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(242, 107, 58, 0.12);
+  border: 1px solid rgba(50, 72, 96, 0.12);
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -733,8 +733,8 @@ body {
 }
 
 .panel.is-highlighted {
-  border-color: rgba(244, 81, 30, 0.35);
-  box-shadow: 0 0 0 1px rgba(244, 81, 30, 0.16), 0 18px 50px rgba(0, 0, 0, 0.28);
+  border-color: rgba(50, 72, 96, 0.35);
+  box-shadow: 0 0 0 1px rgba(50, 72, 96, 0.16), 0 18px 50px rgba(0, 0, 0, 0.28);
 }
 
 @media (max-width: 960px) {

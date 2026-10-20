@@ -356,11 +356,11 @@ $stats = [
         }
         .action-icon-btn:hover { background: rgba(255,255,255,0.1); }
         .btn-open-add-quiz {
-            background: rgba(249, 115, 22, 0.1); color: var(--orange); border: 1px solid rgba(249, 115, 22, 0.3);
+            background: rgba(50, 72, 96, 0.1); color: var(--orange); border: 1px solid rgba(50, 72, 96, 0.3);
             padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.2s; font-family: 'Kanit', sans-serif;
             display: flex; align-items: center; gap: 4px;
         }
-        .btn-open-add-quiz:hover { background: rgba(249, 115, 22, 0.2); transform: translateY(-1px); }
+        .btn-open-add-quiz:hover { background: rgba(50, 72, 96, 0.2); transform: translateY(-1px); }
 
         .choice-row {
             display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
@@ -372,15 +372,15 @@ $stats = [
         .choice-label { font-weight: 600; color: var(--text-dim); font-size: 14px; width: 16px; text-align: center; }
         @media (max-width: 760px) { .course-content-editor { grid-template-columns: 1fr !important; } }
     </style>
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261020-tropical-doodle-icons">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme">
 </head>
 <body>
 <aside class="sidebar">
     <a class="sidebar-logo" href="index.html" title="กลับหน้าหลักและรายวิชา">
         <div class="logo-icon">
             <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-                <polygon points="16,2 30,10 30,22 16,30 2,22 2,10" fill="none" stroke="#f97316" stroke-width="2.5"/>
-                <polygon points="16,8 24,13 24,20 16,25 8,20 8,13" fill="#f97316" opacity="0.35"/>
+                <polygon points="16,2 30,10 30,22 16,30 2,22 2,10" fill="none" stroke="#324860" stroke-width="2.5"/>
+                <polygon points="16,8 24,13 24,20 16,25 8,20 8,13" fill="#324860" opacity="0.35"/>
             </svg>
         </div>
         <div>
@@ -446,7 +446,7 @@ $stats = [
         </header>
 
         <section class="stats-grid">
-            <div class="stat-card" style="--accent:#f97316">
+            <div class="stat-card" style="--accent:#324860">
                 <div class="stat-icon"></div>
                 <div class="stat-value"><?= $stats['students'] ?></div>
                 <div class="stat-label">นักเรียนที่ดูแล</div>
@@ -634,7 +634,7 @@ $stats = [
                                 ?>
                                 <div style="background:<?= $isPlaceholderLesson ? 'rgba(255,255,255,0.65)' : 'var(--bg3)' ?>;padding:16px 20px;border-radius:var(--radius-sm);border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; flex-wrap:wrap; gap:12px;<?= $isPlaceholderLesson ? 'opacity:0.85;' : '' ?>">
                                     <div style="display:flex;align-items:center;gap:16px;">
-                                        <div style="width:36px;height:36px;background:var(--bg2);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--orange);font-weight:600;font-size:14px;border:1px solid rgba(249,115,22,0.2);">
+                                        <div style="width:36px;height:36px;background:var(--bg2);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--orange);font-weight:600;font-size:14px;border:1px solid rgba(50, 72, 96,0.2);">
                                             <?= $i+1 ?>
                                         </div>
                                         <div>
@@ -873,7 +873,7 @@ $stats = [
                     <button class="modal-close" onclick="document.getElementById('quizModalOverlay').classList.remove('open')">ปิด</button>
                 </div>
                 <div class="modal-body">
-                    <div style="background:var(--orange-dim); color:var(--orange); padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:10px; border:1px solid rgba(249,115,22,0.3);">
+                    <div style="background:var(--orange-dim); color:var(--orange); padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:10px; border:1px solid rgba(50, 72, 96,0.3);">
                         <b>เพิ่มลงใน:</b> <span id="quizTargetLessonName"></span>
                     </div>
                     <input type="hidden" id="quizTargetLessonId" value="">
@@ -912,7 +912,7 @@ $stats = [
                     </div>
 
                     <div class="form-group" id="quizEssayGroupAdd" style="display:none;">
-                        <div style="padding:12px; background:rgba(234,179,8,0.1); color:#facc15; border-radius:6px; font-size:12px; border:1px dashed rgba(234,179,8,0.3);">
+                        <div style="padding:12px; background:rgba(50, 72, 96,0.1); color:#324860; border-radius:6px; font-size:12px; border:1px dashed rgba(50, 72, 96,0.3);">
                              <b>โหมดข้อเขียน:</b> นักเรียนจะต้องพิมพ์คำตอบส่งมา และคุณจะต้องเป็นผู้ตรวจให้คะแนนเองในภายหลัง
                         </div>
                     </div>
@@ -1089,18 +1089,18 @@ $stats = [
 
         <div style="position:relative;width:100%;aspect-ratio:1;background:#111;border-radius:12px;overflow:hidden;touch-action:none;" id="cropArea">
             <img id="cropImg" style="position:absolute;transform-origin:0 0;user-select:none;-webkit-user-select:none;max-width:none;">
-            <div id="cropCircle" style="position:absolute;border:2px dashed rgba(255,165,0,0.9);border-radius:50%;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.5);"></div>
+            <div id="cropCircle" style="position:absolute;border:2px dashed rgba(50, 72, 96,0.9);border-radius:50%;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.5);"></div>
         </div>
 
         <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-size:13px;color:var(--text-dim,#aaa);"> </span>
-            <input type="range" id="cropZoom" min="100" max="400" value="100" style="flex:1;accent-color:var(--orange,#f97316);">
+            <input type="range" id="cropZoom" min="100" max="400" value="100" style="flex:1;accent-color:var(--orange,#324860);">
             <span style="font-size:13px;color:var(--text-dim,#aaa);">ซูม</span>
         </div>
 
         <div style="display:flex;gap:10px;">
             <button id="cropCancelBtn2" style="flex:1;padding:10px;border-radius:8px;border:1px solid #444;background:none;color:#ccc;cursor:pointer;font-size:14px;">ยกเลิก</button>
-            <button id="cropConfirmBtn" style="flex:2;padding:10px;border-radius:8px;border:none;background:var(--orange,#f97316);color:var(--text);font-weight:700;cursor:pointer;font-size:14px;"> ใช้รูปนี้</button>
+            <button id="cropConfirmBtn" style="flex:2;padding:10px;border-radius:8px;border:none;background:var(--orange,#324860);color:var(--text);font-weight:700;cursor:pointer;font-size:14px;"> ใช้รูปนี้</button>
         </div>
     </div>
 </div>
@@ -1381,7 +1381,7 @@ function showMsg(id, msg, success) {
                     <span id="sdm-pct-label" style="font-size:12px;color:var(--text-dim);"></span>
                 </div>
                 <div style="height:8px;background:var(--bg3);border-radius:100px;overflow:hidden;border:1px solid var(--border);">
-                    <div id="sdm-progress-bar" style="height:100%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:100px;transition:width .5s ease;width:0%;"></div>
+                    <div id="sdm-progress-bar" style="height:100%;background:linear-gradient(90deg,#324860,#324860);border-radius:100px;transition:width .5s ease;width:0%;"></div>
                 </div>
             </div>
 
@@ -1459,11 +1459,11 @@ function renderLessonScores(lessons) {
         const rawTotal = Math.round(Number(l.quiz_total_score) || 0);
         const pct    = rawTotal > 0 ? Math.round((rawScore / rawTotal) * 100) : 0;
         const passed = pct >= 60;
-        const bar    = passed ? '#10b981' : (pct > 0 ? '#f59e0b' : '#374151');
+        const bar    = passed ? '#10b981' : (pct > 0 ? '#324860' : '#374151');
         const badge  = passed
             ? '<span style="font-size:11px;padding:2px 8px;border-radius:100px;background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3);"> ผ่าน</span>'
             : (pct > 0
-                ? '<span style="font-size:11px;padding:2px 8px;border-radius:100px;background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.3);">️ ไม่ผ่าน</span>'
+                ? '<span style="font-size:11px;padding:2px 8px;border-radius:100px;background:rgba(50, 72, 96,.12);color:#324860;border:1px solid rgba(50, 72, 96,.3);">️ ไม่ผ่าน</span>'
                 : '<span style="font-size:11px;padding:2px 8px;border-radius:100px;background:rgba(75,85,99,.2);color:#6b7280;border:1px solid rgba(75,85,99,.3);">— ยังไม่ทำ</span>');
 
         return `
@@ -1517,14 +1517,14 @@ function renderAnswerDetails(questions) {
     const mostMissed = maxWrong > 0 ? questions.filter(question => Number(question.class_incorrect_count) === maxWrong) : [];
     const hasClassAnswers = questions.some(question => Number(question.class_answered_count) > 0);
     const summary = mostMissed.length
-        ? `<div style="padding:11px 13px;margin-bottom:12px;border-radius:8px;background:#fff7ed;color:#9a3412;font-size:12px;"><strong>ข้อที่ตอบผิดมากที่สุดในรายวิชา:</strong> ${mostMissed.map(question => `ข้อ ${question.question_id} (${question.class_incorrect_count}/${question.class_answered_count} คนตอบผิด)`).join(' · ')}</div>`
+        ? `<div style="padding:11px 13px;margin-bottom:12px;border-radius:8px;background:#EEF4F8;color:#223850;font-size:12px;"><strong>ข้อที่ตอบผิดมากที่สุดในรายวิชา:</strong> ${mostMissed.map(question => `ข้อ ${question.question_id} (${question.class_incorrect_count}/${question.class_answered_count} คนตอบผิด)`).join(' · ')}</div>`
         : `<div style="padding:11px 13px;margin-bottom:12px;border-radius:8px;background:var(--bg2);color:var(--text-muted);font-size:12px;">${hasClassAnswers ? 'ยังไม่มีข้อที่นักเรียนตอบผิดในบทเรียนนี้' : 'ยังไม่มีข้อมูลคำตอบจากนักเรียนในรายวิชา'}</div>`;
     const rows = questions.map((question, index) => {
         if (question.question_type === 'essay') {
             const essaySubmitted = Boolean(question.answer_text);
             const essayReviewed = question.review_status === 'graded';
             const essayStatus = !essaySubmitted ? 'ยังไม่ตอบ' : !essayReviewed ? 'รอตรวจ' : question.result_status === 'passed' ? 'ตรวจแล้ว · ผ่าน' : 'ตรวจแล้ว · ไม่ผ่าน';
-            const essayColor = !essaySubmitted ? '#64748b' : !essayReviewed ? '#a16207' : question.result_status === 'passed' ? '#15803d' : '#b91c1c';
+            const essayColor = !essaySubmitted ? '#64748b' : !essayReviewed ? '#223850' : question.result_status === 'passed' ? '#15803d' : '#b91c1c';
             const essayScore = question.score === null ? '—' : String(Math.round(Number(question.score) || 0));
             return `<article style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-top:10px;"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><strong style="font-size:12px;">ข้อ ${index + 1} · ข้อเขียน: ${escHtml(question.question_text)}</strong><span style="color:${essayColor};font-weight:700;font-size:12px;white-space:nowrap;">${essayStatus}</span></div><div style="white-space:pre-wrap;overflow-wrap:anywhere;padding:10px;margin-top:8px;border-radius:7px;background:var(--bg2);font-size:12px;">${essaySubmitted ? escHtml(question.answer_text) : 'นักเรียนยังไม่ได้ส่งคำตอบ'}</div><div style="margin-top:7px;color:var(--text-muted);font-size:11px;">คะแนน: ${essayReviewed ? `${essayScore}/${Math.round(Number(question.max_score) || 0)}` : `รอตรวจ · เต็ม ${Math.round(Number(question.max_score) || 0)} คะแนน`}</div></article>`;
         }

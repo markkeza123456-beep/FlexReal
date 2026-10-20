@@ -24,10 +24,10 @@
     .avatar-picker { position: relative; cursor: pointer; flex-shrink: 0; }
     .avatar-large {
       width: 72px; height: 72px; border-radius: 50%;
-      background: rgba(255,122,0,0.2); color: var(--accent);
+      background: rgba(50, 72, 96,0.2); color: var(--accent);
       display: flex; align-items: center; justify-content: center;
       font-size: 1.6rem; font-weight: 600;
-      border: 2px solid rgba(255,122,0,0.4);
+      border: 2px solid rgba(50, 72, 96,0.4);
       overflow: hidden;
     }
     .avatar-edit-badge {
@@ -50,7 +50,7 @@
       font-family: 'Kanit', sans-serif; font-size: 0.87rem; outline: none;
       transition: border-color .2s;
     }
-    .settings-input:focus { border-color: rgba(255,122,0,0.5); }
+    .settings-input:focus { border-color: rgba(50, 72, 96,0.5); }
 
     .pwd-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.07); }
     .pwd-section-title { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); margin-bottom: 0.9rem; display: flex; align-items: center; gap: 6px; }
@@ -70,22 +70,22 @@
 
     .btn-save-profile {
       width: 100%; padding: 11px; margin-top: 1.2rem;
-      background: rgba(255,122,0,0.15); border: 1px solid rgba(255,122,0,0.35);
+      background: rgba(50, 72, 96,0.15); border: 1px solid rgba(50, 72, 96,0.35);
       border-radius: 10px; color: var(--accent);
       font-family: 'Kanit', sans-serif; font-size: 0.9rem; font-weight: 500;
       cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
       transition: background .2s;
     }
-    .btn-save-profile:hover { background: rgba(255,122,0,0.25); }
+    .btn-save-profile:hover { background: rgba(50, 72, 96,0.25); }
     .btn-save-profile:disabled { opacity: .5; cursor: not-allowed; }
     .btn-logout { display:flex; align-items:center; gap:10px; padding:.75rem 1rem; margin-bottom:.5rem; border-radius:10px; color:var(--text-muted); text-decoration:none; font-size:.9rem; transition:background .2s,color .2s; }
     .btn-logout:hover { background:rgba(239,68,68,.12); color:#ef4444; }
 
-    .parent-profile.active { background: rgba(255,122,0,0.1); border-radius: 10px; }
+    .parent-profile.active { background: rgba(50, 72, 96,0.1); border-radius: 10px; }
     .parent-profile { transition: background .2s; padding: 8px; margin: -8px; border-radius: 10px; }
     .parent-profile:hover { background: rgba(255,255,255,0.05); }
   </style>
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261020-tropical-doodle-icons" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme" />
 </head>
 <body>
 
