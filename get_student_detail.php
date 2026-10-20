@@ -25,6 +25,7 @@ if ($studentId === '') {
 try {
     $stmt = $conn->prepare("
         SELECT
+            l.lesson_id,
             l.title AS lesson_name,
             c.name AS subject_name,
             COALESCE(a.score, 0) AS best_quiz_score,
@@ -37,7 +38,7 @@ try {
         LEFT JOIN LATERAL (
             SELECT score, total_score FROM public.quiz_attempts
             WHERE student_id = :sid AND lesson_id = l.lesson_id
-            ORDER BY submitted_at DESC LIMIT 1
+            ORDER BY attempt_number DESC, submitted_at DESC LIMIT 1
         ) a ON true
         WHERE sc.student_id = :sid AND sc.status = 'active'
         ORDER BY c.name ASC, l.position ASC
@@ -48,6 +49,7 @@ try {
     $lessons = array_map(function($row) {
         return [
             'lesson_name'      => $row['lesson_name'] ?: ('บทที่ ' . $row['lesson_index']),
+            'lesson_id'        => (string) $row['lesson_id'],
             'subject_name'     => $row['subject_name'] ?: '',
             'best_quiz_score'  => (int) $row['best_quiz_score'],
             'quiz_total_score' => (int) $row['quiz_total_score'],
