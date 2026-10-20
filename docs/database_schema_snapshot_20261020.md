@@ -2,7 +2,7 @@
 
 Live PostgreSQL/Supabase `public` schema inspected on 2026-10-20 via `config/db.php`. This is the database state at inspection time, not a reconstruction from source code. Types, nullability, and defaults are included.
 
-Tables found: **30**.
+Tables found: **31** (including `course_certificates` added later on 2026-10-20).
 
 ## `activity_logs`
 
@@ -44,6 +44,18 @@ Tables found: **30**.
 - `due_at` — timestamp with time zone (`timestamptz`); NOT NULL
 - `max_score` — numeric; NOT NULL; default `10`
 - `created_at` — timestamp with time zone (`timestamptz`); NOT NULL; default `now()`
+
+## `course_certificates`
+
+- `certificate_id` — bigint (`int8`); NOT NULL; identity primary key
+- `student_id` — character varying (`varchar`); NOT NULL; references `students.user_id`
+- `course_id` — bigint (`int8`); NOT NULL; references `courses.course_id`
+- `certificate_number` — character varying (`varchar`); NOT NULL; unique
+- `issued_at` — timestamp with time zone (`timestamptz`); NOT NULL; default `now()`
+- `document_bucket` — text; NULL (legacy storage fields, unused)
+- `document_object_path` — text; NULL (legacy storage fields, unused)
+- `document_pdf` — bytea; NOT NULL (persistent PDF bytes)
+- Unique constraint: (`student_id`, `course_id`) prevents duplicate certificates per course
 
 ## `course_teachers`
 

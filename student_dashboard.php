@@ -13,7 +13,11 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261020-sidebar-brand-centered">
+<<<<<<< HEAD
     <link rel="stylesheet" href="assets/css/theme.css?v=20261020-soft-orange-theme">
+=======
+    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261020-course-certificates-v2">
+>>>>>>> 7be339030c231cec761684d90bd101e385f61dda
 </head>
 <body>
     <div class="dashboard-container">
@@ -246,5 +250,6 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
         </main>
     </div>
     <script src="assets/js/student_dashboard.js?v=20261020-password-eye-icons"></script>
+    <script src="assets/js/student_dashboard.js?v=20261020-course-certificate-issue-v3"></script>
 </body>
 </html>
