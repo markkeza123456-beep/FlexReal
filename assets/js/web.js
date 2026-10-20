@@ -928,6 +928,12 @@ function showPage(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     const targetPage = document.getElementById(pageId);
     if (targetPage) targetPage.classList.add('active');
+    const registrationGuideOpen = pageId === 'page-guide' && targetPage?.classList.contains('register-guide-page');
+    const learningGuideOpen = pageId === 'page-guide' && targetPage?.classList.contains('learning-guide-page');
+    document.body.classList.toggle('registration-guide-open', registrationGuideOpen);
+    document.documentElement.classList.toggle('registration-guide-open', registrationGuideOpen);
+    document.body.classList.toggle('learning-guide-open', learningGuideOpen);
+    document.documentElement.classList.toggle('learning-guide-open', learningGuideOpen);
     window.scrollTo(0, 0);
 }
 
@@ -1655,15 +1661,69 @@ window.addEventListener('pagehide', () => {
     else if (activeVideoProgressSaver) activeVideoProgressSaver();
 });
 
+function learningGuideShell() {
+    return '<section class="learning-guide" aria-label="คู่มือการรับใบประกาศ">' +
+        '<section class="learning-guide-section" aria-labelledby="certificateStepsTitle"><div class="learning-guide-section-heading"><span class="learning-guide-section-icon"><i class="fa-solid fa-award" aria-hidden="true"></i></span><div><h3 id="certificateStepsTitle">การรับใบประกาศนียบัตร</h3><p>ทำตามขั้นตอนง่าย ๆ เพื่อรับใบประกาศนียบัตรของคุณ</p></div></div>' +
+        '<ol class="certificate-guide-steps">' +
+        '<li><span class="certificate-step-number">01</span><span class="certificate-step-icon"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i></span><div class="certificate-step-content"><h4>เข้าสู่ระบบ</h4><p>เข้าสู่ระบบด้วยบัญชีผู้เรียนของคุณ</p></div></li>' +
+        '<li><span class="certificate-step-number">02</span><span class="certificate-step-icon"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span><div class="certificate-step-content"><h4>เรียนเนื้อหาให้ครบ</h4><p>เรียนเนื้อหาในรายวิชาให้ครบตามเงื่อนไขที่ระบบกำหนด</p></div></li>' +
+        '<li><span class="certificate-step-number">03</span><span class="certificate-step-icon"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i></span><div class="certificate-step-content"><h4>ทำแบบทดสอบ</h4><p>ทำแบบทดสอบและผ่านเกณฑ์คะแนนที่กำหนดของรายวิชา</p></div></li>' +
+        '<li><span class="certificate-step-number">04</span><span class="certificate-step-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span><div class="certificate-step-content"><h4>ตรวจสอบสิทธิ์</h4><p>เมื่อเรียนครบและผ่านเกณฑ์ ระบบจะแสดงสิทธิ์รับใบประกาศในรายวิชานั้น</p></div></li>' +
+        '<li><span class="certificate-step-number">05</span><span class="certificate-step-icon"><i class="fa-solid fa-award" aria-hidden="true"></i></span><div class="certificate-step-content"><h4>รับและดาวน์โหลดใบประกาศ</h4><p>กดปุ่ม “รับใบประกาศ” ในรายวิชาที่ผ่านเกณฑ์ จากนั้นเลือกดูหรือดาวน์โหลดเพื่อนำไปใช้งาน</p></div></li>' +
+        '</ol></section></section>';
+}
+
+function showCourseCatalog(event) {
+    if (event) event.preventDefault();
+    showPage('home');
+    const target = document.getElementById(isStudentLoggedIn() ? 'student-course-sections' : 'public-course-section');
+    window.setTimeout(() => target?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+    return false;
+}
+
 function showGuide(type) {
     const title = document.getElementById('guide-title');
     const content = document.getElementById('guide-content');
+    const page = document.getElementById('page-guide');
+    if (type === 'certificate') {
+        title.innerText = 'การรับใบประกาศนียบัตร';
+        page.classList.remove('register-guide-page');
+        page.classList.add('learning-guide-page');
+        content.innerHTML = learningGuideShell();
+        showPage('page-guide');
+        return;
+    }
+    page.classList.remove('learning-guide-page');
     const guides = {
-        'register': ['ขั้นตอนการสมัคร', '1. กด Login <br> 2. กรอก Email <br> 3. เริ่มเรียน'],
-        'certificate': ['การรับใบประกาศ', 'เรียนจบ 100% ดาวน์โหลดได้ทันที']
+        'register': ['ขั้นตอนการสมัครสมาชิก', `
+            <section class="register-guide" aria-label="ขั้นตอนการสมัครสมาชิก">
+                <div class="register-guide-layout">
+                    <ol class="register-guide-steps">
+                        <li class="register-guide-step"><span class="register-step-number">01</span><span class="register-step-icon" aria-hidden="true"><i class="fa-solid fa-user-plus"></i></span><div><h3>สมัครสมาชิก</h3><p>เลือก <a href="regisss.php">สมัครสมาชิก</a> จากหน้าเข้าสู่ระบบ หรือเริ่มสมัครได้ที่ <a href="index.html" onclick="return goHome(event)">หน้าหลัก</a></p></div></li>
+                        <li class="register-guide-step"><span class="register-step-number">02</span><span class="register-step-icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span><div><h3>เลือกประเภทบัญชี</h3><p>เลือกประเภทบัญชี: นักเรียน อาจารย์ หรือผู้ปกครอง</p></div></li>
+                        <li class="register-guide-step"><span class="register-step-number">03</span><span class="register-step-icon" aria-hidden="true"><i class="fa-solid fa-id-card"></i></span><div><h3>กรอกข้อมูลส่วนตัว</h3><p>กรอกชื่อ–นามสกุล เลขบัตรประชาชน 13 หลัก เบอร์โทรศัพท์ และที่อยู่อีเมล</p></div></li>
+                        <li class="register-guide-step"><span class="register-step-number">04</span><span class="register-step-icon" aria-hidden="true"><i class="fa-solid fa-lock"></i></span><div><h3>ตั้งรหัสผ่าน</h3><p>ตั้งรหัสผ่านภาษาอังกฤษและตัวเลข 8–15 ตัว แล้วกรอกรหัสผ่านเดิมเพื่อยืนยัน</p></div></li>
+                        <li class="register-guide-step"><span class="register-step-number">05</span><span class="register-step-icon" aria-hidden="true"><i class="fa-solid fa-circle-check"></i></span><div><h3>ยืนยันการสมัคร</h3><p>กด <strong>สมัครสมาชิก</strong> เมื่อสมัครสำเร็จ ระบบจะแจ้งผลและพาไปหน้าเข้าสู่ระบบ</p></div></li>
+                        <li class="register-guide-step"><span class="register-step-number">06</span><span class="register-step-icon" aria-hidden="true"><i class="fa-solid fa-right-to-bracket"></i></span><div><h3>เข้าสู่ระบบ</h3><p>เข้าสู่ระบบด้วยประเภทบัญชี เลขบัตรประชาชน และรหัสผ่านที่ตั้งไว้</p></div></li>
+                    </ol>
+                    <aside class="register-guide-art" aria-hidden="true">
+                        <span class="register-art-spark register-art-spark-one">✦</span>
+                        <span class="register-art-spark register-art-spark-two">✦</span>
+                        <div class="register-art-book"><i class="fa-solid fa-book-open"></i></div>
+                        <div class="register-art-screen"><i class="fa-solid fa-graduation-cap"></i><span></span><span></span></div>
+                        <div class="register-art-pencil"><i class="fa-solid fa-pencil"></i></div>
+                        <p>พร้อมเรียนรู้<br><strong>ไปกับเรา</strong></p>
+                    </aside>
+                </div>
+                <div class="register-guide-cta">
+                    <div><p>หากมีบัญชีแล้ว ให้เข้าสู่ระบบได้ทันที</p></div>
+                    <a class="register-guide-cta-button" href="login.php">เข้าสู่ระบบ <span aria-hidden="true">→</span></a>
+                </div>
+            </section>`],
     };
     title.innerText = guides[type][0];
-    content.innerHTML = `<div class="info-card">${guides[type][1]}</div>`;
+    page.classList.toggle('register-guide-page', type === 'register');
+    content.innerHTML = type === 'register' ? guides[type][1] : `<div class="info-card">${guides[type][1]}</div>`;
     showPage('page-guide');
 }
 
@@ -1681,6 +1741,11 @@ function showContact(type) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+
+    const requestedGuide = new URLSearchParams(window.location.search).get('guide');
+    if (['register', 'certificate'].includes(requestedGuide)) {
+        showGuide(requestedGuide);
+    }
 
 
     const cachedCoursesBeforeSession = readCachedCourses();
