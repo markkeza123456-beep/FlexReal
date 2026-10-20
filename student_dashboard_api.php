@@ -140,13 +140,9 @@ try {
                  SELECT COUNT(*) AS answer_count,
                         COALESCE(SUM(aa.score) FILTER (WHERE q.question_type <> 'essay'), 0) AS objective_score,
                         COALESCE(SUM(q.max_score) FILTER (WHERE q.question_type <> 'essay'), 0) AS objective_total,
-<<<<<<< HEAD
                         COUNT(*) FILTER (WHERE q.question_type <> 'essay') AS objective_question_count,
                         COUNT(*) FILTER (WHERE q.question_type <> 'essay' AND aa.score >= q.max_score) AS objective_correct_count,
-                        COALESCE(SUM(aa.score) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'reviewed'), 0) AS essay_score,
-=======
                         COALESCE(SUM(aa.score) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'graded'), 0) AS essay_score,
->>>>>>> 4f904c5262a2a238f6b8dc5f9417561b3e56c6d9
                         COALESCE(SUM(q.max_score) FILTER (WHERE q.question_type = 'essay'), 0) AS essay_total,
                         COUNT(*) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'pending') AS essay_pending_count,
                         COUNT(*) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'graded') AS essay_reviewed_count,
