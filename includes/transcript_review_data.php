@@ -45,7 +45,7 @@ $requestsStmt = $conn->query(
               r.submitted_at DESC, r.request_id DESC"
 );
 $requests = $requestsStmt->fetchAll(PDO::FETCH_ASSOC);
-$selectedRequestId = trim((string) ($_GET['request_id'] ?? ''));
+$selectedRequestId = trim((string) ($_GET['id'] ?? $_GET['request_id'] ?? ''));
 $selectedRequest = null;
 foreach ($requests as $request) {
     if ((string) $request['request_id'] === $selectedRequestId) {

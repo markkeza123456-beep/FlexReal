@@ -313,6 +313,7 @@ function renderGraduationTracker(graduation) {
     const total = Number(graduation?.total_courses || 0);
     const percent = Math.max(0, Math.min(100, Number(graduation?.progress_percent || 0)));
     const pending = graduation?.pending_request;
+    const approvedRequest = graduation?.approved_request;
     const message = document.getElementById('graduationTrackerMessage');
     const countLabel = document.getElementById('graduationCoursesLabel');
     const fill = document.getElementById('graduationProgressFill');
@@ -332,6 +333,7 @@ function renderGraduationTracker(graduation) {
     percentLabel.textContent = `${percent}%`;
     button.hidden = true;
     button.disabled = false;
+    button.classList.remove('is-pending');
     if (downloadLink) {
         const approvedDocument = graduation?.approved_document;
         downloadLink.hidden = !approvedDocument?.request_id;
@@ -340,20 +342,27 @@ function renderGraduationTracker(graduation) {
         }
     }
 
-    if (!graduation?.has_courses) {
-        message.textContent = 'ยังไม่พบรายวิชาที่กำหนดให้เรียน กรุณาติดต่อเจ้าหน้าที่';
-    } else if (pending) {
+    if (approvedRequest?.request_id) {
+        message.textContent = 'คำขอจบการศึกษาได้รับการอนุมัติแล้ว สามารถดาวน์โหลดใบสรุปผลการเรียน PDF ได้';
+        button.hidden = true;
+    } else if (pending?.request_id) {
         message.textContent = 'ส่งคำขอจบการศึกษาแล้ว กำลังรอเจ้าหน้าที่พิจารณา';
-        button.textContent = 'รอพิจารณา';
+        button.textContent = 'รอการอนุมัติจบการศึกษา';
+        button.classList.add('is-pending');
         button.hidden = false;
         button.disabled = true;
+        if (downloadLink) downloadLink.hidden = true;
+    } else if (!graduation?.has_courses) {
+        message.textContent = 'ยังไม่พบรายวิชาที่กำหนดให้เรียน กรุณาติดต่อเจ้าหน้าที่';
     } else if (graduation.eligible) {
         message.textContent = 'ผ่านวิชาบังคับครบทุกวิชาแล้ว สามารถยื่นขอจบการศึกษาได้';
         button.textContent = 'ยื่นขอจบการศึกษา';
+        button.classList.remove('is-pending');
         button.hidden = false;
     } else {
         message.textContent = 'ต้องเรียนหรือเทียบโอนวิชาบังคับให้ครบทุกวิชาก่อน จึงจะสามารถกดส่งคำขอจบได้';
         button.textContent = 'ยื่นขอจบการศึกษา';
+        button.classList.remove('is-pending');
         button.hidden = false;
         button.disabled = true;
     }

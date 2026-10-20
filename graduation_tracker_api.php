@@ -144,14 +144,20 @@ try {
         $pendingStmt->execute([':student_id' => $studentId]);
         $summary['pending_request'] = $pendingStmt->fetch(PDO::FETCH_ASSOC) ?: null;
         $approvedStmt = $conn->prepare(
-            "SELECT request_id, total_credits, reviewed_at
+            "SELECT request_id, status, total_credits, reviewed_at,
+                    document_bucket, document_object_path
              FROM public.graduation_requests
              WHERE student_id = :student_id AND status = 'approved'
-               AND document_bucket IS NOT NULL AND document_object_path IS NOT NULL
              ORDER BY reviewed_at DESC NULLS LAST, request_id DESC LIMIT 1"
         );
         $approvedStmt->execute([':student_id' => $studentId]);
-        $summary['approved_document'] = $approvedStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        $approvedRequest = $approvedStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        $summary['approved_request'] = $approvedRequest;
+        $summary['approved_document'] = $approvedRequest
+            && !empty($approvedRequest['document_bucket'])
+            && !empty($approvedRequest['document_object_path'])
+                ? $approvedRequest
+                : null;
         $summary['csrf_token'] = $csrfToken;
         graduationJson(['status' => 'success', 'graduation' => $summary]);
     }

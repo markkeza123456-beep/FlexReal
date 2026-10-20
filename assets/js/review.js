@@ -1,11 +1,51 @@
 'use strict';
 
 (() => {
-    const picker = document.getElementById('requestPicker');
-    picker?.addEventListener('change', () => {
-        const url = new URL(window.location.href);
-        url.searchParams.set('request_id', picker.value);
-        window.location.assign(url);
+    const modal = document.getElementById('searchModal');
+    const openModalButton = document.getElementById('openRequestModal');
+    const closeModalButton = document.getElementById('closeRequestModal');
+    const searchInput = document.getElementById('requestModalSearch');
+    const requestRows = [...(document.querySelectorAll('#requestModalRows tr[data-search-text]') || [])];
+    const emptyRow = document.getElementById('requestModalEmpty');
+
+    function filterRequestRows() {
+        const query = searchInput?.value.trim().toLocaleLowerCase('th-TH') || '';
+        let visibleRows = 0;
+        requestRows.forEach(row => {
+            const matches = (row.dataset.searchText || '').toLocaleLowerCase('th-TH').includes(query);
+            row.hidden = !matches;
+            if (matches) visibleRows += 1;
+        });
+        if (emptyRow) emptyRow.hidden = visibleRows > 0;
+    }
+
+    function showRequestModal() {
+        if (!modal) return;
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('modal-open');
+        if (searchInput) {
+            searchInput.value = '';
+            filterRequestRows();
+            searchInput.focus();
+        }
+    }
+
+    function hideRequestModal() {
+        if (modal) modal.style.display = 'none';
+        modal?.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('modal-open');
+        openModalButton?.focus();
+    }
+
+    openModalButton?.addEventListener('click', showRequestModal);
+    closeModalButton?.addEventListener('click', hideRequestModal);
+    searchInput?.addEventListener('input', filterRequestRows);
+    modal?.addEventListener('click', event => {
+        if (event.target === modal) hideRequestModal();
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && modal?.style.display === 'flex') hideRequestModal();
     });
 
     const form = document.getElementById('transcriptReviewForm');
