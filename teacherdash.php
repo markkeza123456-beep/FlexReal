@@ -936,7 +936,7 @@ $stats = [
                         <div style="display:flex;flex-direction:column;gap:6px;">
                             <label style="font-size:12px;color:var(--text-muted);font-weight:500;">เบอร์โทรศัพท์</label>
                             <div style="background:var(--bg3);padding:11px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);color:var(--text-dim);font-size:13px;">
-                                <?= h($teacherRow['tel'] ?? '-') ?>
+                                <?= h($teacherRow['phone'] ?? '-') ?>
                             </div>
                         </div>
                     </div>
