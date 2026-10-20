@@ -477,6 +477,11 @@ html, body {
     transition: border-color .2s;
 }
 .form-input:focus { border-color: var(--orange); }
+.teacher-password-input-wrap { position:relative; }
+.teacher-password-input-wrap .form-input { width:100%; padding-right:44px; }
+.teacher-password-toggle { position:absolute; top:50%; right:10px; transform:translateY(-50%); padding:4px; border:0; background:transparent; color:var(--text-muted); cursor:pointer; line-height:1; }
+.teacher-password-toggle svg { display:block; width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.teacher-password-toggle:hover, .teacher-password-toggle:focus-visible { color:var(--orange); }
 .form-input::placeholder { color: var(--text-muted); }
 .form-input option { background: var(--bg2); }
 .form-input[type="file"] {
@@ -602,5 +607,7 @@ html, body {
 .sidebar-logo .logo-icon { display: none; }
 .sidebar-logo .logo-name,
 .sidebar-logo .logo-sub { color: #2d3436; }
-.sidebar-logo .logo-name { font-size: 13px; line-height: 1.2; letter-spacing: .12em; }
-.sidebar-logo .logo-sub { margin-top: 2px; font-size: 9px; line-height: 1.2; letter-spacing: .14em; }
+.sidebar-logo { box-sizing:border-box; gap:3px; }
+.sidebar-logo .logo-name { font-size: 14px; line-height: 1.2; letter-spacing: .12em; }
+.sidebar-logo .logo-sub { margin-top: 0; font-size: 9px; line-height: 1.2; letter-spacing: .14em; }
+.sidebar > .sidebar-logo { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; height:102px; min-height:102px; padding-top:0; padding-bottom:0; }

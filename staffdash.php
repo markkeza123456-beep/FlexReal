@@ -53,7 +53,7 @@ if ($displayName !== '') {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261020-staff-profile" />
+  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261020-sidebar-brand-centered" />
   <link rel="stylesheet" href="assets/css/theme.css" />
 </head>
 <body>
@@ -795,6 +795,42 @@ if ($displayName !== '') {
         <div id="graduationRequestsMessage" class="form-card graduation-review-message" role="status" aria-live="polite">กำลังโหลดคำขอ...</div>
         <div id="graduationRequestsList" class="graduation-request-list"></div>
       </section>
+
+      <section class="page staff-profile-page" id="page-profile">
+        <div class="page-header staff-profile-page-header">
+          <div>
+            <div class="page-title">โปรไฟล์ของฉัน</div>
+            <div class="page-sub">ดูและแก้ไขข้อมูลบัญชีเจ้าหน้าที่</div>
+          </div>
+        </div>
+        <div class="form-card staff-profile-page-card">
+          <h2 class="staff-profile-card-title">👤 โปรไฟล์</h2>
+          <div class="staff-profile-identity">
+            <button type="button" class="staff-profile-avatar" onclick="document.getElementById('staffAvatarInput').click()" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์" aria-label="เปลี่ยนรูปโปรไฟล์">
+              <img id="staffProfileAvatarImg" src="<?= htmlspecialchars($staffAvatarUrl, ENT_QUOTES, 'UTF-8') ?>" alt="รูปโปรไฟล์"
+                   style="<?= $staffAvatarUrl !== '' ? 'display:block;' : 'display:none;' ?>">
+              <span id="staffProfileAvatarInitial" style="<?= $staffAvatarUrl !== '' ? 'display:none;' : '' ?>"><?= htmlspecialchars($avatarInitials, ENT_QUOTES, 'UTF-8') ?></span>
+            </button>
+            <div class="staff-profile-identity-info"><h2><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></h2><p>เจ้าหน้าที่ · รหัส <?= htmlspecialchars((string) $_SESSION['user_id'], ENT_QUOTES, 'UTF-8') ?></p><span>คลิกที่รูปเพื่อเปลี่ยน</span></div>
+          </div>
+          <form id="staffProfileForm">
+            <div class="form-grid-2">
+              <label class="form-field"><span class="form-label">ชื่อ</span><input class="staff-profile-input" name="first_name" required maxlength="100" value="<?= htmlspecialchars($profileFirstName, ENT_QUOTES, 'UTF-8') ?>"></label>
+              <label class="form-field"><span class="form-label">นามสกุล</span><input class="staff-profile-input" name="last_name" required maxlength="100" value="<?= htmlspecialchars($profileLastName, ENT_QUOTES, 'UTF-8') ?>"></label>
+            </div>
+            <label class="form-field"><span class="form-label">อีเมล</span><input class="staff-profile-input" name="email" type="email" maxlength="254" value="<?= htmlspecialchars((string) ($staffProfile['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></label>
+            <label class="form-field"><span class="form-label">เบอร์โทรศัพท์</span><input class="staff-profile-input" name="phone" type="tel" maxlength="30" value="<?= htmlspecialchars((string) ($staffProfile['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></label>
+            <div class="staff-password-section">
+              <div class="staff-password-title">🔐 เปลี่ยนรหัสผ่าน</div>
+              <label class="form-field"><span class="form-label">รหัสผ่านปัจจุบัน</span><span class="staff-password-input-wrap"><input class="staff-profile-input" id="staffPwdCurrent" name="pwd_current" type="password" autocomplete="current-password"><button type="button" class="staff-password-toggle" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน" onclick="toggleStaffPwd('staffPwdCurrent', this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></span></label>
+              <label class="form-field"><span class="form-label">รหัสผ่านใหม่</span><span class="staff-password-input-wrap"><input class="staff-profile-input" id="staffPwdNew" name="pwd_new" type="password" minlength="6" autocomplete="new-password" oninput="checkStaffPwdStrength(this.value)"><button type="button" class="staff-password-toggle" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน" onclick="toggleStaffPwd('staffPwdNew', this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></span><span id="staffPwdStrengthWrap" class="staff-password-strength" style="display:none"><span class="staff-password-strength-bg"><span id="staffPwdStrengthBar"></span></span><span id="staffPwdStrengthLabel"></span></span></label>
+              <label class="form-field"><span class="form-label">ยืนยันรหัสผ่านใหม่</span><span class="staff-password-input-wrap"><input class="staff-profile-input" id="staffPwdConfirm" name="pwd_confirm" type="password" minlength="6" autocomplete="new-password" oninput="checkStaffPwdMatch()"><button type="button" class="staff-password-toggle" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน" onclick="toggleStaffPwd('staffPwdConfirm', this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></span><span id="staffPwdMatchMsg" class="staff-password-match"></span></label>
+            </div>
+            <div class="staff-profile-message" id="staffProfileMessage" role="status" aria-live="polite"></div>
+            <div class="staff-profile-actions"><button type="button" class="btn-ghost" onclick="closeStaffProfile()">กลับ</button><button type="submit" class="btn-primary" id="saveStaffProfileBtn"><span class="btn-text">บันทึกข้อมูล</span></button></div>
+          </form>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -817,33 +853,8 @@ if ($displayName !== '') {
     </div>
   </div>
 
-  <div class="modal-overlay" id="staffProfileModal" aria-hidden="true">
-    <div class="modal staff-profile-modal" role="dialog" aria-modal="true" aria-labelledby="staffProfileTitle">
-      <button type="button" class="staff-profile-close" onclick="closeStaffProfile()" aria-label="ปิด">×</button>
-      <h2 class="staff-profile-title" id="staffProfileTitle">โปรไฟล์เจ้าหน้าที่</h2>
-      <p class="staff-profile-id">รหัสผู้ใช้: <?= htmlspecialchars((string) $_SESSION['user_id'], ENT_QUOTES, 'UTF-8') ?></p>
-      <form id="staffProfileForm">
-        <div class="form-grid-2">
-          <label class="form-field"><span class="form-label">ชื่อ</span><input class="staff-profile-input" name="first_name" required maxlength="100" value="<?= htmlspecialchars($profileFirstName, ENT_QUOTES, 'UTF-8') ?>"></label>
-          <label class="form-field"><span class="form-label">นามสกุล</span><input class="staff-profile-input" name="last_name" required maxlength="100" value="<?= htmlspecialchars($profileLastName, ENT_QUOTES, 'UTF-8') ?>"></label>
-        </div>
-        <label class="form-field"><span class="form-label">อีเมล</span><input class="staff-profile-input" name="email" type="email" maxlength="254" value="<?= htmlspecialchars((string) ($staffProfile['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></label>
-        <label class="form-field"><span class="form-label">เบอร์โทรศัพท์</span><input class="staff-profile-input" name="phone" type="tel" maxlength="30" value="<?= htmlspecialchars((string) ($staffProfile['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></label>
-        <details class="staff-password-details">
-          <summary>เปลี่ยนรหัสผ่าน</summary>
-          <label class="form-field"><span class="form-label">รหัสผ่านปัจจุบัน</span><input class="staff-profile-input" name="pwd_current" type="password" autocomplete="current-password"></label>
-          <label class="form-field"><span class="form-label">รหัสผ่านใหม่</span><input class="staff-profile-input" name="pwd_new" type="password" minlength="6" autocomplete="new-password"></label>
-          <label class="form-field"><span class="form-label">ยืนยันรหัสผ่านใหม่</span><input class="staff-profile-input" name="pwd_confirm" type="password" minlength="6" autocomplete="new-password"></label>
-        </details>
-        <div class="staff-profile-message" id="staffProfileMessage" role="status" aria-live="polite"></div>
-        <div class="staff-profile-actions"><button type="button" class="btn-ghost" onclick="closeStaffProfile()">ปิด</button><button type="submit" class="btn-primary" id="saveStaffProfileBtn"><span class="btn-text">บันทึกข้อมูล</span></button></div>
-      </form>
-    </div>
-  </div>
-
-
   <div class="toast" id="toast"></div>
 
-  <script src="assets/js/staffdash.js?v=20261020-staff-profile"></script>
+  <script src="assets/js/staffdash.js?v=20261020-password-eye-icons"></script>
 </body>
 </html>

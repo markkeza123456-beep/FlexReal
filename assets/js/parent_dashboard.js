@@ -179,8 +179,9 @@ function togglePwd(id, btn) {
   const label = show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน';
   btn.setAttribute('aria-label', label);
   btn.title = label;
-  const icon = btn.querySelector('i');
-  if (icon) icon.className = show ? 'ti ti-eye-off' : 'ti ti-eye';
+  btn.innerHTML = show
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.9 5.2A10.8 10.8 0 0112 5c6.4 0 10 7 10 7a14.7 14.7 0 01-3 3.8M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7c1.4 0 2.7-.3 3.8-.8"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
 }
 
 function checkPwdStrength(val) {

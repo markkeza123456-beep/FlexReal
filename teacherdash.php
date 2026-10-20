@@ -348,7 +348,7 @@ $stats = [
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261019-sidebar-brand">
+    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261020-sidebar-brand-centered">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px;
@@ -1056,15 +1056,15 @@ $stats = [
                 <div style="display:flex;flex-direction:column;gap:14px;">
                     <div style="display:flex;flex-direction:column;gap:6px;">
                         <label style="font-size:12px;color:var(--text-muted);font-weight:500;">รหัสผ่านปัจจุบัน</label>
-                        <input type="password" id="currentPassword" class="form-input" placeholder="ใส่รหัสผ่านปัจจุบัน" style="font-size:13px;">
+                        <div class="teacher-password-input-wrap"><input type="password" id="currentPassword" class="form-input" placeholder="ใส่รหัสผ่านปัจจุบัน" style="font-size:13px;"><button type="button" class="teacher-password-toggle" onclick="toggleTeacherPassword('currentPassword',this)" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:6px;">
                         <label style="font-size:12px;color:var(--text-muted);font-weight:500;">รหัสผ่านใหม่</label>
-                        <input type="password" id="newPassword" class="form-input" placeholder="อย่างน้อย 6 ตัวอักษร" style="font-size:13px;">
+                        <div class="teacher-password-input-wrap"><input type="password" id="newPassword" class="form-input" placeholder="อย่างน้อย 6 ตัวอักษร" style="font-size:13px;"><button type="button" class="teacher-password-toggle" onclick="toggleTeacherPassword('newPassword',this)" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:6px;">
                         <label style="font-size:12px;color:var(--text-muted);font-weight:500;">ยืนยันรหัสผ่านใหม่</label>
-                        <input type="password" id="confirmPassword" class="form-input" placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง" style="font-size:13px;">
+                        <div class="teacher-password-input-wrap"><input type="password" id="confirmPassword" class="form-input" placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง" style="font-size:13px;"><button type="button" class="teacher-password-toggle" onclick="toggleTeacherPassword('confirmPassword',this)" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
                     </div>
                 </div>
 
@@ -1291,6 +1291,19 @@ async function saveTeacherProfile() {
     } else {
         showMsg('profileMsg', ' ' + data.message, false);
     }
+}
+
+function toggleTeacherPassword(id, button) {
+    const input = document.getElementById(id);
+    if (!input || !button) return;
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    const label = show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน';
+    button.setAttribute('aria-label', label);
+    button.title = label;
+    button.innerHTML = show
+        ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.9 5.2A10.8 10.8 0 0112 5c6.4 0 10 7 10 7a14.7 14.7 0 01-3 3.8M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7c1.4 0 2.7-.3 3.8-.8"/></svg>'
+        : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
 }
 
 async function saveTeacherPassword() {

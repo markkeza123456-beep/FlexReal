@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Orbitron:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-  <link rel="stylesheet" href="assets/css/parent_dashboard.css?v=20261019-sidebar-brand" />
+  <link rel="stylesheet" href="assets/css/parent_dashboard.css?v=20261020-sidebar-brand-centered" />
   <style>
 
     .settings-wrapper { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.2rem; align-items: start; max-width: 850px; }
@@ -61,6 +61,7 @@
       background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; padding: 4px; line-height: 1;
     }
     .pwd-toggle-btn:hover, .pwd-toggle-btn:focus-visible { color: var(--accent); }
+    .pwd-toggle-btn svg { display:block; width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 
     .strength-bar-bg { height: 5px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; }
     .strength-bar-fill { height: 100%; border-radius: 10px; transition: width .3s, background .3s; width: 0; }
@@ -329,14 +330,14 @@
                 <label class="settings-label">รหัสผ่านปัจจุบัน</label>
                 <div class="pwd-input-wrap">
                   <input type="password" class="settings-input" id="pwdCurrent" placeholder="ใส่รหัสผ่านปัจจุบัน">
-                  <button type="button" onclick="togglePwd('pwdCurrent',this)" class="pwd-toggle-btn" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><i class="ti ti-eye"></i></button>
+                  <button type="button" onclick="togglePwd('pwdCurrent',this)" class="pwd-toggle-btn" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
                 </div>
               </div>
               <div class="settings-field">
                 <label class="settings-label">รหัสผ่านใหม่</label>
                 <div class="pwd-input-wrap">
                   <input type="password" class="settings-input" id="pwdNew" placeholder="อย่างน้อย 6 ตัวอักษร" oninput="checkPwdStrength(this.value)">
-                  <button type="button" onclick="togglePwd('pwdNew',this)" class="pwd-toggle-btn" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><i class="ti ti-eye"></i></button>
+                  <button type="button" onclick="togglePwd('pwdNew',this)" class="pwd-toggle-btn" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
                 </div>
                 <div id="pwdStrengthWrap" style="display:none;margin-top:8px">
                   <div class="strength-bar-bg"><div id="pwdStrengthBar" class="strength-bar-fill"></div></div>
@@ -347,7 +348,7 @@
                 <label class="settings-label">ยืนยันรหัสผ่านใหม่</label>
                 <div class="pwd-input-wrap">
                   <input type="password" class="settings-input" id="pwdConfirm" placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง" oninput="checkPwdMatch()">
-                  <button type="button" onclick="togglePwd('pwdConfirm',this)" class="pwd-toggle-btn" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><i class="ti ti-eye"></i></button>
+                  <button type="button" onclick="togglePwd('pwdConfirm',this)" class="pwd-toggle-btn" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
                 </div>
                 <div id="pwdMatchMsg" class="pwd-match-msg"></div>
               </div>
@@ -387,6 +388,6 @@
   </div>
 </div>
 
-  <script src="assets/js/parent_dashboard.js?v=20261020-shared-avatars"></script>
+  <script src="assets/js/parent_dashboard.js?v=20261020-password-eye-icons"></script>
 </body>
 </html>
