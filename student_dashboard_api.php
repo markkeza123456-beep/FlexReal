@@ -44,10 +44,10 @@ function dashboardScoreLabel(float $score): string
 
 function dashboardActivityProgress(float $quizScore, float $quizTotal, float $documentPercent, float $videoPercent): float
 {
-    $videoPart = min(100.0, max(0.0, $videoPercent)) * 0.40;
+    $videoPart = min(100.0, max(0.0, $videoPercent)) * 0.30;
     $documentPart = min(100.0, max(0.0, $documentPercent)) * 0.30;
     $quizPart = $quizTotal > 0
-        ? min(30.0, max(0.0, ($quizScore / $quizTotal) * 30.0))
+        ? min(40.0, max(0.0, ($quizScore / $quizTotal) * 40.0))
         : 0.0;
 
     return round($videoPart + $documentPart + $quizPart, 1);
@@ -139,6 +139,8 @@ try {
                  SELECT COUNT(*) AS answer_count,
                         COALESCE(SUM(aa.score) FILTER (WHERE q.question_type <> 'essay'), 0) AS objective_score,
                         COALESCE(SUM(q.max_score) FILTER (WHERE q.question_type <> 'essay'), 0) AS objective_total,
+                        COUNT(*) FILTER (WHERE q.question_type <> 'essay') AS objective_question_count,
+                        COUNT(*) FILTER (WHERE q.question_type <> 'essay' AND aa.score >= q.max_score) AS objective_correct_count,
                         COALESCE(SUM(aa.score) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'reviewed'), 0) AS essay_score,
                         COALESCE(SUM(q.max_score) FILTER (WHERE q.question_type = 'essay'), 0) AS essay_total,
                         COUNT(*) FILTER (WHERE q.question_type = 'essay' AND aa.review_status = 'pending') AS essay_pending_count,
@@ -192,6 +194,8 @@ try {
                 'score_percent' => $lessonScoreTotal > 0 ? round(($lessonScoreEarned / $lessonScoreTotal) * 100, 1) : null,
                 'objective_score_earned' => $objectiveScore,
                 'objective_score_total' => $objectiveTotal,
+                'objective_question_count' => (int) ($lessonRow['objective_question_count'] ?? 0),
+                'objective_correct_count' => (int) ($lessonRow['objective_correct_count'] ?? 0),
                 'essay_score_earned' => $essayScore,
                 'essay_score_total' => $essayTotal,
                 'essay_pending_count' => (int) ($lessonRow['essay_pending_count'] ?? 0),

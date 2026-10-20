@@ -198,7 +198,6 @@
     });
   });
 
-  document.getElementById('graduationRefreshBtn')?.addEventListener('click', loadGraduationRequests);
   document.getElementById('graduationRequestsList')?.addEventListener('click', async event => {
     const button = event.target.closest('[data-approve-graduation]');
     if (!button || button.disabled) return;

@@ -30,11 +30,19 @@ if (empty($_SESSION['transcript_review_csrf'])) {
 $csrfToken = (string) $_SESSION['transcript_review_csrf'];
 $requestsStmt = $conn->query(
     "SELECT r.request_id, r.student_id, r.original_file_name, r.submitted_at,
+            r.created_at, r.status, r.approved_at, r.approved_by, r.approved_courses,
+            r.reviewed_by, r.reviewed_at,
+            r.reviewer_note,
+            COALESCE(reviewer_teacher.full_name, NULLIF(TRIM(reviewer_staff.first_name || ' ' || reviewer_staff.last_name), '')) AS approver_name,
+            COALESCE(reviewer.user_id, r.reviewed_by) AS approver_id,
             COALESCE(s.full_name, r.student_id) AS student_name
      FROM public.transcript_requests r
      LEFT JOIN public.students s ON s.user_id = r.student_id
-     WHERE r.status = 'pending'
-     ORDER BY r.submitted_at ASC"
+     LEFT JOIN public.users reviewer ON reviewer.user_id = r.reviewed_by
+     LEFT JOIN public.teachers reviewer_teacher ON reviewer_teacher.user_id = reviewer.user_id
+     LEFT JOIN public.staff reviewer_staff ON reviewer_staff.user_id = reviewer.user_id
+     ORDER BY CASE WHEN r.status = 'pending' THEN 0 ELSE 1 END,
+              r.submitted_at DESC, r.request_id DESC"
 );
 $requests = $requestsStmt->fetchAll(PDO::FETCH_ASSOC);
 $selectedRequestId = trim((string) ($_GET['request_id'] ?? ''));
@@ -46,7 +54,8 @@ foreach ($requests as $request) {
     }
 }
 if (!$selectedRequest && $requests) {
-    $selectedRequest = $requests[0];
+    $pendingRequests = array_values(array_filter($requests, static fn(array $request): bool => $request['status'] === 'pending'));
+    $selectedRequest = $pendingRequests[0] ?? $requests[0];
     $selectedRequestId = (string) $selectedRequest['request_id'];
 }
 
@@ -54,13 +63,55 @@ if ($selectedRequest) {
     $documentStmt = $conn->prepare(
         "SELECT COALESCE(NULLIF(document_url, ''), file_path) AS document_data, mime_type
          FROM public.transcript_requests
-         WHERE request_id = :request_id AND status = 'pending'"
+         WHERE request_id = :request_id"
     );
     $documentStmt->execute([':request_id' => $selectedRequestId]);
     $document = $documentStmt->fetch(PDO::FETCH_ASSOC);
     if ($document) {
         $selectedRequest['document_data'] = $document['document_data'];
         $selectedRequest['mime_type'] = $document['mime_type'];
+    }
+
+    $approvedCourses = json_decode((string) ($selectedRequest['approved_courses'] ?? ''), true);
+    if (!is_array($approvedCourses) || !$approvedCourses) {
+        $approvedCourses = [];
+        $approvedLessonsStmt = $conn->prepare(
+            'SELECT c.course_id, c.code AS course_code, c.name AS course_name,
+                    l.lesson_id, l.title AS lesson_title
+             FROM public.transcript_request_lessons trl
+             JOIN public.lessons l ON l.lesson_id = trl.lesson_id
+             JOIN public.courses c ON c.course_id = l.course_id
+             WHERE trl.request_id = :request_id AND trl.is_approved = TRUE
+             ORDER BY c.name, l.position'
+        );
+        $approvedLessonsStmt->execute([':request_id' => $selectedRequestId]);
+        foreach ($approvedLessonsStmt->fetchAll(PDO::FETCH_ASSOC) as $lesson) {
+            $courseId = (string) $lesson['course_id'];
+            if (!isset($approvedCourses[$courseId])) {
+                $approvedCourses[$courseId] = [
+                    'course_id' => $courseId,
+                    'course_code' => (string) ($lesson['course_code'] ?? ''),
+                    'course_name' => (string) $lesson['course_name'],
+                    'lessons' => [],
+                ];
+            }
+            $approvedCourses[$courseId]['lessons'][] = [
+                'lesson_id' => (string) $lesson['lesson_id'],
+                'lesson_title' => (string) $lesson['lesson_title'],
+            ];
+        }
+        $approvedCourses = array_values($approvedCourses);
+    }
+    $selectedRequest['approved_courses_list'] = $approvedCourses;
+    $approverId = trim((string) ($selectedRequest['approver_id'] ?? $selectedRequest['reviewed_by'] ?? ''));
+    $approverName = trim((string) ($selectedRequest['approver_name'] ?? ''));
+    $storedApprover = trim((string) ($selectedRequest['approved_by'] ?? ''));
+    if ($approverName !== '') {
+        $selectedRequest['approver_display'] = $approverId !== ''
+            ? $approverId . ' · ' . $approverName
+            : $approverName;
+    } else {
+        $selectedRequest['approver_display'] = $storedApprover !== '' ? $storedApprover : ($approverId !== '' ? $approverId : '-');
     }
 }
 
@@ -89,4 +140,15 @@ if ($selectedRequest) {
 function hReview(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
+function formatReviewDate(?string $value): string
+{
+    if ($value === null || trim($value) === '') return '-';
+    try {
+        $date = (new DateTimeImmutable($value))->setTimezone(new DateTimeZone('Asia/Bangkok'));
+        return $date->format('d/m/') . ((int) $date->format('Y') + 543) . $date->format(' H:i') . ' น.';
+    } catch (Throwable $error) {
+        return '-';
+    }
 }

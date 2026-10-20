@@ -131,6 +131,17 @@ body {
     margin-bottom: 18px;
 }
 
+.question-score-value {
+    display: inline-block;
+    margin: -8px 0 16px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    color: #9a3412;
+    background: #fff1e6;
+    font-size: 13px;
+    font-weight: 600;
+}
+
 .option-list {
     display: grid;
     gap: 12px;

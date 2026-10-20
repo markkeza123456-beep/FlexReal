@@ -58,12 +58,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const rows = data.submissions || [];
             const renderRows = (items, isReviewed) => items.length ? items.map(row => {
                 const reviewed = row.review_status !== 'pending';
-                const status = row.review_status === 'pass' ? 'ผ่าน' : row.review_status === 'fail' ? 'ไม่ผ่าน' : 'รอตรวจ';
+                const status = row.review_status === 'pass' ? 'ได้เต็ม' : row.review_status === 'partial' ? 'ได้บางส่วน' : row.review_status === 'fail' ? 'ไม่ได้คะแนน' : 'รอตรวจ';
                 return `<article style="padding:18px;border:1px solid var(--border);border-radius:12px;background:var(--bg3)">
                     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><strong>${escapeHtml(row.student_name)}</strong><span class="badge badge-${reviewed ? (row.review_status === 'pass' ? 'active' : 'needs-help') : 'draft'}">${status}</span></div>
                     <div style="font-size:12px;color:var(--text-muted);margin:5px 0 12px">${escapeHtml(row.lessons_name)} · ส่งเมื่อ ${escapeHtml(row.submitted_at)}</div>
                     <p style="font-weight:600;margin-bottom:7px">คำถาม: ${escapeHtml(row.questions_text)}</p><div style="white-space:pre-wrap;padding:12px;border-radius:8px;background:#fff;border:1px solid var(--border)">${escapeHtml(row.answer_text)}</div>
-                    ${isReviewed ? `<p style="margin-top:12px;font-size:13px">ผลตรวจ: <b>${status}</b>${row.teacher_comment ? ` · ${escapeHtml(row.teacher_comment)}` : ''}</p>` : `<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><input class="form-input essay-comment" data-id="${row.submission_id}" placeholder="ความเห็นถึงนักเรียน (ไม่บังคับ)" style="flex:1;min-width:220px"><button class="btn-save essay-review" data-id="${row.submission_id}" data-decision="pass">ผ่าน</button><button class="btn-cancel essay-review" data-id="${row.submission_id}" data-decision="fail">ไม่ผ่าน</button></div>`}
+                    ${isReviewed ? `<p style="margin-top:12px;font-size:13px">คะแนน: <b>${escapeHtml(row.score ?? 0)}/${escapeHtml(row.max_score)}</b> · ${status}${row.teacher_comment ? ` · ${escapeHtml(row.teacher_comment)}` : ''}</p>` : `<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center"><label>คะแนน <input class="form-input essay-score" data-id="${row.submission_id}" type="number" min="0" max="${Number(row.max_score)}" step="0.1" value="0" style="width:110px"></label><span>/ ${escapeHtml(row.max_score)} คะแนน</span><input class="form-input essay-comment" data-id="${row.submission_id}" placeholder="ความเห็นถึงนักเรียน (ไม่บังคับ)" style="flex:1;min-width:220px"><button class="btn-save essay-review" data-id="${row.submission_id}">บันทึกคะแนน</button></div>`}
                 </article>`;
             }).join('') : `<div style="padding:30px;text-align:center;color:var(--text-muted)">ยังไม่มีข้อเขียน${isReviewed ? 'ที่ตรวจแล้ว' : 'รอตรวจ'}</div>`;
             const pending = rows.filter(row => row.review_status === 'pending');
@@ -91,7 +91,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const button = event.target.closest('.essay-review'); if (!button) return;
         const comment = document.querySelector(`.essay-comment[data-id="${button.dataset.id}"]`)?.value || '';
         button.disabled = true;
-        const form = new FormData(); form.append('action', 'review_essay_submission'); form.append('submission_id', button.dataset.id); form.append('decision', button.dataset.decision); form.append('comment', comment);
+        const score = document.querySelector(`.essay-score[data-id="${button.dataset.id}"]`)?.value ?? '';
+        const form = new FormData(); form.append('action', 'review_essay_submission'); form.append('submission_id', button.dataset.id); form.append('score', score); form.append('comment', comment);
         try { const data = await (await fetch('teacher_api.php', { method: 'POST', body: form })).json(); if (!data.success) throw new Error(data.message); await loadEssaySubmissions(); } catch (error) { alert(error.message || 'บันทึกผลการตรวจไม่สำเร็จ'); button.disabled = false; }
     });
 
@@ -260,8 +261,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const lessonId = document.getElementById('quizTargetLessonId').value;
         const type = document.getElementById('quizTypeAdd').value;
         const question = document.getElementById('quizQuestionAdd').value.trim();
+        const maxScore = document.getElementById('quizMaxScoreAdd').value;
 
         if (!question) { document.getElementById('quizQuestionAdd').style.borderColor = '#ef4444'; return; }
+        if (!(Number(maxScore) > 0) || Number(maxScore) > 10000) { alert('กรุณากำหนดคะแนนเต็มระหว่าง 0.01 ถึง 10,000'); return; }
 
         let chA = '', chB = '', chC = '', chD = '', ans = '';
         if (type === 'choice') {
@@ -278,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const fd = new FormData();
         fd.append('action', 'add_quiz'); fd.append('lesson_id', lessonId); fd.append('type', type);
         fd.append('question', question); fd.append('choice_a', chA); fd.append('choice_b', chB);
-        fd.append('choice_c', chC); fd.append('choice_d', chD); fd.append('answer', ans);
+        fd.append('choice_c', chC); fd.append('choice_d', chD); fd.append('answer', ans); fd.append('max_score', maxScore);
 
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
             if(d.success) {
@@ -301,6 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('editQuizIdInput').value = btn.dataset.id;
             document.getElementById('editQuizTypeHidden').value = type;
             document.getElementById('editQuizQuestion').value = btn.dataset.question;
+            document.getElementById('editQuizMaxScore').value = btn.dataset.maxScore || '1';
 
             grpChoiceEdit.style.display = 'none'; grpTFEdit.style.display = 'none';
             const ans = btn.dataset.answer;
@@ -327,7 +331,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('saveEditQuizBtn')?.addEventListener('click', (e) => {
         const btn = e.target;
         const type = document.getElementById('editQuizTypeHidden').value;
+        const maxScore = document.getElementById('editQuizMaxScore').value;
         let chA = '', chB = '', chC = '', chD = '', ans = '';
+
+        if (!(Number(maxScore) > 0) || Number(maxScore) > 10000) { alert('กรุณากำหนดคะแนนเต็มระหว่าง 0.01 ถึง 10,000'); return; }
 
         if (type === 'choice') {
             chA = document.getElementById('chA_Edit').value.trim(); chB = document.getElementById('chB_Edit').value.trim();
@@ -342,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const fd = new FormData();
         fd.append('action', 'edit_quiz'); fd.append('quiz_id', document.getElementById('editQuizIdInput').value);
         fd.append('type', type); fd.append('question', document.getElementById('editQuizQuestion').value.trim());
-        fd.append('choice_a', chA); fd.append('choice_b', chB); fd.append('choice_c', chC); fd.append('choice_d', chD); fd.append('answer', ans);
+        fd.append('choice_a', chA); fd.append('choice_b', chB); fd.append('choice_c', chC); fd.append('choice_d', chD); fd.append('answer', ans); fd.append('max_score', maxScore);
 
         btn.textContent = '⏳ กำลังบันทึก...'; btn.disabled = true;
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {

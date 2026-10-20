@@ -63,6 +63,7 @@ function renderQuestion() {
         const savedText = typeof answers[currentQuestion] === 'string' ? answers[currentQuestion] : '';
         quizForm.innerHTML = `
             <h2 class="question-title">${currentQuestion + 1}. ${item.question}</h2>
+            <p class="question-score-value">คะแนนเต็มข้อนี้ ${Number(item.max_score || 1).toLocaleString('th-TH', { maximumFractionDigits: 2 })} คะแนน</p>
             <div class="essay-card">
                 <label class="essay-label" for="essayAnswerInput">พิมพ์คำตอบของคุณ</label>
                 <textarea id="essayAnswerInput" class="essay-input" rows="6" placeholder="พิมพ์คำตอบข้อเขียนที่นี่...">${savedText}</textarea>
@@ -72,6 +73,7 @@ function renderQuestion() {
     } else {
         quizForm.innerHTML = `
             <h2 class="question-title">${currentQuestion + 1}. ${item.question}</h2>
+            <p class="question-score-value">คะแนนเต็มข้อนี้ ${Number(item.max_score || 1).toLocaleString('th-TH', { maximumFractionDigits: 2 })} คะแนน</p>
             <div class="option-list">
                 ${item.options.map((option, index) => `
                     <label class="option-card">

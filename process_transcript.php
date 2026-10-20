@@ -12,6 +12,7 @@ function transcriptJson(array $payload, int $statusCode = 200): void
 
 $role = strtolower(trim((string) ($_SESSION['role'] ?? '')));
 $reviewerId = (string) ($_SESSION['user_id'] ?? '');
+$reviewerName = trim((string) ($_SESSION['name'] ?? $_SESSION['full_name'] ?? $_SESSION['user_name'] ?? ''));
 if ($reviewerId === '' || !in_array($role, ['staff', 'teacher'], true)) {
     transcriptJson(['status' => 'unauthorized', 'message' => 'กรุณาเข้าสู่ระบบผู้ตรวจสอบ'], 401);
 }
@@ -77,7 +78,13 @@ try {
         transcriptJson(['status' => 'error', 'message' => 'คำขอนี้ได้รับการตรวจสอบไปแล้ว'], 409);
     }
 
-    $allLessons = $conn->query('SELECT lesson_id, course_id FROM public.lessons ORDER BY lesson_id')->fetchAll(PDO::FETCH_ASSOC);
+    $allLessons = $conn->query(
+        'SELECT l.lesson_id, l.course_id, l.title AS lesson_title,
+                c.code AS course_code, c.name AS course_name
+         FROM public.lessons l
+         JOIN public.courses c ON c.course_id = l.course_id
+         ORDER BY l.lesson_id'
+    )->fetchAll(PDO::FETCH_ASSOC);
     $lessonMap = [];
     foreach ($allLessons as $lesson) $lessonMap[(string) $lesson['lesson_id']] = (string) $lesson['course_id'];
     foreach ($lessonIds as $lessonId => $_) {
@@ -111,6 +118,7 @@ try {
     );
 
     $enrolledCourses = [];
+    $approvedCourses = [];
     foreach ($allLessons as $lesson) {
         $lessonId = (string) $lesson['lesson_id'];
         $isApproved = isset($lessonIds[$lessonId]);
@@ -123,6 +131,18 @@ try {
         if ($isApproved) {
             $courseId = (string) $lesson['course_id'];
             $enrolledCourses[$courseId] = true;
+            if (!isset($approvedCourses[$courseId])) {
+                $approvedCourses[$courseId] = [
+                    'course_id' => $courseId,
+                    'course_code' => (string) ($lesson['course_code'] ?? ''),
+                    'course_name' => (string) $lesson['course_name'],
+                    'lessons' => [],
+                ];
+            }
+            $approvedCourses[$courseId]['lessons'][] = [
+                'lesson_id' => $lessonId,
+                'lesson_title' => (string) $lesson['lesson_title'],
+            ];
             $progressStmt->execute([
                 ':student_id' => $studentId,
                 ':lesson_id' => $lessonId,
@@ -135,13 +155,19 @@ try {
         $enrollStmt->execute([':student_id' => $studentId, ':course_id' => $courseId]);
     }
 
+    $approvedBy = $reviewerName !== '' ? $reviewerName . ' (' . $reviewerId . ')' : $reviewerId;
+    $approvedCoursesJson = json_encode(array_values($approvedCourses), JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     $finishStmt = $conn->prepare(
         "UPDATE public.transcript_requests
-         SET status = 'approved', reviewed_by = :reviewer_id, reviewed_at = now(), reviewer_note = :reviewer_note
+         SET status = 'approved', reviewed_by = :reviewer_id, reviewed_at = CURRENT_TIMESTAMP,
+             approved_by = :approved_by, approved_at = CURRENT_TIMESTAMP,
+             approved_courses = :approved_courses, reviewer_note = :reviewer_note
          WHERE request_id = :request_id AND status = 'pending'"
     );
     $finishStmt->execute([
         ':reviewer_id' => $reviewerId,
+        ':approved_by' => $approvedBy,
+        ':approved_courses' => $approvedCoursesJson,
         ':reviewer_note' => $reviewerNote !== '' ? $reviewerNote : null,
         ':request_id' => $requestId,
     ]);

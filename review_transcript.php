@@ -7,11 +7,11 @@ require __DIR__ . '/includes/header.php';
 <main class="review-page">
     <header class="review-header">
         <div><a class="back-link" href="<?= $role === 'staff' ? 'staffdash.php' : 'teacherdash.php' ?>">← กลับแดชบอร์ด</a><h1>ตรวจสอบทรานสคริปต์</h1><p>เลือกบทเรียนที่เทียบโอนผ่านจากเอกสารของนักเรียน</p></div>
-        <label class="request-picker">คำขอที่รอตรวจ
+        <label class="request-picker">รายการคำขอเทียบโอน
             <select id="requestPicker" <?= !$requests ? 'disabled' : '' ?>>
                 <?php foreach ($requests as $request): ?>
                     <option value="<?= (int) $request['request_id'] ?>" <?= (string) $request['request_id'] === $selectedRequestId ? 'selected' : '' ?>>
-                        #<?= (int) $request['request_id'] ?> · <?= hReview((string) $request['student_name']) ?> (<?= hReview((string) $request['student_id']) ?>)
+                        #<?= (int) $request['request_id'] ?> · <?= hReview((string) $request['student_name']) ?> (<?= hReview((string) $request['student_id']) ?>) · <?= hReview((string) $request['status']) ?>
                     </option>
                 <?php endforeach; ?>
             </select>
@@ -47,42 +47,90 @@ require __DIR__ . '/includes/header.php';
                         <img <?= $isBase64Image ? 'id="transcriptImageViewer"' : '' ?> src="<?= hReview($fileViewerUrl) ?>" alt="เอกสารทรานสคริปต์ของ <?= hReview((string) $selectedRequest['student_name']) ?>">
                     <?php elseif ($isTranscriptPdf): ?>
                         <iframe id="transcriptPdfViewer" title="เอกสารทรานสคริปต์ของนักเรียน" <?= $isBase64Pdf ? 'data-document="' . hReview($fileViewerUrl) . '"' : 'src="' . hReview($fileViewerUrl) . '"' ?>></iframe>
-                    <?php else: ?>
+                    <?php elseif ($fileViewerUrl !== ''): ?>
                         <p class="transcript-file-error">ไม่รองรับชนิดไฟล์นี้</p>
+                    <?php else: ?>
+                        <p class="transcript-file-error">ไม่พบไฟล์เอกสารทรานสคริปต์</p>
                     <?php endif; ?>
                 </div>
                 <a class="transcript-open-link" <?= $isBase64Document ? 'id="transcriptOpenLink" href="#" aria-disabled="true"' : 'href="' . hReview($fileViewerUrl) . '"' ?> target="_blank" rel="noopener noreferrer">เปิดไฟล์ในแท็บใหม่</a>
             </section>
-            <form class="checklist-pane" id="transcriptReviewForm" action="process_transcript.php" method="post">
-                <input type="hidden" name="csrf_token" value="<?= hReview($csrfToken) ?>">
-                <input type="hidden" name="request_id" value="<?= (int) $selectedRequest['request_id'] ?>">
-                <div class="pane-title">Checklist บทเรียนที่ให้ผ่าน</div>
-                <p class="checklist-help">เลือกเฉพาะบทเรียนที่เนื้อหาตรงกับผลการเรียนในทรานสคริปต์</p>
-                <div class="lesson-checklist">
-                    <?php if (!$lessonsByCourse): ?>
-                        <p class="muted">ยังไม่มีบทเรียนในระบบ</p>
-                    <?php else: foreach ($lessonsByCourse as $courseId => $course): ?>
-                        <fieldset class="course-group">
-                            <legend><?= hReview($course['name']) ?><?= $course['code'] !== '' ? ' · ' . hReview($course['code']) : '' ?></legend>
-                            <?php foreach ($course['lessons'] as $lesson): ?>
-                                <label class="lesson-option">
-                                    <input type="checkbox" name="lesson_ids[]" value="<?= (int) $lesson['lesson_id'] ?>">
-                                    <span><strong>บทที่ <?= (int) $lesson['position'] ?>: <?= hReview((string) $lesson['title']) ?></strong>
-                                        <?php if (trim((string) ($lesson['content'] ?? '')) !== ''): ?><small><?= hReview(mb_strimwidth(strip_tags((string) $lesson['content']), 0, 180, '…', 'UTF-8')) ?></small><?php endif; ?>
-                                    </span>
-                                </label>
-                            <?php endforeach; ?>
-                        </fieldset>
-                    <?php endforeach; endif; ?>
-                </div>
-                <label class="review-note-label" for="reviewerNote">หมายเหตุ (ถ้ามี)</label>
-                <textarea id="reviewerNote" name="reviewer_note" rows="3" maxlength="2000" placeholder="บันทึกข้อสังเกตถึงนักเรียน"></textarea>
-                <div class="review-actions">
-                    <button class="approve-button" type="submit" <?= !$lessonsByCourse ? 'disabled' : '' ?>>อนุมัติผลเทียบโอน</button>
-                    <button class="reject-button" id="rejectTranscriptButton" type="button">ไม่อนุมัติและลบไฟล์</button>
-                </div>
-                <p class="review-message" id="reviewMessage" role="status" aria-live="polite"></p>
-            </form>
+            <section class="checklist-pane audit-pane" aria-label="ประวัติและสถานะการตรวจสอบ">
+                <div class="pane-title">ประวัติและสถานะการตรวจสอบ</div>
+                <?php if ($selectedRequest['status'] === 'approved'): ?>
+                    <div class="audit-status audit-status-approved">อนุมัติผลเทียบโอนเรียบร้อยแล้ว</div>
+                <?php elseif ($selectedRequest['status'] === 'pending'): ?>
+                    <div class="audit-status audit-status-pending">รอเจ้าหน้าที่ตรวจสอบ</div>
+                <?php else: ?>
+                    <div class="audit-status audit-status-rejected">ปฏิเสธคำขอเทียบโอน</div>
+                <?php endif; ?>
+                <dl class="audit-details">
+                    <div><dt>วันที่นักเรียนอัปโหลด</dt><dd><?= hReview(formatReviewDate((string) ($selectedRequest['created_at'] ?? $selectedRequest['submitted_at'] ?? ''))) ?></dd></div>
+                    <?php if ($selectedRequest['status'] === 'approved'): ?>
+                        <div><dt>ผู้อนุมัติ</dt><dd><?= hReview((string) ($selectedRequest['approver_display'] ?? '-')) ?></dd></div>
+                        <div><dt>วันที่อนุมัติ</dt><dd><?= hReview(formatReviewDate((string) ($selectedRequest['approved_at'] ?? $selectedRequest['reviewed_at'] ?? ''))) ?></dd></div>
+                    <?php endif; ?>
+                </dl>
+                <?php if ($selectedRequest['status'] === 'approved'): ?>
+                    <div class="approved-course-list">
+                        <strong>รายวิชา/บทเรียนที่ได้รับการเทียบโอนเกรด TR</strong>
+                        <?php if (!empty($selectedRequest['approved_courses_list'])): ?>
+                            <ul>
+                                <?php foreach ($selectedRequest['approved_courses_list'] as $approvedCourse): ?>
+                                    <?php if (is_array($approvedCourse)): ?>
+                                        <li>
+                                            <strong><?= hReview((string) ($approvedCourse['course_name'] ?? 'รายวิชา')) ?><?= !empty($approvedCourse['course_code']) ? ' (' . hReview((string) $approvedCourse['course_code']) . ')' : '' ?></strong>
+                                            <?php if (!empty($approvedCourse['lessons']) && is_array($approvedCourse['lessons'])): ?>
+                                                <ul><?php foreach ($approvedCourse['lessons'] as $approvedLesson): ?><li><?= hReview((string) (is_array($approvedLesson) ? ($approvedLesson['lesson_title'] ?? 'บทเรียน') : $approvedLesson)) ?></li><?php endforeach; ?></ul>
+                                            <?php endif; ?>
+                                        </li>
+                                    <?php else: ?>
+                                        <li><?= hReview((string) $approvedCourse) ?></li>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p class="muted">ไม่พบรายละเอียดบทเรียนที่บันทึกไว้</p>
+                        <?php endif; ?>
+                    </div>
+                    <?php if (!empty($selectedRequest['reviewer_note'])): ?>
+                        <p class="audit-note"><strong>หมายเหตุการตรวจสอบ:</strong> <?= hReview((string) $selectedRequest['reviewer_note']) ?></p>
+                    <?php endif; ?>
+                <?php elseif ($selectedRequest['status'] === 'pending'): ?>
+                    <form class="review-checklist-form" id="transcriptReviewForm" action="process_transcript.php" method="post">
+                        <input type="hidden" name="csrf_token" value="<?= hReview($csrfToken) ?>">
+                        <input type="hidden" name="request_id" value="<?= (int) $selectedRequest['request_id'] ?>">
+                        <div class="pane-title">Checklist บทเรียนที่ให้ผ่าน</div>
+                        <p class="checklist-help">เลือกเฉพาะบทเรียนที่เนื้อหาตรงกับผลการเรียนในทรานสคริปต์</p>
+                        <div class="lesson-checklist">
+                            <?php if (!$lessonsByCourse): ?>
+                                <p class="muted">ยังไม่มีบทเรียนในระบบ</p>
+                            <?php else: foreach ($lessonsByCourse as $courseId => $course): ?>
+                                <fieldset class="course-group">
+                                    <legend><?= hReview($course['name']) ?><?= $course['code'] !== '' ? ' · ' . hReview($course['code']) : '' ?></legend>
+                                    <?php foreach ($course['lessons'] as $lesson): ?>
+                                        <label class="lesson-option">
+                                            <input type="checkbox" name="lesson_ids[]" value="<?= (int) $lesson['lesson_id'] ?>">
+                                            <span><strong>บทที่ <?= (int) $lesson['position'] ?>: <?= hReview((string) $lesson['title']) ?></strong>
+                                                <?php if (trim((string) ($lesson['content'] ?? '')) !== ''): ?><small><?= hReview(mb_strimwidth(strip_tags((string) $lesson['content']), 0, 180, '…', 'UTF-8')) ?></small><?php endif; ?>
+                                            </span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </fieldset>
+                            <?php endforeach; endif; ?>
+                        </div>
+                        <label class="review-note-label" for="reviewerNote">หมายเหตุ (ถ้ามี)</label>
+                        <textarea id="reviewerNote" name="reviewer_note" rows="3" maxlength="2000" placeholder="บันทึกข้อสังเกตถึงนักเรียน"></textarea>
+                        <div class="review-actions">
+                            <button class="approve-button" type="submit" <?= !$lessonsByCourse ? 'disabled' : '' ?>>อนุมัติผลเทียบโอน</button>
+                            <button class="reject-button" id="rejectTranscriptButton" type="button">ไม่อนุมัติและลบไฟล์</button>
+                        </div>
+                        <p class="review-message" id="reviewMessage" role="status" aria-live="polite"></p>
+                    </form>
+                <?php elseif (!empty($selectedRequest['reviewer_note'])): ?>
+                    <p class="audit-note"><strong>หมายเหตุการตรวจสอบ:</strong> <?= hReview((string) $selectedRequest['reviewer_note']) ?></p>
+                <?php endif; ?>
+            </section>
         </div>
     <?php endif; ?>
 </main>

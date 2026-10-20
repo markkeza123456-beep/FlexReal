@@ -434,9 +434,11 @@ try {
         $lessonId = trim((string) ($_POST['lesson_id'] ?? ''));
         $type = trim((string) ($_POST['type'] ?? 'choice'));
         $question = trim((string) ($_POST['question'] ?? ''));
+        $maxScore = filter_var($_POST['max_score'] ?? 1, FILTER_VALIDATE_FLOAT);
         if ($lessonId === '' || $question === '') {
             throw new Exception('ข้อมูลคำถามไม่ครบ');
         }
+        if ($maxScore === false || $maxScore <= 0 || $maxScore > 10000) throw new Exception('คะแนนเต็มต้องอยู่ระหว่าง 0.01 ถึง 10,000');
         if (!teacherOwnsLesson($conn, $teacherId, $lessonId)) {
             throw new Exception('คุณไม่มีสิทธิ์เพิ่มข้อสอบในบทเรียนนี้');
         }
@@ -475,8 +477,8 @@ try {
 
         $stmt = $conn->prepare(
             'INSERT INTO public.questions
-                (lesson_id, question_type, question_text, options, correct_choice)
-             VALUES (:lesson_id, :question_type, :question_text, CAST(:options AS jsonb), :correct_choice)'
+                (lesson_id, question_type, question_text, options, correct_choice, max_score)
+             VALUES (:lesson_id, :question_type, :question_text, CAST(:options AS jsonb), :correct_choice, :max_score)'
         );
         $stmt->execute([
             ':lesson_id' => $lessonId,
@@ -484,6 +486,7 @@ try {
             ':question_text' => $question,
             ':options' => $type === 'essay' ? null : json_encode($type === 'truefalse' ? [$choiceA, $choiceB] : [$choiceA, $choiceB, $choiceC, $choiceD], JSON_UNESCAPED_UNICODE),
             ':correct_choice' => $type === 'essay' ? null : strtoupper($answer),
+            ':max_score' => $maxScore,
         ]);
 
         echo json_encode(['success' => true, 'message' => 'เพิ่มคำถามสำเร็จ']);
@@ -494,9 +497,11 @@ try {
         $quizId = trim((string) ($_POST['quiz_id'] ?? ''));
         $type = trim((string) ($_POST['type'] ?? 'choice'));
         $question = trim((string) ($_POST['question'] ?? ''));
+        $maxScore = filter_var($_POST['max_score'] ?? 1, FILTER_VALIDATE_FLOAT);
         if ($quizId === '' || $question === '') {
             throw new Exception('ข้อมูลไม่ครบถ้วน');
         }
+        if ($maxScore === false || $maxScore <= 0 || $maxScore > 10000) throw new Exception('คะแนนเต็มต้องอยู่ระหว่าง 0.01 ถึง 10,000');
         if (!teacherOwnsQuiz($conn, $teacherId, $quizId)) {
             throw new Exception('คุณไม่มีสิทธิ์แก้ไขข้อสอบนี้');
         }
@@ -539,6 +544,7 @@ try {
                  question_text = :question_text,
                  options = CAST(:options AS jsonb),
                  correct_choice = :correct_choice,
+                 max_score = :max_score,
                  updated_at = NOW()
              WHERE question_id = :question_id'
         );
@@ -547,6 +553,7 @@ try {
             ':question_text' => $question,
             ':options' => $type === 'essay' ? null : json_encode($type === 'truefalse' ? [$choiceA, $choiceB] : [$choiceA, $choiceB, $choiceC, $choiceD], JSON_UNESCAPED_UNICODE),
             ':correct_choice' => $type === 'essay' ? null : strtoupper($answer),
+            ':max_score' => $maxScore,
             ':question_id' => $quizId,
         ]);
 
@@ -683,8 +690,8 @@ try {
         if ($subjectId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) throw new Exception('คุณไม่มีสิทธิ์จัดการรายวิชานี้');
         $stmt = $conn->prepare(
             "SELECT aa.attempt_answer_id AS submission_id, a.attempt_id AS test_id, aa.answer_text,
-                    CASE WHEN aa.review_status = 'pending' THEN 'pending' WHEN COALESCE(aa.score, 0) > 0 THEN 'pass' ELSE 'fail' END AS review_status,
-                    aa.reviewer_comment AS teacher_comment, a.submitted_at,
+                    CASE WHEN aa.review_status = 'pending' THEN 'pending' WHEN COALESCE(aa.score, 0) >= q.max_score THEN 'pass' WHEN COALESCE(aa.score, 0) > 0 THEN 'partial' ELSE 'fail' END AS review_status,
+                    aa.score, q.max_score, aa.reviewer_comment AS teacher_comment, a.submitted_at,
                     s.full_name AS student_name, l.title AS lessons_name, q.question_text AS questions_text
              FROM public.quiz_attempt_answers aa
              INNER JOIN public.quiz_attempts a ON a.attempt_id = aa.attempt_id
@@ -702,7 +709,8 @@ try {
     if ($action === 'review_essay_submission') {
         $submissionId = (int) ($_POST['submission_id'] ?? 0);
         $decision = trim((string) ($_POST['decision'] ?? ''));
-        if ($submissionId <= 0 || !in_array($decision, ['pass', 'fail'], true)) throw new Exception('ข้อมูลการตรวจไม่ถูกต้อง');
+        $requestedScore = isset($_POST['score']) ? filter_var($_POST['score'], FILTER_VALIDATE_FLOAT) : null;
+        if ($submissionId <= 0 || ($requestedScore === false) || ($requestedScore === null && !in_array($decision, ['pass', 'fail'], true))) throw new Exception('ข้อมูลการตรวจไม่ถูกต้อง');
         $conn->beginTransaction();
         $lookup = $conn->prepare(
             'SELECT aa.attempt_id, aa.review_status, q.max_score
@@ -718,8 +726,10 @@ try {
         $row = $lookup->fetch(PDO::FETCH_ASSOC);
         if (!$row) throw new Exception('ไม่พบคำตอบข้อเขียนหรือคุณไม่มีสิทธิ์ตรวจ');
         if ($row['review_status'] !== 'pending') throw new Exception('คำตอบข้อนี้ถูกตรวจแล้ว');
+        $score = $requestedScore === null ? ($decision === 'pass' ? (float) $row['max_score'] : 0.0) : (float) $requestedScore;
+        if (!is_finite($score) || $score < 0 || $score > (float) $row['max_score']) throw new Exception('คะแนนต้องอยู่ระหว่าง 0 ถึงคะแนนเต็มของข้อนี้');
         $conn->prepare("UPDATE public.quiz_attempt_answers SET score = :score, review_status = 'reviewed', reviewer_id = :teacher_id, reviewer_comment = :comment, reviewed_at = CURRENT_TIMESTAMP WHERE attempt_answer_id = :id")
-            ->execute([':score' => $decision === 'pass' ? $row['max_score'] : 0, ':teacher_id' => $teacherId, ':comment' => trim((string) ($_POST['comment'] ?? '')), ':id' => $submissionId]);
+            ->execute([':score' => $score, ':teacher_id' => $teacherId, ':comment' => trim((string) ($_POST['comment'] ?? '')), ':id' => $submissionId]);
         $attemptId = (int) $row['attempt_id'];
         $summary = $conn->prepare("SELECT COALESCE(SUM(score), 0) AS score, COUNT(*) FILTER (WHERE review_status = 'pending') AS pending FROM public.quiz_attempt_answers WHERE attempt_id = :attempt_id");
         $summary->execute([':attempt_id' => $attemptId]);
@@ -730,7 +740,7 @@ try {
         $testStatus = (int) $result['pending'] > 0 ? 'pending_review' : ((float) $result['score'] >= $totalScore ? 'passed' : 'failed');
         $conn->prepare('UPDATE public.quiz_attempts SET score = :score, status = :status WHERE attempt_id = :attempt_id')->execute([':score' => $result['score'], ':status' => $testStatus, ':attempt_id' => $attemptId]);
         $conn->commit();
-        echo json_encode(['success' => true, 'message' => $testStatus === 'pending_review' ? 'บันทึกผลแล้ว ยังมีข้อเขียนรอตรวจ' : 'บันทึกผลการตรวจแล้ว']);
+        echo json_encode(['success' => true, 'score' => $score, 'max_score' => (float) $row['max_score'], 'message' => $testStatus === 'pending_review' ? 'บันทึกคะแนนแล้ว ยังมีข้อเขียนรอตรวจ' : 'บันทึกคะแนนข้อเขียนแล้ว']);
         exit;
     }
 

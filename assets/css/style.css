@@ -259,6 +259,20 @@ h2 { font-size: 20px; }
 .transcript-file-error[hidden] { display:none; }
 .transcript-open-link { align-self:flex-start; margin-top:10px; color:#c2410c; font-size:13px; }
 .checklist-pane { display: flex; flex-direction: column; max-height: 760px; }
+.audit-pane { max-height: 760px; gap: 10px; overflow-y: auto; }
+.audit-status { width: fit-content; padding: 7px 11px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+.audit-status-approved { color: #166534; background: #dcfce7; }
+.audit-status-pending { color: #9a3412; background: #ffedd5; }
+.audit-status-rejected { color: #991b1b; background: #fee2e2; }
+.audit-details { display: grid; gap: 8px; margin: 0; }
+.audit-details > div { display: grid; grid-template-columns: minmax(135px, .8fr) minmax(0, 1.2fr); gap: 12px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
+.audit-details dt { color: #64748b; font-size: 13px; }
+.audit-details dd { margin: 0; color: #1f2937; font-size: 13px; font-weight: 600; }
+.approved-course-list { display: grid; gap: 8px; color: #334155; font-size: 13px; }
+.approved-course-list ul { display: grid; gap: 6px; margin: 0; padding-left: 20px; }
+.approved-course-list ul ul { gap: 2px; margin-top: 4px; }
+.audit-note { margin: 0; color: #475569; font-size: 13px; }
+.review-checklist-form { display: flex; flex: 1; min-height: 0; flex-direction: column; }
 .checklist-help { margin: -4px 0 10px; color: #64748b; font-size: 13px; }
 .lesson-checklist { flex: 1; overflow-y: auto; padding-right: 4px; }
 .course-group { min-width: 0; padding: 10px 12px 12px; margin: 0 0 10px; border: 1px solid #e5e7eb; border-radius: 9px; }
