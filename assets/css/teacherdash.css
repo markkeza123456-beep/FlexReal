@@ -416,7 +416,7 @@ html, body {
 
 .content-manager-overlay {
     background-color: #fffaf6;
-    background-image: radial-gradient(circle, rgba(30,58,138,.12) 1.2px, transparent 1.4px), linear-gradient(135deg, rgba(30,58,138,.08), transparent 42%);
+    background-image: radial-gradient(circle, rgba(50,72,96,.12) 1.2px, transparent 1.4px), linear-gradient(135deg, rgba(50,72,96,.08), transparent 42%);
     background-size: 28px 28px, 100% 100%;
     backdrop-filter: none;
     z-index: 1200;

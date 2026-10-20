@@ -29,7 +29,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ขอเทียบโอนหน่วยกิต</title>
     <link rel="stylesheet" href="assets/css/credit_transfer.css">
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261020-dark-blue-doodles">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261020-tropical-doodle-icons">
     <script src="assets/js/credit_transfer.js" defer></script>
 </head>
 <body>

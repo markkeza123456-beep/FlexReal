@@ -13,7 +13,7 @@ exit;
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/regisstu.css" />
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261020-dark-blue-doodles" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261020-tropical-doodle-icons" />
 
 </head>
 <body>
