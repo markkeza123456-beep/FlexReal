@@ -190,7 +190,6 @@ function renderReports(courses) {
     const earned = rows.reduce((sum, lesson) => sum + (Number(lesson.score_earned) || 0), 0);
     const possible = rows.reduce((sum, lesson) => sum + (Number(lesson.score_total) || 0), 0);
     const pendingEssays = rows.reduce((sum, lesson) => sum + (Number(lesson.essay_pending_count) || 0), 0);
-    const reviewedEssays = rows.reduce((sum, lesson) => sum + (Number(lesson.essay_reviewed_count) || 0), 0);
     const quizAttempts = rows.reduce((sum, lesson) => sum + (Number(lesson.attempt_count) || 0), 0);
     const progress = lessonTotal ? Math.round(attempted / lessonTotal * 100) : 0;
     const fmt = (value) => Number(value || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
@@ -201,8 +200,7 @@ function renderReports(courses) {
         <div class="stat-card blue"><strong class="report-stat-heading">ครั้งที่ส่งข้อสอบ</strong><p class="value">${quizAttempts}</p><span class="sub-value">รวมทุกครั้งในรายวิชาที่เลือก</span></div>
         <div class="stat-card green"><strong class="report-stat-heading">ความคืบหน้า</strong><p class="value">${progress}%</p><span class="sub-value">สัดส่วนบทที่ส่งแบบทดสอบ</span></div>
         <div class="stat-card purple"><strong class="report-stat-heading">คะแนนรวม</strong><p class="value">${fmt(earned)}/${fmt(possible)}</p><span class="sub-value">รวมคะแนนข้อเขียนที่ตรวจแล้ว</span></div>
-        <div class="stat-card red"><strong class="report-stat-heading">ข้อเขียนรอตรวจ</strong><p class="value">${pendingEssays}</p><span class="sub-value">ข้อที่ยังรอครูตรวจ</span></div>
-        <div class="stat-card green"><strong class="report-stat-heading">ข้อเขียนตรวจแล้ว</strong><p class="value">${reviewedEssays}</p><span class="sub-value">นับจากผลสอบครั้งล่าสุดของแต่ละบท</span></div>`;
+        <div class="stat-card red"><strong class="report-stat-heading">ข้อเขียนรอตรวจ</strong><p class="value">${pendingEssays}</p><span class="sub-value">ข้อที่ยังรอครูตรวจ</span></div>`;
 
     if (!visibleCourses.length) {
         courseBody.innerHTML = '<tr><td colspan="8" class="report-empty">ยังไม่มีรายวิชาที่ลงทะเบียน</td></tr>';
