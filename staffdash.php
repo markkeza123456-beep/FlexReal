@@ -401,13 +401,18 @@ if (!empty($_SESSION['name'])) {
             <span class="btn-text">เพิ่มรายวิชาใหม่</span>
           </button>
         </div>
+        <div style="display:flex;align-items:center;gap:12px;margin:0 0 16px;flex-wrap:wrap;">
+          <label for="subjectCurriculumFilter" style="font-weight:600;color:var(--text);">กรองตามหลักสูตร</label>
+          <select id="subjectCurriculumFilter" class="form-input" style="width:min(420px,100%);">
+            <option value="">รายวิชาทั้งหมด</option>
+          </select>
+        </div>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
                 <th>รหัสวิชา</th>
                 <th>ชื่อวิชา</th>
-                <th>หน่วยกิต</th>
                 <th>ประเภท</th>
                 <th>อาจารย์ผู้ดูแล</th>
                 <th>สร้างเมื่อ</th>
@@ -416,7 +421,7 @@ if (!empty($_SESSION['name'])) {
               </tr>
             </thead>
             <tbody id="subjectBody">
-              <tr><td colspan="8" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
+              <tr><td colspan="7" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>

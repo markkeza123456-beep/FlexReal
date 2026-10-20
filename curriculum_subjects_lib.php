@@ -9,7 +9,7 @@ function findActiveCurriculumIdByLevel(PDO $conn, string $level): ?string {
 function assignCurriculumToStudentByLevel(PDO $conn, string $studentId, string $level): ?string {
     $id = findActiveCurriculumIdByLevel($conn, $level); if ($id === null) return null;
     $conn->prepare('INSERT INTO public.student_curricula (student_id, curriculum_id) VALUES (:student_id, :curriculum_id) ON CONFLICT (student_id, curriculum_id) DO NOTHING')->execute([':student_id' => $studentId, ':curriculum_id' => $id]);
-    $conn->prepare("INSERT INTO public.student_courses (student_id, course_id) SELECT :student_id, cc.course_id FROM public.curriculum_courses cc JOIN public.courses c ON c.course_id = cc.course_id WHERE cc.curriculum_id = :curriculum_id AND c.subject_type = 'compulsory' ON CONFLICT (student_id, course_id) DO NOTHING")->execute([':student_id' => $studentId, ':curriculum_id' => $id]);
+    $conn->prepare("INSERT INTO public.student_courses (student_id, course_id) SELECT :student_id, cc.course_id FROM public.curriculum_courses cc WHERE cc.curriculum_id = :curriculum_id AND cc.requirement_type = 'required' ON CONFLICT (student_id, course_id) DO NOTHING")->execute([':student_id' => $studentId, ':curriculum_id' => $id]);
     return $id;
 }
 function assignCurriculumAndEnrollRequiredSubjects(PDO $conn, string $studentId, string $level): ?string { return assignCurriculumToStudentByLevel($conn, $studentId, $level); }

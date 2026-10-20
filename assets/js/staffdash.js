@@ -3,6 +3,7 @@
 (() => {
   let curricula = [];
   let subjects = [];
+  let curriculumSubjects = [];
   let members = [];
   let teachers = [];
   let lessons = [];
@@ -268,6 +269,7 @@
       const data = await fetchJson('api_staff.php?action=getAllData');
       curricula = data.curricula || [];
       subjects = data.subjects || [];
+      curriculumSubjects = data.curriculum_subjects || [];
       members = (data.members || []).map(normalizeMember);
       teachers = data.teachers || [];
 
@@ -586,16 +588,36 @@
     if (!subjectBody) {
       return;
     }
+    const curriculumFilter = document.getElementById('subjectCurriculumFilter');
+    if (curriculumFilter && curriculumFilter.options.length !== curricula.length + 1) {
+      const selectedValue = curriculumFilter.value;
+      curriculumFilter.innerHTML = '<option value="">รายวิชาทั้งหมด</option>' + curricula.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.code)} · ${escapeHtml(item.name)}</option>`).join('');
+      curriculumFilter.value = selectedValue;
+    }
+    const selectedCurriculumId = curriculumFilter?.value || '';
+    const curriculumTypeBySubject = new Map(curriculumSubjects
+      .filter(item => String(item.curriculum_id) === String(selectedCurriculumId))
+      .map(item => [String(item.course_id), String(item.requirement_type).toLowerCase() === 'required' ? 'compulsory' : 'elective']));
+    const visibleSubjects = selectedCurriculumId
+      ? subjects.filter(subject => curriculumTypeBySubject.has(String(subject.id)))
+      : subjects;
 
-
-    subjectBody.innerHTML = subjects.length
-      ? subjects.map(subject => `
+    subjectBody.innerHTML = visibleSubjects.length
+      ? visibleSubjects.map(subject => {
+        const curriculumTypes = curriculumSubjects
+          .filter(item => String(item.course_id) === String(subject.id))
+          .map(item => String(item.requirement_type).toLowerCase() === 'required' ? 'compulsory' : 'elective');
+        const uniqueTypes = [...new Set(curriculumTypes)];
+        const type = curriculumTypeBySubject.get(String(subject.id))
+          || (uniqueTypes.length === 1 ? uniqueTypes[0] : uniqueTypes.length > 1 ? 'varies' : (['required', 'compulsory'].includes(String(subject.type).toLowerCase()) ? 'compulsory' : 'elective'));
+        const isCompulsory = type === 'compulsory';
+        const typeLabel = type === 'varies' ? 'เลือกหลักสูตร' : isCompulsory ? 'วิชาบังคับ' : 'วิชาเลือก';
+        return `
         <tr>
-          <td class="mono">${subject.code}</td>
-          <td>${subject.name}</td>
-          <td>${formatPlainNumber(subject.credit)}</td>
-          <td><span class="badge ${['required', 'compulsory'].includes(subject.type) ? 'compulsory' : 'elective'}">${['required', 'compulsory'].includes(subject.type) ? 'วิชาบังคับ' : 'วิชาเลือก'}</span></td>
-          <td style="color:var(--orange); font-weight:500;">${subject.teacher_name || 'ยังไม่มีผู้ดูแล'}</td>
+          <td class="mono">${escapeHtml(subject.code)}</td>
+          <td>${escapeHtml(subject.name)}</td>
+          <td><span class="badge ${type === 'varies' ? '' : isCompulsory ? 'compulsory' : 'elective'}">${typeLabel}</span></td>
+          <td style="color:var(--orange); font-weight:500;">${escapeHtml(subject.teacher_name || 'ยังไม่มีผู้ดูแล')}</td>
           <td>${formatRegistrationDate(subject.created_at)}</td>
           <td>${formatRegistrationDate(subject.updated_at)}</td>
           <td>
@@ -606,9 +628,12 @@
             </div>
           </td>
         </tr>
-      `).join('')
-      : '<tr><td colspan="8" style="text-align:center;">ไม่มีข้อมูลรายวิชา</td></tr>';
+      `;
+      }).join('')
+      : `<tr><td colspan="7" style="text-align:center;">${selectedCurriculumId ? 'หลักสูตรนี้ยังไม่มีรายวิชาที่กำหนดไว้' : 'ไม่มีข้อมูลรายวิชา'}</td></tr>`;
   }
+
+  document.getElementById('subjectCurriculumFilter')?.addEventListener('change', renderSubjects);
 
   document.querySelector('[data-goto="subject-add"]')?.addEventListener('click', () => {
     document.getElementById('subjectFormTitle').textContent = 'เพิ่มรายวิชาใหม่';
@@ -858,12 +883,16 @@
          listContainer.innerHTML = '<p style="color:var(--text-secondary); text-align:center; padding: 20px;">ยังไม่มีรายวิชาในระบบ กรุณาไปเพิ่มรายวิชาก่อนครับ</p>';
       } else {
          listContainer.innerHTML = data.subjects.map(sub => {
-            const isChecked = Array.isArray(data.selected) && data.selected.includes(sub.id) ? 'checked' : '';
+            const isChecked = Array.isArray(data.selected) && data.selected.some(id => String(id) === String(sub.id)) ? 'checked' : '';
+            const mappedType = data.selected_types?.[String(sub.id)] || (['required', 'compulsory'].includes(String(sub.type).toLowerCase()) ? 'compulsory' : 'elective');
             return `
-              <label class="curriculum-subject-row" style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px; border-radius:10px; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,107,26,0.05)'" onmouseout="this.style.background='transparent'">
-                <input type="checkbox" name="curriculum_subjects[]" value="${sub.id}" ${isChecked} style="width:18px; height:18px; accent-color:var(--orange); cursor:pointer;">
-                <span><strong style="color:var(--orange);">${sub.code || sub.id}</strong> - ${sub.name} <small class="badge ${['required','compulsory'].includes(sub.type) ? 'compulsory' : 'elective'}">${['required','compulsory'].includes(sub.type) ? 'วิชาบังคับ' : 'วิชาเลือก'}</small></span>
-              </label>
+              <div class="curriculum-subject-row" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px; border-radius:10px; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,107,26,0.05)'" onmouseout="this.style.background='transparent'">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex:1;min-width:240px"><input type="checkbox" name="curriculum_subjects[]" value="${escapeHtml(sub.id)}" ${isChecked} style="width:18px; height:18px; accent-color:var(--orange); cursor:pointer;"><span><strong style="color:var(--orange);">${escapeHtml(sub.code || sub.id)}</strong> - ${escapeHtml(sub.name)}</span></label>
+                <select name="curriculum_subject_type[${escapeHtml(sub.id)}]" aria-label="ประเภทวิชาในหลักสูตรสำหรับ ${escapeHtml(sub.name)}" style="min-width:145px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);">
+                  <option value="compulsory" ${mappedType === 'compulsory' ? 'selected' : ''}>วิชาบังคับ</option>
+                  <option value="elective" ${mappedType === 'elective' ? 'selected' : ''}>วิชาเลือก</option>
+                </select>
+              </div>
             `;
          }).join('');
       }
@@ -878,16 +907,20 @@
 
     const curriculumId = document.getElementById('cs-curriculum-id').value;
     const checkboxes = document.querySelectorAll('input[name="curriculum_subjects[]"]:checked');
-    const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+    const selectedSubjects = Array.from(checkboxes).map(cb => ({
+      id: cb.value,
+      type: document.querySelector(`[name="curriculum_subject_type[${CSS.escape(cb.value)}]"]`)?.value || 'elective'
+    }));
 
     const formData = new FormData();
     formData.append('action', 'saveCurriculumSubjects');
     formData.append('curriculum_id', curriculumId);
-    formData.append('subjects', JSON.stringify(selectedIds));
+    formData.append('subjects', JSON.stringify(selectedSubjects));
 
     try {
       await fetchJson('api_staff.php', { method: 'POST', body: formData });
       showToast('บันทึกรายวิชาเข้าหลักสูตรเรียบร้อย!', 'success');
+      await loadData();
       goTo('curriculum-list');
     } catch (error) {
       showToast(error.message || 'ไม่สามารถบันทึกข้อมูลได้', 'error');
