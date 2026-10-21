@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/includes/language.php'; ?>
 <?php
 require_once __DIR__ . '/check_auth.php';
 
@@ -41,6 +42,7 @@ try {
         .transfer-empty, .transfer-error { padding: 24px; color: var(--text-dim); text-align: center; }
         @media (max-width: 700px) { .transfer-content { padding: 24px 16px; } }
     </style>
+    <link rel="stylesheet" href="assets/css/responsive-language.css">
 </head>
 <body>
 <aside class="sidebar">
@@ -82,5 +84,6 @@ try {
         </section>
     </div>
 </main>
+<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js" defer></script>
 </body>
 </html>

@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/includes/language.php'; ?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -8,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/login.css?v=20261020-toa-blue-theme" />
+    <link rel="stylesheet" href="assets/css/responsive-language.css">
 </head>
 <body>
   <div class="bg-grid"></div>
@@ -98,5 +100,6 @@
   </main>
   <div class="toast" id="toast"></div>
   <script src="assets/js/login.js"></script>
+<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js" defer></script>
 </body>
 </html>

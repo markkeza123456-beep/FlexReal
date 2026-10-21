@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/includes/language.php'; ?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -86,6 +87,7 @@
     .parent-profile:hover { background: rgba(255,255,255,0.05); }
   </style>
   <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme" />
+    <link rel="stylesheet" href="assets/css/responsive-language.css">
 </head>
 <body>
 
@@ -401,5 +403,6 @@
 </div>
 
   <script src="assets/js/parent_dashboard.js?v=20261020-quiz-details"></script>
+<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js" defer></script>
 </body>
 </html>

@@ -1,5 +1,6 @@
+<?php require_once __DIR__ . '/includes/language.php'; ?>
 <?php
-session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 require_once __DIR__ . '/config/db.php';
 
 // ตรวจสอบ session และยืนยัน role กับฐานข้อมูลก่อนแสดงหน้าส่งคำขอ
@@ -31,6 +32,7 @@ try {
     <link rel="stylesheet" href="assets/css/credit_transfer.css">
     <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme">
     <script src="assets/js/credit_transfer.js" defer></script>
+    <link rel="stylesheet" href="assets/css/responsive-language.css">
 </head>
 <body>
     <main class="transfer-page">
@@ -56,5 +58,6 @@ try {
             </form>
         </section>
     </main>
+<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js" defer></script>
 </body>
 </html>

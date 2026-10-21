@@ -1,5 +1,6 @@
+<?php require_once __DIR__ . '/includes/language.php'; ?>
 <?php
-session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?? ''))) !== 'staff') {
     header('Location: login.php');
     exit;
@@ -16,6 +17,7 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/staff_subject_editor.css?v=20260902" />
     <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme">
+    <link rel="stylesheet" href="assets/css/responsive-language.css">
 </head>
 <body>
   <div class="bg-grid"></div>
@@ -186,5 +188,6 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
 
   <div class="toast" id="toast"></div>
   <script src="assets/js/staff_subject_editor.js?v=20260901"></script>
+<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js" defer></script>
 </body>
 </html>
