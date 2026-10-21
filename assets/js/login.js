@@ -86,11 +86,6 @@
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    const idDigits = loginInput.value.replace(/\D/g, '');
-    if (idDigits.length !== 13) {
-      showToast('เลขบัตรประชาชนต้องมี 13 หลัก', 'error-toast');
-      return;
-    }
     if (pwInput.value.length < 6) {
       showToast('กรุณากรอกข้อมูลให้ครบถ้วน (รหัสผ่านอย่างน้อย 6 ตัว)', 'error-toast');
       return;

@@ -2,7 +2,7 @@
 session_start(); require_once __DIR__ . '/config/db.php'; require_once __DIR__ . '/curriculum_subjects_lib.php';
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: regisstu.php'); exit; }
 try {
-    $role = strtolower(trim((string) ($_POST['role'] ?? ''))); $id_card = trim((string) ($_POST['userid'] ?? '')); $userId = $id_card; $phone = preg_replace('/\D+/', '', (string) ($_POST['phone'] ?? ''));
+    $role = strtolower(trim((string) ($_POST['role'] ?? ''))); $id_card = preg_replace('/\D+/', '', trim((string) ($_POST['userid'] ?? ''))); $userId = $id_card; $phone = preg_replace('/\D+/', '', (string) ($_POST['phone'] ?? ''));
     $password = (string) ($_POST['password'] ?? '');
     $givenName = trim((string) ($_POST['fullname'] ?? $_POST['firstname'] ?? ''));
     $fullName = trim($givenName . ' ' . trim((string) ($_POST['lastname'] ?? '')));
