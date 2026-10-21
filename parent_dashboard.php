@@ -14,7 +14,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Orbitron:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-  <link rel="stylesheet" href="assets/css/parent_dashboard.css?v=20261021-role-profile-footer-unified" />
+  <link rel="stylesheet" href="assets/css/parent_dashboard.css?v=20261021-profile-selected-blue" />
   <style>
 
     .settings-wrapper { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.2rem; align-items: start; max-width: 850px; }
@@ -85,12 +85,11 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
     }
     .btn-save-profile:hover { background: #284a80; border-color: #284a80; transform: translateY(-1px); }
     .btn-save-profile:disabled { opacity: .5; cursor: not-allowed; }
-    .btn-logout { display:flex; align-items:center; gap:10px; padding:.75rem 1rem; margin-bottom:.5rem; border-radius:10px; color:var(--text-muted); text-decoration:none; font-size:.9rem; transition:background .2s,color .2s; }
-    .btn-logout:hover { background:rgba(239,68,68,.12); color:#ef4444; }
+    .btn-logout { display:flex; align-items:center; gap:10px; margin:0 12px 12px; padding:10px 12px; border-radius:8px; color:var(--text-muted); text-decoration:none; font-size:13px; transition:background .18s,color .18s; }
+    .btn-logout:hover { background:rgba(239,68,68,.08); color:#ef4444; }
+    .btn-logout:focus-visible { outline:3px solid rgba(var(--brand-400-rgb),.35); outline-offset:2px; }
 
-    .parent-profile.active { background: rgba(92, 107, 192,0.1); border-radius: 10px; }
     .parent-profile { transition: background .2s; padding: 8px; margin: -8px; border-radius: 10px; }
-    .parent-profile:hover { background: rgba(255,255,255,0.05); }
   </style>
   <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-fullbleed" />
     <link rel="stylesheet" href="assets/css/responsive.css">
@@ -115,7 +114,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
     </nav>
 
     <a href="logout.php" class="btn-logout" onclick="return confirm('ต้องการออกจากระบบหรือไม่?')">
-      <i class="ti ti-logout"></i> ออกจากระบบ
+      <span aria-hidden="true"></span> ออกจากระบบ
     </a>
 
     <div class="sidebar-footer">
