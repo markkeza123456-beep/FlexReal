@@ -1773,7 +1773,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 userName.textContent = formatDisplayName(fullName);
                 userName.title = fullName;
             }
-            if (userAvatar) userAvatar.textContent = currentUser.avatar_text || 'U';
+            if (userAvatar) {
+                if (currentUser.avatar_url) {
+                    const avatarImage = document.createElement('img');
+                    avatarImage.src = currentUser.avatar_url;
+                    avatarImage.alt = '';
+                    avatarImage.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+                    userAvatar.replaceChildren(avatarImage);
+                } else {
+                    userAvatar.replaceChildren(document.createTextNode(currentUser.avatar_text || 'U'));
+                }
+            }
             if (userMenu) {
                 const profileLink = userMenu.querySelector('a');
                 if (profileLink) profileLink.href = currentUser.dashboard_url || getDashboardUrlForRole(currentUser.role);
