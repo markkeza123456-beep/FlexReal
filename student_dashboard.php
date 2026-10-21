@@ -256,8 +256,12 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
 
         </main>
     </div>
+<<<<<<< HEAD
     <script src="assets/js/student_dashboard.js?v=20261020-password-eye-icons"></script>
     <script src="assets/js/student_dashboard.js?v=20261020-course-certificate-issue-v3"></script>
 <?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js" defer></script>
+=======
+    <script src="assets/js/student_dashboard.js?v=20261021-hide-course-certificates"></script>
+>>>>>>> ba6acf2e0fb3b98084ec23d17f378f175d3b6a16
 </body>
 </html>
