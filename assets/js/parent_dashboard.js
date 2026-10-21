@@ -124,9 +124,6 @@ async function saveProfile() {
   const firstName = (document.getElementById('profileFirstName')?.value || '').trim();
   const lastName = (document.getElementById('profileLastName')?.value || '').trim();
   const name = `${firstName} ${lastName}`.trim();
-  const current  = document.getElementById('pwdCurrent')?.value  || '';
-  const pwdNew   = document.getElementById('pwdNew')?.value      || '';
-  const pwdConfirm = document.getElementById('pwdConfirm')?.value || '';
 
   function showFeedback(type, msg) {
     feedback.style.display = 'block';
@@ -139,17 +136,11 @@ async function saveProfile() {
   }
 
   if (!firstName || !lastName) { showFeedback('error', 'กรุณากรอกชื่อและนามสกุล'); return; }
-  if (pwdNew && pwdNew !== pwdConfirm) { showFeedback('error', 'รหัสผ่านใหม่ไม่ตรงกัน'); return; }
-  if (pwdNew && pwdNew.length < 6)    { showFeedback('error', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'); return; }
-  if (pwdNew && !current)             { showFeedback('error', 'กรุณาใส่รหัสผ่านปัจจุบันก่อน'); return; }
-
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> กำลังบันทึก...'; }
   try {
     const body = new FormData();
     body.append('first_name', firstName);
     body.append('last_name', lastName);
-    body.append('pwd_current', current);
-    body.append('pwd_new', pwdNew);
     const response = await fetch('update_parent_profile.php', { method: 'POST', body, credentials: 'same-origin' });
     const result = await response.json();
     if (!response.ok || !result.success) throw new Error(result.message || 'บันทึกข้อมูลไม่สำเร็จ');
@@ -160,16 +151,52 @@ async function saveProfile() {
     saveParent(profile);
     _parentData.parents_name = name;
     applyParentProfile(profile);
-    ['pwdCurrent','pwdNew','pwdConfirm'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    const sw = document.getElementById('pwdStrengthWrap');
-    if (sw) sw.style.display = 'none';
-    const mm = document.getElementById('pwdMatchMsg');
-    if (mm) mm.textContent = '';
     showFeedback('success', result.message || 'บันทึกข้อมูลสำเร็จ');
   } catch (error) {
     showFeedback('error', error.message || 'บันทึกข้อมูลไม่สำเร็จ กรุณาลองอีกครั้ง');
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> บันทึกข้อมูล'; }
+  }
+}
+
+async function changePassword() {
+  const btn = document.getElementById('changePasswordBtn');
+  const feedback = document.getElementById('passwordFeedback');
+  const current = document.getElementById('pwdCurrent')?.value || '';
+  const pwdNew = document.getElementById('pwdNew')?.value || '';
+  const pwdConfirm = document.getElementById('pwdConfirm')?.value || '';
+  const showFeedback = (type, message) => {
+    if (!feedback) return;
+    feedback.style.display = 'block';
+    feedback.textContent = message;
+    feedback.style.background = type === 'success' ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)';
+    feedback.style.color = type === 'success' ? '#10b981' : '#ef4444';
+    feedback.style.border = `1px solid ${type === 'success' ? '#10b98133' : '#ef444433'}`;
+  };
+  if (!current || !pwdNew || !pwdConfirm) return showFeedback('error', 'กรุณากรอกรหัสผ่านให้ครบ');
+  if (pwdNew.length < 6) return showFeedback('error', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+  if (pwdNew !== pwdConfirm) return showFeedback('error', 'รหัสผ่านใหม่ไม่ตรงกัน');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> กำลังบันทึก...'; }
+  try {
+    const body = new FormData();
+    body.append('first_name', (document.getElementById('profileFirstName')?.value || '').trim());
+    body.append('last_name', (document.getElementById('profileLastName')?.value || '').trim());
+    body.append('pwd_current', current);
+    body.append('pwd_new', pwdNew);
+    body.append('pwd_confirm', pwdConfirm);
+    const response = await fetch('update_parent_profile.php', { method: 'POST', body, credentials: 'same-origin' });
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.message || 'เปลี่ยนรหัสผ่านไม่สำเร็จ');
+    ['pwdCurrent', 'pwdNew', 'pwdConfirm'].forEach(id => { const input = document.getElementById(id); if (input) input.value = ''; });
+    const strength = document.getElementById('pwdStrengthWrap');
+    if (strength) strength.style.display = 'none';
+    const match = document.getElementById('pwdMatchMsg');
+    if (match) match.textContent = '';
+    showFeedback('success', result.message || 'เปลี่ยนรหัสผ่านสำเร็จ');
+  } catch (error) {
+    showFeedback('error', error.message || 'เปลี่ยนรหัสผ่านไม่สำเร็จ');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-lock"></i> เปลี่ยนรหัสผ่าน'; }
   }
 }
 

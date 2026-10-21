@@ -294,6 +294,17 @@ select:focus, input[type="text"]:focus { outline: none; border-color: var(--bran
   border-bottom: 1px solid var(--brand-400);
   text-align: left;
 }
+.sidebar > .logo.logo-section.sidebar-brand-link {
+  width: calc(100% + 2.4rem) !important;
+  min-width: calc(100% + 2.4rem);
+  max-width: none;
+  flex: 0 0 102px;
+  margin-left: -1.2rem;
+  margin-right: -1.2rem;
+  box-sizing: border-box;
+  background: var(--brand-200);
+  border-bottom: 1px solid var(--brand-400);
+}
 .sidebar > .logo.logo-section h2,
 .sidebar > .logo.logo-section span,
 .sidebar > .logo.logo-section:hover h2,
