@@ -4,11 +4,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>เข้าสู่ระบบ - NEXORA</title>
+  <title>เข้าสู่ระบบ - Flexible Learning Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/login.css?v=20261021-home-palette" />
+  <link rel="stylesheet" href="assets/css/login.css?v=20261021-logo-above-card" />
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
@@ -25,27 +25,11 @@
   <div class="glow-orb orb-2"></div>
 
   <main class="container">
+    <div class="brand brand-flh">
+      <img class="brand-flh-logo" src="images/flexible-learning-hub-logo-transparent.png?v=20261021-transparent-horizontal-cropped" alt="Flexible Learning Hub" width="606" height="199" fetchpriority="high" />
+    </div>
     <div class="card" id="loginCard">
       <div class="card-accent"></div>
-      <div class="brand brand-flh" role="img" aria-label="FLH — Flexible Learning Hub">
-        <svg class="brand-flh-mark" viewBox="0 0 220 100" fill="none" aria-hidden="true">
-          <g stroke="#073b8e" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 31c10-8 22-13 35-15M22 37c12-5 22-9 33-11M34 18c-4 16-8 32-13 47" stroke-width="5.5"/>
-            <path d="M71 13C64 35 58 56 55 74M68 45c13-7 27-13 40-16M64 60c13-8 28-13 42-16" stroke-width="5.2"/>
-            <path d="M112 16c-7 18-13 38-17 57M103 53c12 1 24-5 35-13M136 39c-3 13-6 25-9 38" stroke-width="5.2"/>
-          </g>
-          <path d="m145 9 19-8 25 7-18 9-26-8Z" fill="#073b8e"/>
-          <path d="m164 1 25 7-17 9-8-3V1Z" fill="#0c4b9d"/>
-          <path d="M176 15v21" stroke="#f4cf47" stroke-width="2.2" stroke-linecap="round"/>
-          <path d="M172 29c2 3 6 3 8 0" stroke="#f4cf47" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="176" cy="38" r="2.3" fill="#f4cf47"/>
-          <path d="M18 83c37 17 90 6 144-5" stroke="#6757ff" stroke-width="5" stroke-linecap="round"/>
-        </svg>
-        <div class="brand-caption">
-          <span>Flexible Learning</span> <span>Hub</span>
-        </div>
-      </div>
-
       <h1 class="title">เข้าสู่ระบบ</h1>
       <p class="subtitle">เลือกบทบาทแล้วกรอกข้อมูลเพื่อเข้าถึงระบบ</p>
 
