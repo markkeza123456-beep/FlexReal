@@ -50,7 +50,7 @@ $sidebarEscape = static fn($value): string => htmlspecialchars((string) $value, 
     <a class="nav-item" href="review_transcript.php"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>ตรวจทรานสคริปต์</a>
     <a class="nav-item" data-page="graduation-requests" href="staffdash.php?page=graduation-requests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="m8 12 2.5 2.5L16 9M8 2v4M16 2v4"/></svg>อนุมัติจบการศึกษา</a>
   </div>
-  <a href="logout.php" class="sidebar-logout"><span aria-hidden="true">↪</span><span>ออกจากระบบ</span></a>
+  <a href="logout.php" class="sidebar-logout">ออกจากระบบ</a>
   <div class="sidebar-footer<?= $sidebarInteractiveProfile ? ' staff-profile-trigger' : '' ?>" <?= $sidebarInteractiveProfile ? 'role="button" tabindex="0" onclick="openStaffProfile()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openStaffProfile()}" title="ดูหรือแก้ไขโปรไฟล์"' : '' ?>>
     <?php if ($sidebarInteractiveProfile): ?><input type="file" id="staffAvatarInput" accept="image/*" style="display:none" onchange="staffPreviewAvatar(this)"><?php endif; ?>
     <div class="staff-avatar-wrap">

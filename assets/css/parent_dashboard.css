@@ -49,11 +49,30 @@ body { font-family: 'Kanit', sans-serif; background: var(--bg-dark); color: var(
   padding: 14px 1.2rem;
   margin: 0;
   border-radius: 0;
-  background: linear-gradient(135deg, var(--primary-start), var(--primary-end)) !important;
+  background: var(--surface, #FFFFFF) !important;
+  color: var(--text-primary);
+  transition: background .18s, color .18s, filter .18s, transform .18s;
 }
 .sidebar > .sidebar-footer > .parent-profile .profile-name,
 .sidebar > .sidebar-footer > .parent-profile .profile-role,
-.sidebar > .sidebar-footer > .parent-profile > i { color: #FFFFFF !important; }
+.sidebar > .sidebar-footer > .parent-profile > i { color: var(--text-primary) !important; }
+.sidebar > .sidebar-footer > .parent-profile:hover,
+.sidebar > .sidebar-footer > .parent-profile:focus-visible {
+  background: var(--accent-dim) !important;
+}
+.sidebar > .sidebar-footer > .parent-profile:hover .profile-name,
+.sidebar > .sidebar-footer > .parent-profile:hover .profile-role,
+.sidebar > .sidebar-footer > .parent-profile:hover > i,
+.sidebar > .sidebar-footer > .parent-profile:focus-visible .profile-name,
+.sidebar > .sidebar-footer > .parent-profile:focus-visible .profile-role,
+.sidebar > .sidebar-footer > .parent-profile:focus-visible > i { color: var(--brand-700) !important; }
+.sidebar > .sidebar-footer > .parent-profile.active {
+  background: linear-gradient(135deg, var(--primary-start), var(--primary-end)) !important;
+  color: #FFFFFF !important;
+}
+.sidebar > .sidebar-footer > .parent-profile.active .profile-name,
+.sidebar > .sidebar-footer > .parent-profile.active .profile-role,
+.sidebar > .sidebar-footer > .parent-profile.active > i { color: #FFFFFF !important; }
 .sidebar > .sidebar-footer > .parent-profile .avatar { border-radius: 50%; }
 .sidebar { padding-bottom: 0; }
 .avatar-change-button { position:absolute;right:-3px;bottom:-3px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--card-bg);border-radius:50%;background:var(--accent);color:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.18); }
@@ -334,3 +353,10 @@ select:focus, input[type="text"]:focus { outline: none; border-color: var(--bran
 .sidebar > .logo.logo-section { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; height:102px; min-height:102px; padding-top:0; padding-bottom:0; }
 
 .profile-readonly { background:#e9eef3 !important; color:#667085 !important; cursor:not-allowed; }
+
+
+/* Match profile hover and press feedback to the blue sidebar buttons. */
+.sidebar > .sidebar-footer > .parent-profile:hover { filter: brightness(1.04); }
+.sidebar > .sidebar-footer > .parent-profile:active { filter: brightness(.92); transform: translateY(1px); }
+.sidebar > .sidebar-footer > .parent-profile.active:hover { filter: none; }
+.sidebar > .sidebar-footer > .parent-profile:focus-visible { outline: 3px solid var(--brand-400); outline-offset: -4px; }

@@ -165,10 +165,11 @@
     document.querySelectorAll('.nav-item').forEach(item => {
       item.classList.toggle('active', item.dataset.page === page);
     });
+    document.querySelector('.sidebar-footer.staff-profile-trigger')?.classList.toggle('active', page === 'profile');
 
     if (topbarTitle) {
       topbarTitle.textContent = pageNames[page] || '';
-      topbarTitle.hidden = page === 'profile';
+      topbarTitle.hidden = page === 'profile' || page === 'dashboard';
     }
     const pageUrl = new URL(window.location.href);
     pageUrl.searchParams.set('page', page);
