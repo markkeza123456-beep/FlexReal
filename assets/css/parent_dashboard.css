@@ -37,6 +37,23 @@ body { font-family: 'Kanit', sans-serif; background: var(--bg-dark); color: var(
 .profile-info { flex: 1; overflow: hidden; }
 .profile-name { font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .profile-role { font-size: 0.7rem; color: var(--text-muted); }
+.sidebar > .sidebar-footer {
+  margin: auto -1.2rem 0;
+  padding: 0;
+  border: 0;
+}
+.sidebar > .sidebar-footer > .parent-profile {
+  width: 100%;
+  min-height: 72px;
+  padding: 14px 1.2rem;
+  margin: 0;
+  border-radius: 0;
+  background: linear-gradient(135deg, var(--primary-start), var(--primary-end)) !important;
+}
+.sidebar > .sidebar-footer > .parent-profile .profile-name,
+.sidebar > .sidebar-footer > .parent-profile .profile-role,
+.sidebar > .sidebar-footer > .parent-profile > i { color: #FFFFFF !important; }
+.sidebar > .sidebar-footer > .parent-profile .avatar { border-radius: 50%; }
 .avatar-change-button { position:absolute;right:-3px;bottom:-3px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--card-bg);border-radius:50%;background:var(--accent);color:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.18); }
 .avatar-change-button:hover { filter:brightness(1.08); }
 .avatar-change-button:focus-visible { outline:2px solid var(--text-main);outline-offset:2px; }
