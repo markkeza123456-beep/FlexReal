@@ -1042,7 +1042,7 @@ function handleCourseImageError(imageEl) {
 function createCourseCardMarkup(course) {
     const subjectId = pick(course, 'subjects_id', 'Subjects_ID');
     const subjectName = pick(course, 'subjects_name', 'Subjects_Name') || '-';
-    const subjectDesc = pick(course, 'subjects_description', 'Subjects_Description') || 'คลิกเพื่อดูรายละเอียด';
+    const subjectDesc = 'คลิกเพื่อดูรายละเอียด';
     const subjectType = normalizeSubjectType(pick(course, 'subject_type', 'type'));
     const isEnrolled = isTruthy(pick(course, 'is_enrolled', 'Is_Enrolled'));
     const tagText = subjectType === 'required' ? 'วิชาบังคับ' : 'วิชาเลือก';
@@ -1172,7 +1172,7 @@ async function showCourse(subjectId) {
     if (cachedCourse) {
         currentCourseName = pick(cachedCourse, 'subjects_name', 'Subjects_Name');
         document.getElementById('detail-title').innerText = currentCourseName;
-        document.getElementById('detail-desc-top').innerText = pick(cachedCourse, 'subjects_description', 'Subjects_Description') || 'ยังไม่มีคำอธิบาย';
+        document.getElementById('detail-desc-top').innerText = 'รายละเอียดเบื้องต้น';
         document.getElementById('detail-desc').innerText = pick(cachedCourse, 'subjects_description', 'Subjects_Description') || 'ยังไม่มีคำอธิบาย';
         updateEnrollButton(Boolean(enrolledCourses[subjectId]));
         setCurriculumAccess(Boolean(enrolledCourses[subjectId]));
@@ -1191,7 +1191,7 @@ async function showCourse(subjectId) {
             currentCourseName = pick(course, 'subjects_name', 'Subjects_Name');
 
             document.getElementById('detail-title').innerText = currentCourseName;
-            document.getElementById('detail-desc-top').innerText = pick(course, 'subjects_description', 'Subjects_Description') || 'ยังไม่มีคำอธิบาย';
+            document.getElementById('detail-desc-top').innerText = 'รายละเอียดเบื้องต้น';
             document.getElementById('detail-desc').innerText = pick(course, 'subjects_description', 'Subjects_Description') || 'ยังไม่มีคำอธิบาย';
             updateInstructorInfo(course, result.instructors);
 
@@ -1229,7 +1229,6 @@ function goToCourseLearning() {
     if (!enrolledCourses[currentSubjectId]) { alert('กรุณาลงรายวิชาก่อนเข้าเนื้อหาบทเรียน'); return; }
     document.getElementById('learning-title').innerText = document.getElementById('detail-title').innerText;
     document.getElementById('learning-desc-top').innerText = document.getElementById('detail-desc-top').innerText;
-    document.getElementById('learning-desc').innerText = document.getElementById('detail-desc').innerText;
     renderAllLessonAccordions();
     showPage('course-learning');
     openLearningTab({ currentTarget: document.querySelector("#course-learning .tab-btn[onclick*='learning-curriculum']") }, 'learning-curriculum');
