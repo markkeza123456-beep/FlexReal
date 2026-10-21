@@ -28,8 +28,8 @@ let tabSwitchLogQueue = Promise.resolve();
 quizTitle.innerText = `แบบทดสอบวิชา ${courseName} (บทที่ ${lessonIndex})`;
 quizSubtitle.innerText = 'กำลังโหลดข้อสอบจากฐานข้อมูล...';
 backToCourse.href = subjectId
-    ? `index.html?subject_id=${encodeURIComponent(subjectId)}&course=${encodeURIComponent(courseName)}`
-    : `index.html?course=${encodeURIComponent(courseName)}`;
+    ? `index.php?subject_id=${encodeURIComponent(subjectId)}&course=${encodeURIComponent(courseName)}`
+    : `index.php?course=${encodeURIComponent(courseName)}`;
 
 async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
     const controller = new AbortController();
@@ -284,6 +284,12 @@ async function loadQuizFromDatabase() {
             credentials: 'same-origin'
         });
         const result = await response.json();
+
+        if (result.status === 'locked' || result.status === 'unauthorized') {
+            quizSubtitle.innerText = result.message || 'ยังไม่ผ่านเงื่อนไขการเริ่มทำแบบทดสอบ';
+            window.setTimeout(() => window.location.replace(result.redirect_url || (subjectId ? `index.php?subject_id=${encodeURIComponent(subjectId)}` : 'index.php')), 900);
+            return;
+        }
 
         if (result.status !== 'success' || !Array.isArray(result.questions) || result.questions.length === 0) {
             quizSubtitle.innerText = 'ยังไม่มีข้อสอบของบทนี้ในฐานข้อมูล';

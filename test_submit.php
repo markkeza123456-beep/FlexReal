@@ -34,9 +34,11 @@ if ($courseId === '') quizResponse(['status' => 'error', 'message' => 'ไม่
 
 try {
     $conn->beginTransaction();
-    $enrollment = $conn->prepare("SELECT 1 FROM public.student_courses WHERE student_id = :student_id AND course_id = :course_id AND status = 'active'");
-    $enrollment->execute([':student_id' => $studentId, ':course_id' => $courseId]);
-    if (!$enrollment->fetchColumn()) throw new RuntimeException('กรุณาลงรายวิชาก่อนทำแบบทดสอบ');
+    $unlock = lessonQuizUnlockStatus($conn, $studentId, $courseId, $lessonIndex);
+    if (!$unlock['allowed']) {
+        $conn->rollBack();
+        quizResponse(['status' => 'locked', 'message' => $unlock['message']], 403);
+    }
 
     $lesson = $conn->prepare('SELECT lesson_id, title FROM public.lessons WHERE course_id = :course_id AND position = :position LIMIT 1');
     $lesson->execute([':course_id' => $courseId, ':position' => $lessonIndex]);

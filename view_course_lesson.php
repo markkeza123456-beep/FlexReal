@@ -113,15 +113,19 @@ if (($_GET['preview'] ?? '') === 'pdf') {
 }
 $resumePage = 0;
 $documentProgressPercent = 0.0;
+$documentTotalPages = 0;
+$documentReadPages = [];
 try {
     ensureLearningProgressTables($conn);
-    $resume = $conn->prepare('SELECT COALESCE(lp.document_page_index, 0) AS page_index, COALESCE(lp.document_progress_percent, 0) AS progress_percent FROM public.lesson_progress lp JOIN public.lessons l ON l.lesson_id = lp.lesson_id WHERE lp.student_id = :student_id AND l.course_id = :course_id AND l.position = :position');
+    $resume = $conn->prepare("SELECT COALESCE(lp.document_page_index, 0) AS page_index, COALESCE(lp.document_progress_percent, 0) AS progress_percent, COALESCE(lp.document_total_pages, 0) AS total_pages, COALESCE(lp.document_read_pages, '[]'::jsonb) AS read_pages FROM public.lesson_progress lp JOIN public.lessons l ON l.lesson_id = lp.lesson_id WHERE lp.student_id = :student_id AND l.course_id = :course_id AND l.position = :position");
     $resume->execute([':student_id' => (string) $_SESSION['user_id'], ':course_id' => $courseId, ':position' => $position]);
     $savedProgress = $resume->fetch(PDO::FETCH_ASSOC) ?: [];
     $resumePage = max(0, (int) ($savedProgress['page_index'] ?? 0));
     $documentProgressPercent = min(100, max(0, (float) ($savedProgress['progress_percent'] ?? 0)));
+    $documentTotalPages = max(0, (int) ($savedProgress['total_pages'] ?? 0));
+    $documentReadPages = json_decode((string) ($savedProgress['read_pages'] ?? '[]'), true) ?: [];
 } catch (PDOException) {  }
-$documentProgressPayload = json_encode(['type' => 'lesson-document-progress', 'courseId' => $courseId, 'lessonIndex' => $position, 'resumePage' => $resumePage, 'documentProgressPercent' => $documentProgressPercent, 'documentUrl' => $relativePath], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+$documentProgressPayload = json_encode(['type' => 'lesson-document-progress', 'courseId' => $courseId, 'lessonIndex' => $position, 'resumePage' => $resumePage, 'documentProgressPercent' => $documentProgressPercent, 'documentTotalPages' => $documentTotalPages, 'documentReadPages' => $documentReadPages, 'documentUrl' => $relativePath], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 header('Content-Type: text/html; charset=utf-8');
 ?>
 <!doctype html>
@@ -162,21 +166,50 @@ header('Content-Type: text/html; charset=utf-8');
   const documentPayload = <?= $documentProgressPayload ?>;
   const reader = document.getElementById('pdf-reader');
   const pagesContainer = document.getElementById('pdf-pages');
+  let pageCanvases = [];
+  let readPages = new Set(Array.isArray(documentPayload.documentReadPages) ? documentPayload.documentReadPages.map(Number).filter(Number.isInteger) : []);
+  let activePage = Math.max(1, Number(documentPayload.resumePage) || 1);
+  let saveInFlight = null;
 
-  async function saveReadingProgress(percent, resumePage) {
+  function currentProgressPercent(totalPages) {
+    return totalPages > 0 ? readPages.size / totalPages * 100 : 0;
+  }
+
+  function makeProgressForm() {
     const form = new FormData();
     form.append('action', 'record'); form.append('subject_id', documentPayload.courseId);
     form.append('lesson_index', String(documentPayload.lessonIndex)); form.append('activity_type', 'document_progress');
-    form.append('progress_percent', String(Math.max(0, Math.min(100, percent)))); form.append('resume_position', String(resumePage));
-    try { await fetch('student_learning_api.php', { method: 'POST', body: form, credentials: 'same-origin' }); } catch (_) {}
-    window.parent.postMessage({ ...documentPayload, progressPercent: percent }, window.location.origin);
+    form.append('progress_percent', String(Math.max(0, Math.min(100, currentProgressPercent(pageCanvases.length)))));
+    form.append('resume_position', String(activePage));
+    form.append('document_total_pages', String(pageCanvases.length));
+    form.append('document_read_pages', JSON.stringify([...readPages]));
+    return form;
+  }
+
+  async function saveReadingProgress(useBeacon = false) {
+    if (pageCanvases.length === 0) return false;
+    const percent = currentProgressPercent(pageCanvases.length);
+    const form = makeProgressForm();
+    if (useBeacon && navigator.sendBeacon) {
+      const sent = navigator.sendBeacon('student_learning_api.php', form);
+      window.parent.postMessage({ ...documentPayload, progressPercent: percent }, window.location.origin);
+      return sent;
+    }
+    if (saveInFlight) return saveInFlight;
+    saveInFlight = fetch('student_learning_api.php', { method: 'POST', body: form, credentials: 'same-origin', keepalive: true })
+      .then(response => response.ok)
+      .catch(() => false)
+      .finally(() => { saveInFlight = null; });
+    const saved = await saveInFlight;
+    if (saved) window.parent.postMessage({ ...documentPayload, progressPercent: percent }, window.location.origin);
+    return saved;
   }
   function updateReadingStatus(percent) {
     const status = document.getElementById('reading-status');
     if (!status) return;
     const documentPercent = Math.round(Math.max(0, Math.min(100, percent)));
     const lessonPercent = Math.round(documentPercent * 0.30 * 10) / 10;
-    status.textContent = `อ่านแล้ว ${documentPercent}% · คิดเป็น ${lessonPercent}% ของบทเรียน`;
+    status.textContent = `อ่านแล้ว ${readPages.size}/${pageCanvases.length} หน้า (${documentPercent}%) · คิดเป็น ${lessonPercent}% ของบทเรียน`;
   }
 
   async function renderPdf() {
@@ -189,7 +222,6 @@ header('Content-Type: text/html; charset=utf-8');
       const pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs');
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
       const pdf = await pdfjsLib.getDocument(documentPayload.documentUrl).promise;
-      const pageCanvases = [];
       pagesContainer.replaceChildren();
 
       for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
@@ -208,39 +240,65 @@ header('Content-Type: text/html; charset=utf-8');
         pageCanvases.push(canvas);
       }
 
-      updateReadingStatus(documentPayload.documentProgressPercent);
-      if (documentPayload.resumePage > 1) {
+      if (readPages.size === 0 && documentPayload.documentProgressPercent > 0) {
+        const legacyPages = Math.min(pdf.numPages, Math.floor(documentPayload.documentProgressPercent / 100 * pdf.numPages));
+        for (let page = 1; page <= legacyPages; page += 1) readPages.add(page);
+      }
+      readPages = new Set([...readPages].filter(page => page >= 1 && page <= pdf.numPages));
+      updateReadingStatus(currentProgressPercent(pdf.numPages));
+      if (documentPayload.resumePage > 0) {
         const resumeCanvas = pageCanvases[Math.min(pageCanvases.length - 1, documentPayload.resumePage - 1)];
         reader.scrollTop = Math.max(0, resumeCanvas.offsetTop - 18);
       }
 
-      let highestReadPage = Math.floor((documentPayload.documentProgressPercent / 100) * pdf.numPages);
-      let scrollQueued = false;
-      const recordScrolledPages = () => {
-        scrollQueued = false;
-        const visibleBottom = reader.scrollTop + reader.clientHeight;
-        let reachedPage = 0;
-        pageCanvases.forEach((canvas, index) => {
-          if (visibleBottom >= canvas.offsetTop + (canvas.offsetHeight * 0.8)) reachedPage = index + 1;
+      const visiblePages = new Set();
+      const dwellTimers = new Map();
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          const page = Number(entry.target.dataset.pageNumber);
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.4) {
+            visiblePages.add(page);
+            activePage = page;
+            if (!readPages.has(page) && !dwellTimers.has(page)) {
+              dwellTimers.set(page, window.setTimeout(() => {
+                dwellTimers.delete(page);
+                if (visiblePages.has(page)) {
+                  readPages.add(page);
+                  updateReadingStatus(currentProgressPercent(pdf.numPages));
+                  saveReadingProgress();
+                }
+              }, 2500));
+            }
+          } else {
+            visiblePages.delete(page);
+            if (dwellTimers.has(page)) {
+              clearTimeout(dwellTimers.get(page));
+              dwellTimers.delete(page);
+            }
+          }
         });
-        if (reachedPage <= highestReadPage) return;
-        highestReadPage = reachedPage;
-        const percent = (highestReadPage / pdf.numPages) * 100;
-        updateReadingStatus(percent);
-        saveReadingProgress(percent, highestReadPage);
-      };
-
+      }, { root: reader, threshold: [0.4] });
+      pageCanvases.forEach(canvas => observer.observe(canvas));
       reader.addEventListener('scroll', () => {
-        if (!scrollQueued) {
-          scrollQueued = true;
-          requestAnimationFrame(recordScrolledPages);
-        }
+        if (visiblePages.size > 0) saveReadingProgress();
       }, { passive: true });
+      window.setInterval(() => {
+        if (document.visibilityState === 'visible' && visiblePages.size > 0) saveReadingProgress();
+      }, 8000);
     } catch (_) {
       pagesContainer.innerHTML = '<div class="notice">ไม่สามารถเปิดเอกสารได้ กรุณาลองใหม่อีกครั้ง</div>';
       updateReadingStatus(documentPayload.documentProgressPercent);
     }
   }
+
+  window.addEventListener('message', async event => {
+    if (event.origin !== window.location.origin || event.data?.type !== 'lesson-document-save-request') return;
+    await saveReadingProgress();
+    window.parent.postMessage({ type: 'lesson-document-save-complete' }, window.location.origin);
+  });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveReadingProgress(true); });
+  window.addEventListener('pagehide', () => saveReadingProgress(true));
+  window.addEventListener('beforeunload', () => saveReadingProgress(true));
 
   renderPdf();
 </script>

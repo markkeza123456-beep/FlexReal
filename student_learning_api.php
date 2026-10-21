@@ -6,9 +6,11 @@ function currentLearningStudentId(): ?string { return (($_SESSION['role'] ?? '')
 function fetchCourseSummary(PDO $conn, string $studentId, string $courseId): array {
     ensureLearningProgressTables($conn);
     $course = $conn->prepare('SELECT course_id, name FROM public.courses WHERE course_id = :id'); $course->execute([':id' => $courseId]); $courseRow = $course->fetch(PDO::FETCH_ASSOC); if (!$courseRow) throw new RuntimeException('ไม่พบรายวิชา');
-    $lessons = $conn->prepare("SELECT l.lesson_id, l.position AS lesson_index, l.title AS lesson_title, COALESCE(p.opened_count, 0) AS opened_count, COALESCE(p.video_open_count, 0) AS video_open_count, COALESCE(p.document_progress_percent, 0) AS document_progress_percent, COALESCE(p.document_page_index, 0) AS document_page_index, COALESCE(p.video_progress_percent, 0) AS video_progress_percent, COALESCE(p.video_position_seconds, 0) AS video_position_seconds, CASE WHEN COALESCE(p.is_transferred, FALSE) THEN 1 ELSE 0 END AS is_transferred, COALESCE(q.best_score, 0) AS best_quiz_score, COALESCE(q.total_score, 0) AS quiz_total_score, COALESCE(p.last_activity_at, q.last_activity_at) AS last_activity_at FROM public.lessons l LEFT JOIN public.lesson_progress p ON p.lesson_id = l.lesson_id AND p.student_id = :student_id LEFT JOIN LATERAL (SELECT MAX(a.score) AS best_score, MAX(a.total_score) AS total_score, MAX(a.submitted_at) AS last_activity_at FROM public.quiz_attempts a WHERE a.student_id = :student_id AND a.lesson_id = l.lesson_id) q ON true WHERE l.course_id = :course_id ORDER BY l.position");
+    $lessons = $conn->prepare("SELECT l.lesson_id, l.position AS lesson_index, l.title AS lesson_title, COALESCE(p.opened_count, 0) AS opened_count, COALESCE(p.video_open_count, 0) AS video_open_count, COALESCE(p.document_progress_percent, 0) AS document_progress_percent, COALESCE(p.document_page_index, 0) AS document_page_index, COALESCE(p.document_total_pages, 0) AS document_total_pages, COALESCE(p.document_read_pages, '[]'::jsonb) AS document_read_pages, COALESCE(p.video_progress_percent, 0) AS video_progress_percent, COALESCE(p.video_position_seconds, 0) AS video_position_seconds, COALESCE(p.video_watched_ranges, '[]'::jsonb) AS video_watched_ranges, CASE WHEN COALESCE(p.is_transferred, FALSE) THEN 1 ELSE 0 END AS is_transferred, COALESCE(q.best_score, 0) AS best_quiz_score, COALESCE(q.total_score, 0) AS quiz_total_score, COALESCE(p.last_activity_at, q.last_activity_at) AS last_activity_at FROM public.lessons l LEFT JOIN public.lesson_progress p ON p.lesson_id = l.lesson_id AND p.student_id = :student_id LEFT JOIN LATERAL (SELECT MAX(a.score) AS best_score, MAX(a.total_score) AS total_score, MAX(a.submitted_at) AS last_activity_at FROM public.quiz_attempts a WHERE a.student_id = :student_id AND a.lesson_id = l.lesson_id) q ON true WHERE l.course_id = :course_id ORDER BY l.position");
     $lessons->execute([':student_id' => $studentId, ':course_id' => $courseId]); $rows = $lessons->fetchAll(PDO::FETCH_ASSOC);
     foreach ($rows as &$row) {
+        $row['document_read_pages'] = decodeProgressJson($row['document_read_pages'] ?? null);
+        $row['video_watched_ranges'] = decodeProgressJson($row['video_watched_ranges'] ?? null);
         $row['document_progress'] = round((float) $row['document_progress_percent'] * 0.30, 1);
         $row['video_progress'] = round((float) $row['video_progress_percent'] * 0.30, 1);
         $row['quiz_progress'] = (int) $row['quiz_total_score'] > 0 ? round(min(40, ((float) $row['best_quiz_score'] / (float) $row['quiz_total_score']) * 40), 1) : 0;
@@ -23,6 +25,13 @@ try { $action = strtolower((string) ($_GET['action'] ?? $_POST['action'] ?? 'sum
     if ($action === 'record') {
         $position = max(1, (int) ($_POST['lesson_index'] ?? $_POST['position'] ?? 1));
         $durationSeconds = max(0, (int) (($_POST['duration_seconds'] ?? $_POST['duration'] ?? 0)));
+        $decodeInputArray = static function (string $key): array {
+            $raw = $_POST[$key] ?? '[]';
+            if (is_array($raw)) return $raw;
+            $value = json_decode((string) $raw, true);
+            return is_array($value) ? $value : [];
+        };
+        $conn->beginTransaction();
         recordLearningActivity(
             $conn,
             $studentId,
@@ -32,9 +41,13 @@ try { $action = strtolower((string) ($_GET['action'] ?? $_POST['action'] ?? 'sum
             trim((string) ($_POST['lesson_title'] ?? '')),
             (float) ($_POST['progress_percent'] ?? 0),
             (float) ($_POST['resume_position'] ?? 0),
-            $durationSeconds
+            $durationSeconds,
+            array_values($decodeInputArray('document_read_pages')),
+            max(0, (int) ($_POST['document_total_pages'] ?? 0)),
+            array_values($decodeInputArray('video_watched_ranges'))
         );
+        $conn->commit();
         learningJson(['status' => 'success']);
     }
     learningJson(['status' => 'success', 'summary' => fetchCourseSummary($conn, $studentId, $courseId)]);
-} catch (Throwable $e) { learningJson(['status' => 'error', 'message' => 'ระบบติดตามความคืบหน้าขัดข้อง: ' . $e->getMessage()], 500); }
+} catch (Throwable $e) { if ($conn->inTransaction()) $conn->rollBack(); error_log('Learning progress save failed: ' . $e->getMessage()); learningJson(['status' => 'error', 'message' => 'ระบบติดตามความคืบหน้าขัดข้อง'], 500); }

@@ -30,6 +30,8 @@ const learningProgressRequests = new Map();
 const courseProgressRequests = new Map();
 let activeVideoProgressSaver = null;
 let activeVideoProgressBeacon = null;
+let activeVideoProgressCleanup = null;
+let pendingDocumentSaveCloseResolver = null;
 let pendingVideoProgressSave = Promise.resolve(true);
 let lastLearningProgressError = '';
 
@@ -187,11 +189,17 @@ function isQuizUnlocked(lessonIndex) {
 
 function getLessonLockMessage(lessonIndex) {
     if (!canAccessLesson(lessonIndex)) return `ปลดล็อกเมื่อผ่านแบบทดสอบบทที่ ${Number(lessonIndex) - 1}`;
-    if (!hasReadLessonDocument(lessonIndex)) return 'ต้องอ่านบทเรียนให้จบก่อน';
-    const lesson = getLessonRecord(lessonIndex);
-    const hasUploadedVideo = Boolean(String(lesson?.videoPath || lesson?.videoUrl || '').trim());
-    if (!hasCompletedLessonVideo(lessonIndex) && hasUploadedVideo) return 'ต้องชมวิดีโอให้จบก่อนเริ่ม Quiz';
-    return '';
+    const row = getLessonProgressMap().get(Number(lessonIndex)) || {};
+    const reasons = [];
+    if (!hasReadLessonDocument(lessonIndex)) {
+        const totalPages = Number(row.document_total_pages || 0);
+        const readPages = Array.isArray(row.document_read_pages) ? row.document_read_pages.length : 0;
+        reasons.push(totalPages > 0
+            ? `ยังอ่านเอกสารไม่ครบ (${readPages}/${totalPages} หน้า)`
+            : `ยังอ่านเอกสารไม่ครบ (${Math.round(Number(row.document_progress_percent || 0))}%)`);
+    }
+    if (!hasCompletedLessonVideo(lessonIndex)) reasons.push(`ยังดูวิดีโอไม่ครบ (${Math.round(Number(row.video_progress_percent || 0))}%)`);
+    return reasons.join(' • ');
 }
 
 function getLessonStatusInfo(lessonIndex) {
@@ -206,8 +214,10 @@ function getLessonStatusInfo(lessonIndex) {
     const documentReadPercent = Math.round(Number(row.document_progress_percent || 0) * 10) / 10;
     const videoWatchedPercent = Math.round(Number(row.video_progress_percent || 0) * 10) / 10;
     const breakdown = `อ่าน ${documentReadPercent}% (คิด ${Number(row.document_progress || 0)}%) • วิดีโอ ${videoWatchedPercent}% (คิด ${Number(row.video_progress || 0)}%) • Quiz ${Number(row.quiz_progress || 0)}%`;
-    if (passed) return { label: 'ผ่าน', color: '#1e8449', bg: '#eafaf1', scoreText: hasAttempt ? `${score}/${total}` : '-', progress, breakdown };
-    if (hasAttempt) return { label: 'ไม่ผ่าน', color: '#c0392b', bg: '#fdecea', scoreText: `${score}/${total}`, progress, breakdown };
+    const started = hasAttempt || Boolean(row.last_activity_at) || documentReadPercent > 0 || videoWatchedPercent > 0;
+    const complete = passed && documentReadPercent >= 100 && videoWatchedPercent >= 100;
+    if (complete) return { label: 'เรียนครบ', color: '#1e8449', bg: '#eafaf1', scoreText: hasAttempt ? `${score}/${total}` : '-', progress, breakdown };
+    if (started) return { label: 'กำลังเรียน', color: '#b45309', bg: '#fff7ed', scoreText: hasAttempt ? `${score}/${total}` : '-', progress, breakdown };
     return { label: 'ยังไม่ทำ', color: '#7f8c8d', bg: '#f4f6f7', scoreText: '-', progress, breakdown };
 }
 
@@ -854,7 +864,7 @@ function refreshCourseProgress(subjectId) {
     return fetchCourseProgress(subjectId);
 }
 
-async function recordLearningEvent(activityType, lessonIndex = 1, progressPercent = 0, resumePosition = 0, force = false, durationSeconds = 0) {
+async function recordLearningEvent(activityType, lessonIndex = 1, progressPercent = 0, resumePosition = 0, force = false, durationSeconds = 0, progressDetails = {}) {
     if (!currentSubjectId) {
         lastLearningProgressError = 'ไม่พบรหัสรายวิชา';
         return false;
@@ -879,6 +889,11 @@ async function recordLearningEvent(activityType, lessonIndex = 1, progressPercen
         formData.append('resume_position', String(resumePosition));
         if (activityType === 'video_progress') {
             formData.append('duration_seconds', String(Math.max(0, Number(durationSeconds) || 0)));
+            formData.append('video_watched_ranges', JSON.stringify(Array.isArray(progressDetails.videoWatchedRanges) ? progressDetails.videoWatchedRanges : []));
+        }
+        if (activityType === 'document_progress') {
+            formData.append('document_total_pages', String(Math.max(0, Number(progressDetails.documentTotalPages) || 0)));
+            formData.append('document_read_pages', JSON.stringify(Array.isArray(progressDetails.documentReadPages) ? progressDetails.documentReadPages : []));
         }
 
 
@@ -1279,7 +1294,12 @@ function openCourseDocument(lessonIndex) {
 }
 
 window.addEventListener('message', async (event) => {
-    if (event.origin !== window.location.origin || event.data?.type !== 'lesson-document-progress') return;
+    if (event.origin !== window.location.origin) return;
+    if (event.data?.type === 'lesson-document-save-complete') {
+        if (pendingDocumentSaveCloseResolver) pendingDocumentSaveCloseResolver();
+        return;
+    }
+    if (event.data?.type !== 'lesson-document-progress') return;
     const lessonIndex = Number(event.data.lessonIndex || 1);
     if (String(event.data.courseId) !== String(currentSubjectId)) return;
     await fetchCourseProgress(currentSubjectId);
@@ -1321,6 +1341,39 @@ function formatVideoTimestamp(seconds) {
     return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
 }
 
+function mergeVideoWatchRanges(ranges, additions, duration) {
+    const normalized = [...(Array.isArray(ranges) ? ranges : []), ...(Array.isArray(additions) ? additions : [])]
+        .filter((range) => Array.isArray(range) && Number.isFinite(Number(range[0])) && Number.isFinite(Number(range[1])))
+        .map((range) => [Math.max(0, Math.min(duration, Number(range[0]))), Math.max(0, Math.min(duration, Number(range[1])))])
+        .filter(([start, end]) => end - start > 0.05)
+        .sort((a, b) => a[0] - b[0]);
+    const merged = [];
+    normalized.forEach(([start, end]) => {
+        const last = merged[merged.length - 1];
+        if (last && start <= last[1] + 0.05) last[1] = Math.max(last[1], end);
+        else merged.push([start, end]);
+    });
+    return merged;
+}
+
+function totalVideoWatchSeconds(ranges) {
+    return (Array.isArray(ranges) ? ranges : []).reduce((total, range) => total + Math.max(0, Number(range[1]) - Number(range[0])), 0);
+}
+
+function continuousVideoWatchEnd(ranges) {
+    let end = 0;
+    for (const [start, rangeEnd] of Array.isArray(ranges) ? ranges : []) {
+        if (Number(start) > end + 0.1) break;
+        end = Math.max(end, Number(rangeEnd));
+    }
+    return end;
+}
+
+function canSeekWithinWatchedVideo(ranges, target) {
+    const position = Math.max(0, Number(target) || 0);
+    return position <= continuousVideoWatchEnd(ranges) + 0.15 || (Array.isArray(ranges) && ranges.some(([start, end]) => position >= Number(start) - 0.15 && position <= Number(end) + 0.15));
+}
+
 function renderVideoModalBody(lessonIndex) {
     const body = document.getElementById('modal-body');
     if (!body) return;
@@ -1329,6 +1382,8 @@ function renderVideoModalBody(lessonIndex) {
     if (activeVideoProgressSaver) {
         pendingVideoProgressSave = Promise.resolve(activeVideoProgressSaver()).catch(() => false);
     }
+    if (activeVideoProgressCleanup) activeVideoProgressCleanup();
+    activeVideoProgressCleanup = null;
     activeVideoProgressSaver = null;
     activeVideoProgressBeacon = null;
     const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 3, Number(lessonIndex) || 1));
@@ -1365,12 +1420,14 @@ function renderVideoModalBody(lessonIndex) {
         let candidateIndex = 0;
         const progressRow = getLessonProgressMap().get(safeIndex) || {};
         const savedPosition = Math.max(0, Number(progressRow.video_position_seconds || 0));
-        let watchedSeconds = 0;
+        let watchedRanges = Array.isArray(progressRow.video_watched_ranges) ? progressRow.video_watched_ranges : [];
+        let watchedSeconds = totalVideoWatchSeconds(watchedRanges);
         let lastSavedWatchedSeconds = 0;
         let lastSavedResumePosition = savedPosition;
         let lastVideoProgressSaveAttemptAt = 0;
         let videoProgressSaveRequest = null;
         let lastPlaybackTime = null;
+        let lastPlaybackWallTime = null;
         let progressSaveLabel = '';
         const showSeekWarning = () => {
             if (!fallbackStatus) return;
@@ -1407,7 +1464,7 @@ function renderVideoModalBody(lessonIndex) {
             lastVideoProgressSaveAttemptAt = Date.now();
             progressSaveLabel = 'กำลังบันทึก';
             updateVideoProgressStatus();
-            videoProgressSaveRequest = recordLearningEvent('video_progress', safeIndex, percent, resumePositionToSave, true, videoElement.duration)
+            videoProgressSaveRequest = recordLearningEvent('video_progress', safeIndex, percent, resumePositionToSave, true, videoElement.duration, { videoWatchedRanges: watchedRanges })
                 .then((saved) => {
                     if (!saved) {
                         progressSaveLabel = `บันทึกไม่สำเร็จ: ${lastLearningProgressError}`;
@@ -1428,6 +1485,10 @@ function renderVideoModalBody(lessonIndex) {
             return saveVideoProgress(true);
         };
         activeVideoProgressSaver = saveVideoProgressOnExit;
+        const periodicVideoSave = window.setInterval(() => {
+            if (!videoElement.paused && document.visibilityState === 'visible') saveVideoProgress(true);
+        }, 8000);
+        activeVideoProgressCleanup = () => window.clearInterval(periodicVideoSave);
         activeVideoProgressBeacon = () => {
             if (!Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return false;
             const percent = watchedSeconds >= videoElement.duration ? 100 : Math.min(99.9, (watchedSeconds / videoElement.duration) * 100);
@@ -1440,45 +1501,58 @@ function renderVideoModalBody(lessonIndex) {
             formData.append('progress_percent', String(percent));
             formData.append('resume_position', String(Math.max(0, videoElement.currentTime || 0)));
             formData.append('duration_seconds', String(Math.max(0, Number(videoElement.duration) || 0)));
+            formData.append('video_watched_ranges', JSON.stringify(watchedRanges));
             return navigator.sendBeacon('student_learning_api.php', formData);
         };
         videoElement.addEventListener('loadedmetadata', () => {
             const savedPercent = Math.max(0, Math.min(100, Number(progressRow.video_progress_percent || 0)));
-            watchedSeconds = Math.min(videoElement.duration, Math.max(savedPosition, videoElement.duration * savedPercent / 100));
+            watchedRanges = mergeVideoWatchRanges(watchedRanges, [], videoElement.duration);
+            if (watchedRanges.length === 0 && savedPercent > 0) watchedRanges = [[0, Math.min(videoElement.duration, Math.max(savedPosition, videoElement.duration * savedPercent / 100))]];
+            watchedSeconds = totalVideoWatchSeconds(watchedRanges);
             lastSavedWatchedSeconds = watchedSeconds;
             lastSavedResumePosition = Math.min(videoElement.duration, savedPosition);
-            if (savedPercent < 100 && savedPosition > 0 && savedPosition < videoElement.duration - 1) {
+            if (savedPosition > 0 && savedPosition < videoElement.duration - 1) {
                 videoElement.currentTime = savedPosition;
             }
             updateVideoProgressStatus();
         }, { once: true });
         videoElement.addEventListener('play', () => {
             lastPlaybackTime = videoElement.currentTime;
+            lastPlaybackWallTime = performance.now();
         });
         videoElement.addEventListener('timeupdate', () => {
             const currentTime = videoElement.currentTime;
             if (!videoElement.paused && !videoElement.seeking && lastPlaybackTime !== null) {
-                if (currentTime > lastPlaybackTime + 0.02) {
-                    watchedSeconds = Math.min(videoElement.duration, Math.max(watchedSeconds, currentTime));
+                const now = performance.now();
+                const elapsed = lastPlaybackWallTime === null ? 0 : Math.max(0, (now - lastPlaybackWallTime) / 1000);
+                const delta = currentTime - lastPlaybackTime;
+                const plausiblePlaybackDelta = elapsed * Math.max(0.25, Number(videoElement.playbackRate) || 1) + 1.25;
+                if (delta > 0.02 && delta <= plausiblePlaybackDelta) {
+                    watchedRanges = mergeVideoWatchRanges(watchedRanges, [[lastPlaybackTime, currentTime]], videoElement.duration);
+                    watchedSeconds = totalVideoWatchSeconds(watchedRanges);
                 }
+                lastPlaybackWallTime = now;
             }
             lastPlaybackTime = currentTime;
             updateVideoProgressStatus();
             saveVideoProgress();
         });
         videoElement.addEventListener('seeking', () => {
-            if (videoElement.currentTime > watchedSeconds + 0.1) {
-                videoElement.currentTime = Math.min(watchedSeconds, Math.max(0, videoElement.duration - 0.1));
+            if (!canSeekWithinWatchedVideo(watchedRanges, videoElement.currentTime)) {
+                videoElement.currentTime = Math.min(continuousVideoWatchEnd(watchedRanges), Math.max(0, videoElement.duration - 0.1));
                 showSeekWarning();
             }
             lastPlaybackTime = videoElement.currentTime;
+            lastPlaybackWallTime = performance.now();
         });
         videoElement.addEventListener('seeked', () => {
             lastPlaybackTime = videoElement.currentTime;
+            lastPlaybackWallTime = performance.now();
             saveVideoProgress(true);
         });
         videoElement.addEventListener('pause', () => {
             lastPlaybackTime = null;
+            lastPlaybackWallTime = null;
             saveVideoProgress(true);
         });
         videoElement.addEventListener('error', () => {
@@ -1500,16 +1574,13 @@ function renderVideoModalBody(lessonIndex) {
             videoElement.play().catch(() => {});
         });
         videoElement.addEventListener('ended', () => {
-            watchedSeconds = videoElement.duration;
+            const contiguousEnd = continuousVideoWatchEnd(watchedRanges);
+            if (videoElement.duration - contiguousEnd <= 1.25) {
+                watchedRanges = mergeVideoWatchRanges(watchedRanges, [[contiguousEnd, videoElement.duration]], videoElement.duration);
+                watchedSeconds = totalVideoWatchSeconds(watchedRanges);
+            }
             updateVideoProgressStatus();
-            Promise.resolve(videoProgressSaveRequest)
-                .then(() => recordLearningEvent('video_progress', safeIndex, 100, videoElement.duration, true, videoElement.duration))
-                .then((saved) => {
-                    if (saved) {
-                        lastSavedWatchedSeconds = videoElement.duration;
-                        if (currentSubjectId) refreshCourseProgress(currentSubjectId);
-                    }
-                });
+            saveVideoProgress(true);
         }, { once: true });
     }
 }
@@ -1525,6 +1596,8 @@ window.changeModalLessonVideo = async function(lessonIndex) {
         activeVideoProgressSaver = null;
         activeVideoProgressBeacon = null;
     }
+    if (activeVideoProgressCleanup) activeVideoProgressCleanup();
+    activeVideoProgressCleanup = null;
     await refreshCourseProgress(currentSubjectId);
     renderVideoModalBody(targetIndex);
 }
@@ -1558,10 +1631,28 @@ function startQuiz(lessonIndex) {
     window.location.href = url.pathname.split('/').pop() + url.search;
 }
 
-function closeModal() {
+async function closeModal() {
     if (activeVideoProgressSaver) {
-        pendingVideoProgressSave = Promise.resolve(activeVideoProgressSaver()).catch(() => false);
+        await Promise.resolve(activeVideoProgressSaver()).catch(() => false);
     }
+    const documentFrame = document.querySelector('#modal-body iframe[title="เอกสารประกอบบทเรียน"]');
+    if (documentFrame?.contentWindow) {
+        await new Promise((resolve) => {
+            let finished = false;
+            const finish = () => {
+                if (finished) return;
+                finished = true;
+                clearTimeout(timeout);
+                pendingDocumentSaveCloseResolver = null;
+                resolve();
+            };
+            const timeout = window.setTimeout(finish, 1200);
+            pendingDocumentSaveCloseResolver = finish;
+            documentFrame.contentWindow.postMessage({ type: 'lesson-document-save-request' }, window.location.origin);
+        });
+    }
+    if (activeVideoProgressCleanup) activeVideoProgressCleanup();
+    activeVideoProgressCleanup = null;
     activeVideoProgressSaver = null;
     activeVideoProgressBeacon = null;
     const modalBody = document.getElementById('modal-body');

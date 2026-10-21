@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/learning_progress_lib.php';
 header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? '';
@@ -85,10 +86,23 @@ try {
         exit;
     }
 
+    if (($_SESSION['role'] ?? '') !== 'student' || empty($_SESSION['user_id'])) {
+        http_response_code(401);
+        echo json_encode(['status' => 'unauthorized', 'message' => 'กรุณาเข้าสู่ระบบนักเรียนก่อนทำแบบทดสอบ', 'redirect_url' => 'login.php'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     $subjectId = trim((string) ($_GET['subject_id'] ?? ''));
     $lessonNo = max(1, (int) ($_GET['lesson'] ?? 1));
     if ($subjectId === '') {
         echo json_encode(['status' => 'error', 'message' => 'ไม่พบรหัสรายวิชา'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $unlock = lessonQuizUnlockStatus($conn, (string) $_SESSION['user_id'], $subjectId, $lessonNo);
+    if (!$unlock['allowed']) {
+        http_response_code(403);
+        echo json_encode(['status' => 'locked', 'message' => $unlock['message'], 'redirect_url' => 'index.php?subject_id=' . rawurlencode($subjectId)], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
