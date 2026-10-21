@@ -48,8 +48,8 @@ function hTransferPermission(?string $value): string
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261019-transfer-permissions" />
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme" />
+  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261021-cyan-everywhere" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-cyan-everywhere" />
   <script src="assets/js/staff_transfer_permissions.js" defer></script>
 </head>
 <body>
@@ -61,7 +61,7 @@ function hTransferPermission(?string $value): string
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <a class="brand-home-link" href="staffdash.php">
-        <div class="flex-brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><polygon points="32,6 53,18 53,42 32,56 11,42 11,18" stroke="#324860" stroke-width="5"/><polygon points="32,15 45,23 45,39 32,47 19,39 19,23" fill="#EEF4F8"/></svg></div>
+        <div class="flex-brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><polygon points="32,6 53,18 53,42 32,56 11,42 11,18" stroke="#80DEEA" stroke-width="5"/><polygon points="32,15 45,23 45,39 32,47 19,39 19,23" fill="#B2EBF2"/></svg></div>
         <div class="flex-brand-text"><span class="flex-brand-name">FLEXIBLE</span><span class="flex-brand-sub">LEARNING HUB</span></div>
       </a>
       <button class="sidebar-close" id="sidebarClose" type="button" title="ปิดเมนู">ปิด</button>

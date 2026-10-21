@@ -53,8 +53,8 @@ if ($displayName !== '') {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261020-sidebar-brand-centered" />
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme" />
+  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261021-cyan-everywhere" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-cyan-everywhere" />
 </head>
 <body>
 
@@ -70,8 +70,8 @@ if ($displayName !== '') {
       <a class="brand-home-link" href="index.html" title="กลับหน้าหลักและรายวิชา">
       <div class="flex-brand-mark" aria-hidden="true">
         <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <polygon points="32,6 53,18 53,42 32,56 11,42 11,18" fill="none" stroke="#324860" stroke-width="5" stroke-linejoin="round"/>
-          <polygon points="32,15 45,23 45,39 32,47 19,39 19,23" fill="#EEF4F8"/>
+          <polygon points="32,6 53,18 53,42 32,56 11,42 11,18" fill="none" stroke="#80DEEA" stroke-width="5" stroke-linejoin="round"/>
+          <polygon points="32,15 45,23 45,39 32,47 19,39 19,23" fill="#B2EBF2"/>
         </svg>
       </div>
       <div class="flex-brand-text">

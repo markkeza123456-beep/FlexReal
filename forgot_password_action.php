@@ -68,7 +68,7 @@ try {
 
         $mail->isHTML(true);
         $mail->Subject = 'รีเซ็ตรหัสผ่าน - NEXORA Flexible Learning Hub';
-        $mail->Body    = "สวัสดีคุณ {$user['user_name']},<br><br>รหัส PIN 6 หลักสำหรับการรีเซ็ตรหัสผ่านของคุณคือ: <h2 style='color:#324860;'>{$token}</h2><br>รหัสนี้จะหมดอายุภายใน 15 นาที<br><br>หากคุณไม่ได้ทำรายการนี้ กรุณาเพิกเฉยต่ออีเมลฉบับนี้";
+        $mail->Body    = "สวัสดีคุณ {$user['user_name']},<br><br>รหัส PIN 6 หลักสำหรับการรีเซ็ตรหัสผ่านของคุณคือ: <h2 style='color:#2d3436;'>{$token}</h2><br>รหัสนี้จะหมดอายุภายใน 15 นาที<br><br>หากคุณไม่ได้ทำรายการนี้ กรุณาเพิกเฉยต่ออีเมลฉบับนี้";
 
         $mail->send();
         session_regenerate_id(true);

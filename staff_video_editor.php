@@ -11,8 +11,8 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>จัดการวิดีโอรายวิชา | NEXORA</title>
-  <link rel="stylesheet" href="assets/css/staff_subject_editor.css" />
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme" />
+  <link rel="stylesheet" href="assets/css/staff_subject_editor.css?v=20261021-cyan-everywhere" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-cyan-everywhere" />
 </head>
 <body>
   <div class="bg-grid"></div><div class="glow-orb orb-1"></div><div class="glow-orb orb-2"></div>

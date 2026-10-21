@@ -27,8 +27,8 @@ try {
     <title>คำขอเทียบโอนหน่วยกิต - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20260916-hidden-video-list">
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme">
+    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261021-cyan-everywhere">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-cyan-everywhere">
     <style>
         .transfer-content { max-width: 1100px; margin: 0 auto; padding: 36px; }
         .transfer-content h1 { margin: 0 0 8px; }
@@ -37,7 +37,7 @@ try {
         .transfer-table { width: 100%; border-collapse: collapse; text-align: left; }
         .transfer-table th, .transfer-table td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
         .transfer-table th { color: var(--text-dim); font-weight: 600; }
-        .transfer-table a { color: var(--orange); overflow-wrap: anywhere; }
+        .transfer-table a { color: var(--text-primary); overflow-wrap: anywhere; }
         .transfer-empty, .transfer-error { padding: 24px; color: var(--text-dim); text-align: center; }
         @media (max-width: 700px) { .transfer-content { padding: 24px 16px; } }
     </style>

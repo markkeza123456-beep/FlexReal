@@ -1,11 +1,11 @@
 :root {
-    --orange: #324860;
-    --orange-dark: #223850;
+    --orange: #80DEEA;
+    --orange-dark: #80DEEA;
     --ink: #263033;
     --muted: #68777c;
     --paper: #ffffff;
     --line: #ececec;
-    --soft: #EEF4F8;
+    --soft: #B2EBF2;
     --violet: #5b567d;
 }
 
@@ -18,7 +18,7 @@
 
 body {
     min-height: 100vh;
-    background: #E5F9FE;
+    background: #B2EBF2;
     color: var(--ink);
 }
 
@@ -33,7 +33,7 @@ body {
 }
 
 .brand {
-    color: var(--orange);
+    color: var(--text-primary);
     font-size: 24px;
     font-weight: 800;
     text-decoration: none;
@@ -66,9 +66,9 @@ body {
 }
 
 .quiz-return-wrap .back-link:hover {
-    border-color: var(--orange);
+    border-color: #80DEEA;
     background: var(--soft);
-    color: var(--orange-dark);
+    color: var(--text-primary);
 }
 
 .quiz-shell {
@@ -81,7 +81,7 @@ body {
 }
 
 .eyebrow {
-    color: var(--orange-dark);
+    color: var(--text-primary);
     font-weight: 700;
     margin-bottom: 6px;
 }
@@ -136,8 +136,8 @@ body {
     margin: -8px 0 16px;
     padding: 6px 10px;
     border-radius: 999px;
-    color: #223850;
-    background: #EEF4F8;
+    color: #2d3436;
+    background: #B2EBF2;
     font-size: 13px;
     font-weight: 600;
 }
@@ -159,13 +159,13 @@ body {
 }
 
 .option-card:hover {
-    border-color: var(--orange);
+    border-color: #80DEEA;
     background: var(--soft);
 }
 
 .option-card input {
     margin-top: 5px;
-    accent-color: var(--orange);
+    accent-color: var(--text-primary);
 }
 
 .essay-card {
@@ -174,7 +174,7 @@ body {
     padding: 18px;
     border: 1px solid var(--line);
     border-radius: 14px;
-    background: #EEF4F8;
+    background: #B2EBF2;
 }
 
 .essay-label {
@@ -186,7 +186,7 @@ body {
     width: 100%;
     min-height: 180px;
     resize: vertical;
-    border: 1px solid #EEF4F8;
+    border: 1px solid #B2EBF2;
     border-radius: 12px;
     padding: 14px 16px;
     font: inherit;
@@ -198,8 +198,8 @@ body {
 }
 
 .essay-input:focus {
-    border-color: var(--orange);
-    box-shadow: 0 0 0 3px rgba(50, 72, 96, 0.12);
+    border-color: #80DEEA;
+    box-shadow: 0 0 0 3px rgba(128, 222, 234, 0.12);
 }
 
 .essay-note {
@@ -233,7 +233,7 @@ body {
 
 .primary-btn:hover {
     background: var(--orange-dark);
-    border-color: var(--orange-dark);
+    border-color: #80DEEA;
 }
 
 .ghost-btn {
@@ -251,7 +251,7 @@ body {
     padding: 22px;
     border-radius: 14px;
     background: var(--soft);
-    border: 1px solid #EEF4F8;
+    border: 1px solid #B2EBF2;
     margin-top: 18px;
 }
 
@@ -260,7 +260,7 @@ body {
 }
 
 .result-box .score {
-    color: var(--orange-dark);
+    color: var(--text-primary);
     font-weight: 800;
 }
 

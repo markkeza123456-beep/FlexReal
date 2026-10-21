@@ -26,7 +26,7 @@ body {
     text-decoration: none;
 }
 
-.back-link:hover { color: #324860; }
+.back-link:hover { color: #2d3436; }
 
 .transfer-card {
     padding: clamp(24px, 5vw, 40px);
@@ -67,8 +67,8 @@ input {
 }
 
 input:focus {
-    border-color: #324860;
-    outline: 3px solid rgb(234 107 40 / 17%);
+    border-color: #80DEEA;
+    outline: 3px solid rgba(128, 222, 234, .32);
 }
 
 small {
@@ -83,14 +83,14 @@ button {
     min-height: 48px;
     border: 0;
     border-radius: 8px;
-    background: #324860;
-    color: #fff;
+    background: #80DEEA;
+    color: #2d3436;
     font: inherit;
     font-weight: 600;
     cursor: pointer;
 }
 
-button:hover:not(:disabled) { background: #324860; }
+button:hover:not(:disabled) { background: #80DEEA; }
 button:disabled { cursor: wait; opacity: .7; }
 
 .form-message {

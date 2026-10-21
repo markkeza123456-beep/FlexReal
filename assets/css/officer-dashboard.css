@@ -1,12 +1,12 @@
 :root {
-  --bg: #E5F9FE;
+  --bg: #F5FCFD;
   --surface: #ffffff;
-  --surface-muted: #EEF4F8;
-  --line: #EEF4F8;
+  --surface-muted: #B2EBF2;
+  --line: #B2EBF2;
   --text: #2d3436;
   --text-soft: #636e72;
-  --primary: #324860;
-  --primary-soft: rgba(50, 72, 96, 0.15);
+  --primary: #80DEEA;
+  --primary-soft: rgba(128, 222, 234, 0.15);
   --radius-lg: 22px;
   --radius-md: 16px;
   --radius-sm: 12px;
@@ -87,7 +87,7 @@ button {
   height: 42px;
   border-radius: 14px;
   background: var(--primary-soft);
-  color: var(--primary);
+  color: var(--text-primary);
 }
 
 .brand-icon svg,
@@ -120,7 +120,7 @@ button {
   height: 44px;
   border-radius: 14px;
   background: var(--primary-soft);
-  color: var(--primary);
+  color: var(--text-primary);
   font-weight: 700;
 }
 
@@ -152,7 +152,7 @@ button {
 .nav-item:hover,
 .nav-item.active {
   background: var(--surface-muted);
-  color: var(--primary);
+  color: var(--text-primary);
 }
 
 .sidebar-note {
@@ -337,7 +337,7 @@ button {
 .list-time {
   font-size: 12px;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 

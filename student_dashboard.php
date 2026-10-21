@@ -12,8 +12,8 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261020-toa-blue-theme">
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme">
+    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261021-cyan-everywhere">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-cyan-everywhere">
 </head>
 <body>
     <div class="dashboard-container">
@@ -46,7 +46,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
                     <p class="name" id="sidebarName">กำลังโหลด...</p>
                     <p class="role" id="sidebarRole">-</p>
                 </div>
-                <span style="margin-left:auto;font-size:0.8rem;color:var(--accent-orange);">️</span>
+                <span style="margin-left:auto;font-size:0.8rem;color:var(--text-primary);">️</span>
             </button>
         </aside>
 

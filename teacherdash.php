@@ -348,7 +348,7 @@ $stats = [
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261020-sidebar-brand-centered">
+    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261021-cyan-everywhere">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px;
@@ -356,31 +356,31 @@ $stats = [
         }
         .action-icon-btn:hover { background: rgba(255,255,255,0.1); }
         .btn-open-add-quiz {
-            background: rgba(50, 72, 96, 0.1); color: var(--orange); border: 1px solid rgba(50, 72, 96, 0.3);
+            background: rgba(128, 222, 234, 0.1); color: var(--text-primary); border: 1px solid rgba(128, 222, 234, 0.3);
             padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.2s; font-family: 'Kanit', sans-serif;
             display: flex; align-items: center; gap: 4px;
         }
-        .btn-open-add-quiz:hover { background: rgba(50, 72, 96, 0.2); transform: translateY(-1px); }
+        .btn-open-add-quiz:hover { background: rgba(128, 222, 234, 0.2); transform: translateY(-1px); }
 
         .choice-row {
             display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
         }
         input[type="radio"] {
-            accent-color: var(--orange);
+            accent-color: var(--text-primary);
             width: 18px; height: 18px; cursor: pointer;
         }
         .choice-label { font-weight: 600; color: var(--text-dim); font-size: 14px; width: 16px; text-align: center; }
         @media (max-width: 760px) { .course-content-editor { grid-template-columns: 1fr !important; } }
     </style>
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-cyan-everywhere">
 </head>
 <body>
 <aside class="sidebar">
     <a class="sidebar-logo" href="index.html" title="กลับหน้าหลักและรายวิชา">
         <div class="logo-icon">
             <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-                <polygon points="16,2 30,10 30,22 16,30 2,22 2,10" fill="none" stroke="#324860" stroke-width="2.5"/>
-                <polygon points="16,8 24,13 24,20 16,25 8,20 8,13" fill="#324860" opacity="0.35"/>
+                <polygon points="16,2 30,10 30,22 16,30 2,22 2,10" fill="none" stroke="#80DEEA" stroke-width="2.5"/>
+                <polygon points="16,8 24,13 24,20 16,25 8,20 8,13" fill="#80DEEA" opacity="0.35"/>
             </svg>
         </div>
         <div>
@@ -446,13 +446,13 @@ $stats = [
         </header>
 
         <section class="stats-grid">
-            <div class="stat-card" style="--accent:#324860">
+            <div class="stat-card" style="--accent:#80DEEA">
                 <div class="stat-icon"></div>
                 <div class="stat-value"><?= $stats['students'] ?></div>
                 <div class="stat-label">นักเรียนที่ดูแล</div>
                 <div class="stat-trend">เฉพาะที่ผูกกับวิชาของอาจารย์</div>
             </div>
-            <div class="stat-card" style="--accent:#3b82f6">
+            <div class="stat-card" style="--accent:#80DEEA">
                 <div class="stat-icon"></div>
                 <div class="stat-value"><?= $stats['lessons'] ?></div>
                 <div class="stat-label">บทเรียนทั้งหมด</div>
@@ -528,7 +528,7 @@ $stats = [
                                 <div style="display:flex; flex-wrap:wrap; gap:6px;">
                                     <?php foreach ($student['lesson_scores'] as $lessonScore): ?>
                                         <?php if ($lessonScore['transferred']): ?>
-                                            <span title="<?= h($lessonScore['title']) ?>" style="background:#e8f0fe;color:#1a73e8;padding:4px 8px;border-radius:6px;font-size:.85rem;">บท <?= (int) $lessonScore['position'] ?> : TR</span>
+                                            <span title="<?= h($lessonScore['title']) ?>" style="background:#B2EBF2;color:#2d3436;padding:4px 8px;border-radius:6px;font-size:.85rem;">บท <?= (int) $lessonScore['position'] ?> : TR</span>
                                         <?php elseif ($lessonScore['attempted']): ?>
                                             <span title="<?= h($lessonScore['title']) ?>" style="background:#e6f4ea;color:#1e8e3e;padding:4px 8px;border-radius:6px;font-size:.85rem;">บท <?= (int) $lessonScore['position'] ?> : <?= h((string) $lessonScore['score']) ?>/<?= h((string) $lessonScore['total_score']) ?></span>
                                         <?php else: ?>
@@ -634,7 +634,7 @@ $stats = [
                                 ?>
                                 <div style="background:<?= $isPlaceholderLesson ? 'rgba(255,255,255,0.65)' : 'var(--bg3)' ?>;padding:16px 20px;border-radius:var(--radius-sm);border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; flex-wrap:wrap; gap:12px;<?= $isPlaceholderLesson ? 'opacity:0.85;' : '' ?>">
                                     <div style="display:flex;align-items:center;gap:16px;">
-                                        <div style="width:36px;height:36px;background:var(--bg2);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--orange);font-weight:600;font-size:14px;border:1px solid rgba(50, 72, 96,0.2);">
+                                        <div style="width:36px;height:36px;background:var(--bg2);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text-primary);font-weight:600;font-size:14px;border:1px solid rgba(128, 222, 234,0.2);">
                                             <?= $i+1 ?>
                                         </div>
                                         <div>
@@ -673,7 +673,7 @@ $stats = [
                             <div class="modal-header content-manager-header"><h3 class="modal-title">จัดการเนื้อหาวิชา</h3><button type="button" class="modal-close" id="closeContentManagerBtn">ปิด</button></div>
                             <div class="course-content-editor modal-body">
                             <section style="padding:20px;border:1px solid var(--border);border-radius:12px;background:var(--bg3);">
-                                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;"><div><p style="font-size:11px;color:var(--orange);font-weight:700;letter-spacing:.08em;margin:0 0 4px;">LESSON CONTENT</p><h3 style="font-size:17px;margin:0;" id="inlineLessonHeading">เพิ่มบทเรียนย่อย</h3></div><span id="inlineLessonCount" style="font-size:12px;color:var(--text-muted);"><?= count($subLessonsBySubject[$defaultSubjectId] ?? []) ?>/<?= MAX_LESSONS_PER_SUBJECT ?> บท</span></div>
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;"><div><p style="font-size:11px;color:var(--text-primary);font-weight:700;letter-spacing:.08em;margin:0 0 4px;">LESSON CONTENT</p><h3 style="font-size:17px;margin:0;" id="inlineLessonHeading">เพิ่มบทเรียนย่อย</h3></div><span id="inlineLessonCount" style="font-size:12px;color:var(--text-muted);"><?= count($subLessonsBySubject[$defaultSubjectId] ?? []) ?>/<?= MAX_LESSONS_PER_SUBJECT ?> บท</span></div>
                                 <form id="inlineLessonForm" enctype="multipart/form-data">
                                     <div class="form-group"><label>ชื่อบทเรียน *</label><input type="text" class="form-input" id="inlineLessonName" required placeholder="เช่น 1.1 ตรรกศาสตร์เบื้องต้น"></div>
                                     <div class="form-group"><label>เอกสารประกอบ (PDF)</label><div id="inlineExistingDocuments" style="display:none;margin:0 0 8px;font-size:13px;color:var(--text-muted);"></div><input type="file" class="form-input" id="inlineLessonDocument" accept="application/pdf,.pdf"><small id="inlineLessonDocumentHint" style="color:var(--text-muted);">เลือกไฟล์ PDF ใหม่เมื่อต้องการเพิ่มเอกสาร</small></div>
@@ -682,7 +682,7 @@ $stats = [
                             </section>
 
                             <section style="padding:20px;border:1px solid var(--border);border-radius:12px;background:var(--bg3);">
-                                <div style="margin-bottom:16px;"><p style="font-size:11px;color:var(--orange);font-weight:700;letter-spacing:.08em;margin:0 0 4px;">VIDEO CONTENT</p><h3 style="font-size:17px;margin:0;">เพิ่มและจัดการวิดีโอ</h3></div>
+                                <div style="margin-bottom:16px;"><p style="font-size:11px;color:var(--text-primary);font-weight:700;letter-spacing:.08em;margin:0 0 4px;">VIDEO CONTENT</p><h3 style="font-size:17px;margin:0;">เพิ่มและจัดการวิดีโอ</h3></div>
                                 <div id="inlineVideoList" style="margin-bottom:16px;color:var(--text-muted);font-size:13px;">กำลังโหลดวิดีโอ...</div>
                                 <form id="inlineVideoForm" enctype="multipart/form-data">
                                     <input type="hidden" id="inlineVideoId">
@@ -752,7 +752,7 @@ $stats = [
                                         <?php foreach ($student['lesson_scores'] as $lessonScore): ?>
                                             <?php if ($lessonScore['course_id'] !== $selectedSubjectId) continue; ?>
                                             <?php if ($lessonScore['transferred']): ?>
-                                                <span title="<?= h($lessonScore['title']) ?>" style="background:#e8f0fe;color:#1a73e8;padding:4px 8px;border-radius:6px;font-size:.85rem;">บท <?= (int) $lessonScore['position'] ?> : TR</span>
+                                                <span title="<?= h($lessonScore['title']) ?>" style="background:#B2EBF2;color:#2d3436;padding:4px 8px;border-radius:6px;font-size:.85rem;">บท <?= (int) $lessonScore['position'] ?> : TR</span>
                                             <?php elseif ($lessonScore['attempted']): ?>
                                                 <span title="<?= h($lessonScore['title']) ?>" style="background:#e6f4ea;color:#1e8e3e;padding:4px 8px;border-radius:6px;font-size:.85rem;">บท <?= (int) $lessonScore['position'] ?> : <?= h((string) $lessonScore['score']) ?>/<?= h((string) $lessonScore['total_score']) ?></span>
                                             <?php else: ?>
@@ -798,7 +798,7 @@ $stats = [
                                     $qLabel = $qType === 'essay' ? 'อัตนัย (ข้อเขียน)' : ($qType === 'truefalse' ? 'ถูก/ผิด' : 'ปรนัย (4 ตัวเลือก)');
                                 ?>
                                     <div class="quiz-item" style="border:1px solid var(--border);border-radius:8px;padding:13px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
-                                        <div style="display:flex;gap:10px;min-width:0;"><b class="mono" style="color:var(--orange);">Q<?= $i + 1 ?></b><div><div style="font-size:14px;color:var(--text);margin-bottom:5px;"><?= h($q['questions_text']) ?></div><span class="badge badge-draft" style="font-size:10.5px;"><?= $qLabel ?> · <?= number_format((float) $q['question_max_score'], 0) ?> คะแนน</span><div style="color:var(--text-muted);font-size:11px;margin-top:5px;">แก้ไขล่าสุด <?= h(formatTeacherEditDate($q['last_modified_at'] ?? null)) ?></div></div></div>
+                                        <div style="display:flex;gap:10px;min-width:0;"><b class="mono" style="color:var(--text-primary);">Q<?= $i + 1 ?></b><div><div style="font-size:14px;color:var(--text);margin-bottom:5px;"><?= h($q['questions_text']) ?></div><span class="badge badge-draft" style="font-size:10.5px;"><?= $qLabel ?> · <?= number_format((float) $q['question_max_score'], 0) ?> คะแนน</span><div style="color:var(--text-muted);font-size:11px;margin-top:5px;">แก้ไขล่าสุด <?= h(formatTeacherEditDate($q['last_modified_at'] ?? null)) ?></div></div></div>
                                         <div style="display:flex;gap:4px;flex-shrink:0;"><button class="action-icon-btn btn-edit-quiz" data-id="<?= h($q['questions_id']) ?>" data-type="<?= $qType ?>" data-question="<?= h($q['questions_text']) ?>" data-ca="<?= h($q['choice_a']) ?>" data-cb="<?= h($q['choice_b']) ?>" data-cc="<?= h($q['choice_c']) ?>" data-cd="<?= h($q['choice_d']) ?>" data-answer="<?= h($q['correct_answer']) ?>" data-max-score="<?= number_format((float) $q['question_max_score'], 0, '.', '') ?>" title="แก้ไขคำถาม">แก้ไข</button><button class="action-icon-btn btn-del-quiz" data-id="<?= h($q['questions_id']) ?>" title="ลบคำถาม" style="color:#ef4444;">ลบ</button></div>
                                     </div>
                                 <?php endforeach; endif; ?>
@@ -873,7 +873,7 @@ $stats = [
                     <button class="modal-close" onclick="document.getElementById('quizModalOverlay').classList.remove('open')">ปิด</button>
                 </div>
                 <div class="modal-body">
-                    <div style="background:var(--orange-dim); color:var(--orange); padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:10px; border:1px solid rgba(50, 72, 96,0.3);">
+                    <div style="background:var(--orange-dim); color:var(--text-primary); padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:10px; border:1px solid rgba(128, 222, 234,0.3);">
                         <b>เพิ่มลงใน:</b> <span id="quizTargetLessonName"></span>
                     </div>
                     <input type="hidden" id="quizTargetLessonId" value="">
@@ -912,7 +912,7 @@ $stats = [
                     </div>
 
                     <div class="form-group" id="quizEssayGroupAdd" style="display:none;">
-                        <div style="padding:12px; background:rgba(50, 72, 96,0.1); color:#324860; border-radius:6px; font-size:12px; border:1px dashed rgba(50, 72, 96,0.3);">
+                        <div style="padding:12px; background:rgba(128, 222, 234,0.1); color:#2d3436; border-radius:6px; font-size:12px; border:1px dashed rgba(128, 222, 234,0.3);">
                              <b>โหมดข้อเขียน:</b> นักเรียนจะต้องพิมพ์คำตอบส่งมา และคุณจะต้องเป็นผู้ตรวจให้คะแนนเองในภายหลัง
                         </div>
                     </div>
@@ -997,7 +997,7 @@ $stats = [
 
                 <div style="display:flex;align-items:center;gap:20px;margin-bottom:24px;">
                     <div style="position:relative;width:80px;height:80px;flex-shrink:0;">
-                        <div id="settingsAvatarWrap" style="width:80px;height:80px;border-radius:50%;background:var(--bg3);border:2px solid var(--orange);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--orange);">
+                        <div id="settingsAvatarWrap" style="width:80px;height:80px;border-radius:50%;background:var(--bg3);border:2px solid var(--orange);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--text-primary);">
                             <?php if (!empty($teacher['avatar_url'])): ?>
                                 <img src="<?= h($teacher['avatar_url']) ?>" style="width:100%;height:100%;object-fit:cover;" id="settingsAvatarImg">
                             <?php else: ?>
@@ -1018,7 +1018,7 @@ $stats = [
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
                         <div style="display:flex;flex-direction:column;gap:6px;">
                             <label style="font-size:12px;color:var(--text-muted);font-weight:500;">รหัสอาจารย์</label>
-                            <div style="background:var(--bg3);padding:11px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;color:var(--orange);font-size:13px;">
+                            <div style="background:var(--bg3);padding:11px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;color:var(--text-primary);font-size:13px;">
                                 <?= h($teacher['id']) ?>
                             </div>
                         </div>
@@ -1089,18 +1089,18 @@ $stats = [
 
         <div style="position:relative;width:100%;aspect-ratio:1;background:#111;border-radius:12px;overflow:hidden;touch-action:none;" id="cropArea">
             <img id="cropImg" style="position:absolute;transform-origin:0 0;user-select:none;-webkit-user-select:none;max-width:none;">
-            <div id="cropCircle" style="position:absolute;border:2px dashed rgba(50, 72, 96,0.9);border-radius:50%;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.5);"></div>
+            <div id="cropCircle" style="position:absolute;border:2px dashed rgba(128, 222, 234,0.9);border-radius:50%;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.5);"></div>
         </div>
 
         <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-size:13px;color:var(--text-dim,#aaa);"> </span>
-            <input type="range" id="cropZoom" min="100" max="400" value="100" style="flex:1;accent-color:var(--orange,#324860);">
+            <input type="range" id="cropZoom" min="100" max="400" value="100" style="flex:1;accent-color:var(--text-primary);">
             <span style="font-size:13px;color:var(--text-dim,#aaa);">ซูม</span>
         </div>
 
         <div style="display:flex;gap:10px;">
             <button id="cropCancelBtn2" style="flex:1;padding:10px;border-radius:8px;border:1px solid #444;background:none;color:#ccc;cursor:pointer;font-size:14px;">ยกเลิก</button>
-            <button id="cropConfirmBtn" style="flex:2;padding:10px;border-radius:8px;border:none;background:var(--orange,#324860);color:var(--text);font-weight:700;cursor:pointer;font-size:14px;"> ใช้รูปนี้</button>
+            <button id="cropConfirmBtn" style="flex:2;padding:10px;border-radius:8px;border:none;background:var(--orange,#80DEEA);color:var(--text);font-weight:700;cursor:pointer;font-size:14px;"> ใช้รูปนี้</button>
         </div>
     </div>
 </div>
@@ -1348,7 +1348,7 @@ function showMsg(id, msg, success) {
     <div class="modal" style="max-width:620px;width:95%;max-height:90vh;overflow-y:auto;">
         <div class="modal-header" style="position:sticky;top:0;background:var(--bg2);z-index:1;border-bottom:1px solid var(--border);padding:20px 24px;">
             <div style="display:flex;align-items:center;gap:14px;">
-                <div id="sdm-avatar" style="width:48px;height:48px;border-radius:50%;background:var(--orange-dim);border:2px solid var(--orange);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--orange);flex-shrink:0;"></div>
+                <div id="sdm-avatar" style="width:48px;height:48px;border-radius:50%;background:var(--orange-dim);border:2px solid var(--orange);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--text-primary);flex-shrink:0;"></div>
                 <div>
                     <h3 class="modal-title" id="sdm-name" style="font-size:17px;margin:0;"></h3>
                     <div id="sdm-class" style="font-size:12px;color:var(--text-muted);margin-top:3px;"></div>
@@ -1381,7 +1381,7 @@ function showMsg(id, msg, success) {
                     <span id="sdm-pct-label" style="font-size:12px;color:var(--text-dim);"></span>
                 </div>
                 <div style="height:8px;background:var(--bg3);border-radius:100px;overflow:hidden;border:1px solid var(--border);">
-                    <div id="sdm-progress-bar" style="height:100%;background:linear-gradient(90deg,#324860,#324860);border-radius:100px;transition:width .5s ease;width:0%;"></div>
+                    <div id="sdm-progress-bar" style="height:100%;background:linear-gradient(90deg,#80DEEA,#80DEEA);border-radius:100px;transition:width .5s ease;width:0%;"></div>
                 </div>
             </div>
 
@@ -1459,18 +1459,18 @@ function renderLessonScores(lessons) {
         const rawTotal = Math.round(Number(l.quiz_total_score) || 0);
         const pct    = rawTotal > 0 ? Math.round((rawScore / rawTotal) * 100) : 0;
         const passed = pct >= 60;
-        const bar    = passed ? '#10b981' : (pct > 0 ? '#324860' : '#374151');
+        const bar    = passed ? '#10b981' : (pct > 0 ? '#80DEEA' : '#374151');
         const badge  = passed
             ? '<span style="font-size:11px;padding:2px 8px;border-radius:100px;background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3);"> ผ่าน</span>'
             : (pct > 0
-                ? '<span style="font-size:11px;padding:2px 8px;border-radius:100px;background:rgba(50, 72, 96,.12);color:#324860;border:1px solid rgba(50, 72, 96,.3);">️ ไม่ผ่าน</span>'
+                ? '<span style="font-size:11px;padding:2px 8px;border-radius:100px;background:rgba(128, 222, 234,.12);color:#2d3436;border:1px solid rgba(128, 222, 234,.3);">️ ไม่ผ่าน</span>'
                 : '<span style="font-size:11px;padding:2px 8px;border-radius:100px;background:rgba(75,85,99,.2);color:#6b7280;border:1px solid rgba(75,85,99,.3);">— ยังไม่ทำ</span>');
 
         return `
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px;flex-wrap:wrap;">
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:28px;height:28px;border-radius:50%;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--orange);font-weight:600;flex-shrink:0;">${i+1}</div>
+                    <div style="width:28px;height:28px;border-radius:50%;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-primary);font-weight:600;flex-shrink:0;">${i+1}</div>
                     <div>
                         <div style="font-size:13.5px;color:var(--text);font-weight:500;line-height:1.3;">${escHtml(l.lesson_name)}</div>
                         <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${escHtml(l.subject_name)}</div>
@@ -1517,14 +1517,14 @@ function renderAnswerDetails(questions) {
     const mostMissed = maxWrong > 0 ? questions.filter(question => Number(question.class_incorrect_count) === maxWrong) : [];
     const hasClassAnswers = questions.some(question => Number(question.class_answered_count) > 0);
     const summary = mostMissed.length
-        ? `<div style="padding:11px 13px;margin-bottom:12px;border-radius:8px;background:#EEF4F8;color:#223850;font-size:12px;"><strong>ข้อที่ตอบผิดมากที่สุดในรายวิชา:</strong> ${mostMissed.map(question => `ข้อ ${question.question_id} (${question.class_incorrect_count}/${question.class_answered_count} คนตอบผิด)`).join(' · ')}</div>`
+        ? `<div style="padding:11px 13px;margin-bottom:12px;border-radius:8px;background:#B2EBF2;color:#2d3436;font-size:12px;"><strong>ข้อที่ตอบผิดมากที่สุดในรายวิชา:</strong> ${mostMissed.map(question => `ข้อ ${question.question_id} (${question.class_incorrect_count}/${question.class_answered_count} คนตอบผิด)`).join(' · ')}</div>`
         : `<div style="padding:11px 13px;margin-bottom:12px;border-radius:8px;background:var(--bg2);color:var(--text-muted);font-size:12px;">${hasClassAnswers ? 'ยังไม่มีข้อที่นักเรียนตอบผิดในบทเรียนนี้' : 'ยังไม่มีข้อมูลคำตอบจากนักเรียนในรายวิชา'}</div>`;
     const rows = questions.map((question, index) => {
         if (question.question_type === 'essay') {
             const essaySubmitted = Boolean(question.answer_text);
             const essayReviewed = question.review_status === 'graded';
             const essayStatus = !essaySubmitted ? 'ยังไม่ตอบ' : !essayReviewed ? 'รอตรวจ' : question.result_status === 'passed' ? 'ตรวจแล้ว · ผ่าน' : 'ตรวจแล้ว · ไม่ผ่าน';
-            const essayColor = !essaySubmitted ? '#64748b' : !essayReviewed ? '#223850' : question.result_status === 'passed' ? '#15803d' : '#b91c1c';
+            const essayColor = !essaySubmitted ? '#64748b' : !essayReviewed ? '#2d3436' : question.result_status === 'passed' ? '#15803d' : '#b91c1c';
             const essayScore = question.score === null ? '—' : String(Math.round(Number(question.score) || 0));
             return `<article style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-top:10px;"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><strong style="font-size:12px;">ข้อ ${index + 1} · ข้อเขียน: ${escHtml(question.question_text)}</strong><span style="color:${essayColor};font-weight:700;font-size:12px;white-space:nowrap;">${essayStatus}</span></div><div style="white-space:pre-wrap;overflow-wrap:anywhere;padding:10px;margin-top:8px;border-radius:7px;background:var(--bg2);font-size:12px;">${essaySubmitted ? escHtml(question.answer_text) : 'นักเรียนยังไม่ได้ส่งคำตอบ'}</div><div style="margin-top:7px;color:var(--text-muted);font-size:11px;">คะแนน: ${essayReviewed ? `${essayScore}/${Math.round(Number(question.max_score) || 0)}` : `รอตรวจ · เต็ม ${Math.round(Number(question.max_score) || 0)} คะแนน`}</div></article>`;
         }
