@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 $profileRole = strtolower((string) ($_SESSION['role'] ?? ''));
 $profileContactReadonly = $profileRole === 'staff' ? '' : 'readonly';
@@ -207,8 +207,13 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
                             <div class="settings-field"><label class="settings-label">ชั้นเรียน</label><input type="text" class="settings-input profile-readonly" id="profileClass" readonly></div>
                         </div>
 
+                        <div id="profileFeedback" class="profile-feedback" style="display:none;"></div>
+                        <button class="btn-save-profile" id="saveProfileBtn" onclick="saveProfile()">&#128190; บันทึกข้อมูล</button>
+                    </div>
+
+                    <div class="content-card settings-card password-settings-card">
+                        <h2 class="settings-card-title">&#128272; เปลี่ยนรหัสผ่าน</h2>
                         <div class="pwd-section">
-                            <div class="pwd-section-title">&#128272; เปลี่ยนรหัสผ่าน</div>
                             <div class="settings-form">
                                 <div class="settings-field">
                                     <label class="settings-label">รหัสผ่านปัจจุบัน</label>
@@ -241,8 +246,8 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
                             </div>
                         </div>
 
-                        <div id="profileFeedback" class="profile-feedback" style="display:none;"></div>
-                        <button class="btn-save-profile" id="saveProfileBtn" onclick="saveProfile()">&#128190; บันทึกข้อมูล</button>
+                        <div id="passwordFeedback" class="profile-feedback" style="display:none;"></div>
+                        <button class="btn-save-profile" id="changePasswordBtn" onclick="changePassword()">เปลี่ยนรหัสผ่าน</button>
                     </div>
 
 
@@ -251,7 +256,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
 
         </main>
     </div>
-    <script src="assets/js/student_dashboard.js?v=20261021-profile-avatar-control"></script>
+    <script src="assets/js/student_dashboard.js?v=20261021-separated-password-card"></script>
     <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

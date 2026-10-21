@@ -59,6 +59,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
     .settings-input:focus { border-color: rgba(92, 107, 192,0.5); }
 
     .pwd-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.07); }
+    .password-settings-card .pwd-section { margin-top: 0; padding-top: 0; border-top: 0; }
     .pwd-section-title { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); margin-bottom: 0.9rem; display: flex; align-items: center; gap: 6px; }
     .pwd-input-wrap { position: relative; }
     .pwd-input-wrap .settings-input { width: 100%; box-sizing: border-box; padding-right: 40px; }
@@ -76,13 +77,13 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
 
     .btn-save-profile {
       width: 100%; padding: 11px; margin-top: 1.2rem;
-      background: rgba(92, 107, 192,0.15); border: 1px solid rgba(92, 107, 192,0.35);
-      border-radius: 10px; color: var(--text-primary);
+      background: #31578f; border: 1px solid #31578f;
+      border-radius: 8px; color: #fff;
       font-family: 'Kanit', sans-serif; font-size: 0.9rem; font-weight: 500;
       cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
-      transition: background .2s;
+      transition: background .2s, transform .2s;
     }
-    .btn-save-profile:hover { background: rgba(92, 107, 192,0.25); }
+    .btn-save-profile:hover { background: #284a80; border-color: #284a80; transform: translateY(-1px); }
     .btn-save-profile:disabled { opacity: .5; cursor: not-allowed; }
     .btn-logout { display:flex; align-items:center; gap:10px; padding:.75rem 1rem; margin-bottom:.5rem; border-radius:10px; color:var(--text-muted); text-decoration:none; font-size:.9rem; transition:background .2s,color .2s; }
     .btn-logout:hover { background:rgba(239,68,68,.12); color:#ef4444; }
@@ -91,7 +92,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
     .parent-profile { transition: background .2s; padding: 8px; margin: -8px; border-radius: 10px; }
     .parent-profile:hover { background: rgba(255,255,255,0.05); }
   </style>
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-fullbleed" />
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
@@ -324,8 +325,15 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
           </div>
 
 
+          <div id="profileFeedback" style="display:none;padding:10px 14px;border-radius:8px;margin-top:12px;font-size:0.82rem;"></div>
+          <button class="btn-save-profile" id="saveProfileBtn" onclick="saveProfile()">
+            <i class="ti ti-device-floppy"></i> บันทึกข้อมูล
+          </button>
+        </div>
+
+        <div class="card settings-card password-settings-card">
+          <div class="card-title"><i class="ti ti-lock"></i> เปลี่ยนรหัสผ่าน</div>
           <div class="pwd-section">
-            <div class="pwd-section-title"><i class="ti ti-lock"></i> เปลี่ยนรหัสผ่าน</div>
             <div class="settings-form">
               <div class="settings-field">
                 <label class="settings-label">รหัสผ่านปัจจุบัน</label>
@@ -356,9 +364,9 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
             </div>
           </div>
 
-          <div id="profileFeedback" style="display:none;padding:10px 14px;border-radius:8px;margin-top:12px;font-size:0.82rem;"></div>
-          <button class="btn-save-profile" id="saveProfileBtn" onclick="saveProfile()">
-            <i class="ti ti-device-floppy"></i> บันทึกข้อมูล
+          <div id="passwordFeedback" style="display:none;padding:10px 14px;border-radius:8px;margin-top:12px;font-size:0.82rem;"></div>
+          <button class="btn-save-profile" id="changePasswordBtn" onclick="changePassword()">
+            <i class="ti ti-lock"></i> เปลี่ยนรหัสผ่าน
           </button>
         </div>
 
@@ -401,7 +409,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
   </div>
 </div>
 
-  <script src="assets/js/parent_dashboard.js?v=20261021-profile-avatar-control"></script>
+  <script src="assets/js/parent_dashboard.js?v=20261021-separated-password-card"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

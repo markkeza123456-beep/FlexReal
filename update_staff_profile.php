@@ -119,7 +119,12 @@ try {
     $fullName = $firstName . ' ' . $lastName;
     $_SESSION['user_id'] = $userId;
     $_SESSION['name'] = $fullName;
-    staffProfileResponse(['success' => true, 'message' => 'บันทึกข้อมูลโปรไฟล์แล้ว', 'name' => $fullName, 'user_id' => $userId]);
+    staffProfileResponse([
+        'success' => true,
+        'message' => $newPassword !== '' ? 'เปลี่ยนรหัสผ่านสำเร็จ' : 'บันทึกข้อมูลโปรไฟล์แล้ว',
+        'name' => $fullName,
+        'user_id' => $userId,
+    ]);
 } catch (Throwable $error) {
     if (isset($conn) && $conn instanceof PDO && $conn->inTransaction()) $conn->rollBack();
     error_log('Staff profile update failed: ' . $error->getMessage());
