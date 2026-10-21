@@ -61,6 +61,7 @@ if ($displayName !== '') {
   <link rel="stylesheet" href="assets/css/staffdash.css?v=20261021-role-profile-footer-unified" />
   <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge" />
     <link rel="stylesheet" href="assets/css/responsive.css">
+  <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout" />
 </head>
 <body>
 
@@ -721,13 +722,13 @@ if ($displayName !== '') {
       </section>
 
       <section class="page staff-profile-page" id="page-profile">
-        <div class="page-header staff-profile-page-header">
+        <div class="page-header staff-profile-page-header profile-settings-header">
           <div>
             <div class="page-title">โปรไฟล์ของฉัน</div>
             <div class="page-sub">ดูและแก้ไขข้อมูลบัญชีเจ้าหน้าที่</div>
           </div>
         </div>
-        <div class="form-card staff-profile-page-card">
+        <div class="form-card staff-profile-page-card profile-settings-card">
           <h2 class="staff-profile-card-title">👤 โปรไฟล์</h2>
           <div class="staff-profile-identity">
             <button type="button" class="staff-profile-avatar" onclick="document.getElementById('staffAvatarInput').click()" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์" aria-label="เปลี่ยนรูปโปรไฟล์">

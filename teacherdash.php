@@ -383,6 +383,7 @@ $stats = [
     </style>
     <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge">
     <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout">
 </head>
 <body>
 <aside class="sidebar">
@@ -981,16 +982,16 @@ $stats = [
     </div>
 
     <div id="view-settings" class="page-view" style="display:none">
-        <header class="topbar">
+        <header class="topbar profile-settings-header">
             <div class="topbar-left">
                 <h1 class="page-title">ข้อมูลส่วนตัว</h1>
                 <span class="page-sub">จัดการโปรไฟล์และการตั้งค่าของคุณ</span>
             </div>
         </header>
 
-        <div style="display:flex;flex-direction:column;gap:20px;max-width:620px;">
+        <div class="profile-settings-layout" style="display:flex;flex-direction:column;gap:20px;max-width:620px;">
 
-            <div class="card" style="padding:28px;">
+            <div class="card profile-settings-card" style="padding:28px;">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:22px;">
                     <span style="font-size:16px;"></span>
                     <h3 style="color:var(--text);font-size:15px;font-weight:600;">โปรไฟล์</h3>
@@ -1016,7 +1017,7 @@ $stats = [
                 </div>
 
                     <div style="display:flex;flex-direction:column;gap:14px;">
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                    <div class="profile-settings-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
                         <div style="display:flex;flex-direction:column;gap:6px;">
                             <label style="font-size:12px;color:var(--text-muted);font-weight:500;">เลขบัตรประจำตัวประชาชน</label>
                             <input class="form-input profile-readonly" value="<?= h($teacherRow['user_id'] ?? '') ?>" <?= $profileContactReadonly ?>>
@@ -1026,19 +1027,19 @@ $stats = [
                             <input class="form-input profile-readonly" type="email" value="<?= h($teacherRow['email'] ?? '') ?>" <?= $profileContactReadonly ?>>
                         </div>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                    <div class="profile-settings-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
                         <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">ชื่อ<input type="text" id="settingsFirstName" class="form-input" value="<?= h($teacherProfileFirstName) ?>" autocomplete="given-name"></label>
                         <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">นามสกุล<input type="text" id="settingsLastName" class="form-input" value="<?= h($teacherProfileLastName) ?>" autocomplete="family-name"></label>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                    <div class="profile-settings-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
                         <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">เบอร์โทรศัพท์<input class="form-input profile-readonly" type="tel" value="<?= h($teacherRow['phone'] ?? '') ?>" <?= $profileContactReadonly ?>></label>
                         <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">บ้านเลขที่ / ถนน<input class="form-input profile-readonly" value="<?= h($teacherRow['address_line'] ?? '') ?>" <?= $profileContactReadonly ?>></label>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                    <div class="profile-settings-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
                         <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">ตำบล / แขวง<input class="form-input profile-readonly" value="<?= h($teacherRow['subdistrict'] ?? '') ?>" <?= $profileContactReadonly ?>></label>
                         <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">อำเภอ / เขต<input class="form-input profile-readonly" value="<?= h($teacherRow['district'] ?? '') ?>" <?= $profileContactReadonly ?>></label>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                    <div class="profile-settings-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
                         <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">จังหวัด<input class="form-input profile-readonly" value="<?= h($teacherRow['province'] ?? '') ?>" <?= $profileContactReadonly ?>></label>
                         <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">รหัสไปรษณีย์<input class="form-input profile-readonly" value="<?= h($teacherRow['postal_code'] ?? '') ?>" <?= $profileContactReadonly ?>></label>
                     </div>
@@ -1057,7 +1058,7 @@ $stats = [
                 </button>
             </div>
 
-            <div class="card" style="padding:28px;">
+            <div class="card profile-settings-card" style="padding:28px;">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:22px;">
                     <span style="font-size:16px;"></span>
                     <h3 style="color:var(--text);font-size:15px;font-weight:600;">เปลี่ยนรหัสผ่าน</h3>

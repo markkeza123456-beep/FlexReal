@@ -1,0 +1,55 @@
+/* Shared, centered layout for the profile-editing sections across dashboards. */
+.profile-settings-layout {
+  width: min(100%, 620px) !important;
+  max-width: 620px !important;
+  min-width: 0;
+  margin-inline: auto !important;
+  box-sizing: border-box;
+}
+
+.profile-settings-header {
+  width: min(100%, 620px);
+  max-width: 620px;
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+
+.profile-settings-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+
+.profile-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  min-width: 0;
+}
+
+.profile-settings-card input,
+.profile-settings-card select,
+.profile-settings-card textarea {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+@media (max-width: 700px) {
+  .profile-settings-layout,
+  .profile-settings-header {
+    width: 100% !important;
+    max-width: 620px;
+  }
+
+  .profile-settings-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .profile-settings-card {
+    padding-left: min(20px, 5vw);
+    padding-right: min(20px, 5vw);
+  }
+}
