@@ -144,7 +144,7 @@ try {
         <div class="field">
           <label class="label" for="email">อีเมล</label>
           <div class="input-wrap">
-            <input type="email" id="email" name="email" placeholder="example@email.com" autocomplete="email" />
+            <input type="email" id="email" name="email" placeholder="example@email.com" autocomplete="email" required />
             <span class="focus-bar"></span>
           </div>
         </div>
@@ -240,7 +240,7 @@ try {
     <div class="back-row">มีบัญชีอยู่แล้ว? <a href="login.php" class="link">เข้าสู่ระบบ</a></div>
   </div>
   <div class="toast" id="toast"></div>
-  <script src="assets/js/regisstu.js?v=20261021-id-length"></script>
+  <script src="assets/js/regisstu.js?v=20261021-registration-otp"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

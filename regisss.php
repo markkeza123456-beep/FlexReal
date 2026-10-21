@@ -153,7 +153,7 @@ exit;
             <span class="input-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
             </span>
-            <input type="email" id="email" name="email" placeholder="example@email.com" autocomplete="email" />
+            <input type="email" id="email" name="email" placeholder="example@email.com" autocomplete="email" required />
             <span class="focus-bar"></span>
           </div>
           <span class="error-msg" id="email-error"></span>
@@ -382,7 +382,7 @@ exit;
   </div>
 
   <div class="toast" id="toast"></div>
-  <script src="assets/js/regisstu.js?v=20261021-id-length"></script>
+  <script src="assets/js/regisstu.js?v=20261021-registration-otp"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>
