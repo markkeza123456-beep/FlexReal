@@ -165,7 +165,7 @@ $hubDetailActive = $hubCourse !== null;
             </div>
         </div>
 
-        <div id="student-course-sections"<?= $hubRole !== 'student' ? ' style="display:none"' : '' ?>>
+        <div id="student-course-sections" style="display:<?= $hubRole === 'student' ? 'block' : 'none' ?>">
             <div class="course-section-block">
                 <div class="section-head-row">
                     <h2 class="section-title">วิชาที่เรียน</h2>
