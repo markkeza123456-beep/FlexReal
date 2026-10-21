@@ -43,6 +43,8 @@ try {
         $avatarUrl = 'uploads/avatars/' . $filename;
         $stmt = $conn->prepare("UPDATE public.teachers SET avatar_url = :url, updated_at = NOW() WHERE user_id = :id");
         $stmt->execute(['url' => $avatarUrl, 'id' => $user_id]);
+        $conn->prepare('UPDATE public.users SET updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id')
+            ->execute([':updated_by' => $user_id, ':id' => $user_id]);
 
         echo json_encode(['success' => true, 'avatar_url' => $avatarUrl]);
         exit;
@@ -62,13 +64,16 @@ try {
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user && password_verify($pwd_current, (string) $user['password_hash'])) {
-            $stmt_upd1 = $conn->prepare('UPDATE public.users SET password_hash = :pass, updated_at = NOW() WHERE user_id = :uid');
-            $stmt_upd1->execute(['pass' => password_hash($pwd_new, PASSWORD_DEFAULT), 'uid' => $user_id]);
+            $stmt_upd1 = $conn->prepare('UPDATE public.users SET password_hash = :pass, updated_by = :updated_by, updated_at = NOW() WHERE user_id = :uid');
+            $stmt_upd1->execute(['pass' => password_hash($pwd_new, PASSWORD_DEFAULT), 'updated_by' => $user_id, 'uid' => $user_id]);
         } else {
             echo json_encode(['success' => false, 'message' => 'รหัสผ่านปัจจุบันไม่ถูกต้อง']);
             exit;
         }
     }
+
+    $conn->prepare('UPDATE public.users SET updated_by = :updated_by, updated_at = NOW() WHERE user_id = :uid')
+        ->execute(['updated_by' => $user_id, 'uid' => $user_id]);
 
     echo json_encode(['success' => true, 'message' => 'บันทึกข้อมูลสำเร็จ!']);
 } catch (Exception $e) {

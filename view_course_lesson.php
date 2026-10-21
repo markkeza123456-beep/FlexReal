@@ -143,6 +143,7 @@ header('Content-Type: text/html; charset=utf-8');
     .book-image { display:block; max-width:100%; max-height:calc(100vh - 120px); margin:auto; box-shadow:0 8px 26px rgba(15,23,42,.16); background:#fff; }
     .notice { padding: 18px; border-radius: 10px; background: #B2EBF2; color: #2d3436; }
   </style>
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
   <header class="reader-header"><div class="header-title"><span><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span><span id="reading-status" class="reading-status"></span></div></header>
@@ -155,6 +156,7 @@ header('Content-Type: text/html; charset=utf-8');
 <?php else: ?>
   <main><div class="notice">ไฟล์ชนิดนี้ยังไม่รองรับการแสดงเป็นหน้าหนังสือ กรุณาดาวน์โหลดเพื่อเปิดด้วยโปรแกรมที่รองรับ</div></main>
 <?php endif; ?>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 <script type="module">
   const documentPayload = <?= $documentProgressPayload ?>;

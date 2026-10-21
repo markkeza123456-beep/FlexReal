@@ -13,17 +13,29 @@ function loadLessons(PDO $conn, string $courseId): array {
 try {
     $studentId = (($_SESSION['role'] ?? '') === 'student') ? (string) ($_SESSION['user_id'] ?? '') : '';
     if ($action === 'get_all') {
-        $stmt = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' END, c.subject_type, 'elective') AS subject_type, (cc.course_id IS NOT NULL) AS in_curriculum, (COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' END, c.subject_type) = 'compulsory') AS is_curriculum_required, (sc.course_id IS NOT NULL) AS is_enrolled FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id WHERE c.status = 'active' ORDER BY (cc.course_id IS NULL), c.name");
+        $stmt = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, c.image_path, COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' END, c.subject_type, 'elective') AS subject_type, (cc.course_id IS NOT NULL) AS in_curriculum, (COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' END, c.subject_type) = 'compulsory') AS is_curriculum_required, (sc.course_id IS NOT NULL) AS is_enrolled FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id WHERE c.status = 'active' ORDER BY (cc.course_id IS NULL), c.name");
         $stmt->execute([':student_id' => $studentId]); $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
         foreach ($courses as &$course) { $course['subjects_id'] = $course['course_id']; $course['subjects_name'] = $course['name']; $course['subjects_description'] = $course['description']; } unset($course);
         echo json_encode(['status' => 'success', 'data' => $courses], JSON_UNESCAPED_UNICODE); exit;
     }
     if ($action === 'get_detail') {
-        $id = (string) ($_GET['id'] ?? ''); $stmt = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, c.credits, COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' END, c.subject_type, 'elective') AS subject_type FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id WHERE c.course_id = :id AND c.status = :status"); $stmt->execute([':student_id' => $studentId, ':id' => $id, ':status' => 'active']); $course = $stmt->fetch(PDO::FETCH_ASSOC);
+        $id = (string) ($_GET['id'] ?? ''); $stmt = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, c.image_path, c.credits, COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' END, c.subject_type, 'elective') AS subject_type FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id WHERE c.course_id = :id AND c.status = :status"); $stmt->execute([':student_id' => $studentId, ':id' => $id, ':status' => 'active']); $course = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$course) throw new RuntimeException('ไม่พบรายวิชานี้');
-        $teachers = $conn->prepare("SELECT COALESCE(string_agg(t.full_name, ', ' ORDER BY t.full_name), 'ไม่ระบุอาจารย์ผู้สอน') FROM public.course_teachers ct JOIN public.teachers t ON t.user_id = ct.teacher_id WHERE ct.course_id = :id"); $teachers->execute([':id' => $id]);
-        $course['subjects_id'] = $course['course_id']; $course['subjects_name'] = $course['name']; $course['subjects_description'] = $course['description']; $course['teachers_name'] = $teachers->fetchColumn();
-        echo json_encode(['status' => 'success', 'course' => $course, 'lessons' => loadLessons($conn, $id)], JSON_UNESCAPED_UNICODE); exit;
+        $teachers = $conn->prepare("SELECT t.user_id, t.full_name, t.email, t.phone, t.avatar_url FROM public.course_teachers ct JOIN public.teachers t ON t.user_id = ct.teacher_id WHERE ct.course_id = :id ORDER BY t.full_name");
+        $teachers->execute([':id' => $id]);
+        $instructors = $teachers->fetchAll(PDO::FETCH_ASSOC);
+
+        $counts = $conn->prepare("SELECT COUNT(DISTINCT l.lesson_id) AS lesson_count, COUNT(DISTINCT l.lesson_id) FILTER (WHERE q.question_id IS NOT NULL) AS quiz_count FROM public.lessons l LEFT JOIN public.questions q ON q.lesson_id = l.lesson_id AND q.is_active = TRUE WHERE l.course_id = :id");
+        $counts->execute([':id' => $id]);
+        $courseCounts = $counts->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        $course['subjects_id'] = $course['course_id'];
+        $course['subjects_name'] = $course['name'];
+        $course['subjects_description'] = $course['description'];
+        $course['teachers_name'] = implode(', ', array_filter(array_column($instructors, 'full_name'))) ?: 'ไม่ระบุอาจารย์ผู้สอน';
+        $course['lesson_count'] = (int) ($courseCounts['lesson_count'] ?? 0);
+        $course['quiz_count'] = (int) ($courseCounts['quiz_count'] ?? 0);
+        echo json_encode(['status' => 'success', 'course' => $course, 'instructors' => $instructors, 'lessons' => loadLessons($conn, $id)], JSON_UNESCAPED_UNICODE); exit;
     }
     throw new RuntimeException('ไม่รองรับคำขอนี้');
 } catch (Throwable $e) { echo json_encode(['status' => 'error', 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE); }

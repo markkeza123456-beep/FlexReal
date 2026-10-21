@@ -1,6 +1,7 @@
 <?php
 session_start();
 header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, private');
 
 if (!isset($_SESSION['user_id'])) {
     echo json_encode([
@@ -28,12 +29,33 @@ $dashboardUrlMap = [
     'parent' => 'parent_dashboard.php',
 ];
 
+$avatarUrl = trim((string) ($_SESSION['avatar_url'] ?? ''));
+try {
+    require_once __DIR__ . '/config/db.php';
+    $profileTable = match ($role) {
+        'student' => 'students',
+        'teacher' => 'teachers',
+        'staff' => 'staff',
+        'parent' => 'parents',
+        default => null,
+    };
+    if ($profileTable !== null) {
+        $avatarStmt = $conn->prepare("SELECT avatar_url FROM public.{$profileTable} WHERE user_id = :user_id LIMIT 1");
+        $avatarStmt->execute([':user_id' => $userId]);
+        $databaseAvatarUrl = (string) ($avatarStmt->fetchColumn() ?: '');
+        if ($databaseAvatarUrl !== '') $avatarUrl = $databaseAvatarUrl;
+    }
+} catch (Throwable $error) {
+    error_log('Session avatar lookup failed: ' . $error->getMessage());
+}
+
 $payload = [
     'logged_in' => true,
     'name' => $name,
     'role' => $role,
     'user_id' => $userId,
     'avatar_text' => $firstChar,
+    'avatar_url' => $avatarUrl,
     'dashboard_url' => $dashboardUrlMap[$role] ?? 'index.html',
 ];
 

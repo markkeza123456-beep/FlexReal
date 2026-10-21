@@ -1,5 +1,5 @@
-<?php
-session_start();
+﻿<?php
+if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? '')) !== 'student') {
     header('Location: login.php');
     exit;
@@ -12,8 +12,9 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261021-cyan-everywhere">
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-cyan-everywhere">
+    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261020-toa-blue-theme">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme">
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
     <div class="dashboard-container">
@@ -255,5 +256,6 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
         </main>
     </div>
     <script src="assets/js/student_dashboard.js?v=20261021-hide-course-certificates"></script>
+    <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

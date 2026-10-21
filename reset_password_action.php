@@ -50,8 +50,8 @@ try {
 
     $conn->beginTransaction();
 
-    $stmt_user = $conn->prepare('UPDATE public.users SET password_hash = :password_hash, updated_at = NOW() WHERE user_id = :uid');
-    $stmt_user->execute(['password_hash' => password_hash($new_password, PASSWORD_DEFAULT), 'uid' => $user_id]);
+    $stmt_user = $conn->prepare('UPDATE public.users SET password_hash = :password_hash, updated_by = :updated_by, updated_at = NOW() WHERE user_id = :uid');
+    $stmt_user->execute(['password_hash' => password_hash($new_password, PASSWORD_DEFAULT), 'updated_by' => $user_id, 'uid' => $user_id]);
 
 
     $stmt_del = $conn->prepare('UPDATE public.password_reset_tokens SET used_at = NOW() WHERE token_id = :id');

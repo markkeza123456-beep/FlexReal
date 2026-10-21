@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="assets/css/web.css?v=20261021-cyan-everywhere">
+    <link rel="stylesheet" href="assets/css/web.css?v=20261021-course-detail-ui">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-cyan-everywhere">
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme">
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body class="landing-page">
 
@@ -53,7 +54,7 @@
             </div>
         </div>
     </div>
-</nav>
+    </nav>
 
 <div id="home" class="page active">
     <div class="hero">
@@ -141,10 +142,10 @@
                     <div class="info-card section-info-card">
                         <h3 class="section-title subsection-title">อาจารย์ผู้สอน</h3>
                         <div class="instructor-profile">
-                            <div class="instructor-avatar">‍</div>
+                            <div class="instructor-avatar" id="detail-instructor-avatar"><i class="fa-solid fa-user" aria-hidden="true"></i></div>
                             <div>
-                                <b id="detail-instructor-name">อาจารย์ผู้เชี่ยวชาญประจำหลักสูตร</b>
-                                <p id="detail-instructor-role" class="instructor-role">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
+                                <b id="detail-instructor-name">อาจารย์ผู้สอน</b>
+                                <p id="detail-instructor-role" class="instructor-role">ข้อมูลผู้สอน</p>
                             </div>
                         </div>
                     </div>
@@ -156,7 +157,6 @@
                     <button class="btn-enroll" id="enroll-course-btn" onclick="enrollCourseAndOpenLearning()">ลงทะเบียน</button>
                     
                     <div class="meta-list">
-                        <div class="meta-item"><span> Duration</span> <b id="detail-duration">5 ชั่วโมง</b></div>
                         <div class="meta-item"><span> Lessons</span> <b id="detail-lesson-count">0 บทเรียน</b></div>
                         <div class="meta-item"><span> Quizzes</span> <b id="detail-quiz-count">0 ชุด</b></div>
                         <div class="meta-item"><span> Language</span> <b>ภาษาไทย</b></div>
@@ -198,10 +198,10 @@
                     <div class="info-card section-info-card">
                         <h3 class="section-title subsection-title">อาจารย์ผู้สอน</h3>
                         <div class="instructor-profile">
-                            <div class="instructor-avatar">‍</div>
+                            <div class="instructor-avatar" id="learning-instructor-avatar"><i class="fa-solid fa-user" aria-hidden="true"></i></div>
                             <div>
-                                <b id="learning-instructor-name">อาจารย์ผู้เชี่ยวชาญประจำหลักสูตร</b>
-                                <p id="learning-instructor-role" class="instructor-role">ผู้เชี่ยวชาญด้านเนื้อหาวิชา</p>
+                                <b id="learning-instructor-name">อาจารย์ผู้สอน</b>
+                                <p id="learning-instructor-role" class="instructor-role">ข้อมูลผู้สอน</p>
                             </div>
                         </div>
                     </div>
@@ -213,7 +213,6 @@
                     <button class="btn-enroll is-enrolled">กำลังเรียน</button>
 
                     <div class="meta-list">
-                        <div class="meta-item"><span> Duration</span> <b id="learning-duration">5 ชั่วโมง</b></div>
                         <div class="meta-item"><span> Lessons</span> <b id="learning-lesson-count">0 บทเรียน</b></div>
                         <div class="meta-item"><span> Quizzes</span> <b id="learning-quiz-count">0 ชุด</b></div>
                         <div class="meta-item"><span> Language</span> <b>ภาษาไทย</b></div>
@@ -252,7 +251,7 @@
     <p>© 2026 Flow Learning. All Rights Reserved.</p>
 </footer>
 
-<script src="assets/js/web.js?v=20261020-certificate-steps-v5"></script>
+<script src="assets/js/web.js?v=20261021-course-detail-instructors"></script>
 
 </body>
 </html>

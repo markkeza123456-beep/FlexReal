@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -372,7 +372,8 @@ $stats = [
         .choice-label { font-weight: 600; color: var(--text-dim); font-size: 14px; width: 16px; text-align: center; }
         @media (max-width: 760px) { .course-content-editor { grid-template-columns: 1fr !important; } }
     </style>
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-cyan-everywhere">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme">
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
 <aside class="sidebar">
@@ -1561,5 +1562,6 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 </script>
 
     <script src="assets/js/teacherdash.js?v=20261020-integer-question-scores"></script>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

@@ -1,12 +1,15 @@
+<?php if (session_status() !== PHP_SESSION_ACTIVE) session_start(); ?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ลืมรหัสผ่าน - NEXORA</title>
   <link rel="stylesheet" href="assets/css/login.css?v=20261021-cyan-everywhere" />
   <style>
     .step-2, .step-3 { display: none; }
   </style>
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
   <div class="bg-grid"></div>
@@ -181,5 +184,6 @@
       }
     });
   </script>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

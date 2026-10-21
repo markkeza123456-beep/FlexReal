@@ -1,5 +1,5 @@
 <?php
-session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 $staffRole = strtolower(trim((string) ($_SESSION['role'] ?? '')));
 if (empty($_SESSION['user_id']) || $staffRole !== 'staff') {
     header('Location: login.php');
@@ -53,8 +53,9 @@ if ($displayName !== '') {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261021-cyan-everywhere" />
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-cyan-everywhere" />
+  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261021-action-ui" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme" />
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
 
@@ -65,115 +66,7 @@ if ($displayName !== '') {
 
   <div class="dashboard-container">
 
-  <nav class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <a class="brand-home-link" href="index.html" title="กลับหน้าหลักและรายวิชา">
-      <div class="flex-brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <polygon points="32,6 53,18 53,42 32,56 11,42 11,18" fill="none" stroke="#80DEEA" stroke-width="5" stroke-linejoin="round"/>
-          <polygon points="32,15 45,23 45,39 32,47 19,39 19,23" fill="#B2EBF2"/>
-        </svg>
-      </div>
-      <div class="flex-brand-text">
-        <span class="flex-brand-name">FLEXIBLE</span>
-        <span class="flex-brand-sub">LEARNING HUB</span>
-      </div>
-      </a>
-      <button class="sidebar-close" id="sidebarClose" title="ปิดเมนู">ปิด
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
-    </div>
-
-    <div class="nav">
-      <span class="nav-section-label">หลัก</span>
-      <a class="nav-item active" data-page="dashboard" href="staffdash.php?page=dashboard">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-          <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
-        </svg>
-        แดชบอร์ด
-      </a>
-
-      <span class="nav-section-label">หลักสูตร</span>
-      <a class="nav-item" data-page="curriculum-list" href="staffdash.php?page=curriculum-list">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-        </svg>
-        รายการหลักสูตร
-      </a>
-
-      <span class="nav-section-label">รายวิชา</span>
-      <a class="nav-item" data-page="subject-list" href="staffdash.php?page=subject-list">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-        </svg>
-        รายการรายวิชา
-      </a>
-
-      <span class="nav-section-label">สมาชิก</span>
-      <a class="nav-item" data-page="member-list" href="staffdash.php?page=member-list">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-        </svg>
-        จัดการผู้ใช้งาน
-      </a>
-      <a class="nav-item" data-page="staff-add" href="staffdash.php?page=staff-add">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-          <line x1="12" y1="17" x2="12" y2="23"/>
-          <line x1="9" y1="20" x2="15" y2="20"/>
-        </svg>
-        เพิ่มเจ้าหน้าที่
-      </a>
-
-      <span class="nav-section-label">สิทธิ์การใช้งาน</span>
-      <a class="nav-item" href="staff_transfer_permissions.php">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          <circle cx="12" cy="16" r="1"/>
-        </svg>
-        จัดการสิทธิ์เทียบโอน
-      </a>
-      <a class="nav-item" href="review_transcript.php">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/>
-        </svg>
-        ตรวจทรานสคริปต์
-      </a>
-      <a class="nav-item" data-page="graduation-requests" href="staffdash.php?page=graduation-requests">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M4 4h16v16H4z"/><path d="m8 12 2.5 2.5L16 9"/><path d="M8 2v4M16 2v4"/>
-        </svg>
-        อนุมัติจบการศึกษา
-      </a>
-    </div>
-
-    <a href="logout.php" class="sidebar-logout">
-      <span></span><span>ออกจากระบบ</span>
-    </a>
-
-    <div class="sidebar-footer staff-profile-trigger" role="button" tabindex="0" onclick="openStaffProfile()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openStaffProfile()}" title="ดูหรือแก้ไขโปรไฟล์">
-      <input type="file" id="staffAvatarInput" accept="image/*" style="display:none" onchange="staffPreviewAvatar(this)">
-      <div class="staff-avatar-wrap">
-        <div class="user-avatar" id="staffAvatarCircle" style="overflow:hidden;padding:0;flex-shrink:0;">
-          <img id="staffAvatarImg" src="<?= htmlspecialchars($staffAvatarUrl, ENT_QUOTES, 'UTF-8') ?>" alt=""
-               style="<?= $staffAvatarUrl !== '' ? 'display:block;' : 'display:none;' ?>width:100%;height:100%;object-fit:cover;border-radius:50%;">
-          <span id="staffAvatarInitial" style="<?= $staffAvatarUrl !== '' ? 'display:none;' : '' ?>"><?= htmlspecialchars($avatarInitials) ?></span>
-        </div>
-        <button type="button" class="staff-avatar-edit" aria-label="เปลี่ยนรูปโปรไฟล์" title="เปลี่ยนรูป"
-                onclick="event.stopPropagation();document.getElementById('staffAvatarInput').click()" onkeydown="event.stopPropagation()">✎</button>
-      </div>
-      <div class="user-detail">
-        <span class="user-name"><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></span>
-        <span class="user-role"><?= htmlspecialchars($displayRole, ENT_QUOTES, 'UTF-8') ?></span>
-      </div>
-    </div>
-  </nav>
+  <?php $staffSidebarInteractiveProfile = true; include __DIR__ . "/components/staff_sidebar.php"; ?>
 
 
   <div class="main-wrap">
@@ -300,13 +193,15 @@ if ($displayName !== '') {
                 <th>ชื่อหลักสูตร</th>
                 <th>ระดับ</th>
                 <th>สถานะ</th>
+                <th>ผู้สร้าง</th>
+                <th>ผู้แก้ไขล่าสุด</th>
                 <th>สร้างเมื่อ</th>
                 <th>แก้ไขล่าสุด</th>
                 <th style="width:140px;">จัดการ</th>
               </tr>
             </thead>
             <tbody id="curriculumBody">
-              <tr><td colspan="7" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
+              <tr><td colspan="9" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
@@ -439,13 +334,15 @@ if ($displayName !== '') {
                 <th>ชื่อวิชา</th>
                 <th>ประเภท</th>
                 <th>อาจารย์ผู้ดูแล</th>
+                <th>ผู้สร้าง</th>
+                <th>ผู้แก้ไขล่าสุด</th>
                 <th>สร้างเมื่อ</th>
                 <th>แก้ไขล่าสุด</th>
                 <th style="width:140px;">จัดการ</th>
               </tr>
             </thead>
             <tbody id="subjectBody">
-              <tr><td colspan="7" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
+              <tr><td colspan="9" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
@@ -460,7 +357,7 @@ if ($displayName !== '') {
           </div>
           <button class="btn-ghost btn-back" data-goto="subject-list">← กลับรายการ</button>
         </div>
-        <form class="form-card" id="subjectForm">
+        <form class="form-card" id="subjectForm" method="post" enctype="multipart/form-data">
           <input type="hidden" id="sf-id" />
           <div class="form-section-label">ข้อมูลรายวิชา</div>
           <div class="form-grid-2">
@@ -492,8 +389,8 @@ if ($displayName !== '') {
               <div class="input-wrap select-wrap">
                 <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                 <select id="sf-type">
-                  <option value="required">บังคับ</option>
-                  <option value="elective">เลือก</option>
+                  <option value="required">วิชาบังคับ</option>
+                  <option value="elective">วิชาเลือก</option>
                 </select>
                 <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
@@ -510,6 +407,19 @@ if ($displayName !== '') {
               <div id="sf-selected-teachers" aria-live="polite" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
 
             </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="sf-description">คำอธิบายรายวิชา</label>
+            <textarea id="sf-description" rows="4" placeholder="กรอกรายละเอียดรายวิชา"></textarea>
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="sf-image">รูปภาพปก</label>
+            <div class="file-upload-control">
+              <input class="file-input-visually-hidden" type="file" id="sf-image" name="course_image" accept="image/*">
+              <label class="file-upload-button" for="sf-image">เลือกรูปภาพ</label>
+              <span id="sf-image-name" class="file-upload-name">ยังไม่ได้เลือกไฟล์</span>
+            </div>
+            <div id="sf-image-preview-wrap" hidden style="margin-top:10px"><img id="sf-image-preview" alt="ตัวอย่างรูปปก" style="max-width:220px;max-height:140px;object-fit:cover;border-radius:10px"></div>
           </div>
           <div class="form-actions">
             <button type="button" class="btn-ghost" data-goto="subject-list">ยกเลิก</button>
@@ -610,12 +520,19 @@ if ($displayName !== '') {
             <div class="page-title">จัดการผู้ใช้งาน</div>
             <div class="page-sub">รายชื่อสมาชิกทั้งหมดในระบบ</div>
           </div>
-          <label class="search-wrap member-search-wrap" for="memberSearch">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input id="memberSearch" type="search" placeholder="ค้นหาชื่อ อีเมล หรือเบอร์โทร..." autocomplete="off" />
-          </label>
+          <div class="member-list-tools">
+            <select id="memberStatusFilter" class="filter-select" aria-label="กรองสถานะบัญชี">
+              <option value="active">บัญชีปกติ</option>
+              <option value="inactive">บัญชีระงับ</option>
+              <option value="all">ทุกสถานะ</option>
+            </select>
+            <label class="search-wrap member-search-wrap" for="memberSearch">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input id="memberSearch" type="search" placeholder="ค้นหาชื่อ อีเมล หรือเบอร์โทร..." autocomplete="off" />
+            </label>
+          </div>
         </div>
         <div class="table-wrap">
           <table class="data-table">
@@ -628,11 +545,13 @@ if ($displayName !== '') {
                 <th>สถานะ</th>
                 <th>วันที่สมัคร</th>
                 <th>แก้ไขล่าสุด</th>
+                <th>ผู้เพิ่มข้อมูล</th>
+                <th>ผู้แก้ไขล่าสุด</th>
                 <th style="width:120px;">จัดการ</th>
               </tr>
             </thead>
             <tbody id="memberBody">
-              <tr><td colspan="8" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
+              <tr><td colspan="10" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
@@ -775,10 +694,10 @@ if ($displayName !== '') {
           <div class="table-wrap">
             <table class="data-table">
               <thead>
-                <tr><th>ชื่อ-นามสกุล</th><th>เลขสมาชิก</th><th>สถานะ</th><th>วันที่สมัคร</th><th>แก้ไขล่าสุด</th><th style="width:100px;">จัดการ</th></tr>
+                <tr><th>ชื่อ-นามสกุล</th><th>เลขสมาชิก</th><th>สถานะ</th><th>วันที่สมัคร</th><th>แก้ไขล่าสุด</th><th>ผู้เพิ่มข้อมูล</th><th>ผู้แก้ไขล่าสุด</th><th style="width:100px;">จัดการ</th></tr>
               </thead>
               <tbody id="staffListBody">
-                <tr><td colspan="6" style="text-align:center;padding:24px;">กำลังโหลด...</td></tr>
+                <tr><td colspan="8" style="text-align:center;padding:24px;">กำลังโหลด...</td></tr>
               </tbody>
             </table>
           </div>
@@ -855,6 +774,7 @@ if ($displayName !== '') {
 
   <div class="toast" id="toast"></div>
 
-  <script src="assets/js/staffdash.js?v=20261020-password-eye-icons"></script>
+  <script src="assets/js/staffdash.js?v=20261021-action-ui"></script>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

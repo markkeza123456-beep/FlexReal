@@ -28,13 +28,15 @@ try {
     $conn->exec('ALTER TABLE public.staff ADD COLUMN IF NOT EXISTS avatar_url TEXT');
     $userId = (string) $_SESSION['user_id'];
     $url = uploadPublicAvatar('staff', $userId, $png);
-    $stmt = $conn->prepare('UPDATE public.staff SET avatar_url = :url WHERE user_id = :id');
-    $stmt->execute([':url' => $url, ':id' => $userId]);
+    $stmt = $conn->prepare('UPDATE public.staff SET avatar_url = :url, updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id');
+    $stmt->execute([':url' => $url, ':updated_by' => $userId, ':id' => $userId]);
     if ($stmt->rowCount() === 0) {
         $check = $conn->prepare('SELECT 1 FROM public.staff WHERE user_id = :id');
         $check->execute([':id' => $userId]);
         if (!$check->fetchColumn()) throw new RuntimeException('ไม่พบข้อมูลเจ้าหน้าที่');
     }
+    $conn->prepare('UPDATE public.users SET updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id')
+        ->execute([':updated_by' => $userId, ':id' => $userId]);
     echo json_encode(['success' => true, 'url' => $url], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $error) {
     error_log('Staff avatar save failed: ' . $error->getMessage());

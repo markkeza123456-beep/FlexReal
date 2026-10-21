@@ -1,3 +1,4 @@
+<?php if (session_status() !== PHP_SESSION_ACTIVE) session_start(); ?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -85,7 +86,8 @@
     .parent-profile { transition: background .2s; padding: 8px; margin: -8px; border-radius: 10px; }
     .parent-profile:hover { background: rgba(255,255,255,0.05); }
   </style>
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-cyan-everywhere" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme" />
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
 
@@ -401,5 +403,6 @@
 </div>
 
   <script src="assets/js/parent_dashboard.js?v=20261020-quiz-details"></script>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

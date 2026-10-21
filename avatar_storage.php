@@ -1,6 +1,6 @@
 <?php
 
-/** Store a cropped PNG in the shared public Supabase bucket and return its URL. */
+/** Store a cropped PNG durably and return a path that can be saved on the profile. */
 function uploadPublicAvatar(string $role, string $userId, string $png): string
 {
     global $env, $supabaseUrl;
@@ -11,9 +11,27 @@ function uploadPublicAvatar(string $role, string $userId, string $png): string
     $url = rtrim((string) ($env['SUPABASE_URL'] ?? $supabaseUrl ?? ''), '/');
     $key = trim((string) ($env['SUPABASE_SERVICE_ROLE_KEY'] ?? ''));
     $bucket = trim((string) ($env['SUPABASE_LESSON_BUCKET'] ?? 'lesson-media'));
-    if ($url === '' || $key === '' || $bucket === '') {
-        throw new RuntimeException('Shared Supabase Storage is not configured.');
-    }
+    $storeLocally = static function () use ($role, $userId, $png): string {
+        $relativeDirectory = 'uploads/avatars/' . $role . '/' . hash('sha256', $userId);
+        $directory = __DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativeDirectory);
+        if (!is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) {
+            throw new RuntimeException('Unable to create the local avatar directory.');
+        }
+
+        $filename = bin2hex(random_bytes(16)) . '.png';
+        $path = $directory . DIRECTORY_SEPARATOR . $filename;
+        if (file_put_contents($path, $png, LOCK_EX) !== strlen($png)) {
+            if (is_file($path)) unlink($path);
+            throw new RuntimeException('Unable to save the avatar image locally.');
+        }
+
+        return $relativeDirectory . '/' . $filename;
+    };
+
+    // The current XAMPP config has no service-role key. In that setup keep
+    // avatars on this web server instead of rejecting the upload before the
+    // profile URL can be written to the database.
+    if ($url === '' || $key === '' || $bucket === '') return $storeLocally();
 
     $authHeaders = ['apikey: ' . $key];
     if (!str_starts_with($key, 'sb_secret_')) $authHeaders[] = 'Authorization: Bearer ' . $key;
@@ -43,12 +61,15 @@ function uploadPublicAvatar(string $role, string $userId, string $png): string
     [$publicStatus] = $request('PUT', $bucketEndpoint, $jsonHeaders, json_encode(['public' => true]));
     if ($publicStatus < 200 || $publicStatus >= 300) throw new RuntimeException('Supabase avatar access setup failed (HTTP ' . $publicStatus . ').');
 
-    $objectPath = 'avatars/' . $role . '/' . hash('sha256', $userId) . '.png';
+    // Keep each upload immutable. The profile row is switched to this URL only
+    // after the upload succeeds, so a failed database write cannot replace the
+    // image that is currently in use.
+    $objectPath = 'avatars/' . $role . '/' . hash('sha256', $userId) . '/' . bin2hex(random_bytes(16)) . '.png';
     $objectUrl = $url . '/storage/v1/object/' . rawurlencode($bucket) . '/' . implode('/', array_map('rawurlencode', explode('/', $objectPath)));
     [$uploadStatus, $uploadResponse] = $request('POST', $objectUrl, [...$authHeaders, 'Content-Type: image/png', 'x-upsert: true'], $png);
     if ($uploadStatus < 200 || $uploadStatus >= 300) {
         throw new RuntimeException('Supabase avatar upload failed (HTTP ' . $uploadStatus . ').');
     }
 
-    return $url . '/storage/v1/object/public/' . rawurlencode($bucket) . '/' . implode('/', array_map('rawurlencode', explode('/', $objectPath))) . '?t=' . (string) round(microtime(true) * 1000);
+    return $url . '/storage/v1/object/public/' . rawurlencode($bucket) . '/' . implode('/', array_map('rawurlencode', explode('/', $objectPath)));
 }

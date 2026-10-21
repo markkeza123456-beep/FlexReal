@@ -15,6 +15,7 @@ exit;
   <link rel="stylesheet" href="assets/css/regisstu.css?v=20261021-cyan-everywhere" />
   <link rel="stylesheet" href="assets/css/theme.css?v=20261021-cyan-everywhere" />
 
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
   <div class="bg-grid"></div>
@@ -382,5 +383,6 @@ exit;
 
   <div class="toast" id="toast"></div>
   <script src="assets/js/regisstu.js"></script>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

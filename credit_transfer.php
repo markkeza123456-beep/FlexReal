@@ -1,5 +1,5 @@
 <?php
-session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 require_once __DIR__ . '/config/db.php';
 
 // ตรวจสอบ session และยืนยัน role กับฐานข้อมูลก่อนแสดงหน้าส่งคำขอ
@@ -31,6 +31,7 @@ try {
     <link rel="stylesheet" href="assets/css/credit_transfer.css?v=20261021-cyan-everywhere">
     <link rel="stylesheet" href="assets/css/theme.css?v=20261021-cyan-everywhere">
     <script src="assets/js/credit_transfer.js" defer></script>
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
     <main class="transfer-page">
@@ -56,5 +57,6 @@ try {
             </form>
         </section>
     </main>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

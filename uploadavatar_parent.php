@@ -38,6 +38,8 @@ try {
         $check->execute([':uid' => $userId]);
         if (!$check->fetchColumn()) throw new RuntimeException('Parent profile was not found.');
     }
+    $conn->prepare('UPDATE public.users SET updated_by = :updated_by, updated_at = NOW() WHERE user_id = :uid')
+        ->execute([':updated_by' => $userId, ':uid' => $userId]);
     parentAvatarResponse(true, 'บันทึกรูปโปรไฟล์สำเร็จ', ['url' => $url]);
 } catch (Throwable $error) {
     error_log('Parent avatar save failed: ' . $error->getMessage());

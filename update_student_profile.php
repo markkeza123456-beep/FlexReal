@@ -60,6 +60,8 @@ try {
             throw new RuntimeException('ไม่พบข้อมูลนักเรียน');
         }
     }
+    $conn->prepare('UPDATE public.users SET updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id')
+        ->execute([':updated_by' => $userId, ':id' => $userId]);
     $conn->commit();
     $_SESSION['name'] = $name;
     profileJson(['success' => true, 'message' => 'บันทึกข้อมูลสำเร็จ']);

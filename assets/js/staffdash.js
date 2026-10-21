@@ -45,6 +45,9 @@
       renderMembers();
     }
   });
+  document.getElementById('memberStatusFilter')?.addEventListener('change', () => {
+    if (currentPage === 'member-list') renderMembers();
+  });
 
   document.getElementById('menuBtn')?.addEventListener('click', () => sidebar?.classList.toggle('open'));
   document.getElementById('sidebarClose')?.addEventListener('click', () => sidebar?.classList.remove('open'));
@@ -394,7 +397,9 @@
       staff: 'เจ้าหน้าที่',
     };
 
+    const statusFilter = document.getElementById('memberStatusFilter')?.value || 'active';
     const filteredMembers = members.filter(member => {
+      if (statusFilter !== 'all' && member.status !== statusFilter) return false;
       if (!memberSearchTerm) return true;
       const searchable = `${member.name} ${member.email} ${member.phone}`.toLocaleLowerCase();
       return searchable.includes(memberSearchTerm);
@@ -410,21 +415,25 @@
           <td><span class="badge ${member.status === 'active' ? 'active' : 'draft'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
           <td>${formatRegistrationDate(member.registered_at)}</td>
           <td>${formatRegistrationDate(member.updated_at)}</td>
+          <td>${escapeHtml(member.created_by_name || '-')}</td>
+          <td>${escapeHtml(member.updated_by_name || member.created_by_name || '-')}</td>
           <td>
             <div class="action-btns">
               <button type="button" class="btn-icon edit" onclick="editMember('${member.id}')">แก้ไข</button>
-              <button type="button" class="btn-icon del" onclick="deleteMember('${member.id}')">ลบ</button>
+              ${member.status === 'inactive'
+                ? `<button type="button" class="btn-icon edit" onclick="restoreMember('${escapeHtml(member.id)}')">เปิดใช้งาน</button><button type="button" class="btn-icon del" onclick="permanentlyDeleteMember('${escapeHtml(member.id)}')">ลบ</button>`
+                : `<button type="button" class="btn-icon del" onclick="deleteMember('${escapeHtml(member.id)}')">ระงับ</button>`}
             </div>
           </td>
         </tr>
       `).join('')
-      : '<tr><td colspan="8" style="text-align:center; padding:30px;">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>';
+      : '<tr><td colspan="10" style="text-align:center; padding:30px;">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>';
   }
 
   function renderStaffList() {
     const body = document.getElementById('staffListBody');
     if (!body) return;
-    const staffMembers = members.filter(member => String(member.roleValue).toLowerCase() === 'staff');
+    const staffMembers = members.filter(member => String(member.roleValue).toLowerCase() === 'staff' && member.status === 'active');
     body.innerHTML = staffMembers.length
       ? staffMembers.map(member => `
         <tr>
@@ -433,10 +442,12 @@
           <td><span class="badge ${member.status === 'active' ? 'active' : 'draft'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
           <td>${formatRegistrationDate(member.registered_at)}</td>
           <td>${formatRegistrationDate(member.updated_at)}</td>
+          <td>${escapeHtml(member.created_by_name || '-')}</td>
+          <td>${escapeHtml(member.updated_by_name || member.created_by_name || '-')}</td>
           <td><button type="button" class="btn-icon edit" onclick="editMember('${escapeHtml(member.id)}')">แก้ไข</button></td>
         </tr>
       `).join('')
-      : '<tr><td colspan="6" style="text-align:center;padding:24px;">ยังไม่มีบัญชีเจ้าหน้าที่</td></tr>';
+      : '<tr><td colspan="8" style="text-align:center;padding:24px;">ยังไม่มีบัญชีเจ้าหน้าที่</td></tr>';
   }
 
   window.editMember = id => {
@@ -482,17 +493,47 @@
   });
 
   window.deleteMember = id => {
-    openModal('ลบสมาชิก', 'ยืนยันการลบสมาชิกนี้หรือไม่?', async () => {
+    openModal('ระงับบัญชี', 'บัญชีนี้จะเข้าสถานะระงับและข้อมูลประวัติจะยังคงอยู่ ยืนยันหรือไม่?', async () => {
       const formData = new FormData();
       formData.append('action', 'deleteMember');
       formData.append('id', id);
 
       try {
         await fetchJson('api_staff.php', { method: 'POST', body: formData });
-        showToast('ลบสมาชิกเรียบร้อย', 'success');
+        showToast('ระงับบัญชีเรียบร้อย', 'success');
         await loadData();
       } catch (error) {
-        showToast(error.message || 'ไม่สามารถลบสมาชิกได้', 'error');
+        showToast(error.message || 'ไม่สามารถระงับบัญชีได้', 'error');
+      }
+    });
+  };
+
+  window.restoreMember = id => {
+    openModal('เปิดใช้งานบัญชี', 'ยืนยันเปิดใช้งานบัญชีนี้อีกครั้งหรือไม่?', async () => {
+      const formData = new FormData();
+      formData.append('action', 'restoreMember');
+      formData.append('id', id);
+      try {
+        await fetchJson('api_staff.php', { method: 'POST', body: formData });
+        showToast('เปิดใช้งานบัญชีเรียบร้อย', 'success');
+        await loadData();
+      } catch (error) {
+        showToast(error.message || 'ไม่สามารถเปิดใช้งานบัญชีได้', 'error');
+      }
+    });
+  };
+
+  window.permanentlyDeleteMember = id => {
+    openModal('ลบบัญชีถาวร', 'ยืนยันการลบผู้ใช้งานคนนี้อย่างถาวรหรือไม่? ข้อมูลที่เกี่ยวข้องกับบัญชีอาจถูกลบด้วย', async () => {
+      const formData = new FormData();
+      formData.append('action', 'permanentlyDeleteMember');
+      formData.append('id', id);
+      try {
+        await fetchJson('api_staff.php', { method: 'POST', body: formData });
+        showToast('ลบบัญชีผู้ใช้งานถาวรเรียบร้อย', 'success');
+        await loadData();
+      } catch (error) {
+        showToast(error.message || 'ไม่สามารถลบบัญชีได้', 'error');
       }
     });
   };
@@ -510,6 +551,8 @@
           <td>${curriculum.name}</td>
           <td>${curriculum.level || 'ม.ปลาย'}</td>
           <td><span class="badge ${curriculum.status === 'active' ? 'active' : 'draft'}">${curriculum.status || 'active'}</span></td>
+          <td>${escapeHtml(curriculum.created_by_name || '-')}</td>
+          <td>${escapeHtml(curriculum.updated_by_name || curriculum.created_by_name || '-')}</td>
           <td>${formatRegistrationDate(curriculum.created_at)}</td>
           <td>${formatRegistrationDate(curriculum.updated_at)}</td>
           <td>
@@ -521,7 +564,7 @@
           </td>
         </tr>
       `).join('')
-      : '<tr><td colspan="5" style="text-align:center;">ไม่มีข้อมูลหลักสูตร</td></tr>';
+      : '<tr><td colspan="9" style="text-align:center;">ไม่มีข้อมูลหลักสูตร</td></tr>';
   }
 
   document.querySelector('[data-goto="curriculum-add"]')?.addEventListener('click', () => {
@@ -586,6 +629,20 @@
     });
   };
 
+  function getEffectiveSubjectType(subject) {
+    const selectedCurriculumId = document.getElementById('subjectCurriculumFilter')?.value || '';
+    const relatedTypes = curriculumSubjects
+      .filter(item => String(item.course_id) === String(subject.id)
+        && (!selectedCurriculumId || String(item.curriculum_id) === String(selectedCurriculumId)))
+      .map(item => String(item.requirement_type).toLowerCase() === 'required' ? 'compulsory' : 'elective');
+    const uniqueTypes = [...new Set(relatedTypes)];
+    if (uniqueTypes.length === 1) return uniqueTypes[0];
+    if (uniqueTypes.length > 1) return 'varies';
+
+    const baseType = String(subject.type ?? subject.category ?? subject.subject_type ?? '').trim().toLowerCase();
+    return ['required', 'compulsory', 'mandatory'].includes(baseType) ? 'compulsory' : 'elective';
+  }
+
   function renderSubjects() {
     const subjectBody = document.getElementById('subjectBody');
     if (!subjectBody) {
@@ -607,12 +664,7 @@
 
     subjectBody.innerHTML = visibleSubjects.length
       ? visibleSubjects.map(subject => {
-        const curriculumTypes = curriculumSubjects
-          .filter(item => String(item.course_id) === String(subject.id))
-          .map(item => String(item.requirement_type).toLowerCase() === 'required' ? 'compulsory' : 'elective');
-        const uniqueTypes = [...new Set(curriculumTypes)];
-        const type = curriculumTypeBySubject.get(String(subject.id))
-          || (uniqueTypes.length === 1 ? uniqueTypes[0] : uniqueTypes.length > 1 ? 'varies' : (['required', 'compulsory'].includes(String(subject.type).toLowerCase()) ? 'compulsory' : 'elective'));
+        const type = getEffectiveSubjectType(subject);
         const isCompulsory = type === 'compulsory';
         const typeLabel = type === 'varies' ? 'เลือกหลักสูตร' : isCompulsory ? 'วิชาบังคับ' : 'วิชาเลือก';
         return `
@@ -621,6 +673,8 @@
           <td>${escapeHtml(subject.name)}</td>
           <td><span class="badge ${type === 'varies' ? '' : isCompulsory ? 'compulsory' : 'elective'}">${typeLabel}</span></td>
           <td style="color:var(--orange); font-weight:500;">${escapeHtml(subject.teacher_name || 'ยังไม่มีผู้ดูแล')}</td>
+          <td>${escapeHtml(subject.created_by_name || '-')}</td>
+          <td>${escapeHtml(subject.updated_by_name || subject.created_by_name || '-')}</td>
           <td>${formatRegistrationDate(subject.created_at)}</td>
           <td>${formatRegistrationDate(subject.updated_at)}</td>
           <td>
@@ -633,7 +687,7 @@
         </tr>
       `;
       }).join('')
-      : `<tr><td colspan="7" style="text-align:center;">${selectedCurriculumId ? 'หลักสูตรนี้ยังไม่มีรายวิชาที่กำหนดไว้' : 'ไม่มีข้อมูลรายวิชา'}</td></tr>`;
+      : `<tr><td colspan="9" style="text-align:center;">${selectedCurriculumId ? 'หลักสูตรนี้ยังไม่มีรายวิชาที่กำหนดไว้' : 'ไม่มีข้อมูลรายวิชา'}</td></tr>`;
   }
 
   document.getElementById('subjectCurriculumFilter')?.addEventListener('change', renderSubjects);
@@ -642,6 +696,10 @@
     document.getElementById('subjectFormTitle').textContent = 'เพิ่มรายวิชาใหม่';
     document.getElementById('subjectForm').reset();
     document.getElementById('sf-id').value = '';
+    document.getElementById('sf-description').value = '';
+    document.getElementById('sf-image').value = '';
+    document.getElementById('sf-image-name').textContent = 'ยังไม่ได้เลือกไฟล์';
+    document.getElementById('sf-image-preview-wrap').hidden = true;
     populateTeacherSelect('');
   });
 
@@ -657,11 +715,37 @@
     document.getElementById('sf-code').value = subject.code || '';
     document.getElementById('sf-name').value = subject.name || '';
     document.getElementById('sf-credit').value = subject.credit || 0;
-    document.getElementById('sf-type').value = subject.type === 'elective' ? 'elective' : 'required';
+    const effectiveType = getEffectiveSubjectType(subject);
+    const baseType = String(subject.type ?? subject.category ?? subject.subject_type ?? '').trim().toLowerCase();
+    const formType = effectiveType === 'varies'
+      ? (['required', 'compulsory', 'mandatory'].includes(baseType) ? 'compulsory' : 'elective')
+      : effectiveType;
+    document.getElementById('sf-type').value = formType === 'compulsory' ? 'required' : 'elective';
+    document.getElementById('sf-description').value = subject.description || '';
+    document.getElementById('sf-image').value = '';
+    document.getElementById('sf-image-name').textContent = subject.image_path ? 'ใช้รูปปกเดิม' : 'ยังไม่ได้เลือกไฟล์';
+    const preview = document.getElementById('sf-image-preview');
+    const previewWrap = document.getElementById('sf-image-preview-wrap');
+    if (subject.image_path) {
+      preview.src = subject.image_path;
+      previewWrap.hidden = false;
+    } else {
+      previewWrap.hidden = true;
+    }
 
     populateTeacherSelect(subject.teacher_ids || '');
     goTo('subject-add');
   };
+
+  document.getElementById('sf-image')?.addEventListener('change', event => {
+    const file = event.target.files?.[0];
+    const preview = document.getElementById('sf-image-preview');
+    const previewWrap = document.getElementById('sf-image-preview-wrap');
+    if (!file) return;
+    document.getElementById('sf-image-name').textContent = file.name;
+    preview.src = URL.createObjectURL(file);
+    previewWrap.hidden = false;
+  });
 
   document.getElementById('subjectForm')?.addEventListener('submit', async e => {
     e.preventDefault();
@@ -673,6 +757,9 @@
     formData.append('name', document.getElementById('sf-name').value);
     formData.append('credit', document.getElementById('sf-credit').value);
     formData.append('type', document.getElementById('sf-type').value);
+    formData.append('description', document.getElementById('sf-description').value);
+    const courseImage = document.getElementById('sf-image').files?.[0];
+    if (courseImage) formData.append('course_image', courseImage);
 
     addSelectedSubjectTeacher();
     formData.append('teacher_ids', JSON.stringify(selectedSubjectTeacherIds));
