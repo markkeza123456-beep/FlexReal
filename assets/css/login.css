@@ -255,6 +255,13 @@ body {
   transform: scale(1.1);
 }
 
+/* Unselected role labels remain dark, including on hover; only selected roles are white. */
+.role-tab { color: #000000 !important; }
+.role-tab.active,
+.role-tab.selected,
+.role-tab[aria-selected="true"],
+.role-tab[aria-pressed="true"] { color: #FFFFFF !important; }
+
 
 .field-pin {
   animation: fadeSlideUp .3s ease both;
