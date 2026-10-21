@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ลืมรหัสผ่าน - Flexible Learning Hub</title>
-  <link rel="stylesheet" href="assets/css/login.css?v=20261021-login-shared-background" />
+  <link rel="stylesheet" href="assets/css/login.css?v=20261021-brighter-success-green" />
   <style>
     .step-2, .step-3 { display: none; }
   </style>

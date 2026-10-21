@@ -21,7 +21,7 @@ $maskedEmail = htmlspecialchars($maskedEmail, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ยืนยันอีเมล - Flexible Learning Hub</title>
-  <link rel="stylesheet" href="assets/css/login.css?v=20261021-home-palette">
+  <link rel="stylesheet" href="assets/css/login.css?v=20261021-brighter-success-green">
   <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-shared-background">
   <link rel="stylesheet" href="assets/css/responsive.css">
   <style>
