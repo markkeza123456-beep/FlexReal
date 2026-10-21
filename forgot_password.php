@@ -10,6 +10,7 @@
     .step-2, .step-3 { display: none; }
   </style>
     <link rel="stylesheet" href="assets/css/responsive.css">
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-design-system" />
 </head>
 <body>
   <div class="bg-grid"></div>

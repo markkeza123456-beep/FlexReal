@@ -12,7 +12,7 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>จัดการวิดีโอรายวิชา | Flexible Learning Hub</title>
   <link rel="stylesheet" href="assets/css/staff_subject_editor.css" />
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-home-palette" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-design-system" />
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>

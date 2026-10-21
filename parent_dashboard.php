@@ -91,7 +91,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
     .parent-profile { transition: background .2s; padding: 8px; margin: -8px; border-radius: 10px; }
     .parent-profile:hover { background: rgba(255,255,255,0.05); }
   </style>
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-home-palette" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-design-system" />
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
