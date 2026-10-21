@@ -17,6 +17,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
     <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261021-subject-type-color-coding">
     <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-background-only">
     <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout">
 </head>
 <body>
     <div class="dashboard-container">
@@ -164,18 +165,18 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
 
 
             <section id="settings-page" class="content-section" style="display: none;">
-                <header class="header">
+                <header class="header profile-settings-header">
                     <div class="welcome">
                         <h1>ตั้งค่าโปรไฟล์</h1>
                         <p>จัดการข้อมูลส่วนตัวและรหัสผ่านของคุณ</p>
                     </div>
                 </header>
 
-                <div class="settings-wrapper">
+                <div class="settings-wrapper profile-settings-layout">
 
 
-                    <div class="content-card settings-card">
-                        <h2 class="settings-card-title">โปรไฟล์</h2>
+                    <div class="content-card settings-card profile-settings-card">
+                        <h2 class="settings-card-title">&#128100; โปรไฟล์</h2>
 
                         <div class="avatar-section">
                             <div class="avatar-picker" title="รูปโปรไฟล์">

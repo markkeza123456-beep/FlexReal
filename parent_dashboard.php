@@ -98,6 +98,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
   </style>
   <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-fullbleed" />
     <link rel="stylesheet" href="assets/css/responsive.css">
+  <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout" />
 </head>
 <body>
 
@@ -285,16 +286,16 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
 
 
     <div id="page-settings" class="page">
-      <div class="page-header">
+      <div class="page-header profile-settings-header">
         <h1>ตั้งค่าโปรไฟล์</h1>
         <p>จัดการข้อมูลส่วนตัวและรหัสผ่านของคุณ</p>
       </div>
 
-      <div class="settings-wrapper">
+      <div class="settings-wrapper profile-settings-layout">
 
 
-        <div class="card settings-card">
-          <div class="card-title">โปรไฟล์</div>
+        <div class="card settings-card profile-settings-card">
+          <div class="card-title"><i class="ti ti-user-circle"></i> โปรไฟล์ผู้ปกครอง</div>
 
 
           <div class="avatar-section">

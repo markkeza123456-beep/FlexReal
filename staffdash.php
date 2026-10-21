@@ -61,6 +61,7 @@ if ($displayName !== '') {
   <link rel="stylesheet" href="assets/css/staffdash.css?v=20261021-subject-type-color-coding" />
   <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-background-only" />
     <link rel="stylesheet" href="assets/css/responsive.css">
+  <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout" />
 </head>
 <body>
 
@@ -721,14 +722,14 @@ if ($displayName !== '') {
       </section>
 
       <section class="page staff-profile-page" id="page-profile">
-        <div class="page-header staff-profile-page-header">
+        <div class="page-header staff-profile-page-header profile-settings-header">
           <div>
             <div class="page-title">ข้อมูลส่วนตัว</div>
             <div class="page-sub">จัดการโปรไฟล์และการตั้งค่าของคุณ</div>
           </div>
         </div>
-        <div class="form-card staff-profile-page-card">
-          <h2 class="staff-profile-card-title"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="9" r="3"/><path d="M6.8 18a5.5 5.5 0 0 1 10.4 0"/></svg> โปรไฟล์เจ้าหน้าที่</h2>
+        <div class="form-card staff-profile-page-card profile-settings-card">
+          <h2 class="staff-profile-card-title">👤 โปรไฟล์</h2>
           <div class="staff-profile-identity">
             <button type="button" class="staff-profile-avatar" onclick="document.getElementById('staffAvatarInput').click()" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์" aria-label="เปลี่ยนรูปโปรไฟล์">
               <img id="staffProfileAvatarImg" src="<?= htmlspecialchars($staffAvatarUrl, ENT_QUOTES, 'UTF-8') ?>" alt="รูปโปรไฟล์"
