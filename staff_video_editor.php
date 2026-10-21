@@ -53,6 +53,6 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
     </section>
     <section class="panel error-panel" id="errorPanel" hidden><div class="error-body" id="errorMessage"></div></section>
   </main><div class="toast" id="toast"></div><script src="assets/js/staff_video_editor.js"></script>
-<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js" defer></script>
+<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js?v=20261021-session-language" defer></script>
 </body>
 </html>

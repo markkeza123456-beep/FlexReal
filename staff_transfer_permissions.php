@@ -140,6 +140,6 @@ function hTransferPermission(?string $value): string
   </div>
   <div class="toast" id="permissionToast" role="status" aria-live="polite"></div>
   <script>window.transferPermissionCsrf = <?= json_encode($csrfToken, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
-<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js" defer></script>
+<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js?v=20261021-session-language" defer></script>
 </body>
 </html>

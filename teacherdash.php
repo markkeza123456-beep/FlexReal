@@ -1563,6 +1563,6 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 </script>
 
     <script src="assets/js/teacherdash.js?v=20261020-integer-question-scores"></script>
-<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js" defer></script>
+<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js?v=20261021-session-language" defer></script>
 </body>
 </html>

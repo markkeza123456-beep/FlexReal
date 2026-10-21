@@ -157,7 +157,7 @@ header('Content-Type: text/html; charset=utf-8');
 <?php else: ?>
   <main><div class="notice">ไฟล์ชนิดนี้ยังไม่รองรับการแสดงเป็นหน้าหนังสือ กรุณาดาวน์โหลดเพื่อเปิดด้วยโปรแกรมที่รองรับ</div></main>
 <?php endif; ?>
-<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js" defer></script>
+<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js?v=20261021-session-language" defer></script>
 </body>
 <script type="module">
   const documentPayload = <?= $documentProgressPayload ?>;

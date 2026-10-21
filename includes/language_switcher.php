@@ -1,2 +1,2 @@
-<?php $currentLang = $langCode ?? ($_SESSION['site_lang'] ?? 'th'); ?>
-<div class="flh-language" aria-label="Language switcher"><span aria-hidden="true">🌐</span><a href="?lang=th" lang="th" class="<?= $currentLang === 'th' ? 'active' : '' ?>">TH</a><span>|</span><a href="?lang=en" lang="en" class="<?= $currentLang === 'en' ? 'active' : '' ?>">EN</a></div>
+<?php $currentLang = $langCode ?? ($_SESSION['lang'] ?? 'th'); ?>
+<div class="flh-language" aria-label="<?= htmlspecialchars($lang['language'] ?? 'Language', ENT_QUOTES, 'UTF-8') ?>"><span aria-hidden="true">🌐</span><a href="change_lang.php?lang=th" lang="th" class="<?= $currentLang === 'th' ? 'active' : '' ?>" <?= $currentLang === 'th' ? 'aria-current="true"' : '' ?>>TH</a><span>|</span><a href="change_lang.php?lang=en" lang="en" class="<?= $currentLang === 'en' ? 'active' : '' ?>" <?= $currentLang === 'en' ? 'aria-current="true"' : '' ?>>EN</a></div>
