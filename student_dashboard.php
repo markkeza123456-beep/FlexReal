@@ -1,4 +1,3 @@
-<?php require_once __DIR__ . '/includes/language.php'; ?>
 <?php
 if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? '')) !== 'student') {
@@ -15,7 +14,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261020-toa-blue-theme">
     <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme">
-    <link rel="stylesheet" href="assets/css/responsive-language.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
     <div class="dashboard-container">
@@ -259,7 +258,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
 <<<<<<< HEAD
     <script src="assets/js/student_dashboard.js?v=20261020-password-eye-icons"></script>
     <script src="assets/js/student_dashboard.js?v=20261020-course-certificate-issue-v3"></script>
-<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js?v=20261021-session-language" defer></script>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 =======
     <script src="assets/js/student_dashboard.js?v=20261021-hide-course-certificates"></script>
 >>>>>>> ba6acf2e0fb3b98084ec23d17f378f175d3b6a16

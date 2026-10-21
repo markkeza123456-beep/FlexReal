@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/includes/language.php'; ?>
+<?php if (session_status() !== PHP_SESSION_ACTIVE) session_start(); ?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -9,7 +9,7 @@
   <style>
     .step-2, .step-3 { display: none; }
   </style>
-    <link rel="stylesheet" href="assets/css/responsive-language.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
   <div class="bg-grid"></div>
@@ -184,6 +184,6 @@
       }
     });
   </script>
-<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js?v=20261021-session-language" defer></script>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

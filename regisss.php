@@ -1,4 +1,3 @@
-<?php require_once __DIR__ . '/includes/language.php'; ?>
 <?php
 
 header('Location: regisstu.php', true, 302);
@@ -16,7 +15,7 @@ exit;
   <link rel="stylesheet" href="assets/css/regisstu.css" />
   <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme" />
 
-    <link rel="stylesheet" href="assets/css/responsive-language.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
   <div class="bg-grid"></div>
@@ -384,6 +383,6 @@ exit;
 
   <div class="toast" id="toast"></div>
   <script src="assets/js/regisstu.js"></script>
-<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js?v=20261021-session-language" defer></script>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

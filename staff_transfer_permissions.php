@@ -1,4 +1,3 @@
-<?php require_once __DIR__ . '/includes/language.php'; ?>
 <?php
 if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 $staffRole = strtolower(trim((string) ($_SESSION['role'] ?? '')));
@@ -52,7 +51,7 @@ function hTransferPermission(?string $value): string
   <link rel="stylesheet" href="assets/css/staffdash.css?v=20261019-transfer-permissions" />
   <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme" />
   <script src="assets/js/staff_transfer_permissions.js" defer></script>
-    <link rel="stylesheet" href="assets/css/responsive-language.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
   <div class="bg-grid"></div>
@@ -140,6 +139,6 @@ function hTransferPermission(?string $value): string
   </div>
   <div class="toast" id="permissionToast" role="status" aria-live="polite"></div>
   <script>window.transferPermissionCsrf = <?= json_encode($csrfToken, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
-<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js?v=20261021-session-language" defer></script>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

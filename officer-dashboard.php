@@ -1,6 +1,5 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . '/includes/language.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 header('Content-Type: text/html; charset=UTF-8');
 require_once __DIR__ . '/config/db.php';
@@ -98,7 +97,7 @@ $summaryCards = [
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/officer-dashboard.css">
     <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme">
-    <link rel="stylesheet" href="assets/css/responsive-language.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
   <div class="page-shell">
@@ -261,6 +260,6 @@ $summaryCards = [
       setInterval(() => window.location.reload(), 60000);
     })();
   </script>
-<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js?v=20261021-session-language" defer></script>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

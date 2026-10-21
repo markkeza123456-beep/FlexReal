@@ -1,4 +1,3 @@
-<?php require_once __DIR__ . '/includes/language.php'; ?>
 <?php require __DIR__ . '/includes/transcript_review_data.php'; ?>
 <?php
 $pageTitle = 'ตรวจสอบทรานสคริปต์';

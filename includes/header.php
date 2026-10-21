@@ -9,6 +9,6 @@ $pageTitle = (string) ($pageTitle ?? 'Flexible Learning Hub');
     <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
     <link rel="stylesheet" href="assets/css/style.css?v=20261020-design-system-cleanup">
     <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme">
-    <link rel="stylesheet" href="assets/css/responsive-language.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>

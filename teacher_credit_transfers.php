@@ -1,5 +1,5 @@
-<?php require_once __DIR__ . '/includes/language.php'; ?>
 <?php
+if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 require_once __DIR__ . '/check_auth.php';
 
 function hTransfer(?string $value): string
@@ -42,7 +42,7 @@ try {
         .transfer-empty, .transfer-error { padding: 24px; color: var(--text-dim); text-align: center; }
         @media (max-width: 700px) { .transfer-content { padding: 24px 16px; } }
     </style>
-    <link rel="stylesheet" href="assets/css/responsive-language.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
 <aside class="sidebar">
@@ -84,6 +84,6 @@ try {
         </section>
     </div>
 </main>
-<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js?v=20261021-session-language" defer></script>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

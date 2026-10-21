@@ -1,4 +1,3 @@
-<?php require_once __DIR__ . '/includes/language.php'; ?>
 <?php
 if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?? ''))) !== 'staff') {
@@ -14,7 +13,7 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
   <title>จัดการวิดีโอรายวิชา | NEXORA</title>
   <link rel="stylesheet" href="assets/css/staff_subject_editor.css" />
   <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme" />
-    <link rel="stylesheet" href="assets/css/responsive-language.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
   <div class="bg-grid"></div><div class="glow-orb orb-1"></div><div class="glow-orb orb-2"></div>
@@ -53,6 +52,6 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
     </section>
     <section class="panel error-panel" id="errorPanel" hidden><div class="error-body" id="errorMessage"></div></section>
   </main><div class="toast" id="toast"></div><script src="assets/js/staff_video_editor.js"></script>
-<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js?v=20261021-session-language" defer></script>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

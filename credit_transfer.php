@@ -1,4 +1,3 @@
-<?php require_once __DIR__ . '/includes/language.php'; ?>
 <?php
 if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 require_once __DIR__ . '/config/db.php';
@@ -32,7 +31,7 @@ try {
     <link rel="stylesheet" href="assets/css/credit_transfer.css">
     <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme">
     <script src="assets/js/credit_transfer.js" defer></script>
-    <link rel="stylesheet" href="assets/css/responsive-language.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
     <main class="transfer-page">
@@ -58,6 +57,6 @@ try {
             </form>
         </section>
     </main>
-<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js?v=20261021-session-language" defer></script>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

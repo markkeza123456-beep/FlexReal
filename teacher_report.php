@@ -1,6 +1,5 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . '/includes/language.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 if (($_SESSION['role'] ?? '') !== 'teacher' || empty($_SESSION['user_id'])) {
     http_response_code(isset($_SESSION['user_id']) ? 403 : 401);
@@ -277,7 +276,7 @@ function teacherReportEscape(mixed $value): string { return htmlspecialchars((st
         .report-table th,.report-table td{padding:12px 14px;border-bottom:1px solid #eaeaea}.report-table thead th{background:#f8fafc}.report-table tbody tr:nth-child(even){background:#fcfcfd}.report-table .center{text-align:center!important;vertical-align:middle}.course-group-cell{vertical-align:middle;background:#f8fafc;font-weight:500}.tr-score-cell{text-align:center!important;vertical-align:middle;color:#475569;background:transparent!important}.transfer-note{display:inline-block;padding:4px 9px;border:1px solid #dbe3ef;border-radius:999px;background:#f8fafc;color:#475569;font-size:11px;font-weight:500;white-space:nowrap}.total-subnote{display:block;color:var(--muted);font-size:10px;white-space:nowrap}
         @media print{ @page{size:A4 landscape;margin:12mm}body{background:#fff;color:#111;font-size:10pt}.wrap{width:100%;padding:0}.top{margin-bottom:10px}.top h1{font-size:19pt}.actions{display:none}.identity,.panel,.kpi{box-shadow:none;border-color:#cbd5e1;break-inside:avoid}.identity{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.kpis{gap:8px;margin:8px 0}.kpi{padding:10px}.kpi-value{font-size:20pt}.panel{padding:12px;margin:9px 0}.table-wrap{overflow:visible}table{min-width:0;font-size:8pt}th,td{padding:6px 7px}.badge-list{min-width:0}.badge{font-size:7pt;padding:2px 5px}.student-group-cell{background:transparent}.panel table{break-inside:auto}tr{break-inside:avoid;break-after:auto}thead{display:table-header-group}a{color:inherit;text-decoration:none}}
     </style>
-    <link rel="stylesheet" href="assets/css/responsive-language.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body class="<?= $isEmbedded ? 'embed' : '' ?>">
 <main class="wrap">
@@ -322,6 +321,6 @@ function teacherReportEscape(mixed $value): string { return htmlspecialchars((st
     </section>
     <p class="footnote">คะแนนเฉลี่ยของนักเรียนคำนวณเป็นเปอร์เซ็นต์จากผลสอบล่าสุดรายบท · TR นับเป็นบทเรียนสำเร็จ</p>
 </main>
-<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js?v=20261021-session-language" defer></script>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

@@ -1,4 +1,3 @@
-<?php require_once __DIR__ . '/includes/language.php'; ?>
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -374,7 +373,7 @@ $stats = [
         @media (max-width: 760px) { .course-content-editor { grid-template-columns: 1fr !important; } }
     </style>
     <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme">
-    <link rel="stylesheet" href="assets/css/responsive-language.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
 <aside class="sidebar">
@@ -1563,6 +1562,6 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 </script>
 
     <script src="assets/js/teacherdash.js?v=20261020-integer-question-scores"></script>
-<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js?v=20261021-session-language" defer></script>
+<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>
