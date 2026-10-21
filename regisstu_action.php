@@ -1,16 +1,20 @@
 <?php
 session_start();
-require_once __DIR__ . '/config/db.php';
-require_once __DIR__ . '/registration_lib.php';
-require_once __DIR__ . '/registration_mailer.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
     header('Location: regisstu.php');
     exit;
 }
 
 try {
+    require_once __DIR__ . '/config/db.php';
+    require_once __DIR__ . '/registration_lib.php';
+    require_once __DIR__ . '/registration_mailer.php';
+
+    error_log('[auth.register] request received');
     $registration = validateRegistrationPayload($conn, $_POST);
+    error_log('[auth.register] validation passed');
     $otp = (string) random_int(100000, 999999);
 
     session_regenerate_id(true);
@@ -26,15 +30,25 @@ try {
 
     try {
         sendRegistrationOtp($registration['email'], $registration['full_name'], $otp);
+        error_log('[auth.register] OTP delivery accepted');
     } catch (Throwable $mailError) {
         unset($_SESSION['pending_registration']);
-        error_log('Registration OTP email failed: ' . $mailError->getMessage());
-        throw new RuntimeException('ส่งอีเมล OTP ไม่สำเร็จ กรุณาตรวจสอบอีเมลและลองใหม่');
+        error_log('[auth.register] OTP delivery failed: ' . get_class($mailError));
+        throw new RuntimeException('ส่งอีเมล OTP ไม่สำเร็จ กรุณาตรวจสอบอีเมลและลองใหม่', 502, $mailError);
     }
 
+    error_log('[auth.register] awaiting OTP verification');
     header('Location: registration_otp.php');
     exit;
 } catch (Throwable $error) {
-    $message = json_encode($error->getMessage(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+    $sqlState = $error instanceof PDOException ? (string) $error->getCode() : '';
+    $status = $error instanceof PDOException ? ($sqlState === '23505' ? 409 : 500) : ((int) $error->getCode() >= 400 ? (int) $error->getCode() : 422);
+    $messageText = $status === 500
+        ? 'ระบบสมัครสมาชิกขัดข้อง กรุณาลองใหม่ภายหลัง'
+        : ($status === 409 ? 'เลขบัตรประชาชนหรืออีเมลนี้ถูกใช้แล้ว' : $error->getMessage());
+    error_log('[auth.register] failed with HTTP ' . $status . ' (' . get_class($error) . ')');
+    http_response_code($status);
+    header('Content-Type: text/html; charset=utf-8');
+    $message = json_encode($messageText, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
     echo "<!doctype html><html lang='th'><meta charset='utf-8'><script>alert({$message});history.back();</script></html>";
 }

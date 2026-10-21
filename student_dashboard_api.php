@@ -70,7 +70,7 @@ try {
 
     $studentStmt = $conn->prepare(
         'SELECT s.user_id, s.full_name, s.email, s.phone, s.avatar_url,
-                COALESCE(NULLIF(TRIM(student_level), \'\'), NULLIF(TRIM(education_level), \'\'), \'-\') AS class_name
+                COALESCE(NULLIF(TRIM(student_level), \'\'), \'-\') AS class_name
                 , COALESCE(a.address_line, \'\') AS address_line, COALESCE(a.subdistrict, \'\') AS subdistrict,
                   COALESCE(a.district, \'\') AS district, COALESCE(a.province, \'\') AS province,
                   COALESCE(a.postal_code, \'\') AS postal_code

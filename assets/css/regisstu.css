@@ -402,6 +402,9 @@ body {
   color: var(--text-muted);
   width: 20px; height: 20px;
   display: flex; align-items: center; justify-content: center;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
   transition: color var(--transition);
   z-index: 1;
 }

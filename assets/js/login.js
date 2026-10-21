@@ -129,7 +129,6 @@
       event.preventDefault();
       const isPassword = pwInput.type === 'password';
       pwInput.type = isPassword ? 'text' : 'password';
-      togglePwBtn.style.opacity = isPassword ? '1' : '0.5';
     });
   }
 

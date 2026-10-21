@@ -118,11 +118,6 @@ function ensureCourseWorkTables(PDO $conn): void
         teacher_id varchar(50) NOT NULL REFERENCES public.teachers(user_id), title varchar(255) NOT NULL, description text NOT NULL DEFAULT '',
         due_at timestamptz NOT NULL, max_score numeric(7,2) NOT NULL DEFAULT 10, created_at timestamptz NOT NULL DEFAULT now()
     )");
-    $conn->exec("CREATE TABLE IF NOT EXISTS public.assignment_submissions (
-        submission_id BIGSERIAL PRIMARY KEY, assignment_id bigint NOT NULL REFERENCES public.course_assignments(assignment_id) ON DELETE CASCADE,
-        student_id varchar(50) NOT NULL REFERENCES public.students(user_id), note text NOT NULL DEFAULT '', file_url text, status varchar(20) NOT NULL DEFAULT 'submitted',
-        submitted_at timestamptz NOT NULL DEFAULT now(), reviewed_at timestamptz, UNIQUE(assignment_id, student_id)
-    )");
     $conn->exec("CREATE TABLE IF NOT EXISTS public.course_announcements (
         announcement_id BIGSERIAL PRIMARY KEY, course_id bigint NOT NULL REFERENCES public.courses(course_id) ON DELETE CASCADE,
         teacher_id varchar(50) NOT NULL REFERENCES public.teachers(user_id), title varchar(255) NOT NULL, body text NOT NULL DEFAULT '', created_at timestamptz NOT NULL DEFAULT now()
@@ -342,7 +337,7 @@ try {
     if ($action === 'get_course_work') {
         $subjectId = trim((string) ($_POST['subject_id'] ?? ''));
         if ($subjectId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) throw new Exception('คุณไม่มีสิทธิ์จัดการรายวิชานี้');
-        $assignments = $conn->prepare("SELECT a.assignment_id, a.title, a.description, a.due_at, a.max_score, COUNT(s.submission_id) AS submission_count, COUNT(s.submission_id) FILTER (WHERE s.status = 'submitted') AS pending_count FROM public.course_assignments a LEFT JOIN public.assignment_submissions s ON s.assignment_id = a.assignment_id WHERE a.course_id = :course_id AND a.teacher_id = :teacher_id GROUP BY a.assignment_id ORDER BY a.due_at ASC");
+        $assignments = $conn->prepare("SELECT a.assignment_id, a.title, a.description, a.due_at, a.max_score, 0 AS submission_count, 0 AS pending_count FROM public.course_assignments a WHERE a.course_id = :course_id AND a.teacher_id = :teacher_id ORDER BY a.due_at ASC");
         $assignments->execute([':course_id' => $subjectId, ':teacher_id' => $teacherId]);
         $announcements = $conn->prepare('SELECT announcement_id, title, body, created_at FROM public.course_announcements WHERE course_id = :course_id AND teacher_id = :teacher_id ORDER BY created_at DESC');
         $announcements->execute([':course_id' => $subjectId, ':teacher_id' => $teacherId]);

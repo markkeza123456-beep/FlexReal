@@ -723,7 +723,6 @@ try {
                 $conn->prepare('DELETE FROM public.learning_events WHERE student_id = :id')->execute([':id' => $memberId]);
                 $conn->prepare('DELETE FROM public.student_curricula WHERE student_id = :id')->execute([':id' => $memberId]);
                 $conn->prepare('DELETE FROM public.student_courses WHERE student_id = :id')->execute([':id' => $memberId]);
-                $conn->prepare('DELETE FROM public.assignment_submissions WHERE student_id = :id')->execute([':id' => $memberId]);
                 $conn->prepare('DELETE FROM public.quiz_attempts WHERE student_id = :id')->execute([':id' => $memberId]);
             } elseif ($target['role'] === 'teacher') {
                 $conn->prepare('DELETE FROM public.course_teachers WHERE teacher_id = :id')->execute([':id' => $memberId]);

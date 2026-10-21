@@ -405,6 +405,10 @@ body {
   color: var(--text-muted);
   width: 20px; height: 20px;
   display: flex; align-items: center; justify-content: center;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  z-index: 1;
   transition: color var(--transition);
 }
 .toggle-pw:hover { color: var(--text-primary); }

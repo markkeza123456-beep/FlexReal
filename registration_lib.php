@@ -3,7 +3,7 @@
 function validateRegistrationPayload(PDO $conn, array $post): array
 {
     $role = strtolower(trim((string) ($post['role'] ?? '')));
-    $userId = preg_replace('/\D+/', '', trim((string) ($post['userid'] ?? '')));
+    $userId = str_replace(['-', ' ', "\t", "\r", "\n"], '', trim((string) ($post['userid'] ?? '')));
     $password = (string) ($post['password'] ?? '');
     $firstName = trim((string) ($post['firstname'] ?? $post['fullname'] ?? ''));
     $lastName = trim((string) ($post['lastname'] ?? ''));
@@ -11,7 +11,7 @@ function validateRegistrationPayload(PDO $conn, array $post): array
     $email = strtolower(trim((string) ($post['email'] ?? '')));
     $phone = preg_replace('/\D+/', '', (string) ($post['phone'] ?? ''));
     $level = trim((string) ($post['level'] ?? ''));
-    $studentId = preg_replace('/\D+/', '', trim((string) ($post['link_student_id'] ?? '')));
+    $studentId = str_replace(['-', ' ', "\t", "\r", "\n"], '', trim((string) ($post['link_student_id'] ?? '')));
     $address = trim((string) ($post['house'] ?? ''));
     $subdistrict = trim((string) ($post['tambon'] ?? ''));
     $district = trim((string) ($post['amphoe'] ?? ''));
@@ -19,7 +19,7 @@ function validateRegistrationPayload(PDO $conn, array $post): array
     $postalCode = preg_replace('/\D+/', '', (string) ($post['zipcode'] ?? ''));
 
     if (!in_array($role, ['student', 'teacher', 'parent'], true)) throw new RuntimeException('กรุณาเลือกบทบาทสมาชิกให้ถูกต้อง');
-    if (strlen($userId) !== 13 || !preg_match('/^[0-9]{13}$/', $userId)) throw new RuntimeException('เลขบัตรประชาชนต้องมีตัวเลข 13 หลัก');
+    if (!preg_match('/^[0-9]{13}$/', $userId)) throw new RuntimeException('เลขบัตรประชาชนต้องมีตัวเลข 13 หลัก');
     if ($fullName === '') throw new RuntimeException('กรุณากรอกชื่อและนามสกุล');
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('กรุณากรอกอีเมลที่ถูกต้องเพื่อรับ OTP');
     if (strlen($phone) !== 10) throw new RuntimeException('เบอร์โทรศัพท์ต้องมี 10 หลัก');
@@ -27,7 +27,7 @@ function validateRegistrationPayload(PDO $conn, array $post): array
     if (!preg_match('/^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}$/', $password)) throw new RuntimeException('รหัสผ่านต้องมีตัวอักษรภาษาอังกฤษและตัวเลข 8-15 ตัว');
     if ($password !== (string) ($post['confirm'] ?? '')) throw new RuntimeException('รหัสผ่านไม่ตรงกัน');
     if ($role === 'student' && $level === '') throw new RuntimeException('กรุณาเลือกระดับชั้น');
-    if ($role === 'parent' && $studentId !== '' && strlen($studentId) !== 13) throw new RuntimeException('เลขประจำตัวนักเรียนต้องมี 13 หลัก');
+    if ($role === 'parent' && $studentId !== '' && !preg_match('/^[0-9]{13}$/', $studentId)) throw new RuntimeException('เลขประจำตัวนักเรียนต้องมี 13 หลัก');
     if ($role === 'parent' && $studentId !== '') {
         $studentCheck = $conn->prepare('SELECT 1 FROM public.students WHERE user_id = :id');
         $studentCheck->execute([':id' => $studentId]);
