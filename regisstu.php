@@ -40,31 +40,21 @@ try {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/regisstu.css" />
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-home-palette" />
+  <link rel="stylesheet" href="assets/css/regisstu.css?v=20261021-login-theme" />
+  <link rel="stylesheet" href="assets/css/login.css?v=20261021-register-match-login" />
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
-<body>
+<body class="register-page">
   <div class="bg-grid"></div>
   <div class="glow-orb orb-1"></div>
   <div class="glow-orb orb-2"></div>
 
   <div class="container">
+    <div class="brand brand-flh">
+      <img class="brand-flh-logo" src="images/flexible-learning-hub-logo-transparent.png?v=20261021-transparent-horizontal-cropped" alt="Flexible Learning Hub" width="606" height="199" fetchpriority="high" />
+    </div>
     <div class="card">
       <div class="card-accent"></div>
-
-      <div class="brand">
-        <div class="brand-icon">
-          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <polygon points="20,2 38,12 38,28 20,38 2,28 2,12" fill="none" stroke="currentColor" stroke-width="2"/>
-            <circle cx="20" cy="20" r="4" fill="currentColor"/>
-          </svg>
-        </div>
-        <div class="brand-text">
-          <span class="brand-name">FLEXIBLE</span>
-          <span class="brand-sub">LEARNING HUB</span>
-        </div>
-      </div>
 
       <h1 class="title">สมัครสมาชิก</h1>
       <p class="subtitle">เลือกบทบาทแล้วกรอกข้อมูลเพื่อสร้างบัญชี</p>
@@ -237,8 +227,8 @@ try {
         </button>
       </form>
 
-      <div class="back-row">มีบัญชีแล้ว? <a href="login.php" class="link">เข้าสู่ระบบ</a></div>
     </div>
+    <div class="back-row">มีบัญชีอยู่แล้ว? <a href="login.php" class="link">เข้าสู่ระบบ</a></div>
   </div>
   <div class="toast" id="toast"></div>
   <script src="assets/js/regisstu.js"></script>
