@@ -145,18 +145,18 @@
 
   function bindIdCardFormat(input) {
     input?.addEventListener('input', () => {
-      let value = input.value.replace(/\D/g, '');
-      if (value.length > 13) {
-        input.value = value;
+      const digits = input.value.replace(/\D/g, '');
+      if (digits.length > 13) {
+        input.value = digits;
         return;
       }
-      let output = '';
-      if (value.length > 0) output += value.slice(0, 1);
-      if (value.length > 1) output += '-' + value.slice(1, 5);
-      if (value.length > 5) output += '-' + value.slice(5, 10);
-      if (value.length > 10) output += '-' + value.slice(10, 12);
-      if (value.length > 12) output += '-' + value.slice(12, 13);
-      input.value = output;
+      let formatted = '';
+      if (digits.length > 0) formatted += digits.slice(0, 1);
+      if (digits.length > 1) formatted += '-' + digits.slice(1, 5);
+      if (digits.length > 5) formatted += '-' + digits.slice(5, 10);
+      if (digits.length > 10) formatted += '-' + digits.slice(10, 12);
+      if (digits.length > 12) formatted += '-' + digits.slice(12, 13);
+      input.value = formatted;
     });
   }
 
@@ -293,11 +293,6 @@
       valid = setError('field-lastname', 'lastname-error', 'กรุณากรอกนามสกุล') && valid;
     }
 
-    const idCard = valueOf('idcard').replace(/\D/g, '');
-    if (idCard.length !== 13) {
-      valid = setError('field-idcard', 'idcard-error', 'เลขบัตรประชาชนต้องมี 13 หลัก') && valid;
-    }
-
     if (currentRole === 'student' && !valueOf('level')) {
       valid = setError('field-level', 'level-error', 'กรุณาเลือกระดับชั้น') && valid;
     }
@@ -379,12 +374,7 @@
 
 
     if (currentRole === 'parent' && document.getElementById('parentPinWrap')) {
-      const linkedStudentId = valueOf('link_student_id').replace(/\D/g, '');
       const linkedStudentPin = collectPin('parentPinWrap');
-
-      if (linkedStudentId.length !== 13) {
-        valid = setError('field-link-student-id', 'link-student-id-error', 'รหัสบัตรประชาชนนักเรียนต้องมี 13 หลัก') && valid;
-      }
 
       if (linkedStudentPin.length !== 6) {
         valid = setError('field-link-student-pin', 'link-student-pin-error', 'PIN นักเรียนต้องมี 6 หลัก') && valid;

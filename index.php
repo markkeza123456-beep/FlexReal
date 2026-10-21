@@ -98,7 +98,6 @@ $hubInstructorName = trim((string) ($hubInstructor['full_name'] ?? '')) ?: 'ย�
 $hubInstructorContact = implode(' · ', array_filter([trim((string) ($hubInstructor['email'] ?? '')), trim((string) ($hubInstructor['phone'] ?? ''))]));
 $hubInstructorInfo = 'อาจารย์ผู้สอนประจำรายวิชา' . ($hubInstructorContact !== '' ? ' · ' . $hubInstructorContact : '');
 $hubDetailActive = $hubCourse !== null;
-$hubCourseImage = $hubDetailActive ? hubCourseImagePath($hubCourse) : null;
 $hubClientCourses = array_map(static fn(array $course): array => [
     'course_id' => $course['course_id'] ?? '',
     'name' => $course['name'] ?? '',
@@ -230,8 +229,6 @@ $hubClientCourse = $hubCourse ? [
     <h1 id="detail-title" class="course-page-title"><?= hubEscape($hubCourse['name'] ?? 'ชื่อวิชา') ?></h1>
     
     <p id="detail-desc-top" class="course-page-subtitle"><?= $hubDetailActive ? 'รายละเอียดเบื้องต้น' : 'รายละเอียดเบื้องต้นของวิชา...' ?></p>
-    <?php if ($hubDetailActive): ?><?php if ($hubCourseImage !== null): ?><img id="detail-course-image" class="course-detail-cover" src="<?= hubEscape($hubCourseImage) ?>" alt="ภาพปกวิชา <?= hubEscape($hubCourse['name']) ?>" loading="lazy"><?php else: ?><div id="detail-course-image" class="course-cover-placeholder course-detail-cover" role="img" aria-label="ไม่มีภาพปกวิชา"><i class="fa-solid fa-book-open" aria-hidden="true"></i></div><?php endif; ?><?php endif; ?>
-    
                 <div class="tabs">
                     <button class="tab-btn active" onclick="openTab(event, 'overview')">รายละเอียด</button>
                     <button class="tab-btn" onclick="openTab(event, 'curriculum')">เนื้อหาในคอร์ส</button>

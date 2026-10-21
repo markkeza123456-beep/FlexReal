@@ -49,7 +49,7 @@
                 <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6"/><circle cx="16" cy="14" r="2"/>
               </svg>
             </span>
-            <input type="text" id="email" name="email" placeholder="กรอกรหัสบัตรประชาชน" autocomplete="off" />
+            <input type="text" id="email" name="email" placeholder="กรอกรหัสบัตรประชาชน" maxlength="17" autocomplete="off" />
             <span class="focus-bar"></span>
           </div>
           <span class="error-msg" id="email-error"></span>
