@@ -7,6 +7,10 @@
   const csrfToken = form.querySelector('[name="csrf_token"]').value;
   let countdown = Number(resendButton.dataset.resendIn || 0);
 
+  function updateVerifyButton() {
+    verifyButton.disabled = !/^[0-9]{6}$/.test(otpInput.value);
+  }
+
   function setMessage(text, isError = true) {
     message.textContent = text;
     message.style.color = isError ? '#b42318' : '#087e8b';
@@ -27,7 +31,9 @@
 
   otpInput.addEventListener('input', () => {
     otpInput.value = otpInput.value.replace(/\D/g, '').slice(0, 6);
+    updateVerifyButton();
   });
+  updateVerifyButton();
 
   async function sendAction(action, otp = '') {
     const body = new FormData();
@@ -76,6 +82,7 @@
       const result = await sendAction('resend');
       countdown = Number(result.retry_after || 60);
       otpInput.value = '';
+      updateVerifyButton();
       setMessage(result.message, false);
     } catch (error) {
       setMessage(error.message);
