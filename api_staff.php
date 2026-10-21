@@ -369,9 +369,23 @@ try {
             break;
 
         case 'deleteSubject':
-            $subjectId = $_POST['id'] ?? '';
-            $statement = $conn->prepare("DELETE FROM public.courses WHERE course_id = :id");
-            $statement->execute([':id' => $subjectId]);
+            $subjectId = trim((string) ($_POST['id'] ?? ''));
+            if ($subjectId === '') { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
+
+            $conn->beginTransaction();
+            $exists = $conn->prepare('SELECT 1 FROM public.courses WHERE course_id = :id FOR UPDATE');
+            $exists->execute([':id' => $subjectId]);
+            if (!$exists->fetchColumn()) {
+                $conn->rollBack();
+                jsonResponse(['status' => 'error', 'message' => 'ไม่พบรายวิชาที่ต้องการลบ'], 404);
+            }
+
+            $conn->prepare('DELETE FROM public.transcript_request_lessons WHERE lesson_id IN (SELECT lesson_id FROM public.lessons WHERE course_id = :id)')->execute([':id' => $subjectId]);
+            $conn->prepare('DELETE FROM public.quiz_attempts WHERE lesson_id IN (SELECT lesson_id FROM public.lessons WHERE course_id = :id)')->execute([':id' => $subjectId]);
+            $conn->prepare('DELETE FROM public.curriculum_courses WHERE course_id = :id')->execute([':id' => $subjectId]);
+            $conn->prepare('DELETE FROM public.student_courses WHERE course_id = :id')->execute([':id' => $subjectId]);
+            $conn->prepare('DELETE FROM public.courses WHERE course_id = :id')->execute([':id' => $subjectId]);
+            $conn->commit();
             jsonResponse(['status' => 'success']);
             break;
 
@@ -448,9 +462,21 @@ try {
             break;
 
         case 'deleteCurriculum':
-            $curriculumId = $_POST['id'] ?? '';
-            $statement = $conn->prepare("DELETE FROM public.curricula WHERE curriculum_id = :id");
-            $statement->execute([':id' => $curriculumId]);
+            $curriculumId = trim((string) ($_POST['id'] ?? ''));
+            if ($curriculumId === '') { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
+
+            $conn->beginTransaction();
+            $exists = $conn->prepare('SELECT 1 FROM public.curricula WHERE curriculum_id = :id FOR UPDATE');
+            $exists->execute([':id' => $curriculumId]);
+            if (!$exists->fetchColumn()) {
+                $conn->rollBack();
+                jsonResponse(['status' => 'error', 'message' => 'ไม่พบหลักสูตรที่ต้องการลบ'], 404);
+            }
+
+            $conn->prepare('DELETE FROM public.student_curricula WHERE curriculum_id = :id')->execute([':id' => $curriculumId]);
+            $conn->prepare('DELETE FROM public.curriculum_courses WHERE curriculum_id = :id')->execute([':id' => $curriculumId]);
+            $conn->prepare('DELETE FROM public.curricula WHERE curriculum_id = :id')->execute([':id' => $curriculumId]);
+            $conn->commit();
             jsonResponse(['status' => 'success']);
             break;
 
@@ -533,10 +559,22 @@ try {
             break;
 
         case 'deleteLesson':
-            $lessonId = $_POST['id'] ?? '';
-            $subjectId = $_POST['subject_id'] ?? '';
-            $statement = $conn->prepare("DELETE FROM public.lessons WHERE lesson_id = :id AND course_id = :subject_id");
-            $statement->execute([':id' => $lessonId, ':subject_id' => $subjectId]);
+            $lessonId = trim((string) ($_POST['id'] ?? ''));
+            $subjectId = trim((string) ($_POST['subject_id'] ?? ''));
+            if ($lessonId === '' || $subjectId === '') { jsonResponse(['status' => 'error', 'message' => 'Missing lesson ID'], 400); }
+
+            $conn->beginTransaction();
+            $exists = $conn->prepare('SELECT 1 FROM public.lessons WHERE lesson_id = :id AND course_id = :course_id FOR UPDATE');
+            $exists->execute([':id' => $lessonId, ':course_id' => $subjectId]);
+            if (!$exists->fetchColumn()) {
+                $conn->rollBack();
+                jsonResponse(['status' => 'error', 'message' => 'ไม่พบบทเรียนที่ต้องการลบ'], 404);
+            }
+
+            $conn->prepare('DELETE FROM public.transcript_request_lessons WHERE lesson_id = :id')->execute([':id' => $lessonId]);
+            $conn->prepare('DELETE FROM public.quiz_attempts WHERE lesson_id = :id')->execute([':id' => $lessonId]);
+            $conn->prepare('DELETE FROM public.lessons WHERE lesson_id = :id AND course_id = :course_id')->execute([':id' => $lessonId, ':course_id' => $subjectId]);
+            $conn->commit();
             jsonResponse(['status' => 'success']);
             break;
 

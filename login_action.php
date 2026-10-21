@@ -3,7 +3,7 @@ session_start(); header('Content-Type: application/json; charset=utf-8');
 try {
     require_once __DIR__ . '/config/db.php'; require_once __DIR__ . '/curriculum_subjects_lib.php';
     $role = strtolower(trim((string) ($_POST['role'] ?? ''))); $id = preg_replace('/\D+/', '', trim((string) ($_POST['email'] ?? ''))); $password = (string) ($_POST['password'] ?? '');
-    if (!in_array($role, ['student', 'parent', 'teacher', 'staff'], true) || $id === '' || $password === '') throw new RuntimeException('กรุณากรอกข้อมูลให้ครบถ้วน');
+    if (!in_array($role, ['student', 'parent', 'teacher', 'staff'], true) || strlen($id) !== 13 || $password === '') throw new RuntimeException('กรุณากรอกเลขบัตรประชาชน 13 หลักและรหัสผ่านให้ครบถ้วน');
     $profile = match ($role) {
         'student' => 'SELECT full_name AS name, student_level, NULL::varchar AS student_id FROM public.students WHERE user_id = u.user_id',
         'parent' => 'SELECT p.full_name AS name, NULL::varchar AS student_level, (SELECT s.user_id FROM public.students s WHERE s.parent_user_id = u.user_id LIMIT 1) AS student_id FROM public.parents p WHERE p.user_id = u.user_id',

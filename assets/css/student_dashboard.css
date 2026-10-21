@@ -138,7 +138,6 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .avatar-picker {
     position: relative;
     flex-shrink: 0;
-    cursor: pointer;
 }
 
 .avatar-large {

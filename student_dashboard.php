@@ -179,18 +179,16 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
                         <h2 class="settings-card-title">&#128100; โปรไฟล์</h2>
 
                         <div class="avatar-section">
-                            <div class="avatar-picker" onclick="document.getElementById('avatarInput').click()" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
+                            <div class="avatar-picker" title="รูปโปรไฟล์">
                                 <div class="avatar-large" id="avatarDisplay">
                                     <img id="avatarImg" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%">
                                     <span id="avatarInitial">-</span>
                                 </div>
-                                <div class="avatar-edit-badge">&#9999;&#65039;</div>
-                                <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="previewAvatar(this)">
                             </div>
                             <div class="avatar-info">
                                 <div class="avatar-name" id="displayName">กำลังโหลด...</div>
                                 <div class="avatar-role" id="profileRole">-</div>
-                                <div class="avatar-hint">คลิกที่รูปเพื่อเปลี่ยน</div>
+                                <div class="avatar-hint">รูปโปรไฟล์</div>
                             </div>
                         </div>
 

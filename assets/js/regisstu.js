@@ -145,7 +145,11 @@
 
   function bindIdCardFormat(input) {
     input?.addEventListener('input', () => {
-      let value = input.value.replace(/\D/g, '').slice(0, 13);
+      let value = input.value.replace(/\D/g, '');
+      if (value.length > 13) {
+        input.value = value;
+        return;
+      }
       let output = '';
       if (value.length > 0) output += value.slice(0, 1);
       if (value.length > 1) output += '-' + value.slice(1, 5);

@@ -295,7 +295,7 @@ $hubClientCourse = $hubCourse ? [
                 <div id="learning-overview" class="learning-tab-content">
                     <div class="info-card section-info-card">
                         <h3 class="section-title subsection-title">คำอธิบายรายวิชา</h3>
-                        <p id="learning-desc">เริ่มต้นเรียนรู้และพัฒนาทักษะไปกับหลักสูตรคุณภาพจากผู้เชี่ยวชาญ</p>
+                        <p id="learning-desc"><?= hubEscape(trim((string) ($hubCourse['description'] ?? '')) ?: 'ยังไม่มีคำอธิบาย') ?></p>
                     </div>
                 </div>
 

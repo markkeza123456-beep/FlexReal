@@ -23,7 +23,8 @@
   }
 
   function formatIdCard(value) {
-    const digits = value.replace(/\D/g, '').slice(0, 13);
+    const digits = value.replace(/\D/g, '');
+    if (digits.length > 13) return digits;
     let output = '';
     if (digits.length > 0) output += digits.slice(0, 1);
     if (digits.length > 1) output += '-' + digits.slice(1, 5);
@@ -85,7 +86,12 @@
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    if (!loginInput.value.trim() || pwInput.value.length < 6) {
+    const idDigits = loginInput.value.replace(/\D/g, '');
+    if (idDigits.length !== 13) {
+      showToast('เลขบัตรประชาชนต้องมี 13 หลัก', 'error-toast');
+      return;
+    }
+    if (pwInput.value.length < 6) {
       showToast('กรุณากรอกข้อมูลให้ครบถ้วน (รหัสผ่านอย่างน้อย 6 ตัว)', 'error-toast');
       return;
     }

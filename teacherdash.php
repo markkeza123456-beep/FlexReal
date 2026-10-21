@@ -1014,13 +1014,12 @@ $stats = [
                                 <span id="settingsAvatarInitial"><?= h($teacher['avatar']) ?></span>
                             <?php endif; ?>
                         </div>
-                        <button onclick="document.getElementById('avatarFileInput').click()" style="position:absolute;bottom:0;right:0;width:26px;height:26px;border-radius:50%;background:var(--orange);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;" title="เปลี่ยนรูป">️ </button>
-                        <input type="file" id="avatarFileInput" accept="image/*" style="display:none">
+                        <input type="file" id="avatarFileInput" accept="image/*" style="display:none" disabled>
                     </div>
                     <div>
                         <div style="font-size:17px;font-weight:700;color:var(--text);"><?= h($teacher['name']) ?></div>
                         <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">อาจารย์ผู้สอน</div>
-                        <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">คลิกที่รูปเพื่อเปลี่ยน</div>
+                        <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">รูปโปรไฟล์</div>
                     </div>
                 </div>
 
