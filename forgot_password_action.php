@@ -3,13 +3,7 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/config/db.php';
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
-
-require 'PHPMailer/Exception.php';
-require 'PHPMailer/PHPMailer.php';
-require 'PHPMailer/SMTP.php';
+require_once __DIR__ . '/registration_mailer.php';
 
 $email = strtolower(trim((string) ($_POST['email'] ?? '')));
 
@@ -50,21 +44,7 @@ try {
         $stmt_token->execute(['uid' => $user['user_id'], 'token_hash' => password_hash($token, PASSWORD_DEFAULT), 'exp' => $expires_at]);
 
 
-        $mail = new PHPMailer(true);
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
-        $mail->SMTPAuth   = true;
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-        $mail->Port       = 465;
-        $mail->CharSet    = 'UTF-8';
-
-
-        $mail->Username   = 'markkeza123456@gmail.com';
-        $mail->Password   = 'lprq ixqu ugye ayph';
-        $mail->setFrom('markkeza123456@gmail.com', 'Flexible Learning Hub');
-
-        $mail->addAddress($email);
-
+        $mail = createFlexibleMailer($email);
 
         $mail->isHTML(true);
         $mail->Subject = 'รีเซ็ตรหัสผ่านบัญชีของคุณ - Flexible Learning Hub';

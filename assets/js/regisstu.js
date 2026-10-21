@@ -298,8 +298,8 @@
     }
 
     const email = valueOf('email');
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      valid = setError('field-email', 'email-error', 'กรุณากรอกอีเมลให้ถูกต้อง') && valid;
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      valid = setError('field-email', 'email-error', 'กรุณากรอกอีเมลที่ถูกต้องเพื่อรับ OTP') && valid;
     }
 
     const phone = valueOf('phone').replace(/\D/g, '');
@@ -396,7 +396,7 @@
 
     const fullnameHidden = document.getElementById('fullnameHidden');
     if (fullnameHidden) {
-      fullnameHidden.value = (valueOf('firstname') + ' ' + valueOf('lastname')).trim();
+      fullnameHidden.value = valueOf('firstname');
     }
 
     setLoading(true);
