@@ -214,7 +214,7 @@ body {
 .staff-profile-page-header { width: min(100%, 620px); margin: 0 auto 24px; justify-content: flex-start; text-align: left; }
 .staff-profile-page-header > div { width: 100%; }
 .staff-profile-page-header .page-title, .staff-profile-page-header .page-sub { font-family: 'Kanit', sans-serif; letter-spacing: 0; }
-.form-card.staff-profile-page-card { width: min(100%, 620px); max-width: 620px; padding: 20px; margin: 0 auto; box-sizing: border-box; font-family: 'Kanit', sans-serif; }
+.form-card.staff-profile-page-card { width: min(100%, 620px); max-width: 620px; padding: 20px; margin: 0 auto 18px; box-sizing: border-box; font-family: 'Kanit', sans-serif; }
 .staff-profile-card-title { margin: 0 0 20px; color: var(--text-primary); font-size: 1rem; font-weight: 600; }
 .staff-profile-identity { display: flex; align-items: center; gap: 20px; padding-bottom: 22px; margin-bottom: 22px; border-bottom: 1px solid var(--border); }
 .staff-profile-identity h2 { margin: 0; font-size: 1.35rem; font-weight: 700; }
@@ -225,7 +225,8 @@ body {
 .staff-profile-avatar:focus-visible { outline: 3px solid rgba(var(--brand-400-rgb),.4); outline-offset: 3px; }
 .staff-profile-input { width: 100%; min-width: 0; padding: 11px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text-primary); font: inherit; }
 .staff-profile-input:focus { outline: 2px solid rgba(var(--brand-400-rgb),.3); border-color: var(--brand-400); }
-.staff-password-section { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); }
+.staff-password-section { display: flex; flex-direction: column; gap: 14px; }
+.staff-profile-page-card .staff-password-section { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); }
 .staff-password-title { margin-bottom: 2px; color: var(--text-muted); font-size: .82rem; font-weight: 600; }
 .staff-password-input-wrap { position: relative; display: block; }
 .staff-password-input-wrap .staff-profile-input { padding-right: 58px; }
@@ -237,6 +238,10 @@ body {
 .staff-password-match { min-height: 1em; font-size: .72rem; }
 .staff-profile-message { min-height: 1.25em; margin-top: 12px; color: var(--red); font-size: .82rem; }
 .staff-profile-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+.staff-password-card .staff-profile-actions { justify-content: stretch; }
+.staff-password-card .staff-profile-actions .btn-primary { width: 100%; justify-content: center; background: #31578f; box-shadow: none; }
+.staff-password-card .staff-profile-actions .btn-primary::before { display: none; }
+.staff-password-card .staff-profile-actions .btn-primary:hover { background: #284a80; }
 @media (max-width: 600px) { .staff-profile-page-header { margin-bottom: 18px; } .form-card.staff-profile-page-card { padding: 18px; } .staff-profile-identity { gap: 14px; } .staff-profile-avatar { width: 96px; height: 96px; } .staff-profile-identity h2 { font-size: 1.1rem; } .staff-profile-identity p { font-size: .85rem; } }
 .user-avatar {
   width: 36px; height: 36px; border-radius: 50%;

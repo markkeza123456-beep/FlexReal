@@ -22,12 +22,13 @@ $lastName = trim((string) ($_POST['last_name'] ?? ''));
 $name = trim($firstName . ' ' . $lastName);
 $currentPassword = (string) ($_POST['pwd_current'] ?? '');
 $newPassword = (string) ($_POST['pwd_new'] ?? '');
+$confirmPassword = (string) ($_POST['pwd_confirm'] ?? '');
 
 if ($firstName === '' || $lastName === '' || mb_strlen($firstName) > 100 || mb_strlen($lastName) > 100) {
     profileJson(['success' => false, 'message' => 'กรุณากรอกชื่อและนามสกุลให้ถูกต้อง'], 422);
 }
-if ($newPassword !== '' && (mb_strlen($newPassword) < 6 || $currentPassword === '')) {
-    profileJson(['success' => false, 'message' => 'กรุณาตรวจสอบรหัสผ่านปัจจุบันและรหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)'], 422);
+if ($newPassword !== '' && (mb_strlen($newPassword) < 6 || $currentPassword === '' || $newPassword !== $confirmPassword)) {
+    profileJson(['success' => false, 'message' => 'กรุณาตรวจสอบรหัสผ่านปัจจุบัน รหัสผ่านใหม่ และการยืนยันรหัสผ่าน'], 422);
 }
 
 require_once __DIR__ . '/config/db.php';
@@ -59,7 +60,7 @@ try {
         ->execute([':updated_by' => $userId, ':id' => $userId]);
     $conn->commit();
     $_SESSION['name'] = $name;
-    profileJson(['success' => true, 'message' => 'บันทึกข้อมูลสำเร็จ']);
+    profileJson(['success' => true, 'message' => $newPassword !== '' ? 'เปลี่ยนรหัสผ่านสำเร็จ' : 'บันทึกข้อมูลสำเร็จ']);
 } catch (Throwable $e) {
     if ($conn->inTransaction()) $conn->rollBack();
     error_log('Student profile update failed: ' . $e->getMessage());

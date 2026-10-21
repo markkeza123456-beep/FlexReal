@@ -29,7 +29,7 @@ try {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261021-login-shared-background">
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-fullbleed">
     <style>
         .transfer-content { max-width: 1100px; margin: 0 auto; padding: 36px; }
         .transfer-content h1 { margin: 0 0 8px; }

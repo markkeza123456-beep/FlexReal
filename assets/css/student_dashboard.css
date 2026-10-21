@@ -218,6 +218,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
     padding-top: 1.2rem;
     margin-top: 1.2rem;
 }
+.password-settings-card .pwd-section { border-top: 0; padding-top: 0; margin-top: 0; }
 .pwd-section-title {
     font-size: 0.75rem;
     color: var(--text-muted);
@@ -280,6 +281,8 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 }
 .btn-save-profile:hover { opacity: 0.85; }
 .btn-save-profile:disabled { opacity: 0.5; cursor: not-allowed; }
+.password-settings-card .btn-save-profile { width: 100%; display: flex; justify-content: center; background: #31578f; border: 1px solid #31578f; color: #fff; }
+.password-settings-card .btn-save-profile:hover { background: #284a80; border-color: #284a80; }
 
 
 #settings-page {
@@ -559,6 +562,15 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
     border-bottom: 1px solid var(--brand-400);
     text-align: left;
 }
+.sidebar > .logo-section.sidebar-brand-link {
+    width: calc(100% + 48px) !important;
+    min-width: calc(100% + 48px);
+    max-width: none;
+    flex: 0 0 102px;
+    margin-left: -24px;
+    margin-right: -24px;
+    border-bottom: 1px solid var(--brand-400);
+}
 .sidebar > .logo-section h2,
 .sidebar > .logo-section span,
 .sidebar > .logo-section:hover h2,
@@ -570,6 +582,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .sidebar > .logo-section span { margin-top: 0; font-size: 9px; line-height: 1.2; letter-spacing: .14em; }
 @media (max-width: 800px) {
     .sidebar > .logo-section { width: calc(100% + 24px); height: 102px; min-height: 102px; margin: -12px -12px 12px; padding: 0 16px; }
+    .sidebar > .logo-section.sidebar-brand-link { width: calc(100% + 24px) !important; min-width: calc(100% + 24px); margin-left: -12px; margin-right: -12px; }
 }
 
 /* Keep the FLEXIBLE wordmark compact and vertically balanced on every dashboard size. */

@@ -68,10 +68,15 @@ if (PHP_SAPI !== 'cli') {
 $dsn = "pgsql:host={$host};port={$port};dbname={$db};sslmode=require;sslcert=;connect_timeout=8;";
 
 try {
+    $dbConnectStartedAt = microtime(true);
     $conn = new PDO($dsn, $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_TIMEOUT => 8,
+        // Transaction poolers cannot preserve server-side prepared statements
+        // across transactions/connections. Emulate them in the client.
+        PDO::ATTR_EMULATE_PREPARES => true,
     ]);
+    $dbConnectMs = (microtime(true) - $dbConnectStartedAt) * 1000;
     $conn->exec('SET client_encoding TO \'UTF8\'');
     $conn->exec('SET statement_timeout TO 8000');
 } catch (PDOException $e) {

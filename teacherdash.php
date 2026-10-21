@@ -381,7 +381,7 @@ $stats = [
         .choice-label { font-weight: 600; color: var(--text-dim); font-size: 14px; width: 16px; text-align: center; }
         @media (max-width: 760px) { .course-content-editor { grid-template-columns: 1fr !important; } }
     </style>
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-fullbleed">
     <link rel="stylesheet" href="assets/css/responsive.css">
     <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout">
 </head>
@@ -1080,7 +1080,7 @@ $stats = [
 
                 <div id="passwordMsg" style="display:none;margin-top:14px;padding:10px 14px;border-radius:6px;font-size:13px;"></div>
 
-                <button onclick="saveTeacherPassword()" style="margin-top:18px;width:100%;padding:12px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Kanit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--orange)';this.style.color='var(--orange)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+                <button onclick="saveTeacherPassword()" style="margin-top:18px;width:100%;padding:12px;background:#31578f;color:#ffffff;border:1px solid #31578f;border-radius:var(--radius-sm);font-family:'Kanit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s,transform .2s;" onmouseover="this.style.background='#284a80';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#31578f';this.style.transform='translateY(0)'">
                      เปลี่ยนรหัสผ่าน
                 </button>
             </div>

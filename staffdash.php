@@ -755,16 +755,21 @@ if ($displayName !== '') {
               <label class="form-field"><span class="form-label">จังหวัด</span><input class="staff-profile-input" name="province" maxlength="150" value="<?= htmlspecialchars((string) ($staffAddress['province'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
             </div>
             <label class="form-field"><span class="form-label">รหัสไปรษณีย์</span><input class="staff-profile-input" name="postal_code" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" value="<?= htmlspecialchars((string) ($staffAddress['postal_code'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
-            <div class="staff-password-section">
-              <div class="staff-password-title">🔐 เปลี่ยนรหัสผ่าน</div>
-              <label class="form-field"><span class="form-label">รหัสผ่านปัจจุบัน</span><span class="staff-password-input-wrap"><input class="staff-profile-input" id="staffPwdCurrent" name="pwd_current" type="password" autocomplete="current-password"><button type="button" class="staff-password-toggle" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน" onclick="toggleStaffPwd('staffPwdCurrent', this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></span></label>
-              <label class="form-field"><span class="form-label">รหัสผ่านใหม่</span><span class="staff-password-input-wrap"><input class="staff-profile-input" id="staffPwdNew" name="pwd_new" type="password" minlength="6" autocomplete="new-password" oninput="checkStaffPwdStrength(this.value)"><button type="button" class="staff-password-toggle" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน" onclick="toggleStaffPwd('staffPwdNew', this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></span><span id="staffPwdStrengthWrap" class="staff-password-strength" style="display:none"><span class="staff-password-strength-bg"><span id="staffPwdStrengthBar"></span></span><span id="staffPwdStrengthLabel"></span></span></label>
-              <label class="form-field"><span class="form-label">ยืนยันรหัสผ่านใหม่</span><span class="staff-password-input-wrap"><input class="staff-profile-input" id="staffPwdConfirm" name="pwd_confirm" type="password" minlength="6" autocomplete="new-password" oninput="checkStaffPwdMatch()"><button type="button" class="staff-password-toggle" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน" onclick="toggleStaffPwd('staffPwdConfirm', this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></span><span id="staffPwdMatchMsg" class="staff-password-match"></span></label>
-            </div>
             <div class="staff-profile-message" id="staffProfileMessage" role="status" aria-live="polite"></div>
             <div class="staff-profile-actions"><button type="button" class="btn-ghost" onclick="closeStaffProfile()">กลับ</button><button type="submit" class="btn-primary" id="saveStaffProfileBtn"><span class="btn-text">บันทึกข้อมูล</span></button></div>
           </form>
         </div>
+
+        <form class="form-card staff-profile-page-card staff-password-card" id="staffPasswordForm">
+          <h2 class="staff-profile-card-title">🔐 เปลี่ยนรหัสผ่าน</h2>
+          <div class="staff-password-section">
+            <label class="form-field"><span class="form-label">รหัสผ่านปัจจุบัน</span><span class="staff-password-input-wrap"><input class="staff-profile-input" id="staffPwdCurrent" name="pwd_current" type="password" autocomplete="current-password" required><button type="button" class="staff-password-toggle" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน" onclick="toggleStaffPwd('staffPwdCurrent', this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></span></label>
+            <label class="form-field"><span class="form-label">รหัสผ่านใหม่</span><span class="staff-password-input-wrap"><input class="staff-profile-input" id="staffPwdNew" name="pwd_new" type="password" minlength="6" autocomplete="new-password" oninput="checkStaffPwdStrength(this.value)" required><button type="button" class="staff-password-toggle" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน" onclick="toggleStaffPwd('staffPwdNew', this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></span><span id="staffPwdStrengthWrap" class="staff-password-strength" style="display:none"><span class="staff-password-strength-bg"><span id="staffPwdStrengthBar"></span></span><span id="staffPwdStrengthLabel"></span></span></label>
+            <label class="form-field"><span class="form-label">ยืนยันรหัสผ่านใหม่</span><span class="staff-password-input-wrap"><input class="staff-profile-input" id="staffPwdConfirm" name="pwd_confirm" type="password" minlength="6" autocomplete="new-password" oninput="checkStaffPwdMatch()" required><button type="button" class="staff-password-toggle" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน" onclick="toggleStaffPwd('staffPwdConfirm', this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></span><span id="staffPwdMatchMsg" class="staff-password-match"></span></label>
+          </div>
+          <div class="staff-profile-message" id="staffPasswordMessage" role="status" aria-live="polite"></div>
+          <div class="staff-profile-actions"><button type="submit" class="btn-primary" id="saveStaffPasswordBtn"><span class="btn-text">เปลี่ยนรหัสผ่าน</span></button></div>
+        </form>
       </section>
     </main>
   </div>
@@ -790,7 +795,7 @@ if ($displayName !== '') {
 
   <div class="toast" id="toast"></div>
 
-  <script src="assets/js/staffdash.js?v=20261021-id-length"></script>
+  <script src="assets/js/staffdash.js?v=20261021-separated-password-card"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

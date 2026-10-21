@@ -1260,11 +1260,6 @@ document.getElementById('staffProfileForm')?.addEventListener('submit', async ev
   const button = document.getElementById('saveStaffProfileBtn');
   const message = document.getElementById('staffProfileMessage');
   const body = new FormData(form);
-  if (body.get('pwd_new') && body.get('pwd_new') !== body.get('pwd_confirm')) {
-    message.textContent = 'รหัสผ่านใหม่และการยืนยันไม่ตรงกัน';
-    message.style.color = 'var(--red)';
-    return;
-  }
   button.disabled = true;
   message.textContent = 'กำลังบันทึก...';
   message.style.color = 'var(--text-muted)';
@@ -1278,17 +1273,54 @@ document.getElementById('staffProfileForm')?.addEventListener('submit', async ev
     if (profileName) profileName.textContent = result.name;
     const profileIdentifier = document.getElementById('staffProfileIdentifier');
     if (profileIdentifier && result.user_id) profileIdentifier.textContent = `เจ้าหน้าที่ · รหัส ${result.user_id}`;
-    ['pwd_current', 'pwd_new', 'pwd_confirm'].forEach(field => { const input = form.elements.namedItem(field); if (input) input.value = ''; });
-    document.querySelectorAll('.staff-password-toggle').forEach(toggle => { toggle.innerHTML = staffPasswordEyeIcon(false); toggle.setAttribute('aria-label', 'แสดงรหัสผ่าน'); toggle.title = 'แสดงรหัสผ่าน'; });
-    ['staffPwdCurrent', 'staffPwdNew', 'staffPwdConfirm'].forEach(id => { const input = document.getElementById(id); if (input) input.type = 'password'; });
-    const strength = document.getElementById('staffPwdStrengthWrap');
-    if (strength) strength.style.display = 'none';
-    const match = document.getElementById('staffPwdMatchMsg');
-    if (match) match.textContent = '';
     message.textContent = result.message || 'บันทึกข้อมูลโปรไฟล์แล้ว';
     message.style.color = 'var(--green, #16a34a)';
   } catch (error) {
     message.textContent = error.message || 'บันทึกข้อมูลไม่สำเร็จ กรุณาลองอีกครั้ง';
+    message.style.color = 'var(--red)';
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.getElementById('staffPasswordForm')?.addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = document.getElementById('saveStaffPasswordBtn');
+  const message = document.getElementById('staffPasswordMessage');
+  const pwdNew = document.getElementById('staffPwdNew')?.value || '';
+  const pwdConfirm = document.getElementById('staffPwdConfirm')?.value || '';
+  if (pwdNew.length < 6 || pwdNew !== pwdConfirm) {
+    message.textContent = pwdNew.length < 6 ? 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร' : 'รหัสผ่านใหม่และการยืนยันไม่ตรงกัน';
+    message.style.color = 'var(--red)';
+    return;
+  }
+  button.disabled = true;
+  message.textContent = 'กำลังเปลี่ยนรหัสผ่าน...';
+  message.style.color = 'var(--text-muted)';
+  try {
+    const body = new FormData(document.getElementById('staffProfileForm'));
+    body.append('pwd_current', document.getElementById('staffPwdCurrent').value);
+    body.append('pwd_new', pwdNew);
+    body.append('pwd_confirm', pwdConfirm);
+    const response = await fetch('update_staff_profile.php', { method: 'POST', body, credentials: 'same-origin' });
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.message || 'เปลี่ยนรหัสผ่านไม่สำเร็จ');
+    form.reset();
+    ['staffPwdCurrent', 'staffPwdNew', 'staffPwdConfirm'].forEach(id => { const input = document.getElementById(id); if (input) input.type = 'password'; });
+    document.querySelectorAll('#staffPasswordForm .staff-password-toggle').forEach(toggle => {
+      toggle.innerHTML = staffPasswordEyeIcon(false);
+      toggle.setAttribute('aria-label', 'แสดงรหัสผ่าน');
+      toggle.title = 'แสดงรหัสผ่าน';
+    });
+    const strength = document.getElementById('staffPwdStrengthWrap');
+    if (strength) strength.style.display = 'none';
+    const match = document.getElementById('staffPwdMatchMsg');
+    if (match) match.textContent = '';
+    message.textContent = result.message || 'เปลี่ยนรหัสผ่านสำเร็จ';
+    message.style.color = 'var(--green, #16a34a)';
+  } catch (error) {
+    message.textContent = error.message || 'เปลี่ยนรหัสผ่านไม่สำเร็จ กรุณาลองอีกครั้ง';
     message.style.color = 'var(--red)';
   } finally {
     button.disabled = false;
