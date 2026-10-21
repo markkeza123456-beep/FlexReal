@@ -317,7 +317,8 @@ body {
 
 
 #password,
-#confirm {
+#confirm,
+#student_pin {
   font-size: .64rem;
   letter-spacing: -.01em;
   padding-right: 42px;
@@ -407,6 +408,8 @@ body {
 }
 .toggle-pw:hover { color: var(--text-primary); }
 .toggle-pw svg { width: 18px; height: 18px; }
+.toggle-pw .eye-slash { opacity: 0; transition: opacity 160ms ease; }
+.toggle-pw.is-visible .eye-slash { opacity: 1; }
 
 
 .file-upload { position: relative; }
