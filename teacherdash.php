@@ -1052,7 +1052,7 @@ $stats = [
 
                 <div id="profileMsg" style="display:none;margin-top:14px;padding:10px 14px;border-radius:6px;font-size:13px;"></div>
 
-                <button onclick="saveTeacherProfile()" style="margin-top:18px;width:100%;padding:12px;background:var(--orange);color:var(--text);border:none;border-radius:var(--radius-sm);font-family:'Kanit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+                <button onclick="saveTeacherProfile()" style="margin-top:18px;width:100%;padding:12px;background:var(--orange);color:#ffffff;border:none;border-radius:var(--radius-sm);font-family:'Kanit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
                      บันทึกข้อมูล
                 </button>
             </div>
