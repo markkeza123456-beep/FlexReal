@@ -6,7 +6,14 @@ header('Pragma: no-cache');
 function hubEscape($value): string { return htmlspecialchars((string) ($value ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 function hubCourseImagePath(array $course): ?string {
     $path = trim(str_replace('\\', '/', (string) ($course['image_path'] ?? '')));
-    if ($path === '' || preg_match('/^[a-z][a-z0-9+.-]*:/i', $path) || str_starts_with($path, '/')) return null;
+    if ($path === '') return null;
+    if (preg_match('/^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+\/=]+)$/s', $path, $matches)) {
+        if (strlen($path) > 7 * 1024 * 1024) return null;
+        $decoded = base64_decode($matches[2], true);
+        $imageInfo = $decoded === false ? false : @getimagesizefromstring($decoded);
+        return is_array($imageInfo) && ($imageInfo['mime'] ?? '') === $matches[1] ? $path : null;
+    }
+    if (preg_match('/^[a-z][a-z0-9+.-]*:/i', $path) || str_starts_with($path, '/')) return null;
     $projectRoot = realpath(__DIR__);
     $imageFile = realpath(__DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path));
     if ($projectRoot === false || $imageFile === false || !is_file($imageFile)) return null;
@@ -91,6 +98,17 @@ $hubInstructorName = trim((string) ($hubInstructor['full_name'] ?? '')) ?: 'ย�
 $hubInstructorContact = implode(' · ', array_filter([trim((string) ($hubInstructor['email'] ?? '')), trim((string) ($hubInstructor['phone'] ?? ''))]));
 $hubInstructorInfo = 'อาจารย์ผู้สอนประจำรายวิชา' . ($hubInstructorContact !== '' ? ' · ' . $hubInstructorContact : '');
 $hubDetailActive = $hubCourse !== null;
+$hubCourseImage = $hubDetailActive ? hubCourseImagePath($hubCourse) : null;
+$hubClientCourses = array_map(static fn(array $course): array => [
+    'course_id' => $course['course_id'] ?? '',
+    'name' => $course['name'] ?? '',
+    'is_enrolled' => $course['is_enrolled'] ?? false,
+], $hubCourses);
+$hubClientCourse = $hubCourse ? [
+    'course_id' => $hubCourse['course_id'] ?? '',
+    'name' => $hubCourse['name'] ?? '',
+    'is_enrolled' => $hubCourse['is_enrolled'] ?? false,
+] : null;
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -212,6 +230,7 @@ $hubDetailActive = $hubCourse !== null;
     <h1 id="detail-title" class="course-page-title"><?= hubEscape($hubCourse['name'] ?? 'ชื่อวิชา') ?></h1>
     
     <p id="detail-desc-top" class="course-page-subtitle"><?= $hubDetailActive ? 'รายละเอียดเบื้องต้น' : 'รายละเอียดเบื้องต้นของวิชา...' ?></p>
+    <?php if ($hubDetailActive): ?><?php if ($hubCourseImage !== null): ?><img id="detail-course-image" class="course-detail-cover" src="<?= hubEscape($hubCourseImage) ?>" alt="ภาพปกวิชา <?= hubEscape($hubCourse['name']) ?>" loading="lazy"><?php else: ?><div id="detail-course-image" class="course-cover-placeholder course-detail-cover" role="img" aria-label="ไม่มีภาพปกวิชา"><i class="fa-solid fa-book-open" aria-hidden="true"></i></div><?php endif; ?><?php endif; ?>
     
                 <div class="tabs">
                     <button class="tab-btn active" onclick="openTab(event, 'overview')">รายละเอียด</button>
@@ -340,7 +359,7 @@ $hubDetailActive = $hubCourse !== null;
     <p>© 2026 Flow Learning. All Rights Reserved.</p>
 </footer>
 
-<script>window.FLEXREAL_INITIAL = <?= json_encode(['courses' => $hubCourses, 'course' => $hubCourse, 'lessons' => $hubLessons, 'instructors' => $hubInstructors], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;</script>
+<script>window.FLEXREAL_INITIAL = <?= json_encode(['courses' => $hubClientCourses, 'course' => $hubClientCourse, 'lessons' => $hubLessons, 'instructors' => $hubInstructors], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;</script>
 <script src="assets/js/web.js?v=20261021-ssr-course-pages"></script>
 
 </body>

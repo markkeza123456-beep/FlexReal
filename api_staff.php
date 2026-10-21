@@ -124,20 +124,18 @@ function uploadCourseCover(): ?string
     }
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mime = $finfo->file((string) $file['tmp_name']);
-    $extensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif'];
-    if (!isset($extensions[$mime])) {
+    $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!in_array($mime, $allowedMimeTypes, true)) {
         throw new RuntimeException('รองรับเฉพาะรูป JPG, PNG, WEBP หรือ GIF');
     }
-    $relativeDir = 'uploads/courses';
-    $uploadDir = __DIR__ . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'courses';
-    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
-        throw new RuntimeException('ไม่สามารถสร้างโฟลเดอร์เก็บรูปภาพได้');
+    $imageBytes = file_get_contents((string) $file['tmp_name']);
+    if ($imageBytes === false || $imageBytes === '') {
+        throw new RuntimeException('ไม่สามารถอ่านไฟล์รูปภาพได้');
     }
-    $filename = bin2hex(random_bytes(16)) . '.' . $extensions[$mime];
-    if (!move_uploaded_file((string) $file['tmp_name'], $uploadDir . DIRECTORY_SEPARATOR . $filename)) {
-        throw new RuntimeException('ไม่สามารถบันทึกรูปภาพได้');
+    if (@getimagesizefromstring($imageBytes) === false) {
+        throw new RuntimeException('ไฟล์ที่อัปโหลดไม่ใช่รูปภาพที่ถูกต้อง');
     }
-    return $relativeDir . '/' . $filename;
+    return 'data:' . $mime . ';base64,' . base64_encode($imageBytes);
 }
 
 if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? '')) !== 'staff') {
@@ -148,8 +146,6 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
 }
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
-$uploadedCourseCoverPath = null;
-
 try {
     ensureSubjectTeachersTable($conn);
     switch ($action) {
@@ -344,7 +340,6 @@ try {
             $requestedType = strtolower(postValue('type', 'compulsory'));
             $subjectType = in_array($requestedType, ['required', 'compulsory'], true) ? 'compulsory' : 'elective';
             $imagePath = uploadCourseCover();
-            $uploadedCourseCoverPath = $imagePath;
             $actorId = (string) $_SESSION['user_id'];
             $params = [':code' => postValue('code'), ':name' => postValue('name'), ':credit' => (int) postValue('credit', '0'), ':subject_type' => $subjectType, ':description' => postValue('description') ?: null, ':image_path' => $imagePath, ':updated_by' => $actorId];
 
@@ -729,9 +724,5 @@ try {
     }
 } catch (Throwable $exception) {
     if ($conn->inTransaction()) { $conn->rollBack(); }
-    if ($uploadedCourseCoverPath !== null) {
-        $uploadedCourseCoverDiskPath = __DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $uploadedCourseCoverPath);
-        if (is_file($uploadedCourseCoverDiskPath)) { @unlink($uploadedCourseCoverDiskPath); }
-    }
     jsonResponse(['status' => 'error', 'message' => 'DB Error: ' . $exception->getMessage()], 500);
 }

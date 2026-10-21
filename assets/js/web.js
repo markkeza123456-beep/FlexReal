@@ -77,8 +77,8 @@ function isStudentLoggedIn() {
 function primeCourseCache(courses) {
     courseIdByName = {};
     (Array.isArray(courses) ? courses : []).forEach((course) => {
-        const subjectId = pick(course, 'subjects_id', 'Subjects_ID');
-        const subjectName = pick(course, 'subjects_name', 'Subjects_Name');
+        const subjectId = pick(course, 'subjects_id', 'Subjects_ID', 'course_id');
+        const subjectName = pick(course, 'subjects_name', 'Subjects_Name', 'name');
         if (subjectName) courseIdByName[subjectName] = subjectId;
         if (subjectId) {
             enrolledCourses[subjectId] = isTruthy(pick(course, 'is_enrolled', 'Is_Enrolled'));
