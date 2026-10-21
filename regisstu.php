@@ -243,6 +243,6 @@ try {
   </div>
   <div class="toast" id="toast"></div>
   <script src="assets/js/regisstu.js"></script>
-<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js" defer></script>
+<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js?v=20261021-session-language" defer></script>
 </body>
 </html>

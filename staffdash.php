@@ -858,6 +858,6 @@ if ($displayName !== '') {
   <div class="toast" id="toast"></div>
 
   <script src="assets/js/staffdash.js?v=20261020-password-eye-icons"></script>
-<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js" defer></script>
+<?php require __DIR__ . "/includes/language_switcher.php"; ?><script src="assets/js/responsive-language.js?v=20261021-session-language" defer></script>
 </body>
 </html>
