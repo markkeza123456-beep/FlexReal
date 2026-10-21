@@ -326,7 +326,7 @@ html, body {
 .badge-active    { background: rgba(16,185,129,.15);  color: #10b981; }
 .badge-draft     { background: rgba(100,100,100,.18); color: #aaa; }
 .badge-excellent { background: rgba(var(--brand-400-rgb),.15);  color: var(--text-primary); }
-.badge-good      { background: rgba(159,168,218,.15);  color: #60a5fa; }
+.badge-good      { background: rgba(var(--brand-200-rgb),.15);  color: var(--primary-end); }
 .badge-average   { background: rgba(var(--brand-400-rgb),.15);   color: var(--brand-700); }
 .badge-needs-help{ background: rgba(239,68,68,.15);   color: #f87171; }
 

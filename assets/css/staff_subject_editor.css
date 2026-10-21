@@ -10,7 +10,7 @@
   --orange-dim: rgba(var(--brand-400-rgb), 0.12);
   --orange-glow: rgba(var(--brand-400-rgb), 0.22);
   --blue: var(--brand-400);
-  --blue-dim: rgba(159, 168, 218, 0.12);
+  --blue-dim: rgba(var(--brand-200-rgb), 0.12);
   --green: #22c55e;
   --green-dim: rgba(34, 197, 94, 0.12);
   --red: #ef4444;
@@ -511,9 +511,9 @@ body {
 }
 
 .resource-link.document {
-  background: rgba(159, 168, 218, 0.1);
+  background: rgba(var(--brand-200-rgb), 0.1);
   color: var(--brand-700);
-  border-color: rgba(159, 168, 218, 0.16);
+  border-color: rgba(var(--brand-200-rgb), 0.16);
 }
 
 .resource-link.video {
@@ -573,7 +573,7 @@ body {
 }
 
 .resource-icon.document {
-  background: rgba(159, 168, 218, 0.12);
+  background: rgba(var(--brand-200-rgb), 0.12);
 }
 
 .resource-icon.video {

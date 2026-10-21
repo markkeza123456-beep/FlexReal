@@ -5,12 +5,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ลืมรหัสผ่าน - Flexible Learning Hub</title>
-  <link rel="stylesheet" href="assets/css/login.css?v=20261021-indigo-200-400-700" />
+  <link rel="stylesheet" href="assets/css/login.css?v=20261021-login-shared-background" />
   <style>
     .step-2, .step-3 { display: none; }
   </style>
     <link rel="stylesheet" href="assets/css/responsive.css">
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-page-background-50" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-shared-background" />
 </head>
 <body>
   <div class="bg-grid"></div>

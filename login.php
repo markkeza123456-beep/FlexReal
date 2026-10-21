@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/login.css?v=20261021-indigo-200-400-700" />
+  <link rel="stylesheet" href="assets/css/login.css?v=20261021-login-shared-background" />
     <link rel="stylesheet" href="assets/css/responsive.css">
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-page-background-50" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-shared-background" />
 </head>
 <body>
   <div class="bg-grid"></div>

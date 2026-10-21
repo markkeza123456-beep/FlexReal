@@ -1,12 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --tweedia: var(--brand-200);
+  --tweedia: var(--brand-50);
   --tweedia-deep: var(--brand-400);
-  --ocean-splash: var(--brand-200);
+  --ocean-splash: var(--brand-50);
   --ocean-deep: var(--brand-400);
-  --bg: var(--brand-200);
-  --bg-dark: var(--brand-200);
+  --bg: var(--brand-50);
+  --bg-dark: var(--brand-50);
   --bg2: #ffffff;
   --bg3: #f5f6f8;
   --surface: #ffffff;
@@ -16,40 +16,40 @@
   --sidebar-bg: #ffffff;
   --paper: #ffffff;
 
-  --border: #e7e9ee;
-  --border-color: #e7e9ee;
+  --border: var(--brand-200);
+  --border-color: var(--brand-200);
   --border-hover: var(--brand-200);
-  --line: #e7e9ee;
+  --line: var(--brand-200);
 
-  --orange: var(--brand-400);
-  --orange-light: var(--brand-200);
-  --orange-dark: var(--brand-400);
-  --orange-dim: rgba(159, 168, 218, 0.48);
-  --orange-glow: rgba(var(--brand-400-rgb), 0.20);
-  --primary: var(--brand-400);
-  --primary-color: var(--brand-400);
-  --primary-orange: var(--brand-400);
-  --primary-soft: rgba(159, 168, 218, 0.38);
-  --accent: var(--brand-400);
-  --accent-light: var(--brand-200);
-  --accent-mid: var(--brand-200);
-  --accent-dark: var(--brand-400);
-  --accent-dim: rgba(159, 168, 218, 0.42);
-  --soft: var(--brand-200);
-  --soft-orange: var(--brand-200);
-  --dark-orange: var(--brand-400);
+  --orange: var(--primary-start);
+  --orange-light: var(--primary-end);
+  --orange-dark: var(--primary-start);
+  --orange-dim: rgba(var(--primary-end-rgb), 0.14);
+  --orange-glow: rgba(var(--primary-end-rgb), 0.20);
+  --primary: var(--primary-start);
+  --primary-color: var(--primary-start);
+  --primary-orange: var(--primary-start);
+  --primary-soft: rgba(var(--primary-end-rgb), 0.14);
+  --accent: var(--primary-start);
+  --accent-light: var(--primary-end);
+  --accent-mid: var(--primary-end);
+  --accent-dark: var(--primary-start);
+  --accent-dim: rgba(var(--primary-end-rgb), 0.14);
+  --soft: var(--brand-50);
+  --soft-orange: var(--brand-50);
+  --dark-orange: var(--primary-start);
 
   --text: var(--brand-700);
   --text-main: var(--brand-700);
   --text-primary: var(--brand-700);
   --deep-blue: var(--brand-700);
   --ink: var(--brand-700);
-  --text-secondary: #4b5563;
-  --text-soft: #4b5563;
-  --text-dim: #4b5563;
-  --text-gray: #4b5563;
-  --text-muted: #9ca3af;
-  --muted: #9ca3af;
+  --text-secondary: var(--text-body);
+  --text-soft: var(--text-body);
+  --text-dim: var(--text-body);
+  --text-gray: var(--text-body);
+  --text-muted: var(--text-body);
+  --muted: var(--text-body);
 
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 14px 36px rgba(0, 0, 0, 0.07);
@@ -60,9 +60,9 @@ html { color-scheme: light; }
 body {
   background-color: var(--bg) !important;
   background-image:
-    radial-gradient(circle, rgba(var(--brand-400-rgb), 0.075) 1px, transparent 1.4px),
-    radial-gradient(ellipse at 8% 0%, rgba(159, 168, 218, 0.22), transparent 34rem),
-    radial-gradient(ellipse at 94% 20%, rgba(159, 168, 218, 0.25), transparent 30rem) !important;
+    radial-gradient(circle, rgba(var(--primary-end-rgb), 0.10) 1px, transparent 1.4px),
+    radial-gradient(ellipse at 8% 0%, rgba(var(--primary-end-rgb), 0.12), transparent 34rem),
+    radial-gradient(ellipse at 94% 20%, rgba(var(--primary-end-rgb), 0.14), transparent 30rem) !important;
   background-size: 34px 34px, auto, auto !important;
   background-attachment: fixed !important;
   color: var(--text-primary) !important;
@@ -84,12 +84,12 @@ body::after {
 }
 
 .bg-grid {
-  background-image: radial-gradient(circle, rgba(var(--brand-400-rgb), .10) 1.2px, transparent 1.5px) !important;
+  background-image: radial-gradient(circle, rgba(var(--primary-end-rgb), .12) 1.2px, transparent 1.5px) !important;
 }
 
 .edu-illustration {
-  color: var(--brand-700) !important;
-  opacity: .12;
+  color: var(--primary-end) !important;
+  opacity: .22;
 }
 
 .sidebar,
@@ -220,14 +220,14 @@ textarea::placeholder {
 input:focus,
 textarea:focus,
 select:focus {
-  border-color: var(--brand-400) !important;
-  box-shadow: 0 0 0 3px rgba(159, 168, 218, 0.52) !important;
+  border-color: var(--primary-end) !important;
+  box-shadow: 0 0 0 3px rgba(var(--primary-end-rgb), 0.24) !important;
 }
 
 .menu-item.active,
 .nav-item.active,
 .child-tab.active {
-  background: linear-gradient(135deg, var(--accent-dim), rgba(159, 168, 218, 0.58)) !important;
+  background: linear-gradient(135deg, var(--accent-dim), rgba(var(--primary-end-rgb), 0.24)) !important;
   color: var(--text-primary) !important;
   border-color: rgba(var(--brand-400-rgb), 0.22) !important;
 }
@@ -278,22 +278,29 @@ button[type="submit"],
 /* Shared visual system: values are matched to the Login page palette. */
 :root {
   color-scheme: light;
-  --brand-200: #9FA8DA;
-  --brand-400: #5C6BC0;
-  --brand-500: #3F51B5;
-  --brand-700: #303F9F;
-  --brand-200-rgb: 159, 168, 218;
-  --brand-400-rgb: 92, 107, 192;
-  --brand-700-rgb: 48, 63, 159;
-  --brand-50: #E8EAF6;
+  --brand-50: #F2F6FC;
+  --brand-200: #D9E3EF;
+  --brand-400: #64748B;
+  --brand-500: #2F548F;
+  --brand-700: #23324D;
+  --brand-200-rgb: 217, 227, 239;
+  --brand-400-rgb: 100, 116, 139;
+  --brand-500-rgb: 47, 84, 143;
+  --brand-700-rgb: 35, 50, 77;
+  --primary-start: #2F548F;
+  --primary-end: #68A7E4;
+  --primary-end-rgb: 104, 167, 228;
+  --border-color: #D9E3EF;
+  --text-heading: #23324D;
+  --text-body: #64748B;
   --page-background: var(--brand-50);
-  --page-background-image: linear-gradient(145deg, rgba(var(--brand-400-rgb), .08), transparent 48%, rgba(var(--brand-700-rgb), .035));
-  --tweedia: var(--brand-200);
+  --page-background-image: linear-gradient(145deg, rgba(var(--primary-end-rgb), .08), transparent 48%, rgba(var(--brand-500-rgb), .025));
+  --tweedia: var(--brand-50);
   --tweedia-deep: var(--brand-400);
-  --ocean-splash: var(--brand-200);
+  --ocean-splash: var(--brand-50);
   --ocean-deep: var(--brand-700);
-  --bg: var(--brand-200);
-  --bg-dark: var(--brand-200);
+  --bg: var(--brand-50);
+  --bg-dark: var(--brand-50);
   --bg2: #FFFFFF;
   --bg3: #F7FAFD;
   --surface: #FFFFFF;
@@ -302,38 +309,37 @@ button[type="submit"],
   --card-bg: #FFFFFF;
   --sidebar-bg: #FFFFFF;
   --paper: #FFFFFF;
-  --border: var(--brand-200);
-  --border-color: var(--brand-200);
+  --border: var(--border-color);
   --border-hover: var(--brand-400);
   --line: var(--brand-200);
-  --orange: var(--brand-700);
-  --orange-light: var(--brand-400);
-  --orange-dark: var(--brand-700);
-  --orange-dim: rgba(var(--brand-700-rgb), .08);
-  --orange-glow: rgba(var(--brand-400-rgb), .20);
-  --primary: var(--brand-700);
-  --primary-color: var(--brand-700);
-  --primary-orange: var(--brand-700);
-  --primary-soft: rgba(var(--brand-400-rgb), .12);
-  --accent: var(--brand-700);
-  --accent-light: var(--brand-400);
-  --accent-mid: var(--brand-400);
-  --accent-dark: var(--brand-700);
-  --accent-dim: rgba(var(--brand-400-rgb), .12);
-  --soft: var(--brand-200);
-  --soft-orange: var(--brand-200);
-  --dark-orange: var(--brand-700);
+  --orange: var(--primary-start);
+  --orange-light: var(--primary-end);
+  --orange-dark: var(--primary-start);
+  --orange-dim: rgba(var(--primary-end-rgb), .14);
+  --orange-glow: rgba(var(--primary-end-rgb), .20);
+  --primary: var(--primary-start);
+  --primary-color: var(--primary-start);
+  --primary-orange: var(--primary-start);
+  --primary-soft: rgba(var(--primary-end-rgb), .14);
+  --accent: var(--primary-start);
+  --accent-light: var(--primary-end);
+  --accent-mid: var(--primary-end);
+  --accent-dark: var(--primary-start);
+  --accent-dim: rgba(var(--primary-end-rgb), .14);
+  --soft: var(--brand-50);
+  --soft-orange: var(--brand-50);
+  --dark-orange: var(--primary-start);
   --text: var(--brand-700);
   --text-main: var(--brand-700);
   --text-primary: var(--brand-700);
   --deep-blue: var(--brand-700);
   --ink: var(--brand-700);
-  --text-secondary: var(--brand-400);
-  --text-soft: var(--brand-400);
-  --text-dim: var(--brand-400);
-  --text-gray: var(--brand-400);
-  --text-muted: var(--brand-400);
-  --muted: var(--brand-400);
+  --text-secondary: var(--text-body);
+  --text-soft: var(--text-body);
+  --text-dim: var(--text-body);
+  --text-gray: var(--text-body);
+  --text-muted: var(--text-body);
+  --muted: var(--text-body);
   --shadow: 0 18px 52px rgba(34, 56, 80, .10);
   --shadow-md: 0 8px 24px rgba(34, 56, 80, .09);
 }
@@ -347,7 +353,29 @@ body {
   color: var(--brand-700) !important;
   font-family: 'IBM Plex Sans Thai', 'Kanit', sans-serif !important;
 }
-body::after { display: none !important; }
+/* Shared Login artwork: keep decorative layers fixed behind every page. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(var(--primary-end-rgb), .15) 1.2px, transparent 1.5px);
+  background-size: 36px 36px;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 1;
+  background-image: url('../education-doodles.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+}
+.bg-grid, .edu-pattern, .glow-orb { display: none !important; }
 .bg-grid {
   background-image: radial-gradient(circle, rgba(var(--brand-700-rgb), .06) 1px, transparent 1.4px) !important;
   background-size: 36px 36px !important;
@@ -360,12 +388,12 @@ body::after { display: none !important; }
   box-shadow: 0 4px 18px rgba(34, 56, 80, .06) !important;
 }
 .sidebar a, .navbar a, .nav-links a, .sidebar button, .navbar button { color: var(--brand-700); }
-.sidebar a:hover, .navbar a:hover, .nav-links a:hover { color: var(--brand-400) !important; }
+.sidebar a:hover, .navbar a:hover, .nav-links a:hover { color: var(--primary-start) !important; }
 .menu-item.active, .nav-item.active, .child-tab.active,
 .sidebar .active, .navbar .active {
-  background: var(--brand-200) !important;
-  color: var(--brand-700) !important;
-  border-color: var(--brand-200) !important;
+  background: linear-gradient(135deg, var(--primary-start), var(--primary-end)) !important;
+  color: #FFFFFF !important;
+  border-color: var(--primary-start) !important;
 }
 
 .card, .content-card, .panel, .metric-card, .stat-card, .info-card,
@@ -386,7 +414,7 @@ h1, h2, h3, h4, h5, h6, .title, .page-title, .card-title, .section-title,
   color: var(--brand-700) !important;
 }
 p, .subtitle, .description, .text-muted, .muted, .stat-label,
-.stat-sub, .profile-role { color: var(--brand-700); }
+.stat-sub, .profile-role { color: var(--text-body); }
 .card p, .content-card p, .panel p, .metric-card p, .stat-card p,
 .info-card p, .profile-card p, .modal-content p, .modal-box p,
 .transcript-card p { color: var(--brand-400); }
@@ -397,8 +425,8 @@ p, .subtitle, .description, .text-muted, .muted, .stat-label,
 .metric-card .stat-label, .stat-card .stat-label, .profile-card .profile-role,
 .sidebar .text-muted, .sidebar .muted { color: var(--brand-400); }
 a, .link { color: var(--brand-700); }
-a:hover, .link:hover { color: var(--brand-400); }
-.input-icon, .select-arrow, .curr-icon, .section-icon { color: var(--brand-400); }
+a:hover, .link:hover { color: var(--primary-start); }
+.input-icon, .select-arrow, .curr-icon, .section-icon { color: var(--primary-end); }
 
 input, textarea, select {
   background-color: #FFFFFF !important;
@@ -407,8 +435,8 @@ input, textarea, select {
 }
 input::placeholder, textarea::placeholder { color: var(--brand-400) !important; opacity: 1; }
 input:focus, textarea:focus, select:focus {
-  border-color: var(--brand-400) !important;
-  box-shadow: 0 0 0 3px rgba(var(--brand-400-rgb), .12) !important;
+  border-color: var(--primary-end) !important;
+  box-shadow: 0 0 0 3px rgba(var(--primary-end-rgb), .20) !important;
 }
 table { background: #FFFFFF !important; color: var(--brand-700); }
 th { background: var(--brand-200) !important; color: var(--brand-700) !important; }
@@ -422,11 +450,11 @@ tbody tr:nth-child(even) { background-color: #F7FAFD !important; }
 button[type="submit"], .learning-guide-button, .register-guide-cta-button,
 .transcript-form button, .open-request-modal, .select-request-button,
 .approve-button, .btn-enroll-now, .btn-start, .btn-confirm {
-  border-color: var(--brand-700) !important;
+  border-color: var(--primary-start) !important;
   border-radius: 8px !important;
-  background: linear-gradient(135deg, var(--brand-700), var(--brand-400)) !important;
+  background: linear-gradient(135deg, var(--primary-start), var(--primary-end)) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 4px 20px rgba(var(--brand-700-rgb), .18) !important;
+  box-shadow: 0 4px 20px rgba(var(--brand-500-rgb), .18) !important;
   transition: transform .25s cubic-bezier(.4, 0, .2, 1), box-shadow .25s ease, filter .25s ease;
 }
 .btn-submit:hover, .btn-primary:hover, .btn-orange:hover, .btn-save:hover,
@@ -438,7 +466,7 @@ button.primary:hover, .primary-btn:hover, .btn-login:hover, .btn-add-lesson:hove
 .select-request-button:hover, .approve-button:hover {
   transform: translateY(-2px);
   filter: brightness(1.04);
-  box-shadow: 0 8px 30px rgba(var(--brand-700-rgb), .24) !important;
+  box-shadow: 0 8px 30px rgba(var(--brand-500-rgb), .24) !important;
 }
 .btn-submit:active, .btn-primary:active, .btn-orange:active,
 button[type="submit"]:active { transform: translateY(0); }
@@ -450,5 +478,22 @@ button[type="submit"]:active { transform: translateY(0); }
 .btn-outline:hover, .btn-outline-primary:hover, .btn-outline-orange:hover,
 .button.secondary:hover { background: var(--brand-200) !important; }
 
+button:disabled, button[disabled], input:disabled, select:disabled,
+textarea:disabled, .btn-disabled, [aria-disabled="true"] {
+  cursor: not-allowed !important;
+  opacity: .58 !important;
+  filter: saturate(.65);
+}
+
+button:focus-visible, a:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible {
+  outline: 3px solid rgba(var(--primary-end-rgb), .48) !important;
+  outline-offset: 2px;
+}
+
 .footer { border-top: 1px solid var(--brand-200) !important; }
 .footer * { color: inherit; }
+
+@media (max-width: 760px) {
+  body::after { background-image: url('../education-doodles-mobile.svg'); }
+}

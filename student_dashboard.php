@@ -14,8 +14,8 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261021-indigo-200-400-700">
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-page-background-50">
+    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261021-login-shared-background">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-shared-background">
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
