@@ -34,7 +34,11 @@ if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'parent') {
 try {
     $parentId = (string) $_SESSION['user_id'];
     $conn->exec('ALTER TABLE public.parents ADD COLUMN IF NOT EXISTS avatar_url TEXT');
-    $parentStmt = $conn->prepare('SELECT user_id AS parents_id, full_name AS parents_name, email, phone, avatar_url FROM public.parents WHERE user_id = :id LIMIT 1');
+    $parentStmt = $conn->prepare("SELECT p.user_id AS parents_id, p.full_name AS parents_name, p.email, p.phone, p.avatar_url,
+        COALESCE(a.address_line, '') AS address_line, COALESCE(a.subdistrict, '') AS subdistrict,
+        COALESCE(a.district, '') AS district, COALESCE(a.province, '') AS province, COALESCE(a.postal_code, '') AS postal_code
+        FROM public.parents p LEFT JOIN LATERAL (SELECT address_line, subdistrict, district, province, postal_code FROM public.user_addresses WHERE user_id = p.user_id ORDER BY is_primary DESC, address_id ASC LIMIT 1) a ON TRUE
+        WHERE p.user_id = :id LIMIT 1");
     $parentStmt->execute([':id' => $parentId]);
     $parent = $parentStmt->fetch(PDO::FETCH_ASSOC);
     if (!$parent) throw new RuntimeException('ไม่พบข้อมูลผู้ปกครอง');

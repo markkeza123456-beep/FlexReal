@@ -8,6 +8,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
     header('Location: login.php');
     exit;
 }
+$profileRole = strtolower((string) ($_SESSION['role'] ?? ''));
+$profileContactReadonly = $profileRole === 'staff' ? '' : 'readonly';
 
 require_once __DIR__ . '/config/db.php';
 
@@ -74,11 +76,18 @@ try {
 } catch (Exception $e) { $avatar_url = ''; }
 
 
-$teacherStmt = $conn->prepare('SELECT user_id, full_name, phone FROM public.teachers WHERE user_id = :teacher_id LIMIT 1');
+$teacherStmt = $conn->prepare("SELECT t.user_id, t.full_name, t.email, t.phone,
+    COALESCE(a.address_line, '') AS address_line, COALESCE(a.subdistrict, '') AS subdistrict,
+    COALESCE(a.district, '') AS district, COALESCE(a.province, '') AS province, COALESCE(a.postal_code, '') AS postal_code
+    FROM public.teachers t LEFT JOIN LATERAL (SELECT address_line, subdistrict, district, province, postal_code FROM public.user_addresses WHERE user_id = t.user_id ORDER BY is_primary DESC, address_id ASC LIMIT 1) a ON TRUE
+    WHERE t.user_id = :teacher_id LIMIT 1");
 $teacherStmt->execute([':teacher_id' => $teacherId]);
 $teacherRow = $teacherStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 $teacherName = trim((string) ($teacherRow['full_name'] ?? $_SESSION['name'] ?? $teacherId));
 if ($teacherName === '') $teacherName = $teacherId;
+$teacherNameParts = preg_split('/\s+/u', $teacherName, 2) ?: [];
+$teacherProfileFirstName = $teacherNameParts[0] ?? '';
+$teacherProfileLastName = $teacherNameParts[1] ?? '';
 
 
 $subjectStmt = $conn->prepare("
@@ -1015,24 +1024,32 @@ $stats = [
                     </div>
                 </div>
 
-                <div style="display:flex;flex-direction:column;gap:14px;">
+                    <div style="display:flex;flex-direction:column;gap:14px;">
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
                         <div style="display:flex;flex-direction:column;gap:6px;">
-                            <label style="font-size:12px;color:var(--text-muted);font-weight:500;">รหัสอาจารย์</label>
-                            <div style="background:var(--bg3);padding:11px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;color:var(--text-primary);font-size:13px;">
-                                <?= h($teacher['id']) ?>
-                            </div>
+                            <label style="font-size:12px;color:var(--text-muted);font-weight:500;">เลขบัตรประจำตัวประชาชน</label>
+                            <input class="form-input profile-readonly" value="<?= h($teacherRow['user_id'] ?? '') ?>" <?= $profileContactReadonly ?>>
                         </div>
                         <div style="display:flex;flex-direction:column;gap:6px;">
-                            <label style="font-size:12px;color:var(--text-muted);font-weight:500;">เบอร์โทรศัพท์</label>
-                            <div style="background:var(--bg3);padding:11px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);color:var(--text-dim);font-size:13px;">
-                                <?= h($teacherRow['phone'] ?? '-') ?>
-                            </div>
+                            <label style="font-size:12px;color:var(--text-muted);font-weight:500;">อีเมล</label>
+                            <input class="form-input profile-readonly" type="email" value="<?= h($teacherRow['email'] ?? '') ?>" <?= $profileContactReadonly ?>>
                         </div>
                     </div>
-                    <div style="display:flex;flex-direction:column;gap:6px;">
-                        <label style="font-size:12px;color:var(--text-muted);font-weight:500;">ชื่อ-นามสกุล</label>
-                        <input type="text" id="settingsName" class="form-input" value="<?= h($teacher['name']) ?>" placeholder="ชื่อ-นามสกุล" style="font-size:13px;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">ชื่อ<input type="text" id="settingsFirstName" class="form-input" value="<?= h($teacherProfileFirstName) ?>" autocomplete="given-name"></label>
+                        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">นามสกุล<input type="text" id="settingsLastName" class="form-input" value="<?= h($teacherProfileLastName) ?>" autocomplete="family-name"></label>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">เบอร์โทรศัพท์<input class="form-input profile-readonly" type="tel" value="<?= h($teacherRow['phone'] ?? '') ?>" <?= $profileContactReadonly ?>></label>
+                        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">บ้านเลขที่ / ถนน<input class="form-input profile-readonly" value="<?= h($teacherRow['address_line'] ?? '') ?>" <?= $profileContactReadonly ?>></label>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">ตำบล / แขวง<input class="form-input profile-readonly" value="<?= h($teacherRow['subdistrict'] ?? '') ?>" <?= $profileContactReadonly ?>></label>
+                        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">อำเภอ / เขต<input class="form-input profile-readonly" value="<?= h($teacherRow['district'] ?? '') ?>" <?= $profileContactReadonly ?>></label>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">จังหวัด<input class="form-input profile-readonly" value="<?= h($teacherRow['province'] ?? '') ?>" <?= $profileContactReadonly ?>></label>
+                        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">รหัสไปรษณีย์<input class="form-input profile-readonly" value="<?= h($teacherRow['postal_code'] ?? '') ?>" <?= $profileContactReadonly ?>></label>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:6px;">
                         <label style="font-size:12px;color:var(--text-muted);font-weight:500;">วิชาที่สอน</label>
@@ -1280,14 +1297,15 @@ document.getElementById('avatarFileInput').addEventListener('change', function()
 
 async function saveTeacherProfile() {
     const formData = new FormData();
-    formData.append('name', document.getElementById('settingsName').value.trim());
+    formData.append('first_name', document.getElementById('settingsFirstName').value.trim());
+    formData.append('last_name', document.getElementById('settingsLastName').value.trim());
 
     const res = await fetch('update_profile.php', { method: 'POST', body: formData });
     const data = await res.json();
 
     if (data.success) {
         const nameEl = document.querySelector('.profile-name');
-        if (nameEl) nameEl.textContent = document.getElementById('settingsName').value.trim();
+        if (nameEl) nameEl.textContent = data.name;
         showMsg('profileMsg', ' บันทึกข้อมูลสำเร็จ!', true);
     } else {
         showMsg('profileMsg', ' ' + data.message, false);

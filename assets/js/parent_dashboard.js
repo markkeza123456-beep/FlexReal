@@ -54,9 +54,17 @@ function applyParentProfile(p) {
 
   if (fn('displayName'))    fn('displayName').textContent  = p.name;
   if (fn('profileRole'))    fn('profileRole').textContent  = p.relation || 'ผู้ปกครอง';
-  if (fn('profileName'))    fn('profileName').value        = p.name;
+  const parentNameParts = String(p.name || '').trim().split(/\s+/u);
+  if (fn('profileFirstName')) fn('profileFirstName').value = parentNameParts.shift() || '';
+  if (fn('profileLastName')) fn('profileLastName').value = parentNameParts.join(' ');
+  if (fn('profileNationalId')) fn('profileNationalId').value = p.parents_id || '';
   if (fn('profileEmail'))   fn('profileEmail').value       = p.email || '';
   if (fn('profilePhone'))   fn('profilePhone').value       = p.phone || '';
+  if (fn('profileAddressLine')) fn('profileAddressLine').value = p.address_line || '';
+  if (fn('profileSubdistrict')) fn('profileSubdistrict').value = p.subdistrict || '';
+  if (fn('profileDistrict')) fn('profileDistrict').value = p.district || '';
+  if (fn('profileProvince')) fn('profileProvince').value = p.province || '';
+  if (fn('profilePostalCode')) fn('profilePostalCode').value = p.postal_code || '';
 
 
   const avatarImg     = fn('avatarImg');
@@ -113,9 +121,9 @@ async function saveProfile() {
   const btn = document.getElementById('saveProfileBtn');
   const feedback = document.getElementById('profileFeedback');
 
-  const name  = (document.getElementById('profileName')?.value  || '').trim();
-  const email = (document.getElementById('profileEmail')?.value || '').trim();
-  const phone = (document.getElementById('profilePhone')?.value || '').trim();
+  const firstName = (document.getElementById('profileFirstName')?.value || '').trim();
+  const lastName = (document.getElementById('profileLastName')?.value || '').trim();
+  const name = `${firstName} ${lastName}`.trim();
   const current  = document.getElementById('pwdCurrent')?.value  || '';
   const pwdNew   = document.getElementById('pwdNew')?.value      || '';
   const pwdConfirm = document.getElementById('pwdConfirm')?.value || '';
@@ -130,7 +138,7 @@ async function saveProfile() {
     feedback._t = setTimeout(() => { feedback.style.display = 'none'; }, 4000);
   }
 
-  if (!name) { showFeedback('error', 'กรุณากรอกชื่อ-นามสกุล'); return; }
+  if (!firstName || !lastName) { showFeedback('error', 'กรุณากรอกชื่อและนามสกุล'); return; }
   if (pwdNew && pwdNew !== pwdConfirm) { showFeedback('error', 'รหัสผ่านใหม่ไม่ตรงกัน'); return; }
   if (pwdNew && pwdNew.length < 6)    { showFeedback('error', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'); return; }
   if (pwdNew && !current)             { showFeedback('error', 'กรุณาใส่รหัสผ่านปัจจุบันก่อน'); return; }
@@ -138,9 +146,8 @@ async function saveProfile() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> กำลังบันทึก...'; }
   try {
     const body = new FormData();
-    body.append('name', name);
-    body.append('email', email);
-    body.append('phone', phone);
+    body.append('first_name', firstName);
+    body.append('last_name', lastName);
     body.append('pwd_current', current);
     body.append('pwd_new', pwdNew);
     const response = await fetch('update_parent_profile.php', { method: 'POST', body, credentials: 'same-origin' });
@@ -149,13 +156,9 @@ async function saveProfile() {
 
     const profile = currentParentProfile();
     profile.name = name;
-    profile.email = email;
-    profile.phone = phone;
     profile.avatarInitials = name.slice(0, 2);
     saveParent(profile);
     _parentData.parents_name = name;
-    _parentData.email = email;
-    _parentData.phone = phone;
     applyParentProfile(profile);
     ['pwdCurrent','pwdNew','pwdConfirm'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     const sw = document.getElementById('pwdStrengthWrap');
@@ -491,8 +494,14 @@ async function loadDashboardData() {
     if (_parentData) {
       const p = loadParent();
       p.name  = _parentData.parents_name || 'ผู้ปกครอง';
+      p.parents_id = _parentData.parents_id || '';
       p.email = _parentData.email || '';
       p.phone = _parentData.phone || '';
+      p.address_line = _parentData.address_line || '';
+      p.subdistrict = _parentData.subdistrict || '';
+      p.district = _parentData.district || '';
+      p.province = _parentData.province || '';
+      p.postal_code = _parentData.postal_code || '';
       p.avatarInitials = p.name.slice(0, 2);
       p.avatar_url = _parentData.avatar_url || '';
       saveParent(p);
