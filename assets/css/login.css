@@ -630,5 +630,53 @@ body {
 
 /* The registration form is taller than the login form, so let it grow and scroll naturally. */
 .register-page { width: 100%; height: auto; min-height: 100vh; align-items: flex-start; }
-.register-page .container { margin: auto; }
+.register-page .container {
+  width: 100%;
+  max-width: 720px;
+  padding: 24px 20px;
+  margin: auto;
+}
+.register-page .card { padding: 34px 40px 36px; }
 .register-page #roleTabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.register-page .section-label {
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+  font-size: .82rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--text-primary);
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+.register-page .input-wrap input,
+.register-page .input-wrap select,
+.register-page .input-wrap textarea {
+  border-color: #D8E2ED;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+  font-size: .95rem;
+  transition: border-color 320ms cubic-bezier(.22, 1, .36, 1), background-color 320ms ease, box-shadow 320ms ease;
+}
+.register-page .input-wrap input:hover,
+.register-page .input-wrap select:hover,
+.register-page .input-wrap textarea:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 0 0 1px rgba(85, 168, 232, .14);
+}
+.register-page .input-wrap input:focus,
+.register-page .input-wrap input:focus-visible,
+.register-page .input-wrap select:focus,
+.register-page .input-wrap textarea:focus {
+  border: 2px solid var(--orange-light);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(85, 168, 232, .12);
+}
+.register-page .back-row { margin-top: 14px; }
+
+@media (max-width: 760px) {
+  .register-page .container { max-width: 640px; }
+}
+@media (max-width: 520px) {
+  .register-page .container { padding: 20px 16px; }
+  .register-page .card { padding: 28px 22px 26px; }
+}
