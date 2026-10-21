@@ -3,7 +3,6 @@ let currentSubjectId = '';
 let currentCourseName = '';
 let enrolledCourses = {};
 let courseIdByName = {};
-let courseCacheById = {};
 let currentLessonsData = [];
 let currentProgressSummary = null;
 let currentPassedLessons = new Set();
@@ -23,7 +22,6 @@ const LESSON_VIDEO_FILES = [
 const VIDEO_CACHE_BUST = '';
 const SUBJECT_IMAGE_ENDPOINT = 'subject_image.php';
 const QUIZ_PASS_RATIO = 0.8;
-const COURSE_CACHE_MAX_AGE_MS = 30 * 60 * 1000;
 
 const REQUEST_TIMEOUT_MS = 10000;
 const MAX_LESSONS_PER_SUBJECT = 3;
@@ -76,38 +74,16 @@ function isStudentLoggedIn() {
     return Boolean(currentUser?.logged_in) && String(currentUser?.role || '').toLowerCase() === 'student';
 }
 
-function getCourseCacheKey() {
-    return `flexible-course-cache:${currentUser?.user_id || 'guest'}`;
-}
-
 function primeCourseCache(courses) {
     courseIdByName = {};
-    courseCacheById = {};
     (Array.isArray(courses) ? courses : []).forEach((course) => {
         const subjectId = pick(course, 'subjects_id', 'Subjects_ID');
         const subjectName = pick(course, 'subjects_name', 'Subjects_Name');
         if (subjectName) courseIdByName[subjectName] = subjectId;
         if (subjectId) {
-            courseCacheById[subjectId] = course;
             enrolledCourses[subjectId] = isTruthy(pick(course, 'is_enrolled', 'Is_Enrolled'));
         }
     });
-}
-
-function readCachedCourses() {
-    try {
-        const stored = JSON.parse(sessionStorage.getItem(getCourseCacheKey()) || 'null');
-        if (!stored || !Array.isArray(stored.courses) || Date.now() - Number(stored.savedAt || 0) > COURSE_CACHE_MAX_AGE_MS) return [];
-        return stored.courses;
-    } catch (error) {
-        return [];
-    }
-}
-
-function saveCachedCourses(courses) {
-    try {
-        sessionStorage.setItem(getCourseCacheKey(), JSON.stringify({ savedAt: Date.now(), courses }));
-    } catch (error) {}
 }
 
 function getDashboardUrlForRole(role) {
@@ -117,7 +93,7 @@ function getDashboardUrlForRole(role) {
         staff: 'staffdash.php',
         parent: 'parent_dashboard.php'
     };
-    return map[String(role || '').toLowerCase()] || 'index.html';
+    return map[String(role || '').toLowerCase()] || 'index.php';
 }
 
 function formatDisplayName(fullName, maxLength = 18) {
@@ -961,7 +937,7 @@ function goHome(event) {
 }
 
 function getCourseReturnUrl(courseName) {
-    const url = new URL('index.html', window.location.href);
+    const url = new URL('index.php', window.location.href);
     url.searchParams.set('subject_id', currentSubjectId);
     return url.pathname.split('/').pop() + url.search;
 }
@@ -1051,7 +1027,7 @@ function createCourseCardMarkup(course) {
     const fallbackImageUrl = getSubjectFallbackImage(subjectId, subjectName);
 
     return `
-        <div class="card" onclick="showCourse('${escapeHtml(subjectId)}')">
+        <a class="card" href="index.php?subject_id=${encodeURIComponent(subjectId)}">
             <img src="${escapeHtml(imageUrl)}" data-fallback="${escapeHtml(fallbackImageUrl)}" onerror="handleCourseImageError(this)" alt="ภาพประกอบวิชา ${escapeHtml(subjectName)}" loading="lazy">
             <div class="card-content">
                 <span class="card-tag ${subjectType}">${tagText}</span>
@@ -1059,7 +1035,7 @@ function createCourseCardMarkup(course) {
                 <p>${escapeHtml(subjectDesc)}</p>
                 <div class="card-meta">รหัสวิชา: ${escapeHtml(subjectId || '-')} · ${statusText}</div>
             </div>
-        </div>
+        </a>
     `;
 }
 
@@ -1121,15 +1097,13 @@ async function loadAllCourses() {
             dropdown.innerHTML = '';
             const courses = Array.isArray(result.data) ? result.data : [];
             primeCourseCache(courses);
-            saveCachedCourses(courses);
 
             courses.forEach(course => {
                 const subjectId = pick(course, 'subjects_id', 'Subjects_ID');
                 const subjectName = pick(course, 'subjects_name', 'Subjects_Name');
                 if (subjectId) {
                     const a = document.createElement('a');
-                    a.href = '#'; a.textContent = subjectName || subjectId;
-                    a.addEventListener('click', (e) => { e.preventDefault(); showCourse(subjectId); });
+                    a.href = `index.php?subject_id=${encodeURIComponent(subjectId)}`; a.textContent = subjectName || subjectId;
                     dropdown.appendChild(a);
                 }
             });
@@ -1143,16 +1117,6 @@ async function loadAllCourses() {
         }
     } catch (error) {
         console.error("Error loading courses:", error);
-        const cachedCourses = readCachedCourses();
-        if (cachedCourses.length > 0) {
-            primeCourseCache(cachedCourses);
-            renderCourseSections(cachedCourses);
-            const dropdown = document.getElementById('course-dropdown');
-            if (dropdown && dropdown.children.length === 0) {
-                dropdown.innerHTML = '<a href="#" onclick="return false;">แสดงข้อมูลจากแคชชั่วคราว</a>';
-            }
-            return;
-        }
         renderCourseSections([]);
         const grid = document.getElementById('course-grid');
         if (grid) grid.innerHTML = '<p style="text-align:center;">ไม่สามารถเชื่อมต่อฐานข้อมูลได้ หรือใช้เวลานานเกินไป</p>';
@@ -1160,76 +1124,17 @@ async function loadAllCourses() {
 }
 
 
-async function showCourse(subjectId) {
+function showCourse(subjectId) {
     if (courseIdByName[subjectId]) subjectId = courseIdByName[subjectId];
-    currentSubjectId = subjectId;
-    const requestedSubjectId = subjectId;
-    const cachedCourse = courseCacheById[subjectId];
-
-
-
-    showPage('course-detail');
-    if (cachedCourse) {
-        currentCourseName = pick(cachedCourse, 'subjects_name', 'Subjects_Name');
-        document.getElementById('detail-title').innerText = currentCourseName;
-        document.getElementById('detail-desc-top').innerText = 'รายละเอียดเบื้องต้น';
-        document.getElementById('detail-desc').innerText = pick(cachedCourse, 'subjects_description', 'Subjects_Description') || 'ยังไม่มีคำอธิบาย';
-        updateEnrollButton(Boolean(enrolledCourses[subjectId]));
-        setCurriculumAccess(Boolean(enrolledCourses[subjectId]));
-    } else {
-        setEnrollmentButtonLoading();
-        setCurriculumAccess(false);
-    }
-    try {
-        const response = await fetchJsonWithTimeout(`api_courses.php?action=get_detail&id=${subjectId}`);
-        const result = await response.json();
-        if (requestedSubjectId !== currentSubjectId) return;
-
-        if (result.status === 'success') {
-            const course = result.course;
-            const lessons = result.lessons;
-            currentCourseName = pick(course, 'subjects_name', 'Subjects_Name');
-
-            document.getElementById('detail-title').innerText = currentCourseName;
-            document.getElementById('detail-desc-top').innerText = 'รายละเอียดเบื้องต้น';
-            document.getElementById('detail-desc').innerText = pick(course, 'subjects_description', 'Subjects_Description') || 'ยังไม่มีคำอธิบาย';
-            updateInstructorInfo(course, result.instructors);
-
-
-            currentLessonsData = buildLessonsFromDB(Array.isArray(lessons) ? lessons : []);
-            updateCourseMeta(course, lessons);
-
-            currentPassedLessons = new Set();
-            applyCourseProgressSummary(null);
-            renderAllLessonAccordions();
-
-            openTab({ currentTarget: document.querySelector('.tab-btn') }, 'overview');
-
-            const url = new URL(window.location.href);
-            url.searchParams.set('subject_id', subjectId);
-            window.history.replaceState({}, '', url);
-
-
-
-            const isEnrolled = await checkCourseEnrollment(subjectId);
-            if (requestedSubjectId === currentSubjectId && isEnrolled) {
-                goToCourseLearning();
-            }
-        } else {
-            alert('ไม่พบข้อมูลรายวิชา: ' + result.message);
-        }
-    } catch (error) {
-        if (requestedSubjectId !== currentSubjectId) return;
-        console.error("Error fetching course detail:", error);
-        alert('เชื่อมต่อฐานข้อมูลล้มเหลว');
-    }
+    const destination = new URL('index.php', window.location.href);
+    destination.searchParams.set('subject_id', String(subjectId));
+    window.location.assign(destination.href);
 }
 
 function goToCourseLearning() {
     if (!enrolledCourses[currentSubjectId]) { alert('กรุณาลงรายวิชาก่อนเข้าเนื้อหาบทเรียน'); return; }
     document.getElementById('learning-title').innerText = document.getElementById('detail-title').innerText;
     document.getElementById('learning-desc-top').innerText = document.getElementById('detail-desc-top').innerText;
-    renderAllLessonAccordions();
     showPage('course-learning');
     openLearningTab({ currentTarget: document.querySelector("#course-learning .tab-btn[onclick*='learning-curriculum']") }, 'learning-curriculum');
     recordLearningEvent('course_enter', 1);
@@ -1712,7 +1617,7 @@ function showGuide(type) {
             <section class="register-guide" aria-label="ขั้นตอนการสมัครสมาชิก">
                 <div class="register-guide-layout">
                     <ol class="register-guide-steps">
-                        <li class="register-guide-step"><span class="register-step-number">01</span><span class="register-step-icon" aria-hidden="true"><i class="fa-solid fa-user-plus"></i></span><div><h3>สมัครสมาชิก</h3><p>เลือก <a href="regisss.php">สมัครสมาชิก</a> จากหน้าเข้าสู่ระบบ หรือเริ่มสมัครได้ที่ <a href="index.html" onclick="return goHome(event)">หน้าหลัก</a></p></div></li>
+                        <li class="register-guide-step"><span class="register-step-number">01</span><span class="register-step-icon" aria-hidden="true"><i class="fa-solid fa-user-plus"></i></span><div><h3>สมัครสมาชิก</h3><p>เลือก <a href="regisss.php">สมัครสมาชิก</a> จากหน้าเข้าสู่ระบบ หรือเริ่มสมัครได้ที่ <a href="index.php">หน้าหลัก</a></p></div></li>
                         <li class="register-guide-step"><span class="register-step-number">02</span><span class="register-step-icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span><div><h3>เลือกประเภทบัญชี</h3><p>เลือกประเภทบัญชี: นักเรียน อาจารย์ หรือผู้ปกครอง</p></div></li>
                         <li class="register-guide-step"><span class="register-step-number">03</span><span class="register-step-icon" aria-hidden="true"><i class="fa-solid fa-id-card"></i></span><div><h3>กรอกข้อมูลส่วนตัว</h3><p>กรอกชื่อ–นามสกุล เลขบัตรประชาชน 13 หลัก เบอร์โทรศัพท์ และที่อยู่อีเมล</p></div></li>
                         <li class="register-guide-step"><span class="register-step-number">04</span><span class="register-step-icon" aria-hidden="true"><i class="fa-solid fa-lock"></i></span><div><h3>ตั้งรหัสผ่าน</h3><p>ตั้งรหัสผ่านภาษาอังกฤษและตัวเลข 8–15 ตัว แล้วกรอกรหัสผ่านเดิมเพื่อยืนยัน</p></div></li>
@@ -1761,10 +1666,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 
-    const cachedCoursesBeforeSession = readCachedCourses();
-    if (cachedCoursesBeforeSession.length > 0) {
-        primeCourseCache(cachedCoursesBeforeSession);
-        renderCourseSections(cachedCoursesBeforeSession);
+    const initialRender = window.FLEXREAL_INITIAL || null;
+    if (initialRender && Array.isArray(initialRender.courses)) primeCourseCache(initialRender.courses);
+    if (initialRender && initialRender.course) {
+        const course = initialRender.course;
+        currentSubjectId = String(pick(course, 'course_id', 'subjects_id'));
+        currentCourseName = String(pick(course, 'name', 'subjects_name'));
+        currentLessonsData = buildLessonsFromDB(initialRender.lessons || []);
+        enrolledCourses[currentSubjectId] = isTruthy(pick(course, 'is_enrolled', 'Is_Enrolled'));
+        updateEnrollButton(enrolledCourses[currentSubjectId]);
+        setCurriculumAccess(enrolledCourses[currentSubjectId]);
     }
     try {
         const sessionResponse = await fetchJsonWithTimeout('student_session.php', { credentials: 'same-origin' });
@@ -1820,11 +1731,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentUser = { logged_in: false, role: '' };
     }
 
-    await loadAllCourses();
+    if (!initialRender || !Array.isArray(initialRender.courses)) await loadAllCourses();
+});
 
-    const params = new URLSearchParams(window.location.search);
-    const subjectId = params.get('subject_id');
-    const courseName = params.get('course');
-    if (subjectId) { setTimeout(() => { showCourse(subjectId); }, 300); }
-    else if (courseName) { setTimeout(() => { showCourse(courseName); }, 400); }
+window.addEventListener('pageshow', event => {
+    if (event.persisted) window.location.reload();
 });

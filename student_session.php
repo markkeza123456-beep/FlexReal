@@ -56,7 +56,7 @@ $payload = [
     'user_id' => $userId,
     'avatar_text' => $firstChar,
     'avatar_url' => $avatarUrl,
-    'dashboard_url' => $dashboardUrlMap[$role] ?? 'index.html',
+    'dashboard_url' => $dashboardUrlMap[$role] ?? 'index.php',
 ];
 
 echo json_encode($payload, JSON_UNESCAPED_UNICODE);
