@@ -29,7 +29,7 @@ $dashboardUrlMap = [
     'parent' => 'parent_dashboard.php',
 ];
 
-$avatarUrl = '';
+$avatarUrl = trim((string) ($_SESSION['avatar_url'] ?? ''));
 try {
     require_once __DIR__ . '/config/db.php';
     $profileTable = match ($role) {
@@ -42,7 +42,8 @@ try {
     if ($profileTable !== null) {
         $avatarStmt = $conn->prepare("SELECT avatar_url FROM public.{$profileTable} WHERE user_id = :user_id LIMIT 1");
         $avatarStmt->execute([':user_id' => $userId]);
-        $avatarUrl = (string) ($avatarStmt->fetchColumn() ?: '');
+        $databaseAvatarUrl = (string) ($avatarStmt->fetchColumn() ?: '');
+        if ($databaseAvatarUrl !== '') $avatarUrl = $databaseAvatarUrl;
     }
 } catch (Throwable $error) {
     error_log('Session avatar lookup failed: ' . $error->getMessage());

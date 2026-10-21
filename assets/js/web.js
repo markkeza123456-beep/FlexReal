@@ -291,21 +291,21 @@ function renderLessonAccordion(containerId) {
                     ${lesson.content ? `<div style="margin:0 0 12px;padding:12px 14px;border:1px solid #f0d6c5;border-radius:10px;background:#fffaf7;white-space:pre-wrap;"><b>รายละเอียดบทเรียน</b><p style="margin:6px 0 0;">${escapeHtml(lesson.content)}</p></div>` : ''}
                     <div class="curriculum-item">
                         <div class="curr-left">
-                            <span class="curr-icon"></span>
+                            <span class="curr-icon"><i class="fa-solid fa-file-lines" aria-hidden="true"></i></span>
                             <div class="curr-text"><b>เอกสารประกอบบทเรียน</b><p>${escapeHtml(lesson.documentName || 'เปิดอ่านเอกสาร')}</p></div>
                         </div>
                         <button class="btn-orange" onclick="openCourseDocument(${lesson.index})" ${canAccessLesson(lesson.index) ? '' : 'disabled'}>เปิดอ่าน</button>
                     </div>
                     <div class="curriculum-item">
                         <div class="curr-left">
-                            <span class="curr-icon"></span>
+                            <span class="curr-icon"><i class="fa-solid fa-circle-play" aria-hidden="true"></i></span>
                             <div class="curr-text"><b>วิดีโอสรุปบทเรียน</b><p>${escapeHtml(lesson.videoName || 'รับชมวิดีโอ')}</p></div>
                         </div>
                         <button class="btn-orange" onclick="openCourseVideo(${lesson.index})" ${isVideoUnlocked(lesson.index) ? '' : 'disabled'}>ชมวิดีโอ</button>
                     </div>
                     <div class="curriculum-item">
                         <div class="curr-left">
-                            <span class="curr-icon"></span>
+                            <span class="curr-icon"><i class="fa-solid fa-clipboard-question" aria-hidden="true"></i></span>
                             <div class="curr-text"><b>แบบทดสอบประจำบท</b><p>ทดสอบความเข้าใจ</p></div>
                         </div>
                         <button class="btn-outline-orange" onclick="startQuiz(${lesson.index})" ${isQuizUnlocked(lesson.index) ? '' : 'disabled'}>เริ่มทำ Quiz</button>
@@ -769,21 +769,37 @@ function submitAssignmentFromSidebar(scope) {
     alert('ส่งงานเรียบร้อยแล้ว');
 }
 
-function updateInstructorInfo(course) {
-    const teacherName = String(pick(course, 'teachers_name', 'Teachers_Name')).trim() || 'ยังไม่กำหนดอาจารย์ผู้สอน';
-    const teacherRole = teacherName === 'ยังไม่ระบุอาจารย์ผู้สอน' ? 'รอการกำหนดบทบาท' : 'อาจารย์ประจำวิชา';
-    setText('detail-instructor-name', teacherName);
-    setText('detail-instructor-role', teacherRole);
-    setText('learning-instructor-name', teacherName);
-    setText('learning-instructor-role', teacherRole);
+function updateInstructorInfo(course, instructors = []) {
+    const instructor = Array.isArray(instructors) ? instructors[0] : null;
+    const teacherName = String(instructor?.full_name || pick(course, 'teachers_name', 'Teachers_Name') || '').trim() || 'ยังไม่กำหนดอาจารย์ผู้สอน';
+    const contact = [instructor?.email, instructor?.phone].map(value => String(value || '').trim()).filter(Boolean).join(' · ');
+    const teacherInfo = contact ? `อาจารย์ผู้สอนประจำรายวิชา · ${contact}` : 'อาจารย์ผู้สอนประจำรายวิชา';
+    ['detail', 'learning'].forEach(prefix => {
+        setText(`${prefix}-instructor-name`, teacherName);
+        setText(`${prefix}-instructor-role`, teacherInfo);
+        const avatar = document.getElementById(`${prefix}-instructor-avatar`);
+        if (!avatar) return;
+        avatar.replaceChildren();
+        const avatarUrl = String(instructor?.avatar_url || '').trim();
+        if (avatarUrl) {
+            const image = document.createElement('img');
+            image.src = avatarUrl;
+            image.alt = `รูปโปรไฟล์ ${teacherName}`;
+            image.onerror = () => avatar.replaceChildren(document.createTextNode(teacherName.slice(0, 1) || 'อ'));
+            avatar.appendChild(image);
+        } else {
+            avatar.textContent = teacherName === 'ยังไม่กำหนดอาจารย์ผู้สอน' ? 'อ' : teacherName.slice(0, 1);
+        }
+    });
 }
 
 function updateCourseMeta(course, lessons) {
-    const lessonCount = Math.min(currentLessonsData.length || 0, MAX_LESSONS_PER_SUBJECT);
+    const lessonCount = Number(course?.lesson_count ?? lessons?.length ?? 0);
+    const quizCount = Number(course?.quiz_count ?? 0);
     setText('detail-lesson-count', `${lessonCount} บทเรียน`);
-    setText('detail-quiz-count', `${lessonCount} ชุด`);
+    setText('detail-quiz-count', `${quizCount} ชุด`);
     setText('learning-lesson-count', `${lessonCount} บทเรียน`);
-    setText('learning-quiz-count', `${lessonCount} ชุด`);
+    setText('learning-quiz-count', `${quizCount} ชุด`);
 }
 
 function getAutoQuizProgressPercent() {
@@ -1177,8 +1193,7 @@ async function showCourse(subjectId) {
             document.getElementById('detail-title').innerText = currentCourseName;
             document.getElementById('detail-desc-top').innerText = pick(course, 'subjects_description', 'Subjects_Description') || 'รายละเอียดเบื้องต้น';
             document.getElementById('detail-desc').innerText = pick(course, 'subjects_description', 'Subjects_Description') || 'คำอธิบายรายวิชา...';
-            document.getElementById('detail-duration').innerText = course.duration || 'ไม่ระบุเวลา';
-            updateInstructorInfo(course);
+            updateInstructorInfo(course, result.instructors);
 
 
             currentLessonsData = buildLessonsFromDB(Array.isArray(lessons) ? lessons : []);
@@ -1215,7 +1230,6 @@ function goToCourseLearning() {
     document.getElementById('learning-title').innerText = document.getElementById('detail-title').innerText;
     document.getElementById('learning-desc-top').innerText = document.getElementById('detail-desc-top').innerText;
     document.getElementById('learning-desc').innerText = document.getElementById('detail-desc').innerText;
-    document.getElementById('learning-duration').innerText = document.getElementById('detail-duration').innerText;
     renderAllLessonAccordions();
     showPage('course-learning');
     openLearningTab({ currentTarget: document.querySelector("#course-learning .tab-btn[onclick*='learning-curriculum']") }, 'learning-curriculum');
@@ -1779,6 +1793,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     avatarImage.src = currentUser.avatar_url;
                     avatarImage.alt = '';
                     avatarImage.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+                    avatarImage.onerror = () => userAvatar.replaceChildren(document.createTextNode(currentUser.avatar_text || 'U'));
                     userAvatar.replaceChildren(avatarImage);
                 } else {
                     userAvatar.replaceChildren(document.createTextNode(currentUser.avatar_text || 'U'));
