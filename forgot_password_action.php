@@ -61,14 +61,18 @@ try {
 
         $mail->Username   = 'markkeza123456@gmail.com';
         $mail->Password   = 'lprq ixqu ugye ayph';
-        $mail->setFrom('markkeza123456@gmail.com', 'Flexible Support');
+        $mail->setFrom('markkeza123456@gmail.com', 'Flexible Learning Hub');
 
         $mail->addAddress($email);
 
 
         $mail->isHTML(true);
-        $mail->Subject = 'รีเซ็ตรหัสผ่าน - NEXORA Flexible Learning Hub';
-        $mail->Body    = "สวัสดีคุณ {$user['user_name']},<br><br>รหัส PIN 6 หลักสำหรับการรีเซ็ตรหัสผ่านของคุณคือ: <h2 style='color:#2d3436;'>{$token}</h2><br>รหัสนี้จะหมดอายุภายใน 15 นาที<br><br>หากคุณไม่ได้ทำรายการนี้ กรุณาเพิกเฉยต่ออีเมลฉบับนี้";
+        $mail->Subject = 'รีเซ็ตรหัสผ่านบัญชีของคุณ - Flexible Learning Hub';
+        $safeUserName = htmlspecialchars((string) ($user['user_name'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $safeToken = htmlspecialchars((string) $token, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $mail->addEmbeddedImage(__DIR__ . '/images/flexible-learning-hub-logo-transparent.png', 'flexible-learning-hub-logo', 'flexible-learning-hub-logo.png');
+        $mail->Body = "<!doctype html><html lang='th'><body style='margin:0;padding:24px;background:#f4fbfc;font-family:Arial,sans-serif;color:#263238'><table role='presentation' width='100%' cellspacing='0' cellpadding='0'><tr><td align='center'><table role='presentation' width='560' cellspacing='0' cellpadding='0' style='max-width:100%;background:#fff;border:1px solid #dceef1;border-radius:12px'><tr><td style='padding:28px 32px;text-align:center;border-bottom:1px solid #e7f0f2'><img src='cid:flexible-learning-hub-logo' alt='Flexible Learning Hub' width='240' style='display:block;width:240px;max-width:100%;height:auto;margin:0 auto'></td></tr><tr><td style='padding:28px 32px'><p>สวัสดีคุณ {$safeUserName},</p><p>รหัส PIN 6 หลักสำหรับรีเซ็ตรหัสผ่านบัญชี Flexible Learning Hub ของคุณคือ:</p><p style='margin:24px 0;text-align:center;font-size:28px;font-weight:bold;letter-spacing:6px;color:#087e8b'>{$safeToken}</p><p>รหัสนี้จะหมดอายุภายใน 15 นาที</p><p>หากคุณไม่ได้ทำรายการนี้ กรุณาเพิกเฉยต่ออีเมลฉบับนี้</p></td></tr><tr><td style='padding:18px 32px;text-align:center;border-top:1px solid #e7f0f2;color:#64748b;font-size:13px'>Flexible Learning Hub</td></tr></table></td></tr></table></body></html>";
+        $mail->AltBody = "สวัสดีคุณ {$user['user_name']},\n\nรหัส PIN สำหรับรีเซ็ตรหัสผ่าน Flexible Learning Hub คือ {$token}\nรหัสนี้จะหมดอายุภายใน 15 นาที\n\nFlexible Learning Hub";
 
         $mail->send();
         session_regenerate_id(true);

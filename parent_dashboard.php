@@ -9,7 +9,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>หน้าผู้ปกครอง - FLEXIBLE LEARNING HUB</title>
+  <title>หน้าผู้ปกครอง - Flexible Learning Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Orbitron:wght@600;700&display=swap" rel="stylesheet" />
