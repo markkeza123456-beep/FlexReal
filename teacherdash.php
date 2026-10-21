@@ -381,22 +381,13 @@ $stats = [
         .choice-label { font-weight: 600; color: var(--text-dim); font-size: 14px; width: 16px; text-align: center; }
         @media (max-width: 760px) { .course-content-editor { grid-template-columns: 1fr !important; } }
     </style>
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-shared-background">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge">
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
 <aside class="sidebar">
-    <a class="sidebar-logo" href="index.html" title="กลับหน้าหลักและรายวิชา">
-        <div class="logo-icon">
-            <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-                <polygon points="16,2 30,10 30,22 16,30 2,22 2,10" fill="none" stroke="#5C6BC0" stroke-width="2.5"/>
-                <polygon points="16,8 24,13 24,20 16,25 8,20 8,13" fill="#5C6BC0" opacity="0.35"/>
-            </svg>
-        </div>
-        <div>
-            <div class="logo-name">FLEXIBLE</div>
-            <div class="logo-sub">LEARNING HUB</div>
-        </div>
+    <a class="sidebar-logo sidebar-brand-link" href="index.html" title="กลับหน้าหลักและรายวิชา">
+        <img class="sidebar-brand-logo" src="images/flexible-learning-hub-logo-transparent.png" alt="Flexible Learning Hub">
     </a>
 
     <script>

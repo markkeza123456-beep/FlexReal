@@ -30,9 +30,8 @@ $sidebarEscape = static fn($value): string => htmlspecialchars((string) $value, 
 ?>
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <a class="brand-home-link" href="staffdash.php" title="กลับหน้าหลักและรายวิชา">
-      <div class="flex-brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="32,6 53,18 53,42 32,56 11,42 11,18" fill="none" stroke="#324860" stroke-width="5" stroke-linejoin="round"/><polygon points="32,15 45,23 45,39 32,47 19,39 19,23" fill="#EEF4F8"/></svg></div>
-      <div class="flex-brand-text"><span class="flex-brand-name">FLEXIBLE</span><span class="flex-brand-sub">LEARNING HUB</span></div>
+    <a class="brand-home-link sidebar-brand-link" href="staffdash.php" title="กลับหน้าหลักและรายวิชา">
+      <img class="sidebar-brand-logo" src="images/flexible-learning-hub-logo-transparent.png" alt="Flexible Learning Hub">
     </a>
     <button class="sidebar-close" id="sidebarClose" type="button" title="ปิดเมนู">ปิด</button>
   </div>

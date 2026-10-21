@@ -15,16 +15,15 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261021-sidebar-profile-text-states">
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-shared-background">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge">
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
     <div class="dashboard-container">
 
         <aside class="sidebar">
-            <a class="logo-section" href="index.html" title="กลับหน้าหลักและรายวิชา">
-                <h2>FLEXIBLE</h2>
-                <span>LEARNING HUB</span>
+            <a class="logo-section sidebar-brand-link" href="index.html" title="กลับหน้าหลักและรายวิชา">
+                <img class="sidebar-brand-logo" src="images/flexible-learning-hub-logo-transparent.png" alt="Flexible Learning Hub">
             </a>
             <nav class="menu">
                 <button type="button" class="menu-item active" id="btn-dashboard">

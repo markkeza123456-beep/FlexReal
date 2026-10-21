@@ -29,7 +29,7 @@ try {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261021-login-shared-background">
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-shared-background">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge">
     <style>
         .transfer-content { max-width: 1100px; margin: 0 auto; padding: 36px; }
         .transfer-content h1 { margin: 0 0 8px; }
@@ -46,8 +46,8 @@ try {
 </head>
 <body>
 <aside class="sidebar">
-    <a class="sidebar-logo" href="teacherdash.php">
-        <div><div class="logo-name">FLEXIBLE</div><div class="logo-sub">LEARNING HUB</div></div>
+    <a class="sidebar-logo sidebar-brand-link" href="teacherdash.php">
+        <img class="sidebar-brand-logo" src="images/flexible-learning-hub-logo-transparent.png" alt="Flexible Learning Hub">
     </a>
     <nav class="sidebar-nav">
         <a href="teacherdash.php" class="nav-item"><span class="nav-icon"></span><span>แดชบอร์ด</span></a>

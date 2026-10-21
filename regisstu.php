@@ -45,7 +45,7 @@ try {
   <link rel="stylesheet" href="assets/css/regisstu.css?v=20261021-login-shared-background" />
   <link rel="stylesheet" href="assets/css/login.css?v=20261021-brighter-success-green" />
     <link rel="stylesheet" href="assets/css/responsive.css">
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-shared-background" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge" />
 </head>
 <body class="register-page">
   <div class="bg-grid"></div>

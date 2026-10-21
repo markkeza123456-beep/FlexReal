@@ -96,15 +96,14 @@ $summaryCards = [
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/officer-dashboard.css?v=20261021-login-shared-background">
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-shared-background">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge">
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
   <div class="page-shell">
     <aside class="sidebar">
       <div class="brand-block">
-        <div class="brand-icon">⌂</div>
-        <div><div class="brand-title">แดชบอร์ดเจ้าหน้าที่</div><div class="brand-subtitle">ข้อมูลสดจากฐานข้อมูล PostgreSQL / Supabase</div></div>
+        <a class="sidebar-brand-link" href="index.html" title="กลับหน้าหลักและรายวิชา"><img class="sidebar-brand-logo" src="images/flexible-learning-hub-logo-transparent.png" alt="Flexible Learning Hub"></a>
       </div>
       <div class="profile-card">
         <div class="profile-avatar"><?php if ($avatarUrl !== ''): ?><img src="<?= h($avatarUrl) ?>" alt="avatar"><?php else: ?><?= h(mb_substr($officerName,0,1,'UTF-8') ?: 'ย') ?><?php endif; ?></div>

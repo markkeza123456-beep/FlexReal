@@ -281,7 +281,7 @@ function renderLessonAccordion(containerId) {
                     </div>
                     <div class="curriculum-item">
                         <div class="curr-left">
-                            <span class="curr-icon"><i class="fa-solid fa-clipboard-question" aria-hidden="true"></i></span>
+                            <span class="curr-icon"><i class="fa-solid fa-question" aria-hidden="true"></i></span>
                             <div class="curr-text"><b>แบบทดสอบประจำบท</b><p>ทดสอบความเข้าใจ</p></div>
                         </div>
                         <button class="btn-outline-orange" onclick="startQuiz(${lesson.index})" ${isQuizUnlocked(lesson.index) ? '' : 'disabled'}>เริ่มทำ Quiz</button>

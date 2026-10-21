@@ -111,6 +111,37 @@ body::after {
   -webkit-backdrop-filter: blur(10px);
 }
 
+.sidebar-brand-logo {
+  display: block;
+  width: min(100%, 152px) !important;
+  max-height: 54px !important;
+  margin-inline: auto;
+  object-fit: contain;
+  object-position: center;
+  transform: translateX(-6px);
+}
+
+.sidebar-brand-link {
+  display: flex;
+  align-items: center !important;
+  justify-content: center;
+  width: 100%;
+}
+
+.sidebar > .logo-section.sidebar-brand-link,
+.sidebar > .sidebar-logo.sidebar-brand-link {
+  width: 100%;
+  align-items: center !important;
+}
+
+.brand-block > .sidebar-brand-link {
+  margin-inline: auto;
+}
+
+.sidebar-header .brand-home-link.sidebar-brand-link {
+  align-items: center !important;
+}
+
 
 .topbar,
 .page-header,

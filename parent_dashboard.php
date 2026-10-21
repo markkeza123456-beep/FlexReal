@@ -91,7 +91,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
     .parent-profile { transition: background .2s; padding: 8px; margin: -8px; border-radius: 10px; }
     .parent-profile:hover { background: rgba(255,255,255,0.05); }
   </style>
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-shared-background" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge" />
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
@@ -99,9 +99,8 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
 <div class="wrap">
 
   <aside class="sidebar">
-    <a class="logo logo-section" href="index.html" title="กลับหน้าหลักและรายวิชา">
-      <h2>FLEXIBLE</h2>
-      <span>LEARNING HUB</span>
+    <a class="logo logo-section sidebar-brand-link" href="index.html" title="กลับหน้าหลักและรายวิชา">
+      <img class="sidebar-brand-logo" src="images/flexible-learning-hub-logo-transparent.png" alt="Flexible Learning Hub">
     </a>
 
     <nav class="menu">

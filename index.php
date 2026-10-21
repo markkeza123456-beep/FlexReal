@@ -45,7 +45,7 @@ function hubLessonList(array $lessons): string {
         if (trim((string) ($lesson['content'] ?? '')) !== '') $html .= '<div style="margin:0 0 12px;padding:12px 14px;border:1px solid #f0d6c5;border-radius:10px;background:#fffaf7;white-space:pre-wrap"><b>รายละเอียดบทเรียน</b><p style="margin:6px 0 0">' . nl2br(hubEscape($lesson['content'])) . '</p></div>';
         $html .= '<div class="curriculum-item"><div class="curr-left"><span class="curr-icon"><i class="fa-solid fa-file-lines" aria-hidden="true"></i></span><div class="curr-text"><b>เอกสารประกอบบทเรียน</b><p>' . $document . '</p></div></div><button class="btn-orange" onclick="openCourseDocument(' . $number . ')">เปิดอ่าน</button></div>';
         $html .= '<div class="curriculum-item"><div class="curr-left"><span class="curr-icon"><i class="fa-solid fa-circle-play" aria-hidden="true"></i></span><div class="curr-text"><b>วิดีโอสรุปบทเรียน</b><p>' . $video . '</p></div></div><button class="btn-orange" onclick="openCourseVideo(' . $number . ')">ชมวิดีโอ</button></div>';
-        $html .= '<div class="curriculum-item"><div class="curr-left"><span class="curr-icon"><i class="fa-solid fa-clipboard-question" aria-hidden="true"></i></span><div class="curr-text"><b>แบบทดสอบประจำบท</b><p>ทดสอบความเข้าใจ</p></div></div><button class="btn-outline-orange" onclick="startQuiz(' . $number . ')">เริ่มทำ Quiz</button></div></div></div></article>';
+        $html .= '<div class="curriculum-item"><div class="curr-left"><span class="curr-icon"><i class="fa-solid fa-question" aria-hidden="true"></i></span><div class="curr-text"><b>แบบทดสอบประจำบท</b><p>ทดสอบความเข้าใจ</p></div></div><button class="btn-outline-orange" onclick="startQuiz(' . $number . ')">เริ่มทำ Quiz</button></div></div></div></article>';
     }
     return $html;
 }
@@ -119,7 +119,7 @@ $hubClientCourse = $hubCourse ? [
     <link rel="stylesheet" href="assets/css/web.css?v=20261021-five-steps-gradient">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-shared-background">
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge">
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body class="landing-page">
@@ -357,7 +357,7 @@ $hubClientCourse = $hubCourse ? [
 </footer>
 
 <script>window.FLEXREAL_INITIAL = <?= json_encode(['courses' => $hubClientCourses, 'course' => $hubClientCourse, 'lessons' => $hubLessons, 'instructors' => $hubInstructors], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;</script>
-<script src="assets/js/web.js?v=20261021-ssr-course-pages"></script>
+<script src="assets/js/web.js?v=20261021-quiz-icon-fix"></script>
 
 </body>
 </html>

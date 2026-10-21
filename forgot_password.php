@@ -8,9 +8,11 @@
   <link rel="stylesheet" href="assets/css/login.css?v=20261021-brighter-success-green" />
   <style>
     .step-2, .step-3 { display: none; }
+    .toggle-pw .eye-slash { opacity: 0; transition: opacity 160ms ease; }
+    .toggle-pw.is-visible .eye-slash { opacity: 1; }
   </style>
     <link rel="stylesheet" href="assets/css/responsive.css">
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-shared-background" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge" />
 </head>
 <body>
   <div class="bg-grid"></div>
@@ -62,12 +64,14 @@
             <label class="label">รหัสผ่านใหม่</label>
             <div class="input-wrap">
               <input type="password" id="new_password" placeholder="อังกฤษและตัวเลข 8-15 ตัว" required />
+              <button type="button" class="toggle-pw" data-toggle-password="new_password" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m3 3 18 18"/></svg></button>
             </div>
           </div>
           <div class="field">
             <label class="label">ยืนยันรหัสผ่านใหม่</label>
             <div class="input-wrap">
               <input type="password" id="confirm_password" placeholder="กรอกรหัสผ่านใหม่อีกครั้ง" required />
+              <button type="button" class="toggle-pw" data-toggle-password="confirm_password" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m3 3 18 18"/></svg></button>
             </div>
           </div>
           <button type="submit" class="btn-submit">เปลี่ยนรหัสผ่าน</button>
@@ -88,6 +92,19 @@
       toast.className = 'toast show ' + type;
       setTimeout(() => toast.classList.remove('show'), 3000);
     }
+
+    document.querySelectorAll('[data-toggle-password]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const input = document.getElementById(button.dataset.togglePassword);
+        if (!input) return;
+        const isVisible = input.type === 'password';
+        input.type = isVisible ? 'text' : 'password';
+        button.classList.toggle('is-visible', isVisible);
+        const label = isVisible ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน';
+        button.setAttribute('aria-label', label);
+        button.title = label;
+      });
+    });
 
     document.getElementById('forgotForm').addEventListener('submit', async (e) => {
       e.preventDefault();
