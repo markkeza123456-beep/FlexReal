@@ -58,7 +58,7 @@ if ($displayName !== '') {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261021-subject-type-color-coding" />
+  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261021-profile-two-column-fields" />
   <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-background-only" />
     <link rel="stylesheet" href="assets/css/responsive.css">
   <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout" />
@@ -729,7 +729,7 @@ if ($displayName !== '') {
           </div>
         </div>
         <div class="form-card staff-profile-page-card profile-settings-card">
-          <h2 class="staff-profile-card-title">👤 โปรไฟล์</h2>
+          <h2 class="staff-profile-card-title"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="9" r="3"/><path d="M6.8 18a5.5 5.5 0 0 1 10.4 0"/></svg> โปรไฟล์เจ้าหน้าที่</h2>
           <div class="staff-profile-identity">
             <button type="button" class="staff-profile-avatar" onclick="document.getElementById('staffAvatarInput').click()" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์" aria-label="เปลี่ยนรูปโปรไฟล์">
               <img id="staffProfileAvatarImg" src="<?= htmlspecialchars($staffAvatarUrl, ENT_QUOTES, 'UTF-8') ?>" alt="รูปโปรไฟล์"
@@ -740,22 +740,26 @@ if ($displayName !== '') {
             <div class="staff-profile-identity-info"><h2><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></h2><p id="staffProfileIdentifier">เจ้าหน้าที่</p><span>รูปโปรไฟล์</span></div>
           </div>
           <form id="staffProfileForm">
-            <label class="form-field"><span class="form-label">เลขบัตรประจำตัวประชาชน</span><input class="staff-profile-input" name="user_id" inputmode="numeric" maxlength="32" required value="<?= htmlspecialchars((string) $_SESSION['user_id'], ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
             <div class="form-grid-2">
               <label class="form-field"><span class="form-label">ชื่อ</span><input class="staff-profile-input" name="first_name" required maxlength="100" value="<?= htmlspecialchars($profileFirstName, ENT_QUOTES, 'UTF-8') ?>"></label>
               <label class="form-field"><span class="form-label">นามสกุล</span><input class="staff-profile-input" name="last_name" required maxlength="100" value="<?= htmlspecialchars($profileLastName, ENT_QUOTES, 'UTF-8') ?>"></label>
             </div>
-            <label class="form-field"><span class="form-label">อีเมล</span><input class="staff-profile-input" name="email" type="email" maxlength="254" value="<?= htmlspecialchars((string) ($staffProfile['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
-            <label class="form-field"><span class="form-label">เบอร์โทรศัพท์</span><input class="staff-profile-input" name="phone" type="tel" maxlength="30" value="<?= htmlspecialchars((string) ($staffProfile['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
             <div class="form-grid-2">
+              <label class="form-field"><span class="form-label">เลขบัตรประจำตัวประชาชน</span><input class="staff-profile-input" name="user_id" inputmode="numeric" maxlength="32" required value="<?= htmlspecialchars((string) $_SESSION['user_id'], ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
+              <label class="form-field"><span class="form-label">อีเมล</span><input class="staff-profile-input" name="email" type="email" maxlength="254" value="<?= htmlspecialchars((string) ($staffProfile['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
+            </div>
+            <div class="form-grid-2">
+              <label class="form-field"><span class="form-label">เบอร์โทรศัพท์</span><input class="staff-profile-input" name="phone" type="tel" maxlength="30" value="<?= htmlspecialchars((string) ($staffProfile['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
               <label class="form-field"><span class="form-label">บ้านเลขที่ / ถนน</span><input class="staff-profile-input" name="address_line" maxlength="255" value="<?= htmlspecialchars((string) ($staffAddress['address_line'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
-              <label class="form-field"><span class="form-label">ตำบล / แขวง</span><input class="staff-profile-input" name="subdistrict" maxlength="150" value="<?= htmlspecialchars((string) ($staffAddress['subdistrict'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
             </div>
             <div class="form-grid-2">
+              <label class="form-field"><span class="form-label">ตำบล / แขวง</span><input class="staff-profile-input" name="subdistrict" maxlength="150" value="<?= htmlspecialchars((string) ($staffAddress['subdistrict'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
               <label class="form-field"><span class="form-label">อำเภอ / เขต</span><input class="staff-profile-input" name="district" maxlength="150" value="<?= htmlspecialchars((string) ($staffAddress['district'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
-              <label class="form-field"><span class="form-label">จังหวัด</span><input class="staff-profile-input" name="province" maxlength="150" value="<?= htmlspecialchars((string) ($staffAddress['province'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
             </div>
-            <label class="form-field"><span class="form-label">รหัสไปรษณีย์</span><input class="staff-profile-input" name="postal_code" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" value="<?= htmlspecialchars((string) ($staffAddress['postal_code'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
+            <div class="form-grid-2">
+              <label class="form-field"><span class="form-label">จังหวัด</span><input class="staff-profile-input" name="province" maxlength="150" value="<?= htmlspecialchars((string) ($staffAddress['province'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
+              <label class="form-field"><span class="form-label">รหัสไปรษณีย์</span><input class="staff-profile-input" name="postal_code" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" value="<?= htmlspecialchars((string) ($staffAddress['postal_code'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
+            </div>
             <div class="staff-profile-message" id="staffProfileMessage" role="status" aria-live="polite"></div>
             <div class="staff-profile-actions"><button type="submit" class="btn-primary" id="saveStaffProfileBtn"><span class="btn-text">บันทึกข้อมูล</span></button></div>
           </form>

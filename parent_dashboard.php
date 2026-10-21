@@ -14,7 +14,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Orbitron:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-  <link rel="stylesheet" href="assets/css/parent_dashboard.css?v=20261021-subject-type-badges" />
+  <link rel="stylesheet" href="assets/css/parent_dashboard.css?v=20261021-profile-two-column-fields" />
   <style>
 
     .settings-wrapper { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.2rem; align-items: start; max-width: 620px; width: 100%; margin-inline: auto; }
@@ -53,15 +53,17 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
     .avatar-hint { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
     .settings-form { display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1.2rem; }
+    .settings-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
     .settings-field { display: flex; flex-direction: column; gap: 5px; }
     .settings-label { font-size: 12px; color: var(--text-muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
     .settings-input {
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px; padding: 9px 12px; color: var(--text);
-      font-family: 'Kanit', sans-serif; font-size: 13px; outline: none;
+      box-sizing: border-box; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text-primary);
+      font-family: 'Kanit', sans-serif; font-size: 14px; line-height: normal; outline: none;
       transition: border-color .2s;
     }
     .settings-input:focus { border-color: rgba(92, 107, 192,0.5); }
+    @media (max-width: 640px) { .settings-row { grid-template-columns: 1fr; } }
 
     .pwd-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.07); }
     .password-settings-card .pwd-section { margin-top: 0; padding-top: 0; border-top: 0; }
@@ -316,16 +318,26 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
 
 
           <div class="settings-form">
-            <div class="settings-field"><label class="settings-label">ชื่อ</label><input type="text" class="settings-input" id="profileFirstName" autocomplete="given-name"></div>
-            <div class="settings-field"><label class="settings-label">นามสกุล</label><input type="text" class="settings-input" id="profileLastName" autocomplete="family-name"></div>
-            <div class="settings-field"><label class="settings-label">เลขบัตรประจำตัวประชาชน</label><input type="text" class="settings-input profile-readonly" id="profileNationalId" <?= $profileContactReadonly ?>></div>
-            <div class="settings-field"><label class="settings-label">อีเมล</label><input type="email" class="settings-input profile-readonly" id="profileEmail" <?= $profileContactReadonly ?>></div>
-            <div class="settings-field"><label class="settings-label">เบอร์โทรศัพท์</label><input type="tel" class="settings-input profile-readonly" id="profilePhone" <?= $profileContactReadonly ?>></div>
-            <div class="settings-field"><label class="settings-label">บ้านเลขที่ / ถนน</label><input type="text" class="settings-input profile-readonly" id="profileAddressLine" <?= $profileContactReadonly ?>></div>
-            <div class="settings-field"><label class="settings-label">ตำบล / แขวง</label><input type="text" class="settings-input profile-readonly" id="profileSubdistrict" <?= $profileContactReadonly ?>></div>
-            <div class="settings-field"><label class="settings-label">อำเภอ / เขต</label><input type="text" class="settings-input profile-readonly" id="profileDistrict" <?= $profileContactReadonly ?>></div>
-            <div class="settings-field"><label class="settings-label">จังหวัด</label><input type="text" class="settings-input profile-readonly" id="profileProvince" <?= $profileContactReadonly ?>></div>
-            <div class="settings-field"><label class="settings-label">รหัสไปรษณีย์</label><input type="text" class="settings-input profile-readonly" id="profilePostalCode" <?= $profileContactReadonly ?>></div>
+            <div class="settings-row">
+              <div class="settings-field"><label class="settings-label">ชื่อ</label><input type="text" class="settings-input" id="profileFirstName" autocomplete="given-name"></div>
+              <div class="settings-field"><label class="settings-label">นามสกุล</label><input type="text" class="settings-input" id="profileLastName" autocomplete="family-name"></div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-field"><label class="settings-label">เลขบัตรประจำตัวประชาชน</label><input type="text" class="settings-input profile-readonly" id="profileNationalId" <?= $profileContactReadonly ?>></div>
+              <div class="settings-field"><label class="settings-label">อีเมล</label><input type="email" class="settings-input profile-readonly" id="profileEmail" <?= $profileContactReadonly ?>></div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-field"><label class="settings-label">เบอร์โทรศัพท์</label><input type="tel" class="settings-input profile-readonly" id="profilePhone" <?= $profileContactReadonly ?>></div>
+              <div class="settings-field"><label class="settings-label">บ้านเลขที่ / ถนน</label><input type="text" class="settings-input profile-readonly" id="profileAddressLine" <?= $profileContactReadonly ?>></div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-field"><label class="settings-label">ตำบล / แขวง</label><input type="text" class="settings-input profile-readonly" id="profileSubdistrict" <?= $profileContactReadonly ?>></div>
+              <div class="settings-field"><label class="settings-label">อำเภอ / เขต</label><input type="text" class="settings-input profile-readonly" id="profileDistrict" <?= $profileContactReadonly ?>></div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-field"><label class="settings-label">จังหวัด</label><input type="text" class="settings-input profile-readonly" id="profileProvince" <?= $profileContactReadonly ?>></div>
+              <div class="settings-field"><label class="settings-label">รหัสไปรษณีย์</label><input type="text" class="settings-input profile-readonly" id="profilePostalCode" <?= $profileContactReadonly ?>></div>
+            </div>
             <div class="settings-field"><label class="settings-label">ความสัมพันธ์</label><input type="text" class="settings-input profile-readonly" id="profileRelation" value="ผู้ปกครอง" readonly></div>
           </div>
 

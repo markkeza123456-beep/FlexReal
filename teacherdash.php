@@ -1018,6 +1018,10 @@ $stats = [
 
                     <div style="display:flex;flex-direction:column;gap:14px;">
                     <div class="profile-settings-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">ชื่อ<input type="text" id="settingsFirstName" class="form-input" value="<?= h($teacherProfileFirstName) ?>" autocomplete="given-name"></label>
+                        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">นามสกุล<input type="text" id="settingsLastName" class="form-input" value="<?= h($teacherProfileLastName) ?>" autocomplete="family-name"></label>
+                    </div>
+                    <div class="profile-settings-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
                         <div style="display:flex;flex-direction:column;gap:6px;">
                             <label style="font-size:12px;color:var(--text-muted);font-weight:500;">เลขบัตรประจำตัวประชาชน</label>
                             <input class="form-input profile-readonly" value="<?= h($teacherRow['user_id'] ?? '') ?>" <?= $profileContactReadonly ?>>
@@ -1026,10 +1030,6 @@ $stats = [
                             <label style="font-size:12px;color:var(--text-muted);font-weight:500;">อีเมล</label>
                             <input class="form-input profile-readonly" type="email" value="<?= h($teacherRow['email'] ?? '') ?>" <?= $profileContactReadonly ?>>
                         </div>
-                    </div>
-                    <div class="profile-settings-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-                        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">ชื่อ<input type="text" id="settingsFirstName" class="form-input" value="<?= h($teacherProfileFirstName) ?>" autocomplete="given-name"></label>
-                        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">นามสกุล<input type="text" id="settingsLastName" class="form-input" value="<?= h($teacherProfileLastName) ?>" autocomplete="family-name"></label>
                     </div>
                     <div class="profile-settings-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
                         <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);font-weight:500;">เบอร์โทรศัพท์<input class="form-input profile-readonly" type="tel" value="<?= h($teacherRow['phone'] ?? '') ?>" <?= $profileContactReadonly ?>></label>

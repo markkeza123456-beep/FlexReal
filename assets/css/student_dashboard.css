@@ -199,19 +199,22 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 
 
 .settings-form { display: flex; flex-direction: column; gap: 14px; }
+.settings-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 
 .settings-field { display: flex; flex-direction: column; gap: 6px; }
 
 .settings-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
 
 .settings-input {
-    background: var(--bg-dark);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 0.65rem 1rem;
-    color: var(--text-main);
+    box-sizing: border-box;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    color: var(--text-primary);
     font-family: 'Kanit', sans-serif;
-    font-size: 0.9rem;
+    font-size: 14px;
+    line-height: normal;
     transition: border-color 0.2s;
     width: 100%;
 }
@@ -350,6 +353,9 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 @media (max-width:480px) {
     .graduation-tracker-heading { align-items:flex-start; flex-direction:column; }
     .graduation-tracker-footer { align-items:flex-start; flex-direction:column; }
+}
+@media (max-width:640px) {
+    .settings-row { grid-template-columns:1fr; }
 }
 
 @media (max-width: 800px) {

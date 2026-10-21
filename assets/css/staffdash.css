@@ -234,6 +234,8 @@ body {
 .staff-profile-input { width: 100%; min-width: 0; padding: 11px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text-primary); font: inherit; }
 .staff-profile-page-card .form-label { font-family: 'Kanit', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-muted); }
 .staff-profile-page-card .staff-profile-input { box-sizing: border-box; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'Kanit', sans-serif; font-size: 14px; line-height: normal; }
+.staff-profile-page-card .staff-profile-input[readonly] { background: #e9eef3 !important; color: #667085 !important; cursor: not-allowed; }
+#staffProfileForm .form-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
 .staff-profile-input:focus { outline: 2px solid rgba(var(--brand-400-rgb),.3); border-color: var(--brand-400); }
 .staff-password-section { display: flex; flex-direction: column; gap: 14px; }
 .staff-profile-page-card .staff-password-section { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); }
@@ -255,6 +257,7 @@ body {
 #staffProfileForm .staff-profile-actions button#saveStaffProfileBtn:hover,
 #staffPasswordForm .staff-profile-actions button#saveStaffPasswordBtn:hover { background: #284a80 !important; border-color: #284a80 !important; }
 @media (max-width: 600px) { .page-header.staff-profile-page-header { margin-bottom: 38px; } .form-card.staff-profile-page-card { padding: 18px; } .staff-profile-identity { gap: 14px; } .staff-profile-avatar { width: 96px; height: 96px; } .staff-profile-identity h2 { font-size: 1.1rem; } .staff-profile-identity p { font-size: .85rem; } }
+@media (max-width: 640px) { #staffProfileForm .form-grid-2 { grid-template-columns: 1fr; } }
 .user-avatar {
   width: 36px; height: 36px; border-radius: 50%;
   background: var(--orange-dim);

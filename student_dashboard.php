@@ -14,7 +14,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261021-subject-type-color-coding">
+    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261021-profile-two-column-fields">
     <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-background-only">
     <link rel="stylesheet" href="assets/css/responsive.css">
     <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout">
@@ -176,7 +176,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
 
 
                     <div class="content-card settings-card profile-settings-card">
-                        <h2 class="settings-card-title">&#128100; โปรไฟล์</h2>
+                        <h2 class="settings-card-title"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="9" r="3"/><path d="M6.8 18a5.5 5.5 0 0 1 10.4 0"/></svg> โปรไฟล์นักเรียน</h2>
 
                         <div class="avatar-section">
                             <div class="avatar-picker" title="รูปโปรไฟล์">
@@ -195,16 +195,26 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
                         </div>
 
                         <div class="settings-form">
-                            <div class="settings-field"><label class="settings-label">ชื่อ</label><input type="text" class="settings-input" id="profileFirstName" autocomplete="given-name"></div>
-                            <div class="settings-field"><label class="settings-label">นามสกุล</label><input type="text" class="settings-input" id="profileLastName" autocomplete="family-name"></div>
-                            <div class="settings-field"><label class="settings-label">เลขบัตรประจำตัวประชาชน</label><input type="text" class="settings-input profile-readonly" id="profileNationalId" <?= $profileContactReadonly ?>></div>
-                            <div class="settings-field"><label class="settings-label">อีเมล</label><input type="email" class="settings-input profile-readonly" id="profileEmail" <?= $profileContactReadonly ?>></div>
-                            <div class="settings-field"><label class="settings-label">เบอร์โทรศัพท์</label><input type="tel" class="settings-input profile-readonly" id="profilePhone" <?= $profileContactReadonly ?>></div>
-                            <div class="settings-field"><label class="settings-label">บ้านเลขที่ / ถนน</label><input type="text" class="settings-input profile-readonly" id="profileAddressLine" <?= $profileContactReadonly ?>></div>
-                            <div class="settings-field"><label class="settings-label">ตำบล / แขวง</label><input type="text" class="settings-input profile-readonly" id="profileSubdistrict" <?= $profileContactReadonly ?>></div>
-                            <div class="settings-field"><label class="settings-label">อำเภอ / เขต</label><input type="text" class="settings-input profile-readonly" id="profileDistrict" <?= $profileContactReadonly ?>></div>
-                            <div class="settings-field"><label class="settings-label">จังหวัด</label><input type="text" class="settings-input profile-readonly" id="profileProvince" <?= $profileContactReadonly ?>></div>
-                            <div class="settings-field"><label class="settings-label">รหัสไปรษณีย์</label><input type="text" class="settings-input profile-readonly" id="profilePostalCode" <?= $profileContactReadonly ?>></div>
+                            <div class="settings-row">
+                                <div class="settings-field"><label class="settings-label">ชื่อ</label><input type="text" class="settings-input" id="profileFirstName" autocomplete="given-name"></div>
+                                <div class="settings-field"><label class="settings-label">นามสกุล</label><input type="text" class="settings-input" id="profileLastName" autocomplete="family-name"></div>
+                            </div>
+                            <div class="settings-row">
+                                <div class="settings-field"><label class="settings-label">เลขบัตรประจำตัวประชาชน</label><input type="text" class="settings-input profile-readonly" id="profileNationalId" <?= $profileContactReadonly ?>></div>
+                                <div class="settings-field"><label class="settings-label">อีเมล</label><input type="email" class="settings-input profile-readonly" id="profileEmail" <?= $profileContactReadonly ?>></div>
+                            </div>
+                            <div class="settings-row">
+                                <div class="settings-field"><label class="settings-label">เบอร์โทรศัพท์</label><input type="tel" class="settings-input profile-readonly" id="profilePhone" <?= $profileContactReadonly ?>></div>
+                                <div class="settings-field"><label class="settings-label">บ้านเลขที่ / ถนน</label><input type="text" class="settings-input profile-readonly" id="profileAddressLine" <?= $profileContactReadonly ?>></div>
+                            </div>
+                            <div class="settings-row">
+                                <div class="settings-field"><label class="settings-label">ตำบล / แขวง</label><input type="text" class="settings-input profile-readonly" id="profileSubdistrict" <?= $profileContactReadonly ?>></div>
+                                <div class="settings-field"><label class="settings-label">อำเภอ / เขต</label><input type="text" class="settings-input profile-readonly" id="profileDistrict" <?= $profileContactReadonly ?>></div>
+                            </div>
+                            <div class="settings-row">
+                                <div class="settings-field"><label class="settings-label">จังหวัด</label><input type="text" class="settings-input profile-readonly" id="profileProvince" <?= $profileContactReadonly ?>></div>
+                                <div class="settings-field"><label class="settings-label">รหัสไปรษณีย์</label><input type="text" class="settings-input profile-readonly" id="profilePostalCode" <?= $profileContactReadonly ?>></div>
+                            </div>
                             <div class="settings-field"><label class="settings-label">ชั้นเรียน</label><input type="text" class="settings-input profile-readonly" id="profileClass" readonly></div>
                         </div>
 
