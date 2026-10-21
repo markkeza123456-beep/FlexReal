@@ -1,6 +1,7 @@
 <?php
 if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 $staffRole = strtolower(trim((string) ($_SESSION['role'] ?? '')));
+$profileCanEditContact = $staffRole === 'staff';
 if (empty($_SESSION['user_id']) || $staffRole !== 'staff') {
     header('Location: login.php');
     exit;
@@ -11,6 +12,7 @@ $displayRole    = 'เจ้าหน้าที่';
 $avatarInitials = 'ST';
 $staffAvatarUrl = '';
 $staffProfile = [];
+$staffAddress = [];
 $profileFirstName = '';
 $profileLastName = '';
 try {
@@ -24,6 +26,9 @@ try {
     $profileLastName = trim((string) ($staffProfile['last_name'] ?? ''));
     $profileName = trim((string) ($staffProfile['first_name'] ?? '') . ' ' . (string) ($staffProfile['last_name'] ?? ''));
     if ($profileName !== '') $displayName = $profileName;
+    $addressStmt = $conn->prepare('SELECT address_line, subdistrict, district, province, postal_code FROM public.user_addresses WHERE user_id = :id ORDER BY is_primary DESC, address_id ASC LIMIT 1');
+    $addressStmt->execute([':id' => (string) $_SESSION['user_id']]);
+    $staffAddress = $addressStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 } catch (Throwable $error) {
     error_log('Staff avatar lookup failed: ' . $error->getMessage());
 }
@@ -730,15 +735,25 @@ if ($displayName !== '') {
                    style="<?= $staffAvatarUrl !== '' ? 'display:block;' : 'display:none;' ?>">
               <span id="staffProfileAvatarInitial" style="<?= $staffAvatarUrl !== '' ? 'display:none;' : '' ?>"><?= htmlspecialchars($avatarInitials, ENT_QUOTES, 'UTF-8') ?></span>
             </button>
-            <div class="staff-profile-identity-info"><h2><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></h2><p>เจ้าหน้าที่ · รหัส <?= htmlspecialchars((string) $_SESSION['user_id'], ENT_QUOTES, 'UTF-8') ?></p><span>คลิกที่รูปเพื่อเปลี่ยน</span></div>
+            <div class="staff-profile-identity-info"><h2><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></h2><p id="staffProfileIdentifier">เจ้าหน้าที่ · รหัส <?= htmlspecialchars((string) $_SESSION['user_id'], ENT_QUOTES, 'UTF-8') ?></p><span>คลิกที่รูปเพื่อเปลี่ยน</span></div>
           </div>
           <form id="staffProfileForm">
+            <label class="form-field"><span class="form-label">เลขบัตรประจำตัวประชาชน</span><input class="staff-profile-input" name="user_id" inputmode="numeric" maxlength="32" required value="<?= htmlspecialchars((string) $_SESSION['user_id'], ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
             <div class="form-grid-2">
               <label class="form-field"><span class="form-label">ชื่อ</span><input class="staff-profile-input" name="first_name" required maxlength="100" value="<?= htmlspecialchars($profileFirstName, ENT_QUOTES, 'UTF-8') ?>"></label>
               <label class="form-field"><span class="form-label">นามสกุล</span><input class="staff-profile-input" name="last_name" required maxlength="100" value="<?= htmlspecialchars($profileLastName, ENT_QUOTES, 'UTF-8') ?>"></label>
             </div>
-            <label class="form-field"><span class="form-label">อีเมล</span><input class="staff-profile-input" name="email" type="email" maxlength="254" value="<?= htmlspecialchars((string) ($staffProfile['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></label>
-            <label class="form-field"><span class="form-label">เบอร์โทรศัพท์</span><input class="staff-profile-input" name="phone" type="tel" maxlength="30" value="<?= htmlspecialchars((string) ($staffProfile['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"></label>
+            <label class="form-field"><span class="form-label">อีเมล</span><input class="staff-profile-input" name="email" type="email" maxlength="254" value="<?= htmlspecialchars((string) ($staffProfile['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
+            <label class="form-field"><span class="form-label">เบอร์โทรศัพท์</span><input class="staff-profile-input" name="phone" type="tel" maxlength="30" value="<?= htmlspecialchars((string) ($staffProfile['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
+            <div class="form-grid-2">
+              <label class="form-field"><span class="form-label">บ้านเลขที่ / ถนน</span><input class="staff-profile-input" name="address_line" maxlength="255" value="<?= htmlspecialchars((string) ($staffAddress['address_line'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
+              <label class="form-field"><span class="form-label">ตำบล / แขวง</span><input class="staff-profile-input" name="subdistrict" maxlength="150" value="<?= htmlspecialchars((string) ($staffAddress['subdistrict'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
+            </div>
+            <div class="form-grid-2">
+              <label class="form-field"><span class="form-label">อำเภอ / เขต</span><input class="staff-profile-input" name="district" maxlength="150" value="<?= htmlspecialchars((string) ($staffAddress['district'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
+              <label class="form-field"><span class="form-label">จังหวัด</span><input class="staff-profile-input" name="province" maxlength="150" value="<?= htmlspecialchars((string) ($staffAddress['province'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
+            </div>
+            <label class="form-field"><span class="form-label">รหัสไปรษณีย์</span><input class="staff-profile-input" name="postal_code" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" value="<?= htmlspecialchars((string) ($staffAddress['postal_code'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
             <div class="staff-password-section">
               <div class="staff-password-title">🔐 เปลี่ยนรหัสผ่าน</div>
               <label class="form-field"><span class="form-label">รหัสผ่านปัจจุบัน</span><span class="staff-password-input-wrap"><input class="staff-profile-input" id="staffPwdCurrent" name="pwd_current" type="password" autocomplete="current-password"><button type="button" class="staff-password-toggle" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน" onclick="toggleStaffPwd('staffPwdCurrent', this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></span></label>

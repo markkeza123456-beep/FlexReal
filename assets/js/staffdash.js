@@ -1276,6 +1276,8 @@ document.getElementById('staffProfileForm')?.addEventListener('submit', async ev
     if (name) name.textContent = result.name;
     const profileName = document.querySelector('.staff-profile-identity h2');
     if (profileName) profileName.textContent = result.name;
+    const profileIdentifier = document.getElementById('staffProfileIdentifier');
+    if (profileIdentifier && result.user_id) profileIdentifier.textContent = `เจ้าหน้าที่ · รหัส ${result.user_id}`;
     ['pwd_current', 'pwd_new', 'pwd_confirm'].forEach(field => { const input = form.elements.namedItem(field); if (input) input.value = ''; });
     document.querySelectorAll('.staff-password-toggle').forEach(toggle => { toggle.innerHTML = staffPasswordEyeIcon(false); toggle.setAttribute('aria-label', 'แสดงรหัสผ่าน'); toggle.title = 'แสดงรหัสผ่าน'; });
     ['staffPwdCurrent', 'staffPwdNew', 'staffPwdConfirm'].forEach(id => { const input = document.getElementById(id); if (input) input.type = 'password'; });

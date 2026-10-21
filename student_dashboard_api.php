@@ -69,10 +69,14 @@ try {
     ensureLearningProgressTables($conn);
 
     $studentStmt = $conn->prepare(
-        'SELECT user_id, full_name, email, phone, avatar_url,
+        'SELECT s.user_id, s.full_name, s.email, s.phone, s.avatar_url,
                 COALESCE(NULLIF(TRIM(student_level), \'\'), NULLIF(TRIM(education_level), \'\'), \'-\') AS class_name
-         FROM public.students
-         WHERE user_id = :student_id
+                , COALESCE(a.address_line, \'\') AS address_line, COALESCE(a.subdistrict, \'\') AS subdistrict,
+                  COALESCE(a.district, \'\') AS district, COALESCE(a.province, \'\') AS province,
+                  COALESCE(a.postal_code, \'\') AS postal_code
+         FROM public.students s
+         LEFT JOIN LATERAL (SELECT address_line, subdistrict, district, province, postal_code FROM public.user_addresses WHERE user_id = s.user_id ORDER BY is_primary DESC, address_id ASC LIMIT 1) a ON TRUE
+         WHERE s.user_id = :student_id
          LIMIT 1'
     );
     $studentStmt->execute([':student_id' => $studentId]);
@@ -276,11 +280,17 @@ try {
         'status' => 'success',
         'student' => [
             'id' => $studentId,
+            'national_id' => $studentId,
             'name' => (string) ($student['full_name'] ?? ($_SESSION['name'] ?? $studentId)),
             'email' => (string) ($student['email'] ?? ''),
             'phone' => (string) ($student['phone'] ?? ''),
             'class_name' => (string) ($student['class_name'] ?? '-'),
             'avatar_url' => (string) ($student['avatar_url'] ?? ''),
+            'address_line' => (string) ($student['address_line'] ?? ''),
+            'subdistrict' => (string) ($student['subdistrict'] ?? ''),
+            'district' => (string) ($student['district'] ?? ''),
+            'province' => (string) ($student['province'] ?? ''),
+            'postal_code' => (string) ($student['postal_code'] ?? ''),
         ],
         'stats' => [
             'course_count' => $courseCount,

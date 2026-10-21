@@ -299,3 +299,5 @@ select:focus, input[type="text"]:focus { outline: none; border-color: #80DEEA; }
 .sidebar > .logo.logo-section h2 { font-size: 14px; line-height: 1.2; letter-spacing: .12em; }
 .sidebar > .logo.logo-section span { margin-top: 0; font-size: 9px; line-height: 1.2; letter-spacing: .14em; }
 .sidebar > .logo.logo-section { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; height:102px; min-height:102px; padding-top:0; padding-bottom:0; }
+
+.profile-readonly { background:#e9eef3 !important; color:#667085 !important; cursor:not-allowed; }

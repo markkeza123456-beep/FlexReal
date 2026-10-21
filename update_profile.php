@@ -10,9 +10,16 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
 }
 
 $user_id = $_SESSION['user_id'];
-$name = $_POST['name'] ?? '';
+$firstName = trim((string) ($_POST['first_name'] ?? ''));
+$lastName = trim((string) ($_POST['last_name'] ?? ''));
+$name = trim($firstName . ' ' . $lastName);
 $pwd_current = $_POST['pwd_current'] ?? '';
 $pwd_new = $_POST['pwd_new'] ?? '';
+
+if (($firstName !== '' || $lastName !== '') && ($firstName === '' || $lastName === '' || mb_strlen($firstName) > 100 || mb_strlen($lastName) > 100)) {
+    echo json_encode(['success' => false, 'message' => 'กรุณากรอกชื่อและนามสกุลให้ถูกต้อง']);
+    exit;
+}
 
 try {
 
@@ -51,9 +58,12 @@ try {
     }
 
 
-    if (!empty($name)) {
+    if ($name !== '') {
+        // Teachers may edit their name and password; contact and address values are intentionally ignored.
         $stmt = $conn->prepare("UPDATE public.teachers SET full_name = :name, updated_at = NOW() WHERE user_id = :uid");
         $stmt->execute(['name' => $name, 'uid' => $user_id]);
+        $conn->prepare('UPDATE public.users SET updated_by = :updated_by, updated_at = NOW() WHERE user_id = :uid')
+            ->execute(['updated_by' => $user_id, 'uid' => $user_id]);
         $_SESSION['name'] = $name;
     }
 
@@ -75,7 +85,7 @@ try {
     $conn->prepare('UPDATE public.users SET updated_by = :updated_by, updated_at = NOW() WHERE user_id = :uid')
         ->execute(['updated_by' => $user_id, 'uid' => $user_id]);
 
-    echo json_encode(['success' => true, 'message' => 'บันทึกข้อมูลสำเร็จ!']);
+    echo json_encode(['success' => true, 'message' => 'บันทึกข้อมูลสำเร็จ!', 'name' => (string) ($_SESSION['name'] ?? '')], JSON_UNESCAPED_UNICODE);
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => 'ระบบฐานข้อมูลผิดพลาด: ' . $e->getMessage()]);
 }

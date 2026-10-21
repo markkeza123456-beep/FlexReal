@@ -284,9 +284,17 @@ function updateProfile(student) {
     setText('sidebarName', name);
     setText('dashboardOwnerName', name);
     setText('displayName', name);
-    setValue('profileName', name);
+    const nameParts = name.trim().split(/\s+/u);
+    setValue('profileFirstName', nameParts.shift() || '');
+    setValue('profileLastName', nameParts.join(' '));
+    setValue('profileNationalId', student.national_id || student.id || '');
     setValue('profileEmail', student.email || '');
     setValue('profilePhone', student.phone || '');
+    setValue('profileAddressLine', student.address_line || '');
+    setValue('profileSubdistrict', student.subdistrict || '');
+    setValue('profileDistrict', student.district || '');
+    setValue('profileProvince', student.province || '');
+    setValue('profilePostalCode', student.postal_code || '');
     setValue('profileClass', className);
     setText('sidebarRole', 'นักเรียน - ' + className);
     setText('profileRole', 'นักเรียน · ' + className);
@@ -790,7 +798,9 @@ function checkPwdMatch() {
 function saveProfile() {
     const btn = document.getElementById('saveProfileBtn');
     const feedback = document.getElementById('profileFeedback');
-    const name = document.getElementById('profileName')?.value.trim();
+    const firstName = document.getElementById('profileFirstName')?.value.trim();
+    const lastName = document.getElementById('profileLastName')?.value.trim();
+    const name = `${firstName || ''} ${lastName || ''}`.trim();
     const current = document.getElementById('pwdCurrent')?.value ?? '';
     const newPwd = document.getElementById('pwdNew')?.value ?? '';
     const confirm = document.getElementById('pwdConfirm')?.value ?? '';
@@ -821,9 +831,8 @@ function saveProfile() {
     btn.textContent = 'กำลังบันทึก...';
 
     const body = new FormData();
-    body.append('name',        name);
-    body.append('email',       document.getElementById('profileEmail')?.value.trim() ?? '');
-    body.append('phone',       document.getElementById('profilePhone')?.value.trim() ?? '');
+    body.append('first_name', firstName || '');
+    body.append('last_name', lastName || '');
     body.append('pwd_current', current);
     body.append('pwd_new',     newPwd);
 
@@ -834,8 +843,6 @@ function saveProfile() {
                 showFeedback('success', data.message);
                 if (dashboardState.student) {
                     dashboardState.student.name = name;
-                    dashboardState.student.email = document.getElementById('profileEmail')?.value.trim() ?? '';
-                    dashboardState.student.phone = document.getElementById('profilePhone')?.value.trim() ?? '';
                     updateProfile(dashboardState.student);
                 }
                 ['pwdCurrent', 'pwdNew', 'pwdConfirm'].forEach((id) => { const field = document.getElementById(id); if (field) field.value = ''; });

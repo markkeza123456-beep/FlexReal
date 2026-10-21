@@ -1,4 +1,9 @@
-<?php if (session_status() !== PHP_SESSION_ACTIVE) session_start(); ?>
+<?php
+if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+$profileRole = strtolower((string) ($_SESSION['role'] ?? ''));
+$profileContactReadonly = $profileRole === 'staff' ? '' : 'readonly';
+if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location: login.php'); exit; }
+?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -306,22 +311,17 @@
 
 
           <div class="settings-form">
-            <div class="settings-field">
-              <label class="settings-label">ชื่อ-นามสกุล</label>
-              <input type="text" class="settings-input" id="profileName" placeholder="กรอกชื่อ-นามสกุล">
-            </div>
-            <div class="settings-field">
-              <label class="settings-label">อีเมล</label>
-              <input type="email" class="settings-input" id="profileEmail" placeholder="กรอกอีเมล">
-            </div>
-            <div class="settings-field">
-              <label class="settings-label">เบอร์โทรศัพท์</label>
-              <input type="tel" class="settings-input" id="profilePhone" placeholder="กรอกเบอร์โทรศัพท์">
-            </div>
-            <div class="settings-field">
-              <label class="settings-label">ความสัมพันธ์</label>
-              <input type="text" class="settings-input" id="profileRelation" value="ผู้ปกครอง" readonly style="opacity:.5;cursor:not-allowed">
-            </div>
+            <div class="settings-field"><label class="settings-label">ชื่อ</label><input type="text" class="settings-input" id="profileFirstName" autocomplete="given-name"></div>
+            <div class="settings-field"><label class="settings-label">นามสกุล</label><input type="text" class="settings-input" id="profileLastName" autocomplete="family-name"></div>
+            <div class="settings-field"><label class="settings-label">เลขบัตรประจำตัวประชาชน</label><input type="text" class="settings-input profile-readonly" id="profileNationalId" <?= $profileContactReadonly ?>></div>
+            <div class="settings-field"><label class="settings-label">อีเมล</label><input type="email" class="settings-input profile-readonly" id="profileEmail" <?= $profileContactReadonly ?>></div>
+            <div class="settings-field"><label class="settings-label">เบอร์โทรศัพท์</label><input type="tel" class="settings-input profile-readonly" id="profilePhone" <?= $profileContactReadonly ?>></div>
+            <div class="settings-field"><label class="settings-label">บ้านเลขที่ / ถนน</label><input type="text" class="settings-input profile-readonly" id="profileAddressLine" <?= $profileContactReadonly ?>></div>
+            <div class="settings-field"><label class="settings-label">ตำบล / แขวง</label><input type="text" class="settings-input profile-readonly" id="profileSubdistrict" <?= $profileContactReadonly ?>></div>
+            <div class="settings-field"><label class="settings-label">อำเภอ / เขต</label><input type="text" class="settings-input profile-readonly" id="profileDistrict" <?= $profileContactReadonly ?>></div>
+            <div class="settings-field"><label class="settings-label">จังหวัด</label><input type="text" class="settings-input profile-readonly" id="profileProvince" <?= $profileContactReadonly ?>></div>
+            <div class="settings-field"><label class="settings-label">รหัสไปรษณีย์</label><input type="text" class="settings-input profile-readonly" id="profilePostalCode" <?= $profileContactReadonly ?>></div>
+            <div class="settings-field"><label class="settings-label">ความสัมพันธ์</label><input type="text" class="settings-input profile-readonly" id="profileRelation" value="ผู้ปกครอง" readonly></div>
           </div>
 
 

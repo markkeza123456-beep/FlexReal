@@ -17,20 +17,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $userId = (string) $_SESSION['user_id'];
-$name = trim((string) ($_POST['name'] ?? ''));
-$email = trim((string) ($_POST['email'] ?? ''));
-$phone = trim((string) ($_POST['phone'] ?? ''));
+$firstName = trim((string) ($_POST['first_name'] ?? ''));
+$lastName = trim((string) ($_POST['last_name'] ?? ''));
+$name = trim($firstName . ' ' . $lastName);
 $currentPassword = (string) ($_POST['pwd_current'] ?? '');
 $newPassword = (string) ($_POST['pwd_new'] ?? '');
 
-if ($name === '' || mb_strlen($name) > 150) {
-    parentProfileJson(['success' => false, 'message' => 'กรุณากรอกชื่อ-นามสกุลให้ถูกต้อง'], 422);
-}
-if ($email !== '' && (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 254)) {
-    parentProfileJson(['success' => false, 'message' => 'รูปแบบอีเมลไม่ถูกต้อง'], 422);
-}
-if (mb_strlen($phone) > 30) {
-    parentProfileJson(['success' => false, 'message' => 'เบอร์โทรศัพท์ยาวเกินไป'], 422);
+if ($firstName === '' || $lastName === '' || mb_strlen($firstName) > 100 || mb_strlen($lastName) > 100) {
+    parentProfileJson(['success' => false, 'message' => 'กรุณากรอกชื่อและนามสกุลให้ถูกต้อง'], 422);
 }
 if ($newPassword !== '' && (mb_strlen($newPassword) < 6 || $currentPassword === '')) {
     parentProfileJson(['success' => false, 'message' => 'กรุณาตรวจสอบรหัสผ่านปัจจุบันและรหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)'], 422);
@@ -51,8 +45,9 @@ try {
         $stmt->execute([':hash' => password_hash($newPassword, PASSWORD_DEFAULT), ':id' => $userId]);
     }
 
-    $stmt = $conn->prepare('UPDATE public.parents SET full_name = :name, email = :email, phone = :phone WHERE user_id = :id');
-    $stmt->execute([':name' => $name, ':email' => $email ?: null, ':phone' => $phone ?: null, ':id' => $userId]);
+    // Non-staff users may update name and password only; contact and address changes are ignored.
+    $stmt = $conn->prepare('UPDATE public.parents SET full_name = :name, updated_at = NOW() WHERE user_id = :id');
+    $stmt->execute([':name' => $name, ':id' => $userId]);
     if ($stmt->rowCount() === 0) {
         $check = $conn->prepare('SELECT 1 FROM public.parents WHERE user_id = :id');
         $check->execute([':id' => $userId]);
