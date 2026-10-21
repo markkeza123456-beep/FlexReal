@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 $profileRole = strtolower((string) ($_SESSION['role'] ?? ''));
 $profileContactReadonly = $profileRole === 'staff' ? '' : 'readonly';
@@ -14,8 +14,8 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261021-sidebar-header-fullbleed">
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-fullbleed">
+    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261021-role-profile-footer-unified">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge">
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>

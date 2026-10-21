@@ -195,6 +195,17 @@ body {
   border-top: 1px solid var(--border);
   display: flex; align-items: center; gap: 10px;
 }
+.sidebar > .sidebar-footer {
+  width: 100%;
+  min-height: 72px;
+  margin: auto 0 0;
+  padding: 14px 20px;
+  border: 0;
+  background: linear-gradient(135deg, var(--primary-start), var(--primary-end)) !important;
+}
+.sidebar > .sidebar-footer .user-name,
+.sidebar > .sidebar-footer .user-role { color: #FFFFFF !important; }
+.sidebar > .sidebar-footer .user-avatar { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.5); color: #FFFFFF; }
 .staff-profile-trigger { cursor: pointer; transition: background .18s; }
 .staff-profile-trigger:hover, .staff-profile-trigger:focus-visible { background: rgba(var(--brand-400-rgb),.08); outline: none; }
 .staff-avatar-wrap { position: relative; flex-shrink: 0; }
@@ -819,3 +830,8 @@ body {
 .sidebar-header .flex-brand-text { flex:0 0 auto; gap:3px; padding-top:0; }
 .sidebar > .sidebar-header { display:flex; align-items:stretch; }
 .sidebar-header .brand-home-link { display:flex; width:100%; height:100%; flex:1 1 auto; align-items:flex-start; justify-content:center; padding-top:0; padding-bottom:0; }
+
+.sidebar > .sidebar-footer.staff-profile-trigger:hover,
+.sidebar > .sidebar-footer.staff-profile-trigger:focus-visible {
+  background: linear-gradient(135deg, var(--primary-start), var(--primary-end)) !important;
+}

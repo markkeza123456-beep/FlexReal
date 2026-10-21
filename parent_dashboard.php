@@ -14,7 +14,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Orbitron:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-  <link rel="stylesheet" href="assets/css/parent_dashboard.css?v=20261021-sidebar-header-fullbleed" />
+  <link rel="stylesheet" href="assets/css/parent_dashboard.css?v=20261021-role-profile-footer-unified" />
   <style>
 
     .settings-wrapper { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.2rem; align-items: start; max-width: 850px; }

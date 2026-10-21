@@ -593,14 +593,14 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 
 .profile-readonly { background:#e9eef3 !important; color:#667085 !important; cursor:not-allowed; }
 
-/* Keep the student name and role readable against the sidebar profile states. */
+/* Keep the student profile footer flush to the sidebar bottom. */
+#btn-settings.user-profile {
+    width: 100%;
+    margin: auto 0 0;
+    border: 0;
+    border-radius: 0;
+    background: linear-gradient(135deg, var(--primary-start), var(--primary-end)) !important;
+}
+.dashboard-container > .sidebar { padding-bottom: 0; }
 #btn-settings.user-profile .user-info .name,
-#btn-settings.user-profile .user-info .role { color: #000000 !important; }
-#btn-settings.user-profile:hover .user-info .name,
-#btn-settings.user-profile:hover .user-info .role,
-#btn-settings.user-profile.active .user-info .name,
-#btn-settings.user-profile.active .user-info .role,
-#btn-settings.user-profile.selected .user-info .name,
-#btn-settings.user-profile.selected .user-info .role,
-#btn-settings.user-profile[aria-selected="true"] .user-info .name,
-#btn-settings.user-profile[aria-selected="true"] .user-info .role { color: #FFFFFF !important; }
+#btn-settings.user-profile .user-info .role { color: #FFFFFF !important; }

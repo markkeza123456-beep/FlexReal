@@ -356,8 +356,8 @@ $stats = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261021-login-shared-background">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261021-role-profile-footer-unified">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px;
