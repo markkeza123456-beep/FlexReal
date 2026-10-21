@@ -114,7 +114,6 @@ if (($_GET['preview'] ?? '') === 'pdf') {
 $resumePage = 0;
 $documentProgressPercent = 0.0;
 try {
-    ensureLearningProgressTables($conn);
     $resume = $conn->prepare('SELECT COALESCE(lp.document_page_index, 0) AS page_index, COALESCE(lp.document_progress_percent, 0) AS progress_percent FROM public.lesson_progress lp JOIN public.lessons l ON l.lesson_id = lp.lesson_id WHERE lp.student_id = :student_id AND l.course_id = :course_id AND l.position = :position');
     $resume->execute([':student_id' => (string) $_SESSION['user_id'], ':course_id' => $courseId, ':position' => $position]);
     $savedProgress = $resume->fetch(PDO::FETCH_ASSOC) ?: [];
@@ -163,14 +162,52 @@ header('Content-Type: text/html; charset=utf-8');
   const reader = document.getElementById('pdf-reader');
   const pagesContainer = document.getElementById('pdf-pages');
 
-  async function saveReadingProgress(percent, resumePage) {
+  let readingSaveInFlight = false;
+  let readingLastSaveAt = 0;
+  let pendingReadingProgress = null;
+  let readingSaveTimer = null;
+  const readingSaveIntervalMs = 15000;
+  function sendReadingProgress(payload, useBeacon = false) {
     const form = new FormData();
     form.append('action', 'record'); form.append('subject_id', documentPayload.courseId);
     form.append('lesson_index', String(documentPayload.lessonIndex)); form.append('activity_type', 'document_progress');
-    form.append('progress_percent', String(Math.max(0, Math.min(100, percent)))); form.append('resume_position', String(resumePage));
-    try { await fetch('student_learning_api.php', { method: 'POST', body: form, credentials: 'same-origin' }); } catch (_) {}
-    window.parent.postMessage({ ...documentPayload, progressPercent: percent }, window.location.origin);
+    form.append('progress_percent', String(payload.percent)); form.append('resume_position', String(payload.resumePage));
+    if (useBeacon) return navigator.sendBeacon('student_learning_api.php', form);
+    return fetch('student_learning_api.php', { method: 'POST', body: form, credentials: 'same-origin' })
+      .then((response) => response.json())
+      .then((result) => result.ok === true && result.status === 'success');
   }
+  function scheduleReadingSave() {
+    if (readingSaveTimer || readingSaveInFlight || !pendingReadingProgress) return;
+    const waitMs = Math.max(0, readingSaveIntervalMs - (Date.now() - readingLastSaveAt));
+    readingSaveTimer = setTimeout(flushReadingProgress, waitMs);
+  }
+  async function flushReadingProgress() {
+    readingSaveTimer = null;
+    if (readingSaveInFlight || !pendingReadingProgress) return;
+    const payload = pendingReadingProgress;
+    pendingReadingProgress = null;
+    readingSaveInFlight = true;
+    readingLastSaveAt = Date.now();
+    try {
+      const saved = await sendReadingProgress(payload);
+      if (saved) window.parent.postMessage({ ...documentPayload, progressPercent: payload.percent }, window.location.origin);
+    } catch (_) {}
+    finally { readingSaveInFlight = false; scheduleReadingSave(); }
+  }
+  function saveReadingProgress(percent, resumePage) {
+    pendingReadingProgress = { percent: Math.max(0, Math.min(100, percent)), resumePage };
+    scheduleReadingSave();
+  }
+  function flushReadingProgressOnExit() {
+    if (readingSaveTimer) clearTimeout(readingSaveTimer);
+    readingSaveTimer = null;
+    if (readingSaveInFlight || !pendingReadingProgress) return;
+    sendReadingProgress(pendingReadingProgress, true);
+    pendingReadingProgress = null;
+  }
+  window.addEventListener('pagehide', flushReadingProgressOnExit);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushReadingProgressOnExit(); });
   function updateReadingStatus(percent) {
     const status = document.getElementById('reading-status');
     if (!status) return;

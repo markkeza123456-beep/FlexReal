@@ -25,8 +25,12 @@ const QUIZ_PASS_RATIO = 0.8;
 
 const REQUEST_TIMEOUT_MS = 10000;
 const MAX_LESSONS_PER_SUBJECT = 3;
-const LEARNING_PROGRESS_SAVE_INTERVAL_MS = 30000;
+const LEARNING_PROGRESS_SAVE_INTERVAL_MS = 15000;
 const learningProgressRequests = new Map();
+const pendingLearningEvents = new Map();
+let learningEventFlushTimer = null;
+let learningEventPostInFlight = false;
+let learningEventLastPostAt = 0;
 const courseProgressRequests = new Map();
 let activeVideoProgressSaver = null;
 let activeVideoProgressBeacon = null;
@@ -854,7 +858,56 @@ function refreshCourseProgress(subjectId) {
     return fetchCourseProgress(subjectId);
 }
 
-async function recordLearningEvent(activityType, lessonIndex = 1, progressPercent = 0, resumePosition = 0, force = false, durationSeconds = 0) {
+function recordLearningEvent(activityType, lessonIndex = 1, progressPercent = 0, resumePosition = 0, force = false, durationSeconds = 0) {
+    if (!currentSubjectId) {
+        lastLearningProgressError = 'ไม่พบรหัสรายวิชา';
+        return Promise.resolve(false);
+    }
+    const eventKey = `${currentSubjectId}:${lessonIndex}:${activityType}`;
+    const previous = pendingLearningEvents.get(eventKey);
+    return new Promise((resolve) => {
+        pendingLearningEvents.set(eventKey, {
+            args: [activityType, lessonIndex, progressPercent, resumePosition, force, durationSeconds],
+            resolvers: [...(previous?.resolvers || []), resolve]
+        });
+        scheduleLearningEventFlush(force);
+    });
+}
+
+function scheduleLearningEventFlush(immediate = false) {
+    if (pendingLearningEvents.size === 0) return;
+    if (learningEventFlushTimer) {
+        if (!immediate) return;
+        clearTimeout(learningEventFlushTimer);
+        learningEventFlushTimer = null;
+    }
+    if (immediate && !learningEventPostInFlight) {
+        learningEventFlushTimer = setTimeout(flushLearningEventQueue, 0);
+        return;
+    }
+    const delay = Math.max(0, LEARNING_PROGRESS_SAVE_INTERVAL_MS - (Date.now() - learningEventLastPostAt));
+    learningEventFlushTimer = setTimeout(flushLearningEventQueue, delay);
+}
+
+async function flushLearningEventQueue() {
+    learningEventFlushTimer = null;
+    if (learningEventPostInFlight || pendingLearningEvents.size === 0) return;
+    const [eventKey, entry] = [...pendingLearningEvents.entries()][0];
+    pendingLearningEvents.delete(eventKey);
+    learningEventPostInFlight = true;
+    learningEventLastPostAt = Date.now();
+    try {
+        const saved = await sendLearningEventNow(...entry.args);
+        entry.resolvers.forEach((resolve) => resolve(saved));
+    } catch (_) {
+        entry.resolvers.forEach((resolve) => resolve(false));
+    } finally {
+        learningEventPostInFlight = false;
+        scheduleLearningEventFlush();
+    }
+}
+
+async function sendLearningEventNow(activityType, lessonIndex = 1, progressPercent = 0, resumePosition = 0, force = false, durationSeconds = 0) {
     if (!currentSubjectId) {
         lastLearningProgressError = 'ไม่พบรหัสรายวิชา';
         return false;
@@ -862,11 +915,7 @@ async function recordLearningEvent(activityType, lessonIndex = 1, progressPercen
     const eventKey = `${currentSubjectId}:${lessonIndex}:${activityType}`;
     const now = Date.now();
     const previous = learningProgressRequests.get(eventKey);
-    const isPeriodicVideoUpdate = activityType === 'video_progress' && Number(progressPercent) < 100;
-
-
-
-    if ((!force && previous?.inFlight) || (!force && isPeriodicVideoUpdate && now - (previous?.savedAt || 0) < LEARNING_PROGRESS_SAVE_INTERVAL_MS)) return false;
+    if (previous?.inFlight) return false;
     learningProgressRequests.set(eventKey, { inFlight: true, savedAt: previous?.savedAt || 0 });
     try {
         const lesson = currentLessonsData.find((item) => item.index === Number(lessonIndex));
@@ -886,7 +935,7 @@ async function recordLearningEvent(activityType, lessonIndex = 1, progressPercen
         lastLearningProgressError = '';
         const response = await fetchJsonWithTimeout('student_learning_api.php', { method: 'POST', body: formData, credentials: 'same-origin' }, 15000);
         const result = await response.json();
-        if (result.status === 'success') {
+        if (result.status === 'success' && result.ok === true) {
             learningProgressRequests.set(eventKey, { inFlight: false, savedAt: Date.now() });
             return true;
         }
@@ -1407,7 +1456,7 @@ function renderVideoModalBody(lessonIndex) {
             lastVideoProgressSaveAttemptAt = Date.now();
             progressSaveLabel = 'กำลังบันทึก';
             updateVideoProgressStatus();
-            videoProgressSaveRequest = recordLearningEvent('video_progress', safeIndex, percent, resumePositionToSave, true, videoElement.duration)
+            videoProgressSaveRequest = recordLearningEvent('video_progress', safeIndex, percent, resumePositionToSave, force, videoElement.duration)
                 .then((saved) => {
                     if (!saved) {
                         progressSaveLabel = `บันทึกไม่สำเร็จ: ${lastLearningProgressError}`;
@@ -1575,7 +1624,22 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 window.addEventListener('pagehide', () => {
-    if (activeVideoProgressBeacon) activeVideoProgressBeacon();
+    if (pendingLearningEvents.size > 0 && !learningEventPostInFlight) {
+        const entries = [...pendingLearningEvents.entries()];
+        const preferred = entries.find(([, entry]) => entry.args[0] === 'video_progress') || entries[entries.length - 1];
+        if (preferred) {
+            const [key, entry] = preferred;
+            pendingLearningEvents.delete(key);
+            const [activityType, lessonIndex, progressPercent, resumePosition, , durationSeconds] = entry.args;
+            const formData = new FormData();
+            formData.append('action', 'record'); formData.append('subject_id', currentSubjectId);
+            formData.append('lesson_index', String(lessonIndex)); formData.append('activity_type', activityType);
+            formData.append('progress_percent', String(progressPercent)); formData.append('resume_position', String(resumePosition));
+            if (activityType === 'video_progress') formData.append('duration_seconds', String(durationSeconds));
+            navigator.sendBeacon('student_learning_api.php', formData);
+            learningEventLastPostAt = Date.now();
+        }
+    } else if (activeVideoProgressBeacon && !learningEventPostInFlight) activeVideoProgressBeacon();
     else if (activeVideoProgressSaver) activeVideoProgressSaver();
 });
 
@@ -1732,6 +1796,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (!initialRender || !Array.isArray(initialRender.courses)) await loadAllCourses();
+    if (initialRender?.course && enrolledCourses[currentSubjectId] && currentUser?.logged_in && currentUser.role === 'student') {
+        await fetchCourseProgress(currentSubjectId);
+    }
 });
 
 window.addEventListener('pageshow', event => {
