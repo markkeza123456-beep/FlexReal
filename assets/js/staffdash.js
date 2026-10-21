@@ -510,6 +510,8 @@
           <td>${curriculum.name}</td>
           <td>${curriculum.level || 'ม.ปลาย'}</td>
           <td><span class="badge ${curriculum.status === 'active' ? 'active' : 'draft'}">${curriculum.status || 'active'}</span></td>
+          <td>${escapeHtml(curriculum.created_by_name || '-')}</td>
+          <td>${escapeHtml(curriculum.updated_by_name || curriculum.created_by_name || '-')}</td>
           <td>${formatRegistrationDate(curriculum.created_at)}</td>
           <td>${formatRegistrationDate(curriculum.updated_at)}</td>
           <td>
@@ -521,7 +523,7 @@
           </td>
         </tr>
       `).join('')
-      : '<tr><td colspan="5" style="text-align:center;">ไม่มีข้อมูลหลักสูตร</td></tr>';
+      : '<tr><td colspan="9" style="text-align:center;">ไม่มีข้อมูลหลักสูตร</td></tr>';
   }
 
   document.querySelector('[data-goto="curriculum-add"]')?.addEventListener('click', () => {
@@ -586,6 +588,20 @@
     });
   };
 
+  function getEffectiveSubjectType(subject) {
+    const selectedCurriculumId = document.getElementById('subjectCurriculumFilter')?.value || '';
+    const relatedTypes = curriculumSubjects
+      .filter(item => String(item.course_id) === String(subject.id)
+        && (!selectedCurriculumId || String(item.curriculum_id) === String(selectedCurriculumId)))
+      .map(item => String(item.requirement_type).toLowerCase() === 'required' ? 'compulsory' : 'elective');
+    const uniqueTypes = [...new Set(relatedTypes)];
+    if (uniqueTypes.length === 1) return uniqueTypes[0];
+    if (uniqueTypes.length > 1) return 'varies';
+
+    const baseType = String(subject.type ?? subject.category ?? subject.subject_type ?? '').trim().toLowerCase();
+    return ['required', 'compulsory', 'mandatory'].includes(baseType) ? 'compulsory' : 'elective';
+  }
+
   function renderSubjects() {
     const subjectBody = document.getElementById('subjectBody');
     if (!subjectBody) {
@@ -607,12 +623,7 @@
 
     subjectBody.innerHTML = visibleSubjects.length
       ? visibleSubjects.map(subject => {
-        const curriculumTypes = curriculumSubjects
-          .filter(item => String(item.course_id) === String(subject.id))
-          .map(item => String(item.requirement_type).toLowerCase() === 'required' ? 'compulsory' : 'elective');
-        const uniqueTypes = [...new Set(curriculumTypes)];
-        const type = curriculumTypeBySubject.get(String(subject.id))
-          || (uniqueTypes.length === 1 ? uniqueTypes[0] : uniqueTypes.length > 1 ? 'varies' : (['required', 'compulsory'].includes(String(subject.type).toLowerCase()) ? 'compulsory' : 'elective'));
+        const type = getEffectiveSubjectType(subject);
         const isCompulsory = type === 'compulsory';
         const typeLabel = type === 'varies' ? 'เลือกหลักสูตร' : isCompulsory ? 'วิชาบังคับ' : 'วิชาเลือก';
         return `
@@ -621,6 +632,8 @@
           <td>${escapeHtml(subject.name)}</td>
           <td><span class="badge ${type === 'varies' ? '' : isCompulsory ? 'compulsory' : 'elective'}">${typeLabel}</span></td>
           <td style="color:var(--orange); font-weight:500;">${escapeHtml(subject.teacher_name || 'ยังไม่มีผู้ดูแล')}</td>
+          <td>${escapeHtml(subject.created_by_name || '-')}</td>
+          <td>${escapeHtml(subject.updated_by_name || subject.created_by_name || '-')}</td>
           <td>${formatRegistrationDate(subject.created_at)}</td>
           <td>${formatRegistrationDate(subject.updated_at)}</td>
           <td>
@@ -633,7 +646,7 @@
         </tr>
       `;
       }).join('')
-      : `<tr><td colspan="7" style="text-align:center;">${selectedCurriculumId ? 'หลักสูตรนี้ยังไม่มีรายวิชาที่กำหนดไว้' : 'ไม่มีข้อมูลรายวิชา'}</td></tr>`;
+      : `<tr><td colspan="9" style="text-align:center;">${selectedCurriculumId ? 'หลักสูตรนี้ยังไม่มีรายวิชาที่กำหนดไว้' : 'ไม่มีข้อมูลรายวิชา'}</td></tr>`;
   }
 
   document.getElementById('subjectCurriculumFilter')?.addEventListener('change', renderSubjects);
@@ -642,6 +655,10 @@
     document.getElementById('subjectFormTitle').textContent = 'เพิ่มรายวิชาใหม่';
     document.getElementById('subjectForm').reset();
     document.getElementById('sf-id').value = '';
+    document.getElementById('sf-description').value = '';
+    document.getElementById('sf-image').value = '';
+    document.getElementById('sf-image-name').textContent = 'ยังไม่ได้เลือกไฟล์';
+    document.getElementById('sf-image-preview-wrap').hidden = true;
     populateTeacherSelect('');
   });
 
@@ -657,11 +674,37 @@
     document.getElementById('sf-code').value = subject.code || '';
     document.getElementById('sf-name').value = subject.name || '';
     document.getElementById('sf-credit').value = subject.credit || 0;
-    document.getElementById('sf-type').value = subject.type === 'elective' ? 'elective' : 'required';
+    const effectiveType = getEffectiveSubjectType(subject);
+    const baseType = String(subject.type ?? subject.category ?? subject.subject_type ?? '').trim().toLowerCase();
+    const formType = effectiveType === 'varies'
+      ? (['required', 'compulsory', 'mandatory'].includes(baseType) ? 'compulsory' : 'elective')
+      : effectiveType;
+    document.getElementById('sf-type').value = formType === 'compulsory' ? 'required' : 'elective';
+    document.getElementById('sf-description').value = subject.description || '';
+    document.getElementById('sf-image').value = '';
+    document.getElementById('sf-image-name').textContent = subject.image_path ? 'ใช้รูปปกเดิม' : 'ยังไม่ได้เลือกไฟล์';
+    const preview = document.getElementById('sf-image-preview');
+    const previewWrap = document.getElementById('sf-image-preview-wrap');
+    if (subject.image_path) {
+      preview.src = subject.image_path;
+      previewWrap.hidden = false;
+    } else {
+      previewWrap.hidden = true;
+    }
 
     populateTeacherSelect(subject.teacher_ids || '');
     goTo('subject-add');
   };
+
+  document.getElementById('sf-image')?.addEventListener('change', event => {
+    const file = event.target.files?.[0];
+    const preview = document.getElementById('sf-image-preview');
+    const previewWrap = document.getElementById('sf-image-preview-wrap');
+    if (!file) return;
+    document.getElementById('sf-image-name').textContent = file.name;
+    preview.src = URL.createObjectURL(file);
+    previewWrap.hidden = false;
+  });
 
   document.getElementById('subjectForm')?.addEventListener('submit', async e => {
     e.preventDefault();
@@ -673,6 +716,9 @@
     formData.append('name', document.getElementById('sf-name').value);
     formData.append('credit', document.getElementById('sf-credit').value);
     formData.append('type', document.getElementById('sf-type').value);
+    formData.append('description', document.getElementById('sf-description').value);
+    const courseImage = document.getElementById('sf-image').files?.[0];
+    if (courseImage) formData.append('course_image', courseImage);
 
     addSelectedSubjectTeacher();
     formData.append('teacher_ids', JSON.stringify(selectedSubjectTeacherIds));

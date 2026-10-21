@@ -53,7 +53,7 @@ if ($displayName !== '') {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261020-sidebar-brand-centered" />
+  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261021-action-ui" />
   <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme" />
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
@@ -301,13 +301,15 @@ if ($displayName !== '') {
                 <th>ชื่อหลักสูตร</th>
                 <th>ระดับ</th>
                 <th>สถานะ</th>
+                <th>ผู้สร้าง</th>
+                <th>ผู้แก้ไขล่าสุด</th>
                 <th>สร้างเมื่อ</th>
                 <th>แก้ไขล่าสุด</th>
                 <th style="width:140px;">จัดการ</th>
               </tr>
             </thead>
             <tbody id="curriculumBody">
-              <tr><td colspan="7" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
+              <tr><td colspan="9" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
@@ -440,13 +442,15 @@ if ($displayName !== '') {
                 <th>ชื่อวิชา</th>
                 <th>ประเภท</th>
                 <th>อาจารย์ผู้ดูแล</th>
+                <th>ผู้สร้าง</th>
+                <th>ผู้แก้ไขล่าสุด</th>
                 <th>สร้างเมื่อ</th>
                 <th>แก้ไขล่าสุด</th>
                 <th style="width:140px;">จัดการ</th>
               </tr>
             </thead>
             <tbody id="subjectBody">
-              <tr><td colspan="7" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
+              <tr><td colspan="9" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
@@ -461,7 +465,7 @@ if ($displayName !== '') {
           </div>
           <button class="btn-ghost btn-back" data-goto="subject-list">← กลับรายการ</button>
         </div>
-        <form class="form-card" id="subjectForm">
+        <form class="form-card" id="subjectForm" method="post" enctype="multipart/form-data">
           <input type="hidden" id="sf-id" />
           <div class="form-section-label">ข้อมูลรายวิชา</div>
           <div class="form-grid-2">
@@ -493,8 +497,8 @@ if ($displayName !== '') {
               <div class="input-wrap select-wrap">
                 <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                 <select id="sf-type">
-                  <option value="required">บังคับ</option>
-                  <option value="elective">เลือก</option>
+                  <option value="required">วิชาบังคับ</option>
+                  <option value="elective">วิชาเลือก</option>
                 </select>
                 <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
@@ -511,6 +515,19 @@ if ($displayName !== '') {
               <div id="sf-selected-teachers" aria-live="polite" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
 
             </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="sf-description">คำอธิบายรายวิชา</label>
+            <textarea id="sf-description" rows="4" placeholder="กรอกรายละเอียดรายวิชา"></textarea>
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="sf-image">รูปภาพปก</label>
+            <div class="file-upload-control">
+              <input class="file-input-visually-hidden" type="file" id="sf-image" name="course_image" accept="image/*">
+              <label class="file-upload-button" for="sf-image">เลือกรูปภาพ</label>
+              <span id="sf-image-name" class="file-upload-name">ยังไม่ได้เลือกไฟล์</span>
+            </div>
+            <div id="sf-image-preview-wrap" hidden style="margin-top:10px"><img id="sf-image-preview" alt="ตัวอย่างรูปปก" style="max-width:220px;max-height:140px;object-fit:cover;border-radius:10px"></div>
           </div>
           <div class="form-actions">
             <button type="button" class="btn-ghost" data-goto="subject-list">ยกเลิก</button>
@@ -856,7 +873,7 @@ if ($displayName !== '') {
 
   <div class="toast" id="toast"></div>
 
-  <script src="assets/js/staffdash.js?v=20261020-password-eye-icons"></script>
+  <script src="assets/js/staffdash.js?v=20261021-action-ui"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

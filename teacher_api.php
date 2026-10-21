@@ -377,8 +377,8 @@ try {
         }
 
         $conn->beginTransaction();
-        $stmt = $conn->prepare('INSERT INTO public.lessons (course_id, title, content, study_hours, position, updated_at, updated_by) VALUES (:course_id, :title, :content, 1, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lessons WHERE course_id = :course_id), clock_timestamp(), :updated_by) RETURNING lesson_id');
-        $stmt->execute([':course_id' => $subjectId, ':title' => $lessonName, ':content' => $lessonContent, ':updated_by' => $teacherId]);
+        $stmt = $conn->prepare('INSERT INTO public.lessons (course_id, title, content, study_hours, position, created_by, updated_at, updated_by) VALUES (:course_id, :title, :content, 1, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lessons WHERE course_id = :course_id), :created_by, clock_timestamp(), :updated_by) RETURNING lesson_id');
+        $stmt->execute([':course_id' => $subjectId, ':title' => $lessonName, ':content' => $lessonContent, ':created_by' => $teacherId, ':updated_by' => $teacherId]);
         $lessonId = (string) $stmt->fetchColumn();
         $documentUpload = uploadLessonFile('lesson_document', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'documents'), 'lesson_doc', false, ['pdf']);
         if ($documentUpload['path'] !== '') {
@@ -406,8 +406,8 @@ try {
         $currentTitle = $currentLesson->fetchColumn();
         if ($currentTitle === false) throw new Exception('ไม่พบบทเรียน');
         if ((string) $currentTitle !== $lessonName) {
-            $stmt = $conn->prepare('UPDATE public.lessons SET title = :name WHERE lesson_id = :id');
-            $stmt->execute([':name' => $lessonName, ':id' => $lessonId]);
+            $stmt = $conn->prepare('UPDATE public.lessons SET title = :name, updated_at = clock_timestamp(), updated_by = :updated_by WHERE lesson_id = :id');
+            $stmt->execute([':name' => $lessonName, ':updated_by' => $teacherId, ':id' => $lessonId]);
         }
 
         $hasDocumentUpload = !empty($_FILES['lesson_document']) && ($_FILES['lesson_document']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;

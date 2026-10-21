@@ -1047,12 +1047,12 @@ function createCourseCardMarkup(course) {
     const isEnrolled = isTruthy(pick(course, 'is_enrolled', 'Is_Enrolled'));
     const tagText = subjectType === 'required' ? 'วิชาบังคับ' : 'วิชาเลือก';
     const statusText = isEnrolled ? 'ลงทะเบียนแล้ว' : 'ยังไม่ลงทะเบียน';
-    const imageUrl = getSubjectImage(subjectId, subjectName);
+    const imageUrl = pick(course, 'image_path', 'Image_Path') || getSubjectImage(subjectId, subjectName);
     const fallbackImageUrl = getSubjectFallbackImage(subjectId, subjectName);
 
     return `
         <div class="card" onclick="showCourse('${escapeHtml(subjectId)}')">
-            <img src="${imageUrl}" data-fallback="${fallbackImageUrl}" onerror="handleCourseImageError(this)" alt="ภาพประกอบวิชา ${escapeHtml(subjectName)}" loading="lazy">
+            <img src="${escapeHtml(imageUrl)}" data-fallback="${escapeHtml(fallbackImageUrl)}" onerror="handleCourseImageError(this)" alt="ภาพประกอบวิชา ${escapeHtml(subjectName)}" loading="lazy">
             <div class="card-content">
                 <span class="card-tag ${subjectType}">${tagText}</span>
                 <h3>${escapeHtml(subjectName)}</h3>
@@ -1172,8 +1172,8 @@ async function showCourse(subjectId) {
     if (cachedCourse) {
         currentCourseName = pick(cachedCourse, 'subjects_name', 'Subjects_Name');
         document.getElementById('detail-title').innerText = currentCourseName;
-        document.getElementById('detail-desc-top').innerText = pick(cachedCourse, 'subjects_description', 'Subjects_Description') || 'รายละเอียดเบื้องต้น';
-        document.getElementById('detail-desc').innerText = pick(cachedCourse, 'subjects_description', 'Subjects_Description') || 'คำอธิบายรายวิชา...';
+        document.getElementById('detail-desc-top').innerText = pick(cachedCourse, 'subjects_description', 'Subjects_Description') || 'ยังไม่มีคำอธิบาย';
+        document.getElementById('detail-desc').innerText = pick(cachedCourse, 'subjects_description', 'Subjects_Description') || 'ยังไม่มีคำอธิบาย';
         updateEnrollButton(Boolean(enrolledCourses[subjectId]));
         setCurriculumAccess(Boolean(enrolledCourses[subjectId]));
     } else {
@@ -1191,8 +1191,8 @@ async function showCourse(subjectId) {
             currentCourseName = pick(course, 'subjects_name', 'Subjects_Name');
 
             document.getElementById('detail-title').innerText = currentCourseName;
-            document.getElementById('detail-desc-top').innerText = pick(course, 'subjects_description', 'Subjects_Description') || 'รายละเอียดเบื้องต้น';
-            document.getElementById('detail-desc').innerText = pick(course, 'subjects_description', 'Subjects_Description') || 'คำอธิบายรายวิชา...';
+            document.getElementById('detail-desc-top').innerText = pick(course, 'subjects_description', 'Subjects_Description') || 'ยังไม่มีคำอธิบาย';
+            document.getElementById('detail-desc').innerText = pick(course, 'subjects_description', 'Subjects_Description') || 'ยังไม่มีคำอธิบาย';
             updateInstructorInfo(course, result.instructors);
 
 
