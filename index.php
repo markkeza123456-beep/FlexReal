@@ -4,14 +4,27 @@ header('Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0')
 header('Pragma: no-cache');
 
 function hubEscape($value): string { return htmlspecialchars((string) ($value ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
+function hubCourseImagePath(array $course): ?string {
+    $path = trim(str_replace('\\', '/', (string) ($course['image_path'] ?? '')));
+    if ($path === '' || preg_match('/^[a-z][a-z0-9+.-]*:/i', $path) || str_starts_with($path, '/')) return null;
+    $projectRoot = realpath(__DIR__);
+    $imageFile = realpath(__DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path));
+    if ($projectRoot === false || $imageFile === false || !is_file($imageFile)) return null;
+    $rootPrefix = rtrim($projectRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    if (strncasecmp($imageFile, $rootPrefix, strlen($rootPrefix)) !== 0) return null;
+    return $path;
+}
 function hubCard(array $course): string {
     $id = (string) ($course['course_id'] ?? '');
     $name = (string) ($course['name'] ?? '');
-    $image = trim((string) ($course['image_path'] ?? '')) ?: 'subject_image.php?id=' . rawurlencode($id);
+    $image = hubCourseImagePath($course);
     $type = in_array(($course['subject_type'] ?? ''), ['compulsory', 'required'], true) ? 'required' : 'elective';
     $tag = $type === 'required' ? 'วิชาบังคับ' : 'วิชาเลือก';
     $status = !empty($course['is_enrolled']) ? 'ลงทะเบียนแล้ว' : 'ยังไม่ลงทะเบียน';
-    return '<a class="card" href="index.php?subject_id=' . rawurlencode($id) . '"><img src="' . hubEscape($image) . '" alt="ภาพประกอบวิชา ' . hubEscape($name) . '" loading="lazy"><div class="card-content"><span class="card-tag ' . $type . '">' . $tag . '</span><h3>' . hubEscape($name) . '</h3><p>คลิกเพื่อดูรายละเอียด</p><div class="card-meta">รหัสวิชา: ' . hubEscape($id) . ' · ' . $status . '</div></div></a>';
+    $cover = $image !== null
+        ? '<img src="' . hubEscape($image) . '" alt="ภาพปกวิชา ' . hubEscape($name) . '" loading="lazy">'
+        : '<div class="course-cover-placeholder" role="img" aria-label="ไม่มีภาพปกวิชา"><i class="fa-solid fa-book-open" aria-hidden="true"></i></div>';
+    return '<a class="card" href="index.php?subject_id=' . rawurlencode($id) . '">' . $cover . '<div class="card-content"><span class="card-tag ' . $type . '">' . $tag . '</span><h3>' . hubEscape($name) . '</h3><p>คลิกเพื่อดูรายละเอียด</p><div class="card-meta">รหัสวิชา: ' . hubEscape($id) . ' · ' . $status . '</div></div></a>';
 }
 function hubLessonList(array $lessons): string {
     if (!$lessons) return '<div class="assignment-empty-state">วิชานี้ยังไม่มีบทเรียน</div>';
