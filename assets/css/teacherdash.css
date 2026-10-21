@@ -640,6 +640,14 @@ html, body {
 }
 .page-view { display: flex; flex-direction: column; gap: 24px; }
 
+/* Center profile settings in the available workspace, matching the student page. */
+#view-settings > .topbar,
+#view-settings > div[style*="max-width:620px"] {
+    width: min(100%, 620px);
+    margin-inline: auto;
+}
+#view-settings > div[style*="max-width:620px"] { max-width: 620px; }
+
 
 .sub-lesson-row td { background: color-mix(in srgb, var(--bg3) 60%, transparent); border-bottom: 1px solid var(--border); }
 .sub-lesson-row:last-of-type td { border-bottom: 1px solid var(--border); }

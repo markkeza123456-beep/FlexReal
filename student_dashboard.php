@@ -13,8 +13,8 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub - Student Portal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261021-profile-selected-blue">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261021-subject-type-color-coding">
     <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-background-only">
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
@@ -175,7 +175,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
 
 
                     <div class="content-card settings-card">
-                        <h2 class="settings-card-title">&#128100; โปรไฟล์</h2>
+                        <h2 class="settings-card-title">โปรไฟล์</h2>
 
                         <div class="avatar-section">
                             <div class="avatar-picker" title="รูปโปรไฟล์">
@@ -208,7 +208,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
                         </div>
 
                         <div id="profileFeedback" class="profile-feedback" style="display:none;"></div>
-                        <button class="btn-save-profile" id="saveProfileBtn" onclick="saveProfile()">&#128190; บันทึกข้อมูล</button>
+                        <button class="btn-save-profile" id="saveProfileBtn" onclick="saveProfile()">บันทึกข้อมูล</button>
                     </div>
 
                     <div class="content-card settings-card password-settings-card">

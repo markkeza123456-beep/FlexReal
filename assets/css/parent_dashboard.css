@@ -115,7 +115,9 @@ body { font-family: 'Kanit', sans-serif; background: var(--bg-dark); color: var(
 .overview-course-table tbody tr:nth-child(odd) { background: #fcfcfd; }
 .overview-course-table td:last-child { text-align:center; }
 .overview-course-name { font-weight: 500; }
-.overview-course-tag { display: inline-block; margin-left: .4rem; padding: .16rem .55rem; border-radius: 20px; background: rgba(var(--brand-200-rgb),.1); color: var(--blue); font-size: .68rem; white-space: nowrap; }
+.overview-course-tag { display: inline-block; margin-left: .4rem; padding: .16rem .55rem; border: 1px solid currentColor; border-radius: 20px; font-size: .68rem; font-weight: 500; line-height: 1.4; white-space: nowrap; }
+.overview-course-tag.required { color: #dc2626; background: #fef2f2; border-color: #fca5a5; }
+.overview-course-tag.elective { color: #15803d; background: #f0fdf4; border-color: #86efac; }
 .overview-course-empty { text-align: center; color: var(--text-muted); }
 .stat-card { background: var(--card-bg); padding: 1.2rem 1.3rem; border-radius: 14px; border-left: 4px solid var(--accent); }
 .stat-card.blue { border-color: var(--blue); }

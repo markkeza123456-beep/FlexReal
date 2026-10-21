@@ -12,15 +12,20 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
   <title>หน้าผู้ปกครอง - Flexible Learning Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Orbitron:wght@600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Orbitron:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-  <link rel="stylesheet" href="assets/css/parent_dashboard.css?v=20261021-profile-selected-blue" />
+  <link rel="stylesheet" href="assets/css/parent_dashboard.css?v=20261021-subject-type-badges" />
   <style>
 
-    .settings-wrapper { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.2rem; align-items: start; max-width: 850px; }
+    .settings-wrapper { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.2rem; align-items: start; max-width: 620px; width: 100%; margin-inline: auto; }
     @media (max-width: 860px) { .settings-wrapper { grid-template-columns: 1fr; } }
 
-    .settings-card { padding: 1.4rem 1.6rem; }
+    .settings-card { padding: 28px; }
+    #page-settings .settings-card > .card-title { font-family: 'Kanit', sans-serif; font-size: 15px; font-weight: 600; }
+
+    #page-settings > .page-header { width: min(100%, 620px); margin-inline: auto; text-align: left; }
+    #page-settings > .page-header h1 { font-family: 'Kanit', sans-serif; font-size: 26px; font-weight: 700; line-height: 1; }
+    #page-settings > .page-header p { font-family: 'Kanit', sans-serif; font-size: 13px; line-height: 1.5; margin-top: 4px; }
 
     .avatar-section {
       display: flex; align-items: center; gap: 1.2rem;
@@ -29,7 +34,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
     }
     .avatar-picker { position: relative; flex-shrink: 0; }
     .avatar-large {
-      width: 72px; height: 72px; border-radius: 50%;
+      width: 80px; height: 80px; border-radius: 50%;
       background: rgba(92, 107, 192,0.2); color: var(--text-primary);
       display: flex; align-items: center; justify-content: center;
       font-size: 1.6rem; font-weight: 600;
@@ -43,17 +48,17 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
       display: flex; align-items: center; justify-content: center;
       font-size: 0.7rem; border: 2px solid var(--bg);
     }
-    .avatar-name { font-size: 1rem; font-weight: 600; color: var(--text); }
-    .avatar-role { font-size: 0.78rem; color: var(--text-primary); margin: 2px 0; }
-    .avatar-hint { font-size: 0.7rem; color: var(--text-muted); }
+    .avatar-name { font-size: 17px; font-weight: 700; color: var(--text); }
+    .avatar-role { font-size: 12px; color: var(--text-primary); margin: 3px 0 0; }
+    .avatar-hint { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
     .settings-form { display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1.2rem; }
     .settings-field { display: flex; flex-direction: column; gap: 5px; }
-    .settings-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+    .settings-label { font-size: 12px; color: var(--text-muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
     .settings-input {
       background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
       border-radius: 8px; padding: 9px 12px; color: var(--text);
-      font-family: 'Kanit', sans-serif; font-size: 0.87rem; outline: none;
+      font-family: 'Kanit', sans-serif; font-size: 13px; outline: none;
       transition: border-color .2s;
     }
     .settings-input:focus { border-color: rgba(92, 107, 192,0.5); }
@@ -289,7 +294,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
 
 
         <div class="card settings-card">
-          <div class="card-title"><i class="ti ti-user-circle"></i> โปรไฟล์ผู้ปกครอง</div>
+          <div class="card-title">โปรไฟล์</div>
 
 
           <div class="avatar-section">
@@ -408,7 +413,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
   </div>
 </div>
 
-  <script src="assets/js/parent_dashboard.js?v=20261021-separated-password-card"></script>
+  <script src="assets/js/parent_dashboard.js?v=20261021-subject-type-badges"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

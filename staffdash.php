@@ -57,8 +57,8 @@ if ($displayName !== '') {
   <title>แดชบอร์ดเจ้าหน้าที่ | Flexible Learning Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261021-profile-active-blue-match" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261021-subject-type-color-coding" />
   <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-background-only" />
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
@@ -723,19 +723,20 @@ if ($displayName !== '') {
       <section class="page staff-profile-page" id="page-profile">
         <div class="page-header staff-profile-page-header">
           <div>
-            <div class="page-title">โปรไฟล์ของฉัน</div>
-            <div class="page-sub">ดูและแก้ไขข้อมูลบัญชีเจ้าหน้าที่</div>
+            <div class="page-title">ข้อมูลส่วนตัว</div>
+            <div class="page-sub">จัดการโปรไฟล์และการตั้งค่าของคุณ</div>
           </div>
         </div>
         <div class="form-card staff-profile-page-card">
-          <h2 class="staff-profile-card-title">👤 โปรไฟล์</h2>
+          <h2 class="staff-profile-card-title"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="9" r="3"/><path d="M6.8 18a5.5 5.5 0 0 1 10.4 0"/></svg> โปรไฟล์เจ้าหน้าที่</h2>
           <div class="staff-profile-identity">
             <button type="button" class="staff-profile-avatar" onclick="document.getElementById('staffAvatarInput').click()" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์" aria-label="เปลี่ยนรูปโปรไฟล์">
               <img id="staffProfileAvatarImg" src="<?= htmlspecialchars($staffAvatarUrl, ENT_QUOTES, 'UTF-8') ?>" alt="รูปโปรไฟล์"
                    style="<?= $staffAvatarUrl !== '' ? 'display:block;' : 'display:none;' ?>">
               <span id="staffProfileAvatarInitial" style="<?= $staffAvatarUrl !== '' ? 'display:none;' : '' ?>"><?= htmlspecialchars($avatarInitials, ENT_QUOTES, 'UTF-8') ?></span>
+              <span class="staff-profile-camera-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 4h-4l-2 3H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></svg></span>
             </button>
-            <div class="staff-profile-identity-info"><h2><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></h2><p id="staffProfileIdentifier">เจ้าหน้าที่ · รหัส <?= htmlspecialchars((string) $_SESSION['user_id'], ENT_QUOTES, 'UTF-8') ?></p><span>คลิกที่รูปเพื่อเปลี่ยน</span></div>
+            <div class="staff-profile-identity-info"><h2><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></h2><p id="staffProfileIdentifier">เจ้าหน้าที่</p><span>รูปโปรไฟล์</span></div>
           </div>
           <form id="staffProfileForm">
             <label class="form-field"><span class="form-label">เลขบัตรประจำตัวประชาชน</span><input class="staff-profile-input" name="user_id" inputmode="numeric" maxlength="32" required value="<?= htmlspecialchars((string) $_SESSION['user_id'], ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
@@ -755,7 +756,7 @@ if ($displayName !== '') {
             </div>
             <label class="form-field"><span class="form-label">รหัสไปรษณีย์</span><input class="staff-profile-input" name="postal_code" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" value="<?= htmlspecialchars((string) ($staffAddress['postal_code'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $profileCanEditContact ? '' : 'readonly' ?>></label>
             <div class="staff-profile-message" id="staffProfileMessage" role="status" aria-live="polite"></div>
-            <div class="staff-profile-actions"><button type="button" class="btn-ghost" onclick="closeStaffProfile()">กลับ</button><button type="submit" class="btn-primary" id="saveStaffProfileBtn"><span class="btn-text">บันทึกข้อมูล</span></button></div>
+            <div class="staff-profile-actions"><button type="submit" class="btn-primary" id="saveStaffProfileBtn"><span class="btn-text">บันทึกข้อมูล</span></button></div>
           </form>
         </div>
 

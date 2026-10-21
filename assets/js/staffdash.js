@@ -159,6 +159,7 @@
 
     if (page === 'profile' && currentPage !== 'profile') window._staffProfileReturnPage = currentPage;
     currentPage = page;
+    if (page === 'profile') document.querySelector('main.content')?.scrollTo({ top: 0, behavior: 'auto' });
     document.querySelectorAll('.page').forEach(section => section.classList.remove('active'));
     document.getElementById(`page-${page}`)?.classList.add('active');
 

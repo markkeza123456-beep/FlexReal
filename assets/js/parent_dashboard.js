@@ -681,10 +681,12 @@ function renderOverviewCourseTable() {
     const score = attempted
       ? `${formatDashboardNumber(subject.score_earned)}/${formatDashboardNumber(subject.score_possible)} คะแนน`
       : 'ยังไม่มีคะแนน';
-    const subjectType = subject.subject_type === 'required' ? 'วิชาบังคับ' : 'วิชาเลือก';
+    const isRequired = ['required', 'compulsory'].includes(String(subject.subject_type || '').trim().toLowerCase());
+    const subjectType = isRequired ? 'วิชาบังคับ' : 'วิชาเลือก';
+    const subjectTypeClass = isRequired ? 'required' : 'elective';
     return `<tr>
       <td>${String(originalIndex + 1).padStart(2, '0')}</td>
-      <td><span class="overview-course-name">${escapeHtml(subject.subject_name)}</span><span class="overview-course-tag">${subjectType}</span></td>
+      <td><span class="overview-course-name">${escapeHtml(subject.subject_name)}</span><span class="overview-course-tag ${subjectTypeClass}">${subjectType}</span></td>
       <td>ทำแล้ว ${attempted}/${total} บท</td>
       <td>${score}</td>
       <td><button type="button" class="view-quiz-details-btn" data-course-id="${escapeHtml(subject.course_id)}" data-course-name="${escapeHtml(subject.subject_name)}"><i class="ti ti-search" aria-hidden="true"></i> ดูรายละเอียด</button></td>

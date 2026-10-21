@@ -993,7 +993,7 @@ $stats = [
             <div class="card" style="padding:28px;">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:22px;">
                     <span style="font-size:16px;"></span>
-                    <h3 style="color:var(--text);font-size:15px;font-weight:600;">โปรไฟล์</h3>
+                    <h3 style="display:flex;align-items:center;gap:8px;color:var(--text);font-family:'Kanit',sans-serif;font-size:15px;font-weight:600;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="9" r="3"/><path d="M6.8 18a5.5 5.5 0 0 1 10.4 0"/></svg> โปรไฟล์อาจารย์</h3>
                 </div>
 
                 <div style="display:flex;align-items:center;gap:20px;margin-bottom:24px;">
