@@ -254,7 +254,6 @@ if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? ''
 
         </main>
     </div>
-    <script src="assets/js/student_dashboard.js?v=20261020-password-eye-icons"></script>
-    <script src="assets/js/student_dashboard.js?v=20261020-course-certificate-issue-v3"></script>
+    <script src="assets/js/student_dashboard.js?v=20261021-hide-course-certificates"></script>
 </body>
 </html>

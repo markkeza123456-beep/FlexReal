@@ -4,7 +4,6 @@ let dashboardState = {
 };
 
 let graduationCsrfToken = '';
-let courseCertificateCsrfToken = '';
 
 const navBtns = {
     dashboard: document.getElementById('btn-dashboard'),
@@ -127,62 +126,8 @@ function renderLessons(courses) {
             <p style="font-size: 0.8rem; color: #888;">คะแนนสะสม: ${course.score_total > 0 ? `${course.score_earned}/${course.score_total} คะแนน` : 'ยังไม่มีคะแนน'}</p>
             ${renderLessonBreakdown(course)}
             <a class="btn-submit" style="display:inline-block;text-decoration:none;margin-top:10px;" href="index.html?subject_id=${encodeURIComponent(course.subject_id)}">ดูรายวิชาและเข้าเรียน</a>
-            ${renderCourseCertificateAction(course)}
         </div>
     `).join('');
-}
-
-function renderCourseCertificateAction(course) {
-    const certificate = course.certificate;
-    if (certificate?.certificate_id) {
-        const id = encodeURIComponent(certificate.certificate_id);
-        return `<div class="course-certificate-actions"><span>ได้รับใบประกาศแล้ว</span><a href="download_course_certificate.php?certificate_id=${id}" target="_blank" rel="noopener">ดูใบประกาศ</a><a href="download_course_certificate.php?certificate_id=${id}&download=1">ดาวน์โหลด</a></div>`;
-    }
-    if (course.certificate_eligible) {
-        return `<div class="course-certificate-actions"><span>ผ่านเงื่อนไขรับใบประกาศ</span><button type="button" class="btn-submit" data-issue-course-certificate="${encodeURIComponent(course.subject_id)}">รับใบประกาศ</button></div>`;
-    }
-    return '';
-}
-
-async function loadStudentCourseCertificates() {
-    const response = await fetch('course_certificate_api.php', { credentials: 'same-origin', cache: 'no-store' });
-    if (!response.ok) throw new Error('โหลดสิทธิ์รับใบประกาศไม่สำเร็จ');
-    const result = await response.json();
-    if (result.status !== 'success') throw new Error(result.message || 'โหลดสิทธิ์รับใบประกาศไม่สำเร็จ');
-    courseCertificateCsrfToken = String(result.csrf_token || '');
-    const byCourse = new Map((Array.isArray(result.courses) ? result.courses : []).map((item) => [String(item.course_id), item]));
-    dashboardState.courses = dashboardState.courses.map((course) => {
-        const certificateCourse = byCourse.get(String(course.subject_id));
-        return certificateCourse ? {
-            ...course,
-            certificate_eligible: certificateCourse.is_eligible === true,
-            certificate: certificateCourse.certificate || null
-        } : course;
-    });
-    renderLessons(dashboardState.courses);
-}
-
-async function issueStudentCourseCertificate(courseId, button) {
-    if (!courseCertificateCsrfToken || !button || button.disabled) return;
-    button.disabled = true;
-    const originalText = button.textContent;
-    button.textContent = 'กำลังออกใบประกาศ...';
-    try {
-        const response = await fetch('course_certificate_api.php', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': courseCertificateCsrfToken },
-            body: JSON.stringify({ course_id: Number(courseId) })
-        });
-        const result = await response.json();
-        if (!response.ok || result.status !== 'success') throw new Error(result.message || 'ออกใบประกาศไม่สำเร็จ');
-        await loadStudentCourseCertificates();
-        window.alert(result.message || 'ออกใบประกาศเรียบร้อยแล้ว');
-    } catch (error) {
-        window.alert(error.message || 'ออกใบประกาศไม่สำเร็จ กรุณาลองอีกครั้ง');
-        button.disabled = false;
-        button.textContent = originalText;
-    }
 }
 
 function flattenReportLessons(courses) {
@@ -498,7 +443,6 @@ async function loadDashboardData() {
     updateStats(result.stats || {}, dashboardState.courses);
     renderLessons(dashboardState.courses);
     renderReports(dashboardState.courses, dashboardState.stats);
-    loadStudentCourseCertificates().catch((error) => console.error('Student course certificate load failed:', error));
     loadGraduationTracker().catch((error) => {
         const message = document.getElementById('graduationTrackerMessage');
         if (message) message.textContent = error.message || 'โหลดความคืบหน้าการจบไม่สำเร็จ';
@@ -532,10 +476,6 @@ loadDashboardData().catch((error) => {
 document.getElementById('reportCourseFilter')?.addEventListener('change', () => renderReports(dashboardState.courses, dashboardState.stats || {}));
 document.getElementById('reportPrintBtn')?.addEventListener('click', () => window.print());
 document.getElementById('graduationRequestBtn')?.addEventListener('click', submitGraduationRequest);
-document.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-issue-course-certificate]');
-    if (button) issueStudentCourseCertificate(button.dataset.issueCourseCertificate, button);
-});
 
 
 const _crop = {
