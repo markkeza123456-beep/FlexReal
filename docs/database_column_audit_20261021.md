@@ -1,6 +1,6 @@
 # Database column audit — 2026-10-21
 
-Current inventory of the connected PostgreSQL `public` schema after approved cleanup: 30 tables and 279 columns. Row counts and NULL/blank percentages were measured against the live schema; no row values were exported.
+Archival baseline inventory of the connected PostgreSQL `public` schema before the final demo cleanup: 30 tables and 279 columns. Row counts and NULL/blank percentages were measured against the live schema at that point; no row values were exported. The final post-cleanup state is recorded in [demo_cleanup_audit_20261021.md](demo_cleanup_audit_20261021.md).
 
 Usage evidence searches literal whole-word column names in first-party PHP/JS/HTML/CSS/SQL files. A filename hit is a code reference candidate, not proof it belongs to this table when multiple tables share a column name. No literal hit does not prove dynamic SQL or external consumers do not use a field.
 
@@ -294,4 +294,4 @@ Usage evidence searches literal whole-word column names in first-party PHP/JS/HT
 - Removed `assignment_submissions` after the live database confirmed it was empty. Its assignment list now returns zero counts for submissions and pending reviews; SQL references and dynamic creation were removed from application code.
 - `course_teachers.assigned_at` and `exam_logs.exam_log_id` have populated values but no literal code reference; retain them (assignment timestamp and primary key).
 - `transcript_requests.file_path` and `document_url` are both referenced by the current document workflow. Keep both until a data migration and caller cutover is planned.
-- Executed migrations are verified: the five listed columns and `assignment_submissions` table are absent; public schema now has 30 tables and 279 columns. Rollback files recreate definitions only; dropped values are not restored.
+- At the time of this baseline, the five listed columns and `assignment_submissions` table were absent. Later demo cleanup dropped `course_certificates`, bringing the current public schema to 29 tables and 273 columns. Rollback files recreate definitions only; dropped values are restored from the external backup.

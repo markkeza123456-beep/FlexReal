@@ -459,55 +459,7 @@ body.registration-guide-open { min-width: 0; overflow-x: hidden; }
 #page-guide .learning-guide-loading,
 #page-guide .learning-guide-empty { margin: 0; padding: 18px; border: 1px dashed var(--brand-400); border-radius: 14px; background: var(--brand-200); color: #667085; font-size: 14px; }
 #page-guide .learning-guide-empty { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-#page-guide .learning-course-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
-#page-guide .certificate-list-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:24px 0 13px; }
-#page-guide .certificate-list-heading h4 { margin:0; color:#29384a; font-size:17px; }
-#page-guide .certificate-list-heading > span { padding:5px 10px; border-radius:99px; background:var(--brand-200); color:var(--brand-700); font-size:12px; font-weight:600; }
-#page-guide .learning-course-card,
 #page-guide .graduation-guide-card { padding: 18px; border: 1px solid var(--brand-200); border-radius: 15px; background: var(--brand-200); }
-#page-guide .learning-course-card { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
-#page-guide .learning-course-card:hover { transform: translateY(-2px); border-color: var(--brand-400); box-shadow: 0 9px 20px rgba(34, 56, 80,.08); }
-#page-guide .certificate-course-card { display:grid; grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr); align-items:start; gap:18px; min-height:155px; }
-#page-guide .certificate-course-top { display:flex; align-items:flex-start; gap:12px; min-width:0; }
-#page-guide .certificate-course-icon { display:grid; flex:0 0 40px; width:40px; height:40px; place-items:center; border-radius:12px; background:var(--brand-200); color:var(--brand-700); }
-#page-guide .certificate-course-title { min-width:0; }
-#page-guide .certificate-course-title h4 { margin:1px 0 5px; color:#29384a; font-size:16px; overflow-wrap:anywhere; }
-#page-guide .certificate-course-title > span { color:#7b8794; font-size:12px; }
-#page-guide .certificate-course-details { min-width:0; }
-#page-guide .certificate-course-card.has-certificate { border-color:var(--brand-400); background:linear-gradient(135deg,var(--brand-200),var(--brand-200)); }
-#page-guide .learning-course-status { display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border-radius:99px; background:#f3f4f6; color:#667085; font-size:12px; font-weight:600; }
-#page-guide .learning-course-status.is-issued { background:#eaf8ef; color:#25824b; }
-#page-guide .learning-course-status.is-eligible { background:var(--brand-200); color:var(--brand-700); }
-#page-guide .learning-course-status.is-pending { background:#f3f4f6; color:#667085; }
-#page-guide .certificate-issued-date { margin:10px 0 0; color:#657386; font-size:12px; }
-#page-guide .certificate-issued-date i { margin-right:5px; color:var(--brand-700); }
-#page-guide .certificate-passed-date { margin:9px 0 0; color:#657386; font-size:12px; }
-#page-guide .certificate-passed-date i { margin-right:5px; color:var(--brand-700); }
-#page-guide .certificate-requirements { margin-top:12px; padding:10px 12px; border-left:3px solid var(--brand-400); border-radius:0 9px 9px 0; background:var(--brand-200); color:#657386; font-size:12px; }
-#page-guide .certificate-requirements strong { color:var(--brand-700); }
-#page-guide .certificate-requirements p { margin:3px 0 0; }
-#page-guide .learning-course-heading,
-#page-guide .learning-course-progress-label,
-#page-guide .learning-course-facts { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-#page-guide .learning-course-heading { align-items: flex-start; }
-#page-guide .learning-course-heading h4 { margin: 0 0 5px; color: #29384a; font-size: 16px; }
-#page-guide .learning-course-status { color: var(--brand-700); font-size: 12px; font-weight: 600; }
-#page-guide .learning-course-start { flex: 0 0 auto; color: var(--brand-700); font-size: 12px; font-weight: 600; text-decoration: none; }
-#page-guide .learning-course-progress-label { margin: 14px 0 6px; color: #657386; font-size: 12px; }
-#page-guide .learning-course-progress-label strong { color: var(--brand-700); font-size: 14px; }
-#page-guide .learning-progress-track { height: 9px; overflow: hidden; border-radius: 99px; background: var(--brand-200); }
-#page-guide .learning-progress-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,var(--brand-400),var(--brand-400)); }
-#page-guide .learning-course-facts { justify-content: flex-start; flex-wrap: wrap; margin-top: 12px; color: #657386; font-size: 11px; }
-#page-guide .certificate-guide-steps { display: grid; gap: 13px; margin: 0; padding: 0; list-style: none; }
-#page-guide .certificate-guide-steps li { position: relative; display: grid; grid-template-columns: 40px 46px minmax(0,1fr); align-items: center; gap: 14px; min-height: 92px; padding: 16px 20px; border: 1px solid var(--brand-200); border-radius: 16px; background: var(--brand-200); color: #4b596b; box-shadow: 0 4px 14px rgba(34, 56, 80,.035); transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease; }
-#page-guide .certificate-guide-steps li:hover { transform: translateY(-2px); border-color: var(--brand-400); box-shadow: 0 9px 22px rgba(34, 56, 80,.085); }
-#page-guide .certificate-guide-steps li:not(:last-child)::after { position: absolute; z-index: 0; top: 54px; bottom: -30px; left: 38px; width: 2px; background: linear-gradient(var(--brand-400),var(--brand-200)); content: ''; }
-#page-guide .certificate-step-number,
-#page-guide .certificate-step-icon { position: relative; z-index: 1; display: grid; place-items: center; }
-#page-guide .certificate-step-number { width: 36px; height: 36px; border: 1px solid var(--brand-200); border-radius: 50%; background: #fff; color: var(--brand-700); font-size: 11px; font-weight: 700; }
-#page-guide .certificate-step-icon { width: 44px; height: 44px; border-radius: 13px; background: var(--brand-200); color: var(--brand-700); font-size: 17px; }
-#page-guide .certificate-step-content h4 { margin: 0 0 3px; color: #29384a; font-size: 15px; }
-#page-guide .certificate-step-content p { margin: 0; color: #657386; font-size: 13px; line-height: 1.65; }
 #page-guide .learning-guide-notice { display: flex; align-items: flex-start; gap: 10px; margin: 18px 0; padding: 14px 16px; border: 1px solid var(--brand-200); border-radius: 13px; background: var(--brand-200); color: var(--brand-700); font-size: 13px; }
 #page-guide .graduation-guide-status { margin: 14px 0 0; color: #4b596b; font-size: 14px; }
 #page-guide .learning-guide-subsection { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--brand-200); }
@@ -530,21 +482,11 @@ body.learning-guide-open { min-width: 0; overflow-x: hidden; }
     #page-guide .learning-guide-section { padding: 18px 15px; border-radius: 16px; }
     #page-guide .learning-guide-section-heading { margin-bottom: 15px; }
     #page-guide .learning-guide-section-heading h3 { font-size: 17px; }
-    #page-guide .learning-guide-steps,
-    #page-guide .learning-course-list { grid-template-columns: 1fr; }
+    #page-guide .learning-guide-steps { grid-template-columns: 1fr; }
     #page-guide .learning-guide-steps li { min-height: 82px; grid-template-columns: 31px minmax(0,1fr) 30px; gap: 9px; padding: 13px 11px; }
-    #page-guide .certificate-guide-steps { gap: 10px; }
-    #page-guide .certificate-guide-steps li { grid-template-columns: 34px 40px minmax(0,1fr); gap: 10px; min-height: 84px; padding: 13px 12px; border-radius: 13px; }
-    #page-guide .certificate-guide-steps li:not(:last-child)::after { top: 47px; bottom: -25px; left: 28px; }
-    #page-guide .certificate-step-number { width: 32px; height: 32px; font-size: 10px; }
-    #page-guide .certificate-step-icon { width: 38px; height: 38px; border-radius: 11px; font-size: 15px; }
-    #page-guide .certificate-step-content h4 { font-size: 14px; }
-    #page-guide .certificate-step-content p { font-size: 12px; }
     #page-guide .learning-guide-steps p { font-size: 12px; }
     #page-guide .learning-guide-actions { flex-direction: column; }
     #page-guide .learning-guide-button { width: 100%; min-height: 48px; }
-    #page-guide .certificate-course-card { grid-template-columns:1fr; gap:12px; min-height:0; }
-    #page-guide .certificate-list-heading { align-items:flex-start; }
     #page-guide .learning-guide-empty { align-items: stretch; }
     body.learning-guide-open .navbar { align-items: flex-start; flex-direction: column; gap: 8px; padding: 12px 16px; }
     body.learning-guide-open .logo { font-size: 20px; }

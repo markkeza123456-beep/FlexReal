@@ -142,7 +142,6 @@ $hubClientCourse = $hubCourse ? [
             <button class="dropbtn">คู่มือการเรียน ▾</button>
             <div class="dropdown-content">
                 <a href="#" onclick="showGuide('register')">ขั้นตอนการสมัคร</a>
-                <a href="#" onclick="showGuide('certificate')">การรับใบประกาศ</a>
             </div> 
         </div>
 

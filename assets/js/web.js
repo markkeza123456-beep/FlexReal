@@ -1579,18 +1579,6 @@ window.addEventListener('pagehide', () => {
     else if (activeVideoProgressSaver) activeVideoProgressSaver();
 });
 
-function learningGuideShell() {
-    return '<section class="learning-guide" aria-label="คู่มือการรับใบประกาศ">' +
-        '<section class="learning-guide-section" aria-labelledby="certificateStepsTitle"><div class="learning-guide-section-heading"><span class="learning-guide-section-icon"><i class="fa-solid fa-award" aria-hidden="true"></i></span><div><h3 id="certificateStepsTitle">การรับใบประกาศนียบัตร</h3><p>ทำตามขั้นตอนง่าย ๆ เพื่อรับใบประกาศนียบัตรของคุณ</p></div></div>' +
-        '<ol class="certificate-guide-steps">' +
-        '<li><span class="certificate-step-number">01</span><span class="certificate-step-icon"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i></span><div class="certificate-step-content"><h4>เข้าสู่ระบบ</h4><p>เข้าสู่ระบบด้วยบัญชีผู้เรียนของคุณ</p></div></li>' +
-        '<li><span class="certificate-step-number">02</span><span class="certificate-step-icon"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span><div class="certificate-step-content"><h4>เรียนเนื้อหาให้ครบ</h4><p>เรียนเนื้อหาในรายวิชาให้ครบตามเงื่อนไขที่ระบบกำหนด</p></div></li>' +
-        '<li><span class="certificate-step-number">03</span><span class="certificate-step-icon"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i></span><div class="certificate-step-content"><h4>ทำแบบทดสอบ</h4><p>ทำแบบทดสอบและผ่านเกณฑ์คะแนนที่กำหนดของรายวิชา</p></div></li>' +
-        '<li><span class="certificate-step-number">04</span><span class="certificate-step-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span><div class="certificate-step-content"><h4>ตรวจสอบสิทธิ์</h4><p>เมื่อเรียนครบและผ่านเกณฑ์ ระบบจะแสดงสิทธิ์รับใบประกาศในรายวิชานั้น</p></div></li>' +
-        '<li><span class="certificate-step-number">05</span><span class="certificate-step-icon"><i class="fa-solid fa-award" aria-hidden="true"></i></span><div class="certificate-step-content"><h4>รับและดาวน์โหลดใบประกาศ</h4><p>กดปุ่ม “รับใบประกาศ” ในรายวิชาที่ผ่านเกณฑ์ จากนั้นเลือกดูหรือดาวน์โหลดเพื่อนำไปใช้งาน</p></div></li>' +
-        '</ol></section></section>';
-}
-
 function showCourseCatalog(event) {
     if (event) event.preventDefault();
     showPage('home');
@@ -1603,14 +1591,6 @@ function showGuide(type) {
     const title = document.getElementById('guide-title');
     const content = document.getElementById('guide-content');
     const page = document.getElementById('page-guide');
-    if (type === 'certificate') {
-        title.innerText = 'การรับใบประกาศนียบัตร';
-        page.classList.remove('register-guide-page');
-        page.classList.add('learning-guide-page');
-        content.innerHTML = learningGuideShell();
-        showPage('page-guide');
-        return;
-    }
     page.classList.remove('learning-guide-page');
     const guides = {
         'register': ['ขั้นตอนการสมัครสมาชิก', `
@@ -1661,7 +1641,7 @@ function showContact(type) {
 document.addEventListener('DOMContentLoaded', async () => {
 
     const requestedGuide = new URLSearchParams(window.location.search).get('guide');
-    if (['register', 'certificate'].includes(requestedGuide)) {
+    if (requestedGuide === 'register') {
         showGuide(requestedGuide);
     }
 

@@ -50,7 +50,7 @@ $countQueries = array_filter([
   'students' => $hasStudent ? "(SELECT COUNT(*) FROM public.students)" : null,
   'registrations' => $hasEnrollments ? "(SELECT COUNT(*) FROM public.student_courses)" : null,
   'transfers' => $hasCurricula ? "(SELECT COUNT(*) FROM public.student_curricula WHERE status = 'active')" : null,
-  'certificates' => $hasCourses ? "(SELECT COUNT(*) FROM public.courses WHERE status = 'active')" : null,
+  'active_courses' => $hasCourses ? "(SELECT COUNT(*) FROM public.courses WHERE status = 'active')" : null,
   'learning' => $hasLearn ? "(SELECT COUNT(*) FROM public.lesson_progress)" : null,
   'tests' => $hasTest ? "(SELECT COUNT(*) FROM public.quiz_attempts)" : null,
 ]);
@@ -66,7 +66,7 @@ if ($countQueries !== []) {
 $studentCount = (string) ($counts['students'] ?? 0);
 $regCount = (string) ($counts['registrations'] ?? 0);
 $transferCount = (string) ($counts['transfers'] ?? 0);
-$certCount = (string) ($counts['certificates'] ?? 0);
+$activeCourseCount = (string) ($counts['active_courses'] ?? 0);
 $learnCount = (string) ($counts['learning'] ?? 0);
 $testCount = (string) ($counts['tests'] ?? 0);
 
@@ -81,7 +81,7 @@ $summaryCards = [
   ['key' => 'students', 'label' => 'นักเรียนทั้งหมด', 'value' => $studentCount, 'sub' => 'จากตาราง students'],
   ['key' => 'registrations', 'label' => 'การลงทะเบียนรายวิชา', 'value' => $regCount, 'sub' => 'จากตาราง student_courses'],
   ['key' => 'transfers', 'label' => 'หลักสูตรที่กำลังเรียน', 'value' => $transferCount, 'sub' => 'จากตาราง student_curricula'],
-  ['key' => 'certificates', 'label' => 'รายวิชาที่เปิดสอน', 'value' => $certCount, 'sub' => 'จากตาราง courses'],
+  ['key' => 'active_courses', 'label' => 'รายวิชาที่เปิดสอน', 'value' => $activeCourseCount, 'sub' => 'จากตาราง courses'],
   ['key' => 'learning', 'label' => 'บันทึกการเรียน', 'value' => $learnCount, 'sub' => 'จากตาราง lesson_progress'],
   ['key' => 'tests', 'label' => 'ผลการทดสอบ', 'value' => $testCount, 'sub' => 'จากตาราง quiz_attempts'],
 ];
@@ -160,7 +160,7 @@ $summaryCards = [
             <?php if ($transfers === []): ?><div class="empty-panel">ยังไม่มีข้อมูลหลักสูตรของนักเรียน</div><?php else: ?><div class="list-block"><?php foreach ($transfers as $t): ?><article class="list-item"><div class="list-title"><?= h((string)$t['student_name']) ?></div><div class="list-detail">หลักสูตร <?= h((string)$t['curriculum_name']) ?></div><div class="list-meta">สถานะ <?= h((string)$t['status']) ?> • ลงทะเบียน <?= h((string)($t['enrolled_at'] ?? '-')) ?></div></article><?php endforeach; ?></div><?php endif; ?>
           </div>
 
-          <div class="detail-block" data-block="certificates" style="display:none">
+          <div class="detail-block" data-block="active_courses" style="display:none">
             <?php if ($certs === []): ?><div class="empty-panel">ยังไม่มีรายวิชา</div><?php else: ?><div class="list-block"><?php foreach ($certs as $c): ?><article class="list-item"><div class="list-title"><?= h((string)$c['name']) ?></div><div class="list-detail">รหัสวิชา <?= h((string)$c['code']) ?></div><div class="list-meta">หน่วยกิต <?= h((string)$c['credits']) ?> • สถานะ <?= h((string)$c['status']) ?></div></article><?php endforeach; ?></div><?php endif; ?>
           </div>
 
@@ -237,7 +237,7 @@ $summaryCards = [
         students: 'รายชื่อนักเรียนทั้งหมด',
         registrations: 'รายละเอียดการลงทะเบียน',
         transfers: 'รายละเอียดคำขอเทียบโอน',
-        certificates: 'รายละเอียดใบรับรอง',
+        active_courses: 'รายละเอียดรายวิชาที่เปิดสอน',
         learning: 'รายละเอียดบันทึกการเรียน',
         tests: 'รายละเอียดผลการทดสอบ'
       };
