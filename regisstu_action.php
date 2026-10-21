@@ -2,12 +2,13 @@
 session_start(); require_once __DIR__ . '/config/db.php'; require_once __DIR__ . '/curriculum_subjects_lib.php';
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: regisstu.php'); exit; }
 try {
-    $role = strtolower(trim((string) ($_POST['role'] ?? ''))); $userId = preg_replace('/\D+/', '', (string) ($_POST['userid'] ?? '')); $phone = preg_replace('/\D+/', '', (string) ($_POST['phone'] ?? ''));
+    $role = strtolower(trim((string) ($_POST['role'] ?? ''))); $id_card = trim((string) ($_POST['userid'] ?? '')); $userId = $id_card; $phone = preg_replace('/\D+/', '', (string) ($_POST['phone'] ?? ''));
     $password = (string) ($_POST['password'] ?? '');
     $givenName = trim((string) ($_POST['fullname'] ?? $_POST['firstname'] ?? ''));
     $fullName = trim($givenName . ' ' . trim((string) ($_POST['lastname'] ?? '')));
     $email = trim((string) ($_POST['email'] ?? '')) ?: null;
-    if (!in_array($role, ['student', 'teacher', 'parent'], true) || strlen($userId) !== 13 || $fullName === '' || !preg_match('/^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}$/', $password) || $password !== (string) ($_POST['confirm'] ?? '')) throw new RuntimeException('ข้อมูลสมัครสมาชิกไม่ถูกต้อง หรือเลขบัตรประชาชนไม่ครบ 13 หลัก');
+    if (strlen($id_card) !== 13 || !preg_match('/^[0-9]{13}$/', $id_card)) throw new RuntimeException('เลขบัตรประชาชนต้องเป็นตัวเลข 13 หลักพอดี');
+    if (!in_array($role, ['student', 'teacher', 'parent'], true) || $fullName === '' || !preg_match('/^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}$/', $password) || $password !== (string) ($_POST['confirm'] ?? '')) throw new RuntimeException('ข้อมูลสมัครสมาชิกไม่ถูกต้อง');
     $conn->beginTransaction();
     $conn->prepare('INSERT INTO public.users (user_id, password_hash, role) VALUES (:id, :password_hash, :role)')->execute([':id' => $userId, ':password_hash' => password_hash($password, PASSWORD_DEFAULT), ':role' => $role]);
     if ($role === 'student') {
@@ -21,7 +22,7 @@ try {
         // If an ID is supplied, validate it and link the accounts in this transaction.
         $studentId = preg_replace('/\D+/', '', (string) ($_POST['link_student_id'] ?? ''));
         if ($studentId !== '') {
-            if (strlen($studentId) !== 13) throw new RuntimeException('เลขบัตรประชาชนนักเรียนต้องมี 13 หลัก');
+            if (strlen($studentId) !== 13) throw new RuntimeException('เลขประจำตัวนักเรียนต้องมี 13 หลัก');
             $check = $conn->prepare('SELECT 1 FROM public.students WHERE user_id = :id');
             $check->execute([':id' => $studentId]);
             if (!$check->fetchColumn()) throw new RuntimeException('ไม่พบนักเรียนที่ต้องการเชื่อมโยง');

@@ -145,18 +145,7 @@
 
   function bindIdCardFormat(input) {
     input?.addEventListener('input', () => {
-      let value = input.value.replace(/\D/g, '');
-      if (value.length > 13) {
-        input.value = value;
-        return;
-      }
-      let output = '';
-      if (value.length > 0) output += value.slice(0, 1);
-      if (value.length > 1) output += '-' + value.slice(1, 5);
-      if (value.length > 5) output += '-' + value.slice(5, 10);
-      if (value.length > 10) output += '-' + value.slice(10, 12);
-      if (value.length > 12) output += '-' + value.slice(12, 13);
-      input.value = output;
+      input.value = input.value.replace(/\D/g, '').slice(0, 13);
     });
   }
 
@@ -383,7 +372,7 @@
       const linkedStudentPin = collectPin('parentPinWrap');
 
       if (linkedStudentId.length !== 13) {
-        valid = setError('field-link-student-id', 'link-student-id-error', 'รหัสบัตรประชาชนนักเรียนต้องมี 13 หลัก') && valid;
+        valid = setError('field-link-student-id', 'link-student-id-error', 'เลขประจำตัวนักเรียนต้องมี 13 หลัก') && valid;
       }
 
       if (linkedStudentPin.length !== 6) {

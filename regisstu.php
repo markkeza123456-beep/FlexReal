@@ -102,10 +102,10 @@ try {
         </div>
 
         <div class="field" id="field-idcard">
-          <label class="label">เลขบัตรประชาชน<span class="required">*</span></label>
+          <label class="label" for="idcard">เลขบัตรประจำตัวประชาชน<span class="required">*</span></label>
           <div class="input-wrap">
             <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6"/><circle cx="16" cy="14" r="2"/></svg></span>
-            <input type="text" id="idcard" name="userid" placeholder="X-XXXX-XXXXX-XX-X" maxlength="17" autocomplete="off" required />
+            <input type="text" id="idcard" name="userid" placeholder="เลขบัตรประชาชน 13 หลัก" maxlength="13" minlength="13" pattern="[0-9]{13}" inputmode="numeric" autocomplete="off" required />
             <span class="focus-bar"></span>
           </div>
           <span class="error-msg" id="idcard-error"></span>
@@ -132,9 +132,9 @@ try {
         <div class="role-field parent-field" id="parent-link-section" style="display:none">
           <div class="section-label">เชื่อมโยงบัญชีนักเรียน</div>
           <div class="field" id="field-link-student-id">
-            <label class="label" for="link_student_id">เลขบัตรประชาชนนักเรียน<span class="required">*</span></label>
+            <label class="label" for="link_student_id">เลขประจำตัวนักเรียน<span class="required">*</span></label>
             <div class="input-wrap">
-              <input type="text" id="link_student_id" name="link_student_id" placeholder="เว้นว่างได้ หากยังไม่ต้องการเชื่อมบัญชีนักเรียน" maxlength="17" autocomplete="off" />
+              <input type="text" id="link_student_id" name="link_student_id" placeholder="เลขประจำตัวนักเรียน" maxlength="13" minlength="13" pattern="[0-9]{13}" inputmode="numeric" autocomplete="off" />
               <span class="focus-bar"></span>
             </div>
             <span class="error-msg" id="link-student-id-error"></span>
