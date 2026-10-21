@@ -43,6 +43,7 @@ try {
   <link rel="stylesheet" href="assets/css/regisstu.css?v=20261021-register-layout" />
   <link rel="stylesheet" href="assets/css/login.css?v=20261021-register-layout" />
     <link rel="stylesheet" href="assets/css/responsive.css">
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-design-system" />
 </head>
 <body class="register-page">
   <div class="bg-grid"></div>
