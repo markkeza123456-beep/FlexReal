@@ -732,7 +732,11 @@ try {
                 $conn->prepare('DELETE FROM public.quiz_attempt_answers WHERE reviewer_id = :id')->execute([':id' => $memberId]);
             }
 
-            $profileTable = ['student' => 'students', 'teacher' => 'teachers', 'parent' => 'parents', 'staff' => 'staff'][$target['role']] ?? null;
+            // Clean the staff profile even if its role metadata is inconsistent.
+            // The FK currently uses NO ACTION, so remove this child row before users.
+            $conn->prepare('DELETE FROM public.staff WHERE user_id = :id')->execute([':id' => $memberId]);
+
+            $profileTable = ['student' => 'students', 'teacher' => 'teachers', 'parent' => 'parents'][$target['role']] ?? null;
             if ($profileTable !== null) {
                 $profileDelete = $conn->prepare('DELETE FROM public.' . $profileTable . ' WHERE user_id = :id');
                 $profileDelete->execute([':id' => $memberId]);
