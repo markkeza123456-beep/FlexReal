@@ -299,6 +299,8 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
                 <img id="avatarImg" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%">
                 <span id="avatarInitial">สม</span>
               </div>
+              <input type="file" id="avatarFileInput" accept="image/*" hidden onchange="previewAvatar(this)">
+              <button type="button" class="avatar-change-button" onclick="document.getElementById('avatarFileInput').click()" aria-label="เปลี่ยนรูปโปรไฟล์" title="เปลี่ยนรูปโปรไฟล์"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 4h-4l-2 3H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
             </div>
             <div class="avatar-info">
         <div class="avatar-name" id="displayName">ผู้ปกครอง</div>
@@ -400,7 +402,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
   </div>
 </div>
 
-  <script src="assets/js/parent_dashboard.js?v=20261020-quiz-details"></script>
+  <script src="assets/js/parent_dashboard.js?v=20261021-profile-avatar-control"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

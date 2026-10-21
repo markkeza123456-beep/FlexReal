@@ -1014,7 +1014,8 @@ $stats = [
                                 <span id="settingsAvatarInitial"><?= h($teacher['avatar']) ?></span>
                             <?php endif; ?>
                         </div>
-                        <input type="file" id="avatarFileInput" accept="image/*" style="display:none" disabled>
+                        <input type="file" id="avatarFileInput" accept="image/*" style="display:none">
+                        <button type="button" onclick="document.getElementById('avatarFileInput').click()" aria-label="เปลี่ยนรูปโปรไฟล์" title="เปลี่ยนรูปโปรไฟล์" style="position:absolute;right:-3px;bottom:-3px;width:28px;height:28px;border:2px solid var(--bg);border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 4h-4l-2 3H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
                     </div>
                     <div>
                         <div style="font-size:17px;font-weight:700;color:var(--text);"><?= h($teacher['name']) ?></div>
