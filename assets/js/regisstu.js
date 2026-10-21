@@ -5,6 +5,19 @@
   const roleInput = document.getElementById('roleInput');
   const form = document.getElementById('regisForm');
 
+  document.querySelectorAll('[data-toggle-password]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const input = document.getElementById(button.dataset.togglePassword);
+      if (!input) return;
+      const isVisible = input.type === 'password';
+      input.type = isVisible ? 'text' : 'password';
+      button.classList.toggle('is-visible', isVisible);
+      const label = isVisible ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน';
+      button.setAttribute('aria-label', label);
+      button.title = label;
+    });
+  });
+
   const roleActions = {
     student: 'regisstu_action.php',
     teacher: 'regisstu_action.php',

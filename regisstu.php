@@ -40,10 +40,12 @@ try {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/regisstu.css?v=20261021-register-layout" />
-  <link rel="stylesheet" href="assets/css/login.css?v=20261021-register-layout" />
+  <link rel="stylesheet" href="assets/css/regisstu.css?v=20261021-registration-password-toggle" />
+  <link rel="stylesheet" href="assets/css/login.css?v=20261021-registration-password-toggle" />
+  <link rel="stylesheet" href="assets/css/regisstu.css?v=20261021-login-shared-background" />
+  <link rel="stylesheet" href="assets/css/login.css?v=20261021-login-shared-background" />
     <link rel="stylesheet" href="assets/css/responsive.css">
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-design-system" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-shared-background" />
 </head>
 <body class="register-page">
   <div class="bg-grid"></div>
@@ -221,13 +223,13 @@ try {
 
         <div class="section-label">ตั้งรหัสผ่าน</div>
         <div class="grid-2">
-          <div class="field"><label class="label">รหัสผ่าน</label><div class="input-wrap"><input type="password" name="password" id="password" minlength="8" maxlength="15" pattern="(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}" required /><span class="focus-bar"></span></div><small class="password-hint">ใช้ตัวอักษรภาษาอังกฤษและตัวเลข 8-15 ตัว</small></div>
-          <div class="field"><label class="label">ยืนยันรหัสผ่าน</label><div class="input-wrap"><input type="password" name="confirm" id="confirm" minlength="8" maxlength="15" pattern="(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}" required /><span class="focus-bar"></span></div><small class="password-hint">กรอกรหัสผ่านเดิมอีกครั้ง</small></div>
+          <div class="field"><label class="label" for="password">รหัสผ่าน</label><div class="input-wrap"><input type="password" name="password" id="password" minlength="8" maxlength="15" pattern="(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}" required /><button type="button" class="toggle-pw" data-toggle-password="password" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m3 3 18 18"/></svg></button><span class="focus-bar"></span></div><small class="password-hint">ใช้ตัวอักษรภาษาอังกฤษและตัวเลข 8-15 ตัว</small></div>
+          <div class="field"><label class="label" for="confirm">ยืนยันรหัสผ่าน</label><div class="input-wrap"><input type="password" name="confirm" id="confirm" minlength="8" maxlength="15" pattern="(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}" required /><button type="button" class="toggle-pw" data-toggle-password="confirm" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m3 3 18 18"/></svg></button><span class="focus-bar"></span></div><small class="password-hint">กรอกรหัสผ่านเดิมอีกครั้ง</small></div>
         </div>
 
         <div class="role-field student-field" id="pin-section">
           <div class="section-label">ตั้ง PIN สำหรับผู้ปกครอง</div>
-          <div class="field"><label class="label">PIN 6 หลัก</label><div class="input-wrap"><input type="password" name="student_pin" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" /><span class="focus-bar"></span></div></div>
+          <div class="field"><label class="label" for="student_pin">PIN 6 หลัก</label><div class="input-wrap"><input type="password" name="student_pin" id="student_pin" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" /><button type="button" class="toggle-pw" data-toggle-password="student_pin" aria-label="แสดง PIN" title="แสดง PIN"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m3 3 18 18"/></svg></button><span class="focus-bar"></span></div></div>
         </div>
 
         <button type="submit" class="btn-submit" id="submitBtn">
@@ -240,7 +242,7 @@ try {
     <div class="back-row">มีบัญชีอยู่แล้ว? <a href="login.php" class="link">เข้าสู่ระบบ</a></div>
   </div>
   <div class="toast" id="toast"></div>
-  <script src="assets/js/regisstu.js?v=20261021-registration-otp"></script>
+  <script src="assets/js/regisstu.js?v=20261021-registration-password-toggle"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

@@ -9,7 +9,7 @@ function lessonViewerError(string $message, int $status = 400): never
 {
     http_response_code($status);
     header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>เปิดบทเรียนไม่ได้</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F5FCFD;color:#2d3436;font-family:system-ui,sans-serif}.message{max-width:560px;margin:24px;padding:24px 28px;background:#fff;border:1px solid #B2EBF2;border-top:5px solid #80DEEA;border-radius:16px;box-shadow:0 12px 32px rgba(45,52,54,.08);font-size:1.05rem;line-height:1.7}</style></head><body><main class="message">' . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</main></body></html>';
+    echo '<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>เปิดบทเรียนไม่ได้</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#9FA8DA;color:#303F9F;font-family:system-ui,sans-serif}.message{max-width:560px;margin:24px;padding:24px 28px;background:#fff;border:1px solid #9FA8DA;border-top:5px solid #5C6BC0;border-radius:16px;box-shadow:0 12px 32px rgba(48,63,159,.08);font-size:1.05rem;line-height:1.7}</style></head><body><main class="message">' . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</main></body></html>';
     exit;
 }
 
@@ -130,7 +130,7 @@ header('Content-Type: text/html; charset=utf-8');
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-design-system">
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-shared-background">
   <style>
     body { margin: 0; color: #24303b; font-family: "IBM Plex Sans Thai", system-ui, sans-serif; background: #f7f8fa; }
     header { display:flex; gap:12px; align-items:center; justify-content:space-between; padding: 12px 20px; background: #fff; border-bottom: 1px solid #e8eaed; font-weight: 700; }
@@ -141,7 +141,7 @@ header('Content-Type: text/html; charset=utf-8');
     .pdf-page { display:block; max-width:100%; height:auto; background:#fff; box-shadow:0 2px 12px rgba(15,23,42,.3); }
     .pdf-loading { padding:28px; color:#fff; text-align:center; }
     .book-image { display:block; max-width:100%; max-height:calc(100vh - 120px); margin:auto; box-shadow:0 8px 26px rgba(15,23,42,.16); background:#fff; }
-    .notice { padding: 18px; border-radius: 10px; background: #B2EBF2; color: #2d3436; }
+    .notice { padding: 18px; border-radius: 10px; background: #9FA8DA; color: #303F9F; }
   </style>
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>

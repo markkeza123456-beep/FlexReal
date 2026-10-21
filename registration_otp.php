@@ -22,10 +22,13 @@ $maskedEmail = htmlspecialchars($maskedEmail, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ยืนยันอีเมล - Flexible Learning Hub</title>
   <link rel="stylesheet" href="assets/css/login.css?v=20261021-home-palette">
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-shared-background">
   <link rel="stylesheet" href="assets/css/responsive.css">
   <style>
     .otp-code { width:100%; letter-spacing:.35em; text-align:center; font-size:1.35rem; }
     .otp-actions { display:flex; flex-direction:column; gap:12px; margin-top:18px; }
+    .otp-actions .otp-verify { display:flex; justify-content:center; align-items:center; min-height:50px; padding:14px 20px; border:0; border-radius:8px; background:linear-gradient(135deg,#80DEEA,#B2EBF2); color:#2d3436; font-family:'IBM Plex Sans Thai',sans-serif; font-size:1rem; font-weight:700; letter-spacing:0; cursor:pointer; box-shadow:0 6px 18px rgba(128,222,234,.3); }
+    .otp-actions .otp-verify:disabled { opacity:.48; cursor:not-allowed; box-shadow:none; }
     .otp-resend { border:0; background:none; color:#087e8b; cursor:pointer; padding:10px; font:inherit; }
     .otp-resend:disabled { color:#89969a; cursor:not-allowed; }
     .otp-message { min-height:1.4em; margin:8px 0 0; text-align:center; color:#b42318; }
@@ -48,7 +51,7 @@ $maskedEmail = htmlspecialchars($maskedEmail, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-
           </div>
         </div>
         <div class="otp-actions">
-          <button type="submit" class="btn-submit" id="verifyOtpButton">ยืนยันและสมัครสมาชิก</button>
+          <button type="submit" class="btn-submit otp-verify" id="verifyOtpButton" disabled>ยืนยันและสมัครสมาชิก</button>
           <button type="button" class="otp-resend" id="resendOtpButton" data-resend-in="<?= $resendIn ?>">ส่งรหัส OTP อีกครั้ง</button>
         </div>
         <p class="otp-message" id="otpMessage" role="status" aria-live="polite"></p>
@@ -56,6 +59,6 @@ $maskedEmail = htmlspecialchars($maskedEmail, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-
       <p class="register-row"><a class="link" href="regisstu.php">กลับไปแก้ไขข้อมูลสมัคร</a></p>
     </div>
   </main>
-  <script src="assets/js/registration_otp.js?v=20261021-registration-otp"></script>
+  <script src="assets/js/registration_otp.js?v=20261021-registration-otp-button"></script>
 </body>
 </html>

@@ -1,11 +1,11 @@
 :root {
-    --orange: #5C6BC0;
-    --orange-dark: #5C6BC0;
+    --orange: var(--brand-400);
+    --orange-dark: var(--brand-400);
     --ink: #263033;
     --muted: #68777c;
     --paper: #ffffff;
     --line: #ececec;
-    --soft: #9FA8DA;
+    --soft: var(--brand-200);
     --violet: #5b567d;
 }
 
@@ -18,7 +18,7 @@
 
 body {
     min-height: 100vh;
-    background: #9FA8DA;
+    background: var(--brand-200);
     color: var(--ink);
 }
 
@@ -66,7 +66,7 @@ body {
 }
 
 .quiz-return-wrap .back-link:hover {
-    border-color: #5C6BC0;
+    border-color: var(--brand-400);
     background: var(--soft);
     color: var(--text-primary);
 }
@@ -136,8 +136,8 @@ body {
     margin: -8px 0 16px;
     padding: 6px 10px;
     border-radius: 999px;
-    color: #303F9F;
-    background: #9FA8DA;
+    color: var(--brand-700);
+    background: var(--brand-200);
     font-size: 13px;
     font-weight: 600;
 }
@@ -159,7 +159,7 @@ body {
 }
 
 .option-card:hover {
-    border-color: #5C6BC0;
+    border-color: var(--brand-400);
     background: var(--soft);
 }
 
@@ -174,7 +174,7 @@ body {
     padding: 18px;
     border: 1px solid var(--line);
     border-radius: 14px;
-    background: #9FA8DA;
+    background: var(--brand-200);
 }
 
 .essay-label {
@@ -186,7 +186,7 @@ body {
     width: 100%;
     min-height: 180px;
     resize: vertical;
-    border: 1px solid #9FA8DA;
+    border: 1px solid var(--brand-200);
     border-radius: 12px;
     padding: 14px 16px;
     font: inherit;
@@ -198,8 +198,8 @@ body {
 }
 
 .essay-input:focus {
-    border-color: #5C6BC0;
-    box-shadow: 0 0 0 3px rgba(92, 107, 192, 0.12);
+    border-color: var(--brand-400);
+    box-shadow: 0 0 0 3px rgba(var(--brand-400-rgb), 0.12);
 }
 
 .essay-note {
@@ -233,7 +233,7 @@ body {
 
 .primary-btn:hover {
     background: var(--orange-dark);
-    border-color: #5C6BC0;
+    border-color: var(--brand-400);
 }
 
 .ghost-btn {
@@ -251,7 +251,7 @@ body {
     padding: 22px;
     border-radius: 14px;
     background: var(--soft);
-    border: 1px solid #9FA8DA;
+    border: 1px solid var(--brand-200);
     margin-top: 18px;
 }
 

@@ -1345,7 +1345,7 @@ function renderVideoModalBody(lessonIndex) {
     body.innerHTML = `
         <h3 style="margin-bottom:10px; color:#E67E22;"> วิดีโอบทเรียน</h3>
         <p style="margin-bottom:12px; color:#636e72;">กำลังดู: บทที่ ${safeIndex} - ${escapeHtml(selectedTitle)}</p>
-        <label for="video-lesson-select" style="display:block; margin-bottom:8px; font-weight:600; color:#2d3436;">เปลี่ยนบทเรียน</label>
+        <label for="video-lesson-select" style="display:block; margin-bottom:8px; font-weight:600; color:#303F9F;">เปลี่ยนบทเรียน</label>
         <select id="video-lesson-select" onchange="changeModalLessonVideo(this.value)" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; margin-bottom:14px;">
             ${selectorOptions}
         </select>

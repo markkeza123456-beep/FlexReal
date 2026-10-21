@@ -116,10 +116,10 @@ $hubClientCourse = $hubCourse ? [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="assets/css/web.css?v=20261021-course-detail-ui">
+    <link rel="stylesheet" href="assets/css/web.css?v=20261021-five-steps-gradient">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-design-system">
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-shared-background">
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body class="landing-page">
