@@ -28,8 +28,8 @@ try {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ขอเทียบโอนหน่วยกิต</title>
-    <link rel="stylesheet" href="assets/css/credit_transfer.css?v=20261021-cyan-everywhere">
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-design-system">
+    <link rel="stylesheet" href="assets/css/credit_transfer.css?v=20261021-indigo-200-400-700">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-page-background-50">
     <script src="assets/js/credit_transfer.js" defer></script>
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>

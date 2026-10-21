@@ -14,7 +14,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Orbitron:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-  <link rel="stylesheet" href="assets/css/parent_dashboard.css?v=20261021-cyan-everywhere" />
+  <link rel="stylesheet" href="assets/css/parent_dashboard.css?v=20261021-indigo-200-400-700" />
   <style>
 
     .settings-wrapper { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.2rem; align-items: start; max-width: 850px; }
@@ -30,10 +30,10 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
     .avatar-picker { position: relative; flex-shrink: 0; }
     .avatar-large {
       width: 72px; height: 72px; border-radius: 50%;
-      background: rgba(128, 222, 234,0.2); color: var(--text-primary);
+      background: rgba(92, 107, 192,0.2); color: var(--text-primary);
       display: flex; align-items: center; justify-content: center;
       font-size: 1.6rem; font-weight: 600;
-      border: 2px solid rgba(128, 222, 234,0.4);
+      border: 2px solid rgba(92, 107, 192,0.4);
       overflow: hidden;
     }
     .avatar-edit-badge {
@@ -56,7 +56,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
       font-family: 'Kanit', sans-serif; font-size: 0.87rem; outline: none;
       transition: border-color .2s;
     }
-    .settings-input:focus { border-color: rgba(128, 222, 234,0.5); }
+    .settings-input:focus { border-color: rgba(92, 107, 192,0.5); }
 
     .pwd-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.07); }
     .pwd-section-title { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); margin-bottom: 0.9rem; display: flex; align-items: center; gap: 6px; }
@@ -76,22 +76,22 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
 
     .btn-save-profile {
       width: 100%; padding: 11px; margin-top: 1.2rem;
-      background: rgba(128, 222, 234,0.15); border: 1px solid rgba(128, 222, 234,0.35);
+      background: rgba(92, 107, 192,0.15); border: 1px solid rgba(92, 107, 192,0.35);
       border-radius: 10px; color: var(--text-primary);
       font-family: 'Kanit', sans-serif; font-size: 0.9rem; font-weight: 500;
       cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
       transition: background .2s;
     }
-    .btn-save-profile:hover { background: rgba(128, 222, 234,0.25); }
+    .btn-save-profile:hover { background: rgba(92, 107, 192,0.25); }
     .btn-save-profile:disabled { opacity: .5; cursor: not-allowed; }
     .btn-logout { display:flex; align-items:center; gap:10px; padding:.75rem 1rem; margin-bottom:.5rem; border-radius:10px; color:var(--text-muted); text-decoration:none; font-size:.9rem; transition:background .2s,color .2s; }
     .btn-logout:hover { background:rgba(239,68,68,.12); color:#ef4444; }
 
-    .parent-profile.active { background: rgba(128, 222, 234,0.1); border-radius: 10px; }
+    .parent-profile.active { background: rgba(92, 107, 192,0.1); border-radius: 10px; }
     .parent-profile { transition: background .2s; padding: 8px; margin: -8px; border-radius: 10px; }
     .parent-profile:hover { background: rgba(255,255,255,0.05); }
   </style>
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-design-system" />
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-page-background-50" />
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>

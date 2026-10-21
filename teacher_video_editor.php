@@ -3,7 +3,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'teacher') { header('Location: login.php'); exit; }
 $subjectId = trim((string) ($_GET['subject_id'] ?? ''));
 ?>
-<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>คลังวิดีโอของอาจารย์</title><link rel="stylesheet" href="assets/css/staff_subject_editor.css"><link rel="stylesheet" href="assets/css/theme.css?v=20261021-login-design-system">    <link rel="stylesheet" href="assets/css/responsive.css">
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>คลังวิดีโอของอาจารย์</title><link rel="stylesheet" href="assets/css/staff_subject_editor.css?v=20261021-indigo-200-400-700"><link rel="stylesheet" href="assets/css/theme.css?v=20261021-page-background-50">    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body><div class="bg-grid"></div><div class="glow-orb orb-1"></div><div class="glow-orb orb-2"></div><header class="topbar"><a class="btn-ghost" href="teacherdash.php?subject_id=<?= htmlspecialchars($subjectId, ENT_QUOTES, 'UTF-8') ?>">← กลับแดชบอร์ดอาจารย์</a><div class="topbar-copy"><span class="eyebrow">TEACHER VIDEO LIBRARY</span><h1>จัดการวิดีโอรายวิชา</h1></div></header>
 <main class="page-shell"><section class="hero-card"><div><p class="hero-label">Subject videos</p><h2 id="subjectTitle">กำลังโหลดรายวิชา...</h2><p class="hero-sub">อัปโหลดไฟล์วิดีโอได้เฉพาะรายวิชาที่คุณรับผิดชอบ</p></div><div class="hero-meta" id="videoMeta"></div></section>
