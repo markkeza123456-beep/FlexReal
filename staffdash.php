@@ -789,7 +789,7 @@ if ($displayName !== '') {
 
   <div class="toast" id="toast"></div>
 
-  <script src="assets/js/staffdash.js?v=20261021-action-ui"></script>
+  <script src="assets/js/staffdash.js?v=20261021-id-length"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

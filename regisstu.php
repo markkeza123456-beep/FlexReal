@@ -231,7 +231,7 @@ try {
     <div class="back-row">มีบัญชีอยู่แล้ว? <a href="login.php" class="link">เข้าสู่ระบบ</a></div>
   </div>
   <div class="toast" id="toast"></div>
-  <script src="assets/js/regisstu.js"></script>
+  <script src="assets/js/regisstu.js?v=20261021-id-length"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

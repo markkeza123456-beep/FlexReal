@@ -903,7 +903,7 @@
   }
 
   staffUserIdInput?.addEventListener('input', () => {
-    staffUserIdInput.value = staffUserIdInput.value.replace(/\D+/g, '').slice(0, 13);
+    staffUserIdInput.value = staffUserIdInput.value.replace(/\D+/g, '');
   });
 
   document.getElementById('staffResetBtn')?.addEventListener('click', resetStaffForm);

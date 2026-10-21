@@ -382,7 +382,7 @@ exit;
   </div>
 
   <div class="toast" id="toast"></div>
-  <script src="assets/js/regisstu.js"></script>
+  <script src="assets/js/regisstu.js?v=20261021-id-length"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>
