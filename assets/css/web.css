@@ -260,7 +260,7 @@ body {
 .steps-title { width:min(1440px,100%); margin:0 auto; text-align:center; border:0; padding:0; }
 .steps-grid { margin-top:32px; }
 .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; text-align: center; }
-.step-icon { width: 65px; height: 65px; background: var(--soft-orange); color: var(--text-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 22px; font-weight: bold; border: 2px solid var(--primary-orange); }
+.step-icon { width: 65px; height: 65px; background: #DFF9FC; color: var(--text-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 22px; font-weight: bold; border: 2px solid var(--primary-orange); }
 
 
 #page-guide .container,

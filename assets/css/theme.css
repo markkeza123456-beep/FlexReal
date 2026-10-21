@@ -5,7 +5,7 @@
   --tweedia-deep: #80DEEA;
   --ocean-splash: #B2EBF2;
   --ocean-deep: #80DEEA;
-  --bg: #F5FCFD;
+  --bg: #c3f7ff;
   --bg-dark: #B2EBF2;
   --bg2: #ffffff;
   --bg3: #f5f6f8;
@@ -60,9 +60,9 @@ html { color-scheme: light; }
 body {
   background-color: var(--bg) !important;
   background-image:
-    radial-gradient(circle, rgba(128, 222, 234, 0.055) 1px, transparent 1.4px),
-    radial-gradient(ellipse at 8% 0%, rgba(178, 235, 242, 0.15), transparent 34rem),
-    radial-gradient(ellipse at 94% 20%, rgba(178, 235, 242, 0.18), transparent 30rem) !important;
+    radial-gradient(circle, rgba(128, 222, 234, 0.075) 1px, transparent 1.4px),
+    radial-gradient(ellipse at 8% 0%, rgba(178, 235, 242, 0.22), transparent 34rem),
+    radial-gradient(ellipse at 94% 20%, rgba(178, 235, 242, 0.25), transparent 30rem) !important;
   background-size: 34px 34px, auto, auto !important;
   background-attachment: fixed !important;
   color: var(--text-primary) !important;
@@ -80,7 +80,7 @@ body::after {
   background-repeat: repeat;
   background-size: 640px 480px;
   background-position: center top;
-  opacity: .30;
+  opacity: .36;
 }
 
 .bg-grid {
@@ -95,7 +95,7 @@ body::after {
 .sidebar,
 .navbar,
 .quiz-nav {
-  background-color: #ffffff !important;
+  background-color: #ddfafe !important;
   border-color: transparent !important;
   box-shadow: var(--shadow);
   backdrop-filter: blur(10px);

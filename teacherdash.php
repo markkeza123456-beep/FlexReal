@@ -372,7 +372,7 @@ $stats = [
         .choice-label { font-weight: 600; color: var(--text-dim); font-size: 14px; width: 16px; text-align: center; }
         @media (max-width: 760px) { .course-content-editor { grid-template-columns: 1fr !important; } }
     </style>
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261020-toa-blue-theme">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-home-palette">
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
