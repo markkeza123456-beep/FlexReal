@@ -40,6 +40,8 @@ try {
     $stmt->execute([':url' => $publicUrl, ':uid' => $userId]);
     $savedUrl = $stmt->fetchColumn();
     if (!is_string($savedUrl) || $savedUrl === '') throw new RuntimeException('Student profile was not found or avatar URL was not saved.');
+    $conn->prepare('UPDATE public.users SET updated_by = :updated_by, updated_at = NOW() WHERE user_id = :uid')
+        ->execute([':updated_by' => $userId, ':uid' => $userId]);
     echo json_encode(['success' => true, 'url' => $savedUrl], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     error_log('Student avatar save failed: ' . $e->getMessage());

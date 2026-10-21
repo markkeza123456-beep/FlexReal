@@ -45,16 +45,17 @@ try {
             $conn->rollBack();
             staffProfileResponse(['success' => false, 'message' => 'รหัสผ่านปัจจุบันไม่ถูกต้อง'], 422);
         }
-        $stmt = $conn->prepare('UPDATE public.users SET password_hash = :hash, updated_at = NOW() WHERE user_id = :id');
-        $stmt->execute([':hash' => password_hash($newPassword, PASSWORD_DEFAULT), ':id' => $userId]);
+        $stmt = $conn->prepare('UPDATE public.users SET password_hash = :hash, updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id');
+        $stmt->execute([':hash' => password_hash($newPassword, PASSWORD_DEFAULT), ':updated_by' => $userId, ':id' => $userId]);
     }
 
-    $stmt = $conn->prepare('UPDATE public.staff SET first_name = :first_name, last_name = :last_name, email = :email, phone = :phone, updated_at = NOW() WHERE user_id = :id');
+    $stmt = $conn->prepare('UPDATE public.staff SET first_name = :first_name, last_name = :last_name, email = :email, phone = :phone, updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id');
     $stmt->execute([
         ':first_name' => $firstName,
         ':last_name' => $lastName,
         ':email' => $email !== '' ? $email : null,
         ':phone' => $phone !== '' ? $phone : null,
+        ':updated_by' => $userId,
         ':id' => $userId,
     ]);
     if ($stmt->rowCount() === 0) {
@@ -62,6 +63,8 @@ try {
         $check->execute([':id' => $userId]);
         if (!$check->fetchColumn()) throw new RuntimeException('ไม่พบข้อมูลเจ้าหน้าที่');
     }
+    $conn->prepare('UPDATE public.users SET updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id')
+        ->execute([':updated_by' => $userId, ':id' => $userId]);
     $conn->commit();
 
     $fullName = $firstName . ' ' . $lastName;

@@ -58,6 +58,8 @@ try {
         $check->execute([':id' => $userId]);
         if (!$check->fetchColumn()) throw new RuntimeException('ไม่พบข้อมูลผู้ปกครอง');
     }
+    $conn->prepare('UPDATE public.users SET updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id')
+        ->execute([':updated_by' => $userId, ':id' => $userId]);
     $conn->commit();
     $_SESSION['name'] = $name;
     parentProfileJson(['success' => true, 'message' => 'บันทึกข้อมูลสำเร็จ']);

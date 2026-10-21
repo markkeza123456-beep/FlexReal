@@ -33,7 +33,7 @@ try {
 
     $userId = (string) $_SESSION['user_id'];
     $publicUrl = uploadPublicAvatar('teacher', $userId, $binary);
-    $stmt = $conn->prepare('UPDATE public.teachers SET avatar_url = :url WHERE user_id = :uid');
+    $stmt = $conn->prepare('UPDATE public.teachers SET avatar_url = :url, updated_at = NOW() WHERE user_id = :uid');
     $stmt->execute([':url' => $publicUrl, ':uid' => $userId]);
     if ($stmt->rowCount() === 0) {
         $check = $conn->prepare('SELECT 1 FROM public.teachers WHERE user_id = :uid');
@@ -42,6 +42,8 @@ try {
             throw new RuntimeException('Teacher profile was not found for the authenticated user.');
         }
     }
+    $conn->prepare('UPDATE public.users SET updated_by = :updated_by, updated_at = NOW() WHERE user_id = :uid')
+        ->execute([':updated_by' => $userId, ':uid' => $userId]);
 
     avatarResponse(true, 'บันทึกรูปโปรไฟล์สำเร็จ', ['url' => $publicUrl]);
 } catch (Throwable $e) {

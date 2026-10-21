@@ -164,12 +164,16 @@ try {
                     u.updated_at,
                     COALESCE(s.full_name, t.full_name, p.full_name, NULLIF(TRIM(stf.first_name || \' \' || stf.last_name), \'\'), \'-\') as name,
                     COALESCE(s.email, t.email, p.email, stf.email, \'-\') as email,
-                    COALESCE(s.phone, t.phone, p.phone, stf.phone, \'-\') as phone
+                    COALESCE(s.phone, t.phone, p.phone, stf.phone, \'-\') as phone,
+                    COALESCE(NULLIF(TRIM(CONCAT_WS(\' \', creator_staff.first_name, creator_staff.last_name)), \'\'), u.created_by, \'-\') AS created_by_name,
+                    COALESCE(NULLIF(TRIM(CONCAT_WS(\' \', editor_staff.first_name, editor_staff.last_name)), \'\'), u.updated_by, \'-\') AS updated_by_name
                 FROM public.users u
                 LEFT JOIN public.students s ON s.user_id = u.user_id
                 LEFT JOIN public.teachers t ON t.user_id = u.user_id
                 LEFT JOIN public.parents p ON p.user_id = u.user_id
                 LEFT JOIN public.staff stf ON u.user_id = stf.user_id
+                LEFT JOIN public.staff creator_staff ON creator_staff.user_id = u.created_by
+                LEFT JOIN public.staff editor_staff ON editor_staff.user_id = u.updated_by
                 ORDER BY u.user_id DESC
             ');
             $curriculaStmt = $conn->query("SELECT c.curriculum_id AS id, c.code, c.name, c.level, c.status, c.created_at, c.updated_at, COALESCE(NULLIF(TRIM(CONCAT_WS(' ', creator_staff.first_name, creator_staff.last_name)), ''), creator_user.user_id, '-') AS created_by_name, COALESCE(NULLIF(TRIM(CONCAT_WS(' ', editor_staff.first_name, editor_staff.last_name)), ''), editor_user.user_id, '-') AS updated_by_name FROM public.curricula c LEFT JOIN public.users creator_user ON creator_user.user_id = c.created_by LEFT JOIN public.staff creator_staff ON creator_staff.user_id = c.created_by LEFT JOIN public.users editor_user ON editor_user.user_id = c.updated_by LEFT JOIN public.staff editor_staff ON editor_staff.user_id = c.updated_by ORDER BY c.curriculum_id ASC");
@@ -221,10 +225,11 @@ try {
             }
 
             $conn->beginTransaction();
-            $conn->prepare('INSERT INTO public.users (user_id, password_hash, role) VALUES (:id, :password_hash, \'staff\')')
-                ->execute([':id' => $memberId, ':password_hash' => password_hash($password, PASSWORD_DEFAULT)]);
-            $conn->prepare('INSERT INTO public.staff (user_id, first_name, last_name, email, phone) VALUES (:id, :first_name, :last_name, :email, :phone)')
-                ->execute([':id' => $memberId, ':first_name' => $firstName, ':last_name' => $lastName, ':email' => $email !== '' ? $email : null, ':phone' => $phone !== '' ? $phone : null]);
+            $actorId = (string) $_SESSION['user_id'];
+            $conn->prepare('INSERT INTO public.users (user_id, password_hash, role, created_by, updated_by) VALUES (:id, :password_hash, \'staff\', :created_by, :updated_by)')
+                ->execute([':id' => $memberId, ':password_hash' => password_hash($password, PASSWORD_DEFAULT), ':created_by' => $actorId, ':updated_by' => $actorId]);
+            $conn->prepare('INSERT INTO public.staff (user_id, first_name, last_name, email, phone, created_by, updated_by) VALUES (:id, :first_name, :last_name, :email, :phone, :created_by, :updated_by)')
+                ->execute([':id' => $memberId, ':first_name' => $firstName, ':last_name' => $lastName, ':email' => $email !== '' ? $email : null, ':phone' => $phone !== '' ? $phone : null, ':created_by' => $actorId, ':updated_by' => $actorId]);
             $conn->commit();
             jsonResponse(['status' => 'success']);
             break;
@@ -262,6 +267,7 @@ try {
             }
 
             $fullName = trim($firstName . ' ' . $lastName);
+            $actorId = (string) $_SESSION['user_id'];
             switch ($requestedRole) {
                 case 'student':
                     $profile = $conn->prepare('SELECT 1 FROM public.students WHERE user_id = :id');
@@ -299,17 +305,20 @@ try {
                 case 'staff':
                     $profile = $conn->prepare('SELECT 1 FROM public.staff WHERE user_id = :id');
                     $profile->execute([':id' => $memberId]);
-                    if ($profile->fetchColumn()) {
-                        $statement = $conn->prepare('UPDATE public.staff SET first_name = :firstname, last_name = :lastname, email = :email, phone = :phone, updated_at = NOW() WHERE user_id = :id');
+                    $staffProfileExists = (bool) $profile->fetchColumn();
+                    if ($staffProfileExists) {
+                        $statement = $conn->prepare('UPDATE public.staff SET first_name = :firstname, last_name = :lastname, email = :email, phone = :phone, updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id');
                     } else {
-                        $statement = $conn->prepare('INSERT INTO public.staff (user_id, first_name, last_name, email, phone) VALUES (:id, :firstname, :lastname, :email, :phone)');
+                        $statement = $conn->prepare('INSERT INTO public.staff (user_id, first_name, last_name, email, phone, created_by, updated_by) VALUES (:id, :firstname, :lastname, :email, :phone, :created_by, :updated_by)');
                     }
-                    $statement->execute([':id' => $memberId, ':firstname' => $firstName, ':lastname' => $lastName, ':email' => $email !== '' ? $email : null, ':phone' => $phone !== '' ? $phone : null]);
+                    $staffParams = [':id' => $memberId, ':firstname' => $firstName, ':lastname' => $lastName, ':email' => $email !== '' ? $email : null, ':phone' => $phone !== '' ? $phone : null, ':updated_by' => $actorId];
+                    if (!$staffProfileExists) { $staffParams[':created_by'] = $actorId; }
+                    $statement->execute($staffParams);
                     break;
             }
 
-            $statement = $conn->prepare('UPDATE public.users SET role = :role, account_status = :account_status, updated_at = NOW() WHERE user_id = :id');
-            $statement->execute([':id' => $memberId, ':role' => $requestedRole, ':account_status' => $accountStatus]);
+            $statement = $conn->prepare('UPDATE public.users SET role = :role, account_status = :account_status, updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id');
+            $statement->execute([':id' => $memberId, ':role' => $requestedRole, ':account_status' => $accountStatus, ':updated_by' => $actorId]);
             $conn->commit();
             jsonResponse(['status' => 'success']);
             break;
@@ -628,8 +637,90 @@ try {
             $memberId = $_POST['id'] ?? '';
             if (empty($memberId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
 
-            $statement = $conn->prepare('DELETE FROM public.users WHERE user_id = :id');
-            $statement->execute([':id' => $memberId]);
+            $statement = $conn->prepare("UPDATE public.users SET account_status = 'inactive', updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id");
+            $statement->execute([':id' => $memberId, ':updated_by' => (string) $_SESSION['user_id']]);
+            if ($statement->rowCount() === 0) {
+                $exists = $conn->prepare('SELECT 1 FROM public.users WHERE user_id = :id');
+                $exists->execute([':id' => $memberId]);
+                if (!$exists->fetchColumn()) { jsonResponse(['status' => 'error', 'message' => 'ไม่พบสมาชิกที่ต้องการระงับ'], 404); }
+            }
+            jsonResponse(['status' => 'success']);
+            break;
+
+        case 'permanentlyDeleteMember':
+            $memberId = trim((string) ($_POST['id'] ?? ''));
+            $actorId = (string) $_SESSION['user_id'];
+            if ($memberId === '') { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
+            if ($memberId === $actorId) { jsonResponse(['status' => 'error', 'message' => 'ไม่สามารถลบบัญชีที่กำลังใช้งานอยู่ได้'], 400); }
+
+            $conn->beginTransaction();
+            $targetStmt = $conn->prepare('SELECT role, account_status FROM public.users WHERE user_id = :id FOR UPDATE');
+            $targetStmt->execute([':id' => $memberId]);
+            $target = $targetStmt->fetch(PDO::FETCH_ASSOC);
+            if (!$target) {
+                $conn->rollBack();
+                jsonResponse(['status' => 'error', 'message' => 'ไม่พบบัญชีผู้ใช้งาน'], 404);
+            }
+            if ($target['account_status'] !== 'inactive') {
+                $conn->rollBack();
+                jsonResponse(['status' => 'error', 'message' => 'ลบถาวรได้เฉพาะบัญชีที่ระงับแล้ว'], 409);
+            }
+
+            // Clear nullable audit references and remove dependent records that require a live user.
+            $conn->prepare('UPDATE public.students SET parent_user_id = NULL WHERE parent_user_id = :id')->execute([':id' => $memberId]);
+            $conn->prepare('UPDATE public.students SET advisor_user_id = NULL WHERE advisor_user_id = :id')->execute([':id' => $memberId]);
+            $conn->prepare('UPDATE public.courses SET created_by = NULL WHERE created_by = :id')->execute([':id' => $memberId]);
+            $conn->prepare('UPDATE public.activity_logs SET actor_user_id = NULL WHERE actor_user_id = :id')->execute([':id' => $memberId]);
+            $conn->prepare('UPDATE public.graduation_requests SET approved_by = NULL WHERE approved_by = :id')->execute([':id' => $memberId]);
+            $conn->prepare('UPDATE public.transfer_permissions SET revoked_by = NULL WHERE revoked_by = :id')->execute([':id' => $memberId]);
+            $conn->prepare('DELETE FROM public.transfer_permissions WHERE instructor_id = :id OR granted_by = :id')->execute([':id' => $memberId]);
+            $conn->prepare('UPDATE public.transcript_requests SET reviewed_by = NULL, approved_by = NULL WHERE reviewed_by = :id OR approved_by = :id')->execute([':id' => $memberId]);
+            $conn->prepare('UPDATE public.lesson_progress SET transferred_by = NULL WHERE transferred_by = :id')->execute([':id' => $memberId]);
+
+            if ($target['role'] === 'student') {
+                // Progress rows can point to the student's transfer request, so remove them first.
+                $conn->prepare('DELETE FROM public.lesson_progress WHERE student_id = :id')->execute([':id' => $memberId]);
+            }
+
+            // Remove transcript requests owned by the account and review rows that cannot retain a deleted reviewer ID.
+            $conn->prepare('DELETE FROM public.transcript_request_lessons WHERE request_id IN (SELECT request_id FROM public.transcript_requests WHERE student_id = :id) OR reviewed_by = :id')->execute([':id' => $memberId]);
+            $conn->prepare('DELETE FROM public.transcript_requests WHERE student_id = :id')->execute([':id' => $memberId]);
+
+            if ($target['role'] === 'student') {
+                $conn->prepare('DELETE FROM public.learning_events WHERE student_id = :id')->execute([':id' => $memberId]);
+                $conn->prepare('DELETE FROM public.student_curricula WHERE student_id = :id')->execute([':id' => $memberId]);
+                $conn->prepare('DELETE FROM public.student_courses WHERE student_id = :id')->execute([':id' => $memberId]);
+                $conn->prepare('DELETE FROM public.assignment_submissions WHERE student_id = :id')->execute([':id' => $memberId]);
+                $conn->prepare('DELETE FROM public.quiz_attempts WHERE student_id = :id')->execute([':id' => $memberId]);
+            } elseif ($target['role'] === 'teacher') {
+                $conn->prepare('DELETE FROM public.course_teachers WHERE teacher_id = :id')->execute([':id' => $memberId]);
+                $conn->prepare('DELETE FROM public.course_assignments WHERE teacher_id = :id')->execute([':id' => $memberId]);
+                $conn->prepare('DELETE FROM public.course_announcements WHERE teacher_id = :id')->execute([':id' => $memberId]);
+                $conn->prepare('DELETE FROM public.quiz_attempt_answers WHERE reviewer_id = :id')->execute([':id' => $memberId]);
+            }
+
+            $profileTable = ['student' => 'students', 'teacher' => 'teachers', 'parent' => 'parents', 'staff' => 'staff'][$target['role']] ?? null;
+            if ($profileTable !== null) {
+                $profileDelete = $conn->prepare('DELETE FROM public.' . $profileTable . ' WHERE user_id = :id');
+                $profileDelete->execute([':id' => $memberId]);
+            }
+            $deleteUser = $conn->prepare('DELETE FROM public.users WHERE user_id = :id');
+            $deleteUser->execute([':id' => $memberId]);
+            if ($deleteUser->rowCount() !== 1) { throw new RuntimeException('ไม่สามารถลบบัญชีผู้ใช้งานได้'); }
+            $conn->commit();
+            jsonResponse(['status' => 'success']);
+            break;
+
+        case 'restoreMember':
+            $memberId = $_POST['id'] ?? '';
+            if (empty($memberId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
+            $statement = $conn->prepare("UPDATE public.users SET account_status = 'active', updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id");
+            $statement->execute([':id' => $memberId, ':updated_by' => (string) $_SESSION['user_id']]);
+            if ($statement->rowCount() === 0) {
+                $exists = $conn->prepare('SELECT 1 FROM public.users WHERE user_id = :id');
+                $exists->execute([':id' => $memberId]);
+                if (!$exists->fetchColumn()) { jsonResponse(['status' => 'error', 'message' => 'ไม่พบสมาชิกที่ต้องการเปิดใช้งาน'], 404); }
+            }
             jsonResponse(['status' => 'success']);
             break;
 

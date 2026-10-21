@@ -45,6 +45,9 @@
       renderMembers();
     }
   });
+  document.getElementById('memberStatusFilter')?.addEventListener('change', () => {
+    if (currentPage === 'member-list') renderMembers();
+  });
 
   document.getElementById('menuBtn')?.addEventListener('click', () => sidebar?.classList.toggle('open'));
   document.getElementById('sidebarClose')?.addEventListener('click', () => sidebar?.classList.remove('open'));
@@ -394,7 +397,9 @@
       staff: 'เจ้าหน้าที่',
     };
 
+    const statusFilter = document.getElementById('memberStatusFilter')?.value || 'active';
     const filteredMembers = members.filter(member => {
+      if (statusFilter !== 'all' && member.status !== statusFilter) return false;
       if (!memberSearchTerm) return true;
       const searchable = `${member.name} ${member.email} ${member.phone}`.toLocaleLowerCase();
       return searchable.includes(memberSearchTerm);
@@ -410,21 +415,25 @@
           <td><span class="badge ${member.status === 'active' ? 'active' : 'draft'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
           <td>${formatRegistrationDate(member.registered_at)}</td>
           <td>${formatRegistrationDate(member.updated_at)}</td>
+          <td>${escapeHtml(member.created_by_name || '-')}</td>
+          <td>${escapeHtml(member.updated_by_name || member.created_by_name || '-')}</td>
           <td>
             <div class="action-btns">
               <button type="button" class="btn-icon edit" onclick="editMember('${member.id}')">แก้ไข</button>
-              <button type="button" class="btn-icon del" onclick="deleteMember('${member.id}')">ลบ</button>
+              ${member.status === 'inactive'
+                ? `<button type="button" class="btn-icon edit" onclick="restoreMember('${escapeHtml(member.id)}')">เปิดใช้งาน</button><button type="button" class="btn-icon del" onclick="permanentlyDeleteMember('${escapeHtml(member.id)}')">ลบ</button>`
+                : `<button type="button" class="btn-icon del" onclick="deleteMember('${escapeHtml(member.id)}')">ระงับ</button>`}
             </div>
           </td>
         </tr>
       `).join('')
-      : '<tr><td colspan="8" style="text-align:center; padding:30px;">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>';
+      : '<tr><td colspan="10" style="text-align:center; padding:30px;">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>';
   }
 
   function renderStaffList() {
     const body = document.getElementById('staffListBody');
     if (!body) return;
-    const staffMembers = members.filter(member => String(member.roleValue).toLowerCase() === 'staff');
+    const staffMembers = members.filter(member => String(member.roleValue).toLowerCase() === 'staff' && member.status === 'active');
     body.innerHTML = staffMembers.length
       ? staffMembers.map(member => `
         <tr>
@@ -433,10 +442,12 @@
           <td><span class="badge ${member.status === 'active' ? 'active' : 'draft'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
           <td>${formatRegistrationDate(member.registered_at)}</td>
           <td>${formatRegistrationDate(member.updated_at)}</td>
+          <td>${escapeHtml(member.created_by_name || '-')}</td>
+          <td>${escapeHtml(member.updated_by_name || member.created_by_name || '-')}</td>
           <td><button type="button" class="btn-icon edit" onclick="editMember('${escapeHtml(member.id)}')">แก้ไข</button></td>
         </tr>
       `).join('')
-      : '<tr><td colspan="6" style="text-align:center;padding:24px;">ยังไม่มีบัญชีเจ้าหน้าที่</td></tr>';
+      : '<tr><td colspan="8" style="text-align:center;padding:24px;">ยังไม่มีบัญชีเจ้าหน้าที่</td></tr>';
   }
 
   window.editMember = id => {
@@ -482,17 +493,47 @@
   });
 
   window.deleteMember = id => {
-    openModal('ลบสมาชิก', 'ยืนยันการลบสมาชิกนี้หรือไม่?', async () => {
+    openModal('ระงับบัญชี', 'บัญชีนี้จะเข้าสถานะระงับและข้อมูลประวัติจะยังคงอยู่ ยืนยันหรือไม่?', async () => {
       const formData = new FormData();
       formData.append('action', 'deleteMember');
       formData.append('id', id);
 
       try {
         await fetchJson('api_staff.php', { method: 'POST', body: formData });
-        showToast('ลบสมาชิกเรียบร้อย', 'success');
+        showToast('ระงับบัญชีเรียบร้อย', 'success');
         await loadData();
       } catch (error) {
-        showToast(error.message || 'ไม่สามารถลบสมาชิกได้', 'error');
+        showToast(error.message || 'ไม่สามารถระงับบัญชีได้', 'error');
+      }
+    });
+  };
+
+  window.restoreMember = id => {
+    openModal('เปิดใช้งานบัญชี', 'ยืนยันเปิดใช้งานบัญชีนี้อีกครั้งหรือไม่?', async () => {
+      const formData = new FormData();
+      formData.append('action', 'restoreMember');
+      formData.append('id', id);
+      try {
+        await fetchJson('api_staff.php', { method: 'POST', body: formData });
+        showToast('เปิดใช้งานบัญชีเรียบร้อย', 'success');
+        await loadData();
+      } catch (error) {
+        showToast(error.message || 'ไม่สามารถเปิดใช้งานบัญชีได้', 'error');
+      }
+    });
+  };
+
+  window.permanentlyDeleteMember = id => {
+    openModal('ลบบัญชีถาวร', 'ยืนยันการลบผู้ใช้งานคนนี้อย่างถาวรหรือไม่? ข้อมูลที่เกี่ยวข้องกับบัญชีอาจถูกลบด้วย', async () => {
+      const formData = new FormData();
+      formData.append('action', 'permanentlyDeleteMember');
+      formData.append('id', id);
+      try {
+        await fetchJson('api_staff.php', { method: 'POST', body: formData });
+        showToast('ลบบัญชีผู้ใช้งานถาวรเรียบร้อย', 'success');
+        await loadData();
+      } catch (error) {
+        showToast(error.message || 'ไม่สามารถลบบัญชีได้', 'error');
       }
     });
   };
