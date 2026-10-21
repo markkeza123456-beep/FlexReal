@@ -201,7 +201,7 @@ body {
   margin: auto 0 0;
   padding: 14px 20px;
   border: 0;
-  background: linear-gradient(135deg, var(--primary-start), var(--primary-end));
+  background: linear-gradient(135deg, var(--primary-start), var(--primary-end)) !important;
 }
 .sidebar > .sidebar-footer .user-name,
 .sidebar > .sidebar-footer .user-role { color: #FFFFFF !important; }

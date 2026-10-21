@@ -595,11 +595,14 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 /* Match the student profile footer to the selected-profile design. */
 #btn-settings.user-profile {
     width: 100%;
+    margin-top: auto;
     margin: auto 0 0;
     border: 0;
     border-radius: 0;
     background: linear-gradient(135deg, var(--primary-start), var(--primary-end)) !important;
 }
+#page-dashboard .sidebar,
+.dashboard-container > .sidebar { padding-bottom: 0; }
 #btn-settings.user-profile .user-info .name,
 #btn-settings.user-profile .user-info .role { color: #FFFFFF !important; }
 
