@@ -82,6 +82,49 @@ try {
     $studentStmt->execute([':student_id' => $studentId]);
     $student = $studentStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
+    // Return the full active catalog separately from curriculum progress so
+    // the student can see every course offered on the website without
+    // changing enrollment or graduation totals.
+    $catalogStmt = $conn->prepare(
+        "SELECT c.course_id, c.code, c.name, COALESCE(c.description, '') AS description,
+                CASE
+                    WHEN LOWER(TRIM(COALESCE(cc.requirement_type, c.subject_type, ''))) IN ('required', 'compulsory', 'mandatory', 'บังคับ', 'วิชาบังคับ') THEN 'compulsory'
+                    WHEN LOWER(TRIM(COALESCE(cc.requirement_type, c.subject_type, ''))) IN ('elective', 'optional', 'เลือก', 'วิชาเลือก') THEN 'elective'
+                    ELSE NULL
+                END AS subject_type,
+                (cc.course_id IS NOT NULL) AS is_in_curriculum,
+                (cc.course_id IS NOT NULL OR sc.course_id IS NOT NULL) AS is_enrolled,
+                COUNT(DISTINCT l.lesson_id)::integer AS lesson_count
+         FROM public.courses c
+         LEFT JOIN LATERAL (
+             SELECT curriculum_id FROM public.student_curricula
+             WHERE student_id = :student_id AND status = 'active'
+             ORDER BY enrolled_at DESC LIMIT 1
+         ) active_curriculum ON TRUE
+         LEFT JOIN public.curriculum_courses cc
+           ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id
+         LEFT JOIN public.student_courses sc
+           ON sc.student_id = :student_id AND sc.course_id = c.course_id
+         LEFT JOIN public.lessons l ON l.course_id = c.course_id
+         WHERE c.status = 'active'
+         GROUP BY c.course_id, c.code, c.name, c.description, c.subject_type,
+                  cc.course_id, cc.requirement_type, sc.course_id
+         ORDER BY (cc.course_id IS NULL), cc.course_id, c.code ASC NULLS LAST, c.name"
+    );
+    $catalogStmt->execute([':student_id' => $studentId]);
+    $catalogCourses = array_map(static function (array $row): array {
+        return [
+            'subject_id' => (string) ($row['course_id'] ?? ''),
+            'code' => (string) ($row['code'] ?? ''),
+            'name' => (string) ($row['name'] ?? 'ไม่ระบุชื่อวิชา'),
+            'description' => (string) ($row['description'] ?? ''),
+            'subject_type' => $row['subject_type'] !== null ? (string) $row['subject_type'] : null,
+            'is_in_curriculum' => in_array(strtolower((string) ($row['is_in_curriculum'] ?? '')), ['1', 't', 'true', 'yes'], true),
+            'is_enrolled' => in_array(strtolower((string) ($row['is_enrolled'] ?? '')), ['1', 't', 'true', 'yes'], true),
+            'lesson_count' => (int) ($row['lesson_count'] ?? 0),
+        ];
+    }, $catalogStmt->fetchAll(PDO::FETCH_ASSOC));
+
     $courseStmt = $conn->prepare(
         "SELECT c.course_id, c.code, c.name, COALESCE(c.description, '') AS description,
                 cc.curriculum_id, cc.curriculum_order,
@@ -256,6 +299,8 @@ try {
             'code' => (string) ($row['code'] ?? ''),
             'curriculum_id' => (string) ($row['curriculum_id'] ?? ''),
             'curriculum_order' => $row['curriculum_order'] !== null ? (int) $row['curriculum_order'] : null,
+            'is_in_curriculum' => true,
+            'is_enrolled' => true,
             'name' => (string) ($row['name'] ?? 'ไม่ระบุชื่อวิชา'),
             'description' => (string) ($row['description'] ?? ''),
             'subject_type' => $row['subject_type'] !== null ? (string) $row['subject_type'] : null,
@@ -294,6 +339,7 @@ try {
         ],
         'stats' => [
             'course_count' => $courseCount,
+            'catalog_course_count' => count($catalogCourses),
             'completed_courses' => $completedCourses,
             'course_progress_percent' => $courseCount > 0 ? round(($completedCourses / $courseCount) * 100, 1) : 0,
             'attempted_lessons' => $attemptedLessons,
@@ -303,6 +349,7 @@ try {
             'score_total' => $scoreTotal,
         ],
         'courses' => $courses,
+        'catalog_courses' => $catalogCourses,
     ]);
 } catch (Throwable $e) {
     dashboardJson([

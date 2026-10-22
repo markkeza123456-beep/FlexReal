@@ -86,9 +86,9 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
 
                 <section class="stats-grid student-stats-grid">
                     <div class="stat-card orange">
-                        <p class="label">วิชาที่ลงทะเบียน</p>
+                        <p class="label">รายวิชาบนเว็บไซต์</p>
                         <p class="value" id="statCourseCount">0</p>
-                        <span class="sub-value">รายวิชาที่เปิดเรียนอยู่</span>
+                        <span class="sub-value">วิชาที่เปิดสอนทั้งหมด</span>
                     </div>
                     <div class="stat-card blue">
                         <p class="label">ครั้งที่ส่งข้อสอบ</p>
@@ -118,7 +118,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
                             <thead>
                                 <tr>
                                     <th>ลำดับ</th>
-                                    <th>รายวิชาตามหลักสูตร</th>
+                                    <th>รายวิชาทั้งหมดบนเว็บไซต์</th>
                                     <th>ความคืบหน้า</th>
                                     <th>สถานะผลการเรียน</th>
                                 </tr>
@@ -273,7 +273,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
 
         </main>
     </div>
-    <script src="assets/js/student_dashboard.js?v=20261022-mobile-layout-v2"></script>
+    <script src="assets/js/student_dashboard.js?v=20261022-full-course-catalog"></script>
     <script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>
