@@ -26,12 +26,12 @@ function hubCard(array $course): string {
     $name = (string) ($course['name'] ?? '');
     $image = hubCourseImagePath($course);
     $type = in_array(($course['subject_type'] ?? ''), ['compulsory', 'required'], true) ? 'required' : 'elective';
-    $tag = $type === 'required' ? 'วิชาบังคับ' : 'วิชาเลือก';
+    $tag = ($course['subject_type'] ?? null) === null ? '' : ($type === 'required' ? 'วิชาบังคับ' : 'วิชาเลือก');
     $status = !empty($course['is_enrolled']) ? 'ลงทะเบียนแล้ว' : 'ยังไม่ลงทะเบียน';
     $cover = $image !== null
         ? '<img src="' . hubEscape($image) . '" alt="ภาพปกวิชา ' . hubEscape($name) . '" loading="lazy">'
         : '<div class="course-cover-placeholder" role="img" aria-label="ไม่มีภาพปกวิชา"><i class="fa-solid fa-book-open" aria-hidden="true"></i></div>';
-    return '<a class="card" href="index.php?subject_id=' . rawurlencode($id) . '">' . $cover . '<div class="card-content"><span class="card-tag ' . $type . '">' . $tag . '</span><h3>' . hubEscape($name) . '</h3><p>คลิกเพื่อดูรายละเอียด</p><div class="card-meta">รหัสวิชา: ' . hubEscape($id) . ' · ' . $status . '</div></div></a>';
+    return '<a class="card" href="index.php?subject_id=' . rawurlencode($id) . '">' . $cover . '<div class="card-content">' . ($tag !== '' ? '<span class="card-tag ' . $type . '">' . $tag . '</span>' : '') . '<h3>' . hubEscape($name) . '</h3><p>คลิกเพื่อดูรายละเอียด</p><div class="card-meta">รหัสวิชา: ' . hubEscape($id) . ' · ' . $status . '</div></div></a>';
 }
 function hubLessonList(array $lessons): string {
     if (!$lessons) return '<div class="assignment-empty-state">วิชานี้ยังไม่มีบทเรียน</div>';
@@ -59,7 +59,7 @@ $hubInstructors = [];
 $hubLoadError = false;
 try {
     require_once __DIR__ . '/config/db.php';
-    $courseSql = "SELECT c.course_id, c.code, c.name, c.description, c.image_path, COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' END, c.subject_type, 'elective') AS subject_type, (cc.course_id IS NOT NULL) AS in_curriculum, (sc.course_id IS NOT NULL) AS is_enrolled FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id AND sc.status = 'active' WHERE c.status = 'active' ORDER BY (cc.course_id IS NULL), c.name";
+    $courseSql = "SELECT c.course_id, c.code, c.name, c.description, c.image_path, CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' ELSE NULL END AS subject_type, (cc.course_id IS NOT NULL) AS in_curriculum, (sc.course_id IS NOT NULL) AS is_enrolled FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id AND sc.status = 'active' WHERE c.status = 'active' ORDER BY (cc.course_id IS NULL), c.name";
     $courseStatement = $conn->prepare($courseSql);
     $studentIdForQuery = $hubRole === 'student' ? $hubUserId : '';
     $courseStatement->execute([':student_id' => $studentIdForQuery]);
@@ -68,8 +68,8 @@ try {
     $requestedCourse = trim((string) ($_GET['subject_id'] ?? ''));
     if ($requestedCourse === '' && isset($_GET['course'])) $requestedCourse = trim((string) $_GET['course']);
     if ($requestedCourse !== '') {
-        $detailStatement = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, c.image_path, c.credits, COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' END, c.subject_type, 'elective') AS subject_type, (sc.course_id IS NOT NULL) AS is_enrolled FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id AND sc.status = 'active' WHERE c.status = 'active' AND (c.course_id::text = :id OR c.name = :name) LIMIT 1");
-        $detailStatement->execute([':student_id' => $studentIdForQuery, ':id' => $requestedCourse, ':name' => $requestedCourse]);
+        $detailStatement = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, c.image_path, c.credits, CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' ELSE NULL END AS subject_type, (sc.course_id IS NOT NULL) AS is_enrolled FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id AND sc.status = 'active' WHERE c.status = 'active' AND c.course_id::text = :id LIMIT 1");
+        $detailStatement->execute([':student_id' => $studentIdForQuery, ':id' => $requestedCourse]);
         $hubCourse = $detailStatement->fetch(PDO::FETCH_ASSOC) ?: null;
         if ($hubCourse) {
             $lessonStatement = $conn->prepare("SELECT l.lesson_id, l.course_id, l.title, l.content, l.position, COALESCE(video.url, '') AS video_url, COALESCE(video.url, '') AS video_path, COALESCE(video.title, '') AS video_name, COALESCE(document.url, '') AS document_path, COALESCE(document.title, '') AS document_name FROM public.lessons l LEFT JOIN LATERAL (SELECT url, title FROM public.lesson_resources WHERE lesson_id = l.lesson_id AND resource_type = 'video' ORDER BY position DESC, resource_id DESC LIMIT 1) video ON true LEFT JOIN LATERAL (SELECT url, title FROM public.lesson_resources WHERE lesson_id = l.lesson_id AND resource_type = 'document' ORDER BY position DESC, resource_id DESC LIMIT 1) document ON true WHERE l.course_id = :course_id ORDER BY l.position");

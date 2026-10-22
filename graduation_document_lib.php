@@ -11,6 +11,7 @@ function graduationTranscriptRows(PDO $conn, string $studentId): array
 {
     $stmt = $conn->prepare(
         "SELECT c.course_id, c.code, c.name, c.credits, sc.status AS enrollment_status,
+                CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' ELSE NULL END AS subject_type,
                 COUNT(l.lesson_id)::integer AS total_lessons,
                 COUNT(l.lesson_id) FILTER (
                     WHERE COALESCE(lp.is_transferred, FALSE) OR UPPER(COALESCE(lp.grade, '')) = 'TR'
@@ -25,6 +26,8 @@ function graduationTranscriptRows(PDO $conn, string $studentId): array
                 COUNT(l.lesson_id) FILTER (WHERE qa.status = 'failed')::integer AS failed_lessons
          FROM public.student_courses sc
          JOIN public.courses c ON c.course_id = sc.course_id
+         LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = sc.student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) ac ON TRUE
+         LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = ac.curriculum_id AND cc.course_id = c.course_id
          LEFT JOIN public.lessons l ON l.course_id = c.course_id
          LEFT JOIN public.lesson_progress_summary lp ON lp.student_id = sc.student_id AND lp.lesson_id = l.lesson_id
          LEFT JOIN LATERAL (
@@ -34,7 +37,7 @@ function graduationTranscriptRows(PDO $conn, string $studentId): array
              ORDER BY a.submitted_at DESC, a.attempt_number DESC LIMIT 1
          ) qa ON TRUE
          WHERE sc.student_id = :student_id
-         GROUP BY c.course_id, c.code, c.name, c.credits, sc.status
+         GROUP BY c.course_id, c.code, c.name, c.credits, sc.status, cc.requirement_type
          ORDER BY c.code, c.name"
     );
     $stmt->execute([':student_id' => $studentId]);
@@ -142,11 +145,13 @@ function generateGraduationTranscriptPdf(array $student, array $courseRows, floa
     $html .= '<h1>ใบสรุปผลการเรียน</h1><p class="subtitle">Flexible Learning Hub</p>';
     $html .= '<table class="student" width="100%"><tr><td class="label">ชื่อ - นามสกุล</td><td><b>' . graduationDocumentH((string) ($student['full_name'] ?? '')) . '</b></td><td class="label">รหัสนักเรียน</td><td>' . graduationDocumentH((string) $student['student_id']) . '</td></tr>';
     $html .= '<tr><td class="label">วันที่อนุมัติ</td><td>' . graduationDocumentH(date('d/m/') . (date('Y') + 543)) . '</td><td class="label">หน่วยกิตสะสม</td><td><b>' . number_format($totalCredits, 2) . '</b></td></tr></table>';
-    $html .= '<table class="courses"><thead><tr><th style="width:11%">รหัสวิชา</th><th>รายวิชา</th><th style="width:12%">หน่วยกิต</th><th style="width:15%">บทเรียนที่เทียบโอน</th><th style="width:19%">ผลการเรียน</th></tr></thead><tbody>';
+    $html .= '<table class="courses"><thead><tr><th style="width:11%">รหัสวิชา</th><th>รายวิชา</th><th style="width:16%">ประเภทวิชา</th><th style="width:12%">หน่วยกิต</th><th style="width:15%">บทเรียนที่เทียบโอน</th><th style="width:19%">ผลการเรียน</th></tr></thead><tbody>';
     foreach ($courseRows as $row) {
         $gradeClass = $row['grade_code'] === 'TR' ? 'grade-tr' : ($row['grade_code'] === 'P' ? 'grade-pass' : ($row['grade_code'] === 'F' ? 'grade-fail' : ''));
         $html .= '<tr><td class="center">' . graduationDocumentH((string) $row['code']) . '</td>';
         $html .= '<td>' . graduationDocumentH((string) $row['name']) . '</td>';
+        $subjectTypeLabel = $row['subject_type'] === 'compulsory' ? 'วิชาบังคับ' : ($row['subject_type'] === 'elective' ? 'วิชาเลือก' : 'ยังไม่กำหนดประเภท');
+        $html .= '<td class="center">' . graduationDocumentH($subjectTypeLabel) . '</td>';
         $html .= '<td class="center">' . number_format((float) $row['credits'], 2) . '</td>';
         $html .= '<td class="center">' . graduationDocumentH((string) $row['transfer_summary']) . '</td>';
         $html .= '<td class="center ' . $gradeClass . '">' . graduationDocumentH((string) $row['grade_label']) . '</td></tr>';

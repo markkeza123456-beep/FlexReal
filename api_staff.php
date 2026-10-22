@@ -144,7 +144,22 @@ try {
                          editor_user.user_id, editor_staff.first_name, editor_staff.last_name
                 ORDER BY c.course_id ASC
             ");
-            $curriculumSubjectsStmt = $conn->query('SELECT curriculum_id, course_id, requirement_type FROM public.curriculum_courses');
+            $curriculumSubjectsStmt = $conn->query('SELECT curriculum_id, course_id, requirement_type, curriculum_order FROM public.curriculum_courses ORDER BY curriculum_id, curriculum_order NULLS LAST, course_id');
+            $curriculumIssuesStmt = $conn->query("SELECT ac.curriculum_id, cu.code AS curriculum_code, cu.name AS curriculum_name,
+                       c.course_id, c.code AS subject_code, c.name AS subject_name,
+                       COUNT(DISTINCT sc.student_id)::integer AS affected_students
+                FROM public.student_courses sc
+                JOIN LATERAL (
+                    SELECT curriculum_id FROM public.student_curricula
+                    WHERE student_id = sc.student_id AND status = 'active'
+                    ORDER BY enrolled_at DESC LIMIT 1
+                ) ac ON TRUE
+                JOIN public.curricula cu ON cu.curriculum_id = ac.curriculum_id
+                JOIN public.courses c ON c.course_id = sc.course_id
+                LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = ac.curriculum_id AND cc.course_id = c.course_id
+                WHERE sc.status = 'active' AND cc.course_id IS NULL
+                GROUP BY ac.curriculum_id, cu.code, cu.name, c.course_id, c.code, c.name
+                ORDER BY cu.code, c.code, c.course_id");
             $teachersStmt = $conn->query("SELECT user_id AS id, full_name AS name FROM public.teachers ORDER BY full_name ASC");
 
             jsonResponse([
@@ -153,6 +168,7 @@ try {
                 'curricula' => fetchAllRows($curriculaStmt),
                 'subjects' => fetchAllRows($subjectsStmt),
                 'curriculum_subjects' => fetchAllRows($curriculumSubjectsStmt),
+                'curriculum_issues' => fetchAllRows($curriculumIssuesStmt),
                 'teachers' => fetchAllRows($teachersStmt)
             ]);
             break;
@@ -366,16 +382,22 @@ try {
             $curriculumId = $_GET['curriculum_id'] ?? '';
             if (empty($curriculumId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
             $allSubjectsStmt = $conn->query("SELECT course_id AS id, code, name, subject_type AS type FROM public.courses ORDER BY course_id ASC");
-            $selectedStmt = $conn->prepare("SELECT course_id, requirement_type FROM public.curriculum_courses WHERE curriculum_id = :id");
+            $selectedStmt = $conn->prepare("SELECT course_id, requirement_type, curriculum_order FROM public.curriculum_courses WHERE curriculum_id = :id ORDER BY curriculum_order NULLS LAST, course_id");
             $selectedStmt->execute([':id' => $curriculumId]);
             $selectedRows = $selectedStmt->fetchAll(PDO::FETCH_ASSOC);
             $selectedTypes = [];
-            foreach ($selectedRows as $selectedRow) $selectedTypes[(string) $selectedRow['course_id']] = $selectedRow['requirement_type'] === 'required' ? 'compulsory' : 'elective';
+            $selectedOrders = [];
+            foreach ($selectedRows as $selectedRow) {
+                $selectedTypes[(string) $selectedRow['course_id']] = $selectedRow['requirement_type'] === 'required' ? 'compulsory' : 'elective';
+                $selectedOrders[(string) $selectedRow['course_id']] = $selectedRow['curriculum_order'] !== null ? (int) $selectedRow['curriculum_order'] : null;
+            }
             jsonResponse([
                 'status' => 'success',
+                'curriculum_id' => (string) $curriculumId,
                 'subjects' => fetchAllRows($allSubjectsStmt),
                 'selected' => array_column($selectedRows, 'course_id'),
-                'selected_types' => $selectedTypes
+                'selected_types' => $selectedTypes,
+                'selected_orders' => $selectedOrders
             ]);
             break;
 
@@ -386,23 +408,36 @@ try {
             $conn->beginTransaction();
             try {
                 $actorId = (string) $_SESSION['user_id'];
-                $delStmt = $conn->prepare("DELETE FROM public.curriculum_courses WHERE curriculum_id = :id");
-                $delStmt->execute([':id' => $curriculumId]);
+                $existingStmt = $conn->prepare('SELECT course_id FROM public.curriculum_courses WHERE curriculum_id = :id');
+                $existingStmt->execute([':id' => $curriculumId]);
+                $existingIds = array_map('strval', $existingStmt->fetchAll(PDO::FETCH_COLUMN));
+                $selectedIds = [];
+                $insertStmt = $conn->prepare("INSERT INTO public.curriculum_courses (curriculum_id, course_id, requirement_type, curriculum_order) SELECT :cid, course_id, :requirement_type, :curriculum_order FROM public.courses WHERE course_id = :sid ON CONFLICT (curriculum_id, course_id) DO UPDATE SET requirement_type = EXCLUDED.requirement_type, curriculum_order = EXCLUDED.curriculum_order, updated_at = NOW()");
                 if (!empty($subjectIds) && is_array($subjectIds)) {
-                    $insertStmt = $conn->prepare("INSERT INTO public.curriculum_courses (curriculum_id, course_id, requirement_type) SELECT :cid, course_id, :requirement_type FROM public.courses WHERE course_id = :sid");
+                    $usedOrders = [];
+                    $usedSubjects = [];
                     foreach ($subjectIds as $selection) {
                         if (is_array($selection)) {
                             $sid = trim((string) ($selection['id'] ?? ''));
                             $type = strtolower(trim((string) ($selection['type'] ?? 'elective')));
+                            $order = filter_var($selection['order'] ?? null, FILTER_VALIDATE_INT);
                         } else {
                             $sid = trim((string) $selection);
                             $type = 'elective';
+                            $order = false;
                         }
                         if ($sid === '' || !ctype_digit($sid) || !in_array($type, ['compulsory', 'elective'], true)) throw new RuntimeException('ประเภทวิชาในหลักสูตรไม่ถูกต้อง');
-                        $insertStmt->execute([':cid' => $curriculumId, ':sid' => $sid, ':requirement_type' => $type === 'compulsory' ? 'required' : 'elective']);
-                        if ($insertStmt->rowCount() !== 1) throw new RuntimeException('ไม่พบรายวิชาที่ต้องการบันทึก');
+                        if ($order === false || $order < 1 || isset($usedOrders[$order])) throw new RuntimeException('กรุณากำหนดลำดับหลักสูตรเป็นจำนวนเต็มบวกที่ไม่ซ้ำกัน');
+                        if (isset($usedSubjects[$sid])) throw new RuntimeException('พบรายวิชาซ้ำในรายการหลักสูตร');
+                        $usedOrders[$order] = true;
+                        $usedSubjects[$sid] = true;
+                        $selectedIds[] = $sid;
+                        $insertStmt->execute([':cid' => $curriculumId, ':sid' => $sid, ':requirement_type' => $type === 'compulsory' ? 'required' : 'elective', ':curriculum_order' => $order]);
+                        if ($insertStmt->rowCount() < 1) throw new RuntimeException('ไม่พบรายวิชาที่ต้องการบันทึก');
                     }
                 }
+                $removeStmt = $conn->prepare('DELETE FROM public.curriculum_courses WHERE curriculum_id = :cid AND course_id = :sid');
+                foreach (array_diff($existingIds, $selectedIds) as $removedId) $removeStmt->execute([':cid' => $curriculumId, ':sid' => $removedId]);
                 $conn->prepare('UPDATE public.curricula SET updated_by = :updated_by, updated_at = NOW() WHERE curriculum_id = :id')
                     ->execute([':updated_by' => $actorId, ':id' => $curriculumId]);
                 $conn->commit();
