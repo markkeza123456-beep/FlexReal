@@ -494,32 +494,6 @@ document.addEventListener('DOMContentLoaded', () => {
         catch (error) { inlineVideoList.innerHTML = `<div style="color:#ef4444;font-size:13px">${escapeHtml(error.message)}</div>`; }
     }
 
-    async function checkLessonStorageConfig() {
-        const button = document.getElementById('checkLessonStorageBtn');
-        const output = document.getElementById('lessonStorageStatus');
-        if (!button || !output) return;
-        button.disabled = true;
-        output.textContent = 'กำลังตรวจสอบค่าฝั่งเซิร์ฟเวอร์...';
-        try {
-            const form = new FormData();
-            form.append('action', 'check_storage_config');
-            const { status } = await teacherRequest(form);
-            const authLabel = status.storage_api_accepted_key === true
-                ? 'Storage API ยอมรับคีย์'
-                : status.storage_api_accepted_key === false
-                    ? `Storage API ไม่ยอมรับคีย์ (HTTP ${status.storage_http_status || 'เชื่อมต่อไม่ได้'})`
-                    : 'ยังตรวจสอบ Storage API ไม่ได้';
-            output.textContent = `URL ${status.url_configured ? 'พบ' : 'ไม่พบ'} · Service Role Key ${status.service_role_key_configured ? 'พบ' : 'ไม่พบ'} · Bucket ${status.bucket_exists ? 'พบ' : 'ไม่พบ'}${status.bucket_public ? ' (public)' : ''} · ${authLabel} · ${status.message}`;
-            output.style.color = status.url_configured && status.service_role_key_configured && status.bucket_exists && status.storage_api_accepted_key
-                ? 'var(--text-muted)' : '#b91c1c';
-        } catch (error) {
-            output.textContent = error.message || 'ตรวจสอบการตั้งค่าไม่สำเร็จ';
-            output.style.color = '#b91c1c';
-        } finally {
-            button.disabled = false;
-        }
-    }
-
     async function saveInlineLesson() {
         const saveButton = document.getElementById('saveInlineLessonBtn');
         const lessonName = document.getElementById('inlineLessonName');
@@ -587,8 +561,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('saveInlineLessonBtn')?.addEventListener('click', saveInlineLesson);
     document.getElementById('saveInlineVideoBtn')?.addEventListener('click', saveInlineVideo);
-    document.getElementById('checkLessonStorageBtn')?.addEventListener('click', checkLessonStorageConfig);
-
     document.getElementById('inlineVideoClearBtn')?.addEventListener('click', resetInlineVideoForm);
     inlineVideoList?.addEventListener('click', async (event) => {
         const editButton = event.target.closest('[data-inline-video-edit]');
