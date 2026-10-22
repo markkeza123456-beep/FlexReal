@@ -48,8 +48,6 @@ try {
     exit;
 }
 
-const MAX_LESSONS_PER_SUBJECT = 3;
-
 $action = $_POST['action'] ?? '';
 $teacherId = (string) $_SESSION['user_id'];
 
@@ -313,13 +311,6 @@ function teacherOwnsLesson(PDO $conn, string $teacherId, string $lessonId): bool
     return (bool) $stmt->fetchColumn();
 }
 
-function countSubjectLessons(PDO $conn, string $subjectId): int
-{
-    $stmt = $conn->prepare('SELECT COUNT(*) FROM public.lessons WHERE course_id = :subject_id');
-    $stmt->execute([':subject_id' => $subjectId]);
-    return (int) $stmt->fetchColumn();
-}
-
 function teacherOwnsQuiz(PDO $conn, string $teacherId, string $quizId): bool
 {
     $stmt = $conn->prepare(
@@ -420,10 +411,6 @@ try {
         if (!teacherOwnsSubject($conn, $teacherId, $subjectId)) {
             throw new Exception('คุณไม่มีสิทธิ์จัดการรายวิชานี้');
         }
-        if (countSubjectLessons($conn, $subjectId) >= MAX_LESSONS_PER_SUBJECT) {
-            throw new Exception('รายวิชานี้มีบทเรียนครบ 3 บทแล้ว');
-        }
-
         // Reject PHP upload errors before creating the lesson row.
         foreach (['lesson_document' => 'เอกสาร PDF', 'lesson_video' => 'วิดีโอ MP4'] as $uploadField => $label) {
             $uploadError = (int) ($_FILES[$uploadField]['error'] ?? UPLOAD_ERR_NO_FILE);
@@ -743,7 +730,7 @@ try {
         if ($subjectId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) {
             throw new Exception('คุณไม่มีสิทธิ์จัดการรายวิชานี้');
         }
-        $lessonStmt = $conn->prepare('SELECT lesson_id AS id, title FROM public.lessons WHERE course_id = :subject_id ORDER BY position LIMIT 3');
+        $lessonStmt = $conn->prepare('SELECT lesson_id AS id, title FROM public.lessons WHERE course_id = :subject_id ORDER BY position, lesson_id');
         $lessonStmt->execute([':subject_id' => $subjectId]);
         $videoStmt = $conn->prepare("SELECT r.resource_id AS id, r.title, r.url, '' AS description, r.duration_seconds, r.position AS display_order, r.lesson_id AS lessons_id, l.title AS lesson_title, EXTRACT(EPOCH FROM COALESCE(r.updated_at, r.created_at)) AS last_modified_epoch, COALESCE(t.full_name, r.updated_by, 'ยังไม่มีข้อมูล') AS updated_by_name FROM public.lesson_resources r INNER JOIN public.lessons l ON l.lesson_id = r.lesson_id LEFT JOIN public.teachers t ON t.user_id = r.updated_by WHERE l.course_id = :subject_id AND r.resource_type = 'video' ORDER BY r.lesson_id, r.position DESC, r.resource_id DESC");
         $videoStmt->execute([':subject_id' => $subjectId]);

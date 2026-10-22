@@ -22,16 +22,13 @@ foreach ([['lessons', 'lessons_set_updated_at'], ['questions', 'questions_set_up
     $conn->exec("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid = 'public.{$table}'::regclass AND tgname = '{$trigger}') THEN CREATE TRIGGER {$trigger} BEFORE UPDATE ON public.{$table} FOR EACH ROW EXECUTE FUNCTION public.set_content_updated_at(); END IF; END $$");
 }
 
-const MAX_LESSONS_PER_SUBJECT = 3;
-
-
 function h(?string $value): string {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
 function normalizeLessonSlots(array $lessons): array {
     $normalized = [];
-    foreach (array_slice(array_values($lessons), 0, MAX_LESSONS_PER_SUBJECT) as $index => $lessonRow) {
+    foreach (array_values($lessons) as $lessonRow) {
         $lessonRow['is_placeholder'] = false;
         $normalized[] = $lessonRow;
     }
@@ -110,7 +107,7 @@ $totalLessonCount = 0;
 foreach ($subjectRows as $row) {
     $subjectId = (string) $row['subjects_id'];
     $subjectName = trim((string) $row['subjects_name']);
-    $lessonCount = min((int) $row['lesson_count'], MAX_LESSONS_PER_SUBJECT);
+    $lessonCount = (int) $row['lesson_count'];
     $studentCount = (int) $row['student_count'];
 
     $subjects[] = [
@@ -289,7 +286,7 @@ foreach ($studentStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     $completedLessons = min((int) $row['completed_lessons'], $totalLessons);
     $progressPct = $totalLessons > 0 ? round(($completedLessons / $totalLessons) * 100) : 0;
 
-    $completedNames = $row['completed_lesson_names'] ? array_slice(explode('||', $row['completed_lesson_names']), 0, MAX_LESSONS_PER_SUBJECT) : [];
+    $completedNames = $row['completed_lesson_names'] ? explode('||', $row['completed_lesson_names']) : [];
 
     $students[] = [
         'id' => $row['student_id'],
@@ -668,7 +665,7 @@ $stats = [
                             <div class="modal-header content-manager-header"><h3 class="modal-title">จัดการเนื้อหาวิชา</h3><button type="button" class="modal-close" id="closeContentManagerBtn">ปิด</button></div>
                             <div class="course-content-editor modal-body">
                             <section style="padding:20px;border:1px solid var(--border);border-radius:12px;background:var(--bg3);">
-                                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;"><div><p style="font-size:11px;color:var(--text-primary);font-weight:700;letter-spacing:.08em;margin:0 0 4px;">LESSON CONTENT</p><h3 style="font-size:17px;margin:0;" id="inlineLessonHeading">เพิ่มบทเรียนย่อย</h3></div><span id="inlineLessonCount" style="font-size:12px;color:var(--text-muted);"><?= count($subLessonsBySubject[$defaultSubjectId] ?? []) ?>/<?= MAX_LESSONS_PER_SUBJECT ?> บท</span></div>
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;"><div><p style="font-size:11px;color:var(--text-primary);font-weight:700;letter-spacing:.08em;margin:0 0 4px;">LESSON CONTENT</p><h3 style="font-size:17px;margin:0;" id="inlineLessonHeading">เพิ่มบทเรียนย่อย</h3></div><span id="inlineLessonCount" style="font-size:12px;color:var(--text-muted);"><?= count($subLessonsBySubject[$defaultSubjectId] ?? []) ?> บทเรียน</span></div>
                                 <form id="inlineLessonForm" enctype="multipart/form-data">
                                     <div class="form-group"><label>ชื่อบทเรียน *</label><input type="text" class="form-input" id="inlineLessonName" required placeholder="เช่น 1.1 ตรรกศาสตร์เบื้องต้น"></div>
                                     <div class="form-group"><label>เอกสารประกอบ (PDF)</label><div id="inlineExistingDocuments" style="display:none;margin:0 0 8px;font-size:13px;color:var(--text-muted);"></div><input type="file" class="form-input" id="inlineLessonDocument" accept="application/pdf,.pdf"><small id="inlineLessonDocumentHint" style="color:var(--text-muted);">เลือกไฟล์ PDF ใหม่เมื่อต้องการเพิ่มเอกสาร</small></div>
@@ -1576,7 +1573,7 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-    <script src="assets/js/teacherdash.js?v=20261022-clean-storage-ui"></script>
+    <script src="assets/js/teacherdash.js?v=20261022-unlimited-lessons"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

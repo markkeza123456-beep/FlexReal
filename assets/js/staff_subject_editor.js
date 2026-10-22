@@ -1,5 +1,4 @@
 (() => {
-  const MAX_LESSONS_PER_SUBJECT = 3;
   const params = new URLSearchParams(window.location.search);
   const subjectId = (params.get('subject_id') || '').trim();
   const initialSection = params.get('section') || 'subject';
@@ -85,16 +84,12 @@
     heroMeta.innerHTML = `
       <span class="meta-pill">รหัสวิชา ${escapeHtml(subject.code)}</span>
       <span class="meta-pill">ประเภท ${escapeHtml(subjectTypeLabel(subject.type))}</span>
-      <span class="meta-pill">บทเรียน ${lessons.length}/${MAX_LESSONS_PER_SUBJECT} รายการ</span>
+      <span class="meta-pill">บทเรียน ${lessons.length} รายการ</span>
     `;
 
     document.getElementById('manageVideosLink').href = `staff_video_editor.php?subject_id=${encodeURIComponent(subject.id)}`;
     const addLessonBtn = document.getElementById('addLessonBtn');
-    if (addLessonBtn) {
-      const reachedLimit = lessons.length >= MAX_LESSONS_PER_SUBJECT;
-      addLessonBtn.disabled = reachedLimit;
-      addLessonBtn.title = reachedLimit ? 'รายวิชานี้มีบทเรียนครบ 3 บทแล้ว' : 'เพิ่มบทเรียนใหม่';
-    }
+    if (addLessonBtn) { addLessonBtn.disabled = false; addLessonBtn.title = 'เพิ่มบทเรียนใหม่'; }
   }
 
   function renderSubjectForm() {
@@ -175,7 +170,7 @@
       }
 
       subject = data.subject;
-      lessons = Array.isArray(data.lessons) ? data.lessons.slice(0, MAX_LESSONS_PER_SUBJECT) : [];
+      lessons = Array.isArray(data.lessons) ? data.lessons : [];
 
       editorContent.hidden = false;
       lessonSection.hidden = false;
@@ -287,10 +282,6 @@
     event.preventDefault();
 
     const lessonId = document.getElementById('lessonId').value.trim();
-    if (!lessonId && lessons.length >= MAX_LESSONS_PER_SUBJECT) {
-      showToast('รายวิชานี้มีบทเรียนครบ 3 บทแล้ว', 'error');
-      return;
-    }
     const formData = new FormData();
     formData.append('action', 'saveLesson');
     formData.append('id', lessonId);
@@ -323,10 +314,6 @@
   });
 
   document.getElementById('addLessonBtn').addEventListener('click', () => {
-    if (lessons.length >= MAX_LESSONS_PER_SUBJECT) {
-      showToast('รายวิชานี้มีบทเรียนครบ 3 บทแล้ว', 'error');
-      return;
-    }
     resetLessonForm();
     lessonEditor.classList.add('is-highlighted');
     lessonEditor.scrollIntoView({ behavior: 'smooth', block: 'start' });

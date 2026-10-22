@@ -1,7 +1,6 @@
 
 
 document.addEventListener('DOMContentLoaded', () => {
-    const MAX_LESSONS_PER_SUBJECT = 3;
 
 
     const navItems = document.querySelectorAll('.nav-item[data-view]');
@@ -182,11 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('closeContentManagerBtn')?.addEventListener('click', () => contentManagerModal?.classList.remove('open'));
     contentManagerModal?.addEventListener('click', (event) => { if (event.target === contentManagerModal) contentManagerModal.classList.remove('open'); });
     document.getElementById('openModalBtn')?.addEventListener('click', () => {
-        const currentLessonCount = document.querySelectorAll('.btn-edit-lsn').length;
-        if (currentLessonCount >= MAX_LESSONS_PER_SUBJECT) {
-            alert('รายวิชานี้มีบทเรียนครบ 3 บทแล้ว');
-            return;
-        }
         modalOverlay.classList.add('open');
     });
     document.getElementById('closeModalBtn')?.addEventListener('click', () => modalOverlay.classList.remove('open'));
@@ -199,16 +193,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const subjectId = document.getElementById('lessonSubjectId').value;
         const lessonDocument = document.getElementById('lessonDocument')?.files?.[0] || null;
         const lessonVideo = document.getElementById('lessonVideo')?.files?.[0] || null;
-        const currentLessonCount = document.querySelectorAll('.btn-edit-lsn').length;
 
         if (!lessonName) { document.getElementById('lessonNameInput').style.borderColor = '#ef4444'; document.getElementById('lessonNameInput').focus(); return; }
         if (!subjectId) { alert('ไม่พบรายวิชาที่เลือก กรุณาเลือกหรือเปิดรายวิชาใหม่'); return; }
         if (lessonDocument && !lessonDocument.name.toLowerCase().endsWith('.pdf')) { alert('เอกสารประกอบต้องเป็นไฟล์ PDF'); return; }
         if (lessonVideo && !lessonVideo.name.toLowerCase().endsWith('.mp4')) { alert('วิดีโอบทเรียนต้องเป็นไฟล์ MP4'); return; }
-        if (currentLessonCount >= MAX_LESSONS_PER_SUBJECT) {
-            alert('รายวิชานี้มีบทเรียนครบ 3 บทแล้ว');
-            return;
-        }
         btn.dataset.saving = '1'; btn.textContent = 'กำลังบันทึก...'; btn.disabled = true;
         try {
             const fd = new FormData();

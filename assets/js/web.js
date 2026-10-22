@@ -24,7 +24,6 @@ const SUBJECT_IMAGE_ENDPOINT = 'subject_image.php';
 const QUIZ_PASS_RATIO = 0.8;
 
 const REQUEST_TIMEOUT_MS = 10000;
-const MAX_LESSONS_PER_SUBJECT = 3;
 const courseProgressRequests = new Map();
 let activeVideoProgressSaver = null;
 let activeVideoProgressBeacon = null;
@@ -121,7 +120,7 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEO
 
 
 function buildLessonsFromDB(lessons) {
-    const normalized = Array.isArray(lessons) ? lessons.slice(0, MAX_LESSONS_PER_SUBJECT) : [];
+    const normalized = Array.isArray(lessons) ? lessons : [];
     return normalized.map((lsn, index) => {
         const lsnId = pick(lsn, 'lesson_id', 'lessons_id', 'Lesson_ID', 'Lessons_ID') || `tmp_${index}`;
         const lsnName = pick(lsn, 'title', 'lessons_name', 'Title', 'Lessons_Name') || `บทเรียนที่ ${index + 1}`;

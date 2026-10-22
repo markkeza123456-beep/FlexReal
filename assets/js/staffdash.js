@@ -281,6 +281,9 @@
       curriculumSubjects = data.curriculum_subjects || [];
       members = (data.members || []).map(normalizeMember);
       teachers = data.teachers || [];
+      if (currentPage === 'subject-add') {
+        populateTeacherSelect(selectedSubjectTeacherIds);
+      }
 
       updateDashStats();
 
@@ -355,8 +358,8 @@
         .filter(Boolean)
     )];
     subjectTeacherSelect.innerHTML = `
-      <option value="">-- เลือกอาจารย์ผู้สอน --</option>
-      ${teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+      <option value="">${teachers.length ? '-- เลือกอาจารย์ผู้สอน --' : 'ยังไม่มีรายชื่ออาจารย์ในระบบ'}</option>
+      ${teachers.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)}</option>`).join('')}
     `;
     renderSelectedSubjectTeachers();
   }

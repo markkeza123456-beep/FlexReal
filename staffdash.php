@@ -802,7 +802,7 @@ if ($displayName !== '') {
 
   <div class="toast" id="toast"></div>
 
-  <script src="assets/js/staffdash.js?v=20261022-hide-graduation-title"></script>
+  <script src="assets/js/staffdash.js?v=20261022-subject-teacher-options"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>
