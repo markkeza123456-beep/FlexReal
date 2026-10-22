@@ -877,7 +877,7 @@
   };
 
   window.manageLessons = (subjectId) => {
-    window.location.href = `staff_subject_editor.php?subject_id=${encodeURIComponent(subjectId)}`;
+    window.location.href = `staff_subject_editor.php?subject_id=${encodeURIComponent(subjectId)}&view=content`;
   };
 
   async function loadLessons() {

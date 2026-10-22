@@ -4,6 +4,7 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
     header('Location: login.php');
     exit;
 }
+$contentManagerMode = (($_GET['view'] ?? '') === 'content');
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -15,13 +16,54 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/staff_subject_editor.css?v=20261021-login-shared-background" />
+  <?php if ($contentManagerMode): ?><link rel="stylesheet" href="assets/css/staff_content_manager.css?v=20261022-content-manager-v10" /><?php endif; ?>
     <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
     <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-sidebar-menu-fix">
 </head>
-<body>
+<body class="<?= $contentManagerMode ? 'content-manager-mode' : '' ?>">
   <div class="bg-grid"></div>
   <div class="glow-orb orb-1"></div>
   <div class="glow-orb orb-2"></div>
+
+  <?php if ($contentManagerMode): ?>
+  <main class="staff-content-manager" id="staffContentManager" data-subject-id="<?= htmlspecialchars((string) ($_GET['subject_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+    <header class="content-manager-title"><h1>จัดการเนื้อหาวิชา</h1><a class="btn-ghost" href="staffdash.php?page=subject-list">ปิด</a></header>
+    <div class="content-manager-grid">
+      <section class="content-manager-card">
+        <div class="content-manager-card-heading"><div><p>LESSON CONTENT</p><h2 id="cmLessonHeading">เพิ่มบทเรียน</h2></div><span id="cmLessonCount">กำลังโหลด...</span></div>
+        <form id="cmLessonForm" enctype="multipart/form-data">
+          <input type="hidden" id="cmLessonId">
+          <label for="cmLessonName">ชื่อบทเรียน *</label><input id="cmLessonName" required placeholder="เช่น 1.1 ตรรกศาสตร์เบื้องต้น">
+          <label for="cmLessonDocument">เอกสารประกอบ (PDF)</label><input id="cmLessonDocument" type="file" accept="application/pdf,.pdf">
+          <div id="cmLessonDocumentCurrent" class="content-manager-current" hidden></div>
+          <div class="content-manager-actions"><button class="content-manager-save" type="submit">บันทึกบทเรียน</button><button class="content-manager-reset" type="button" id="cmClearLessonBtn">ล้างฟอร์ม</button></div>
+          <p id="cmLessonStatus" class="content-manager-status" aria-live="polite"></p>
+        </form>
+        <details class="content-manager-existing"><summary>รายการบทเรียนเดิม</summary><div class="content-manager-list" id="cmLessonList"></div></details>
+      </section>
+      <section class="content-manager-card">
+        <div class="content-manager-card-heading"><div><p>VIDEO CONTENT</p><h2 id="cmVideoHeading">เพิ่มและจัดการวิดีโอ</h2></div></div>
+        <form id="cmVideoForm" enctype="multipart/form-data">
+          <input id="cmVideoId" type="hidden" value="">
+          <select id="cmVideoLesson" required aria-label="บทเรียนที่จะผูกวิดีโอ" hidden><option value="">เลือกบทเรียน</option></select>
+          <label for="cmVideoTitle">ชื่อวิดีโอ *</label><input id="cmVideoTitle" type="text" value="วิดีโอบทเรียน" required>
+          <label for="cmVideoFile">ไฟล์วิดีโอ <span id="cmVideoFileOptional">*</span></label><input id="cmVideoFile" type="file" accept="video/*">
+          <input id="cmVideoUrl" type="hidden" value="">
+          <div class="content-manager-actions"><button class="content-manager-save" type="submit">บันทึกวิดีโอ</button><button class="content-manager-reset" type="button" id="cmClearVideoBtn">ล้างฟอร์ม</button></div>
+          <p id="cmVideoStatus" class="content-manager-status" aria-live="polite"></p>
+        </form>
+        <details class="content-manager-existing"><summary>รายการวิดีโอเดิม</summary><div class="content-manager-list" id="cmVideoList"></div></details>
+      </section>
+    </div>
+    <div class="content-manager-toast" id="cmToast" role="status" aria-live="polite"></div>
+  </main>
+  <div class="resource-viewer" id="cmResourceViewer" aria-hidden="true">
+    <div class="resource-viewer-dialog" role="dialog" aria-modal="true" aria-labelledby="cmViewerTitle">
+      <header class="resource-viewer-header"><h2 id="cmViewerTitle">ดูสื่อการเรียน</h2><button type="button" id="cmViewerClose" aria-label="ปิดหน้าต่าง">ปิด</button></header>
+      <div class="resource-viewer-body" id="cmViewerBody"></div>
+    </div>
+  </div>
+  <?php endif; ?>
 
   <header class="topbar">
     <a class="btn-ghost btn-back" href="staffdash.php?page=subject-list">← กลับไปหน้ารายวิชา</a>
@@ -187,6 +229,7 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
 
   <div class="toast" id="toast"></div>
   <script src="assets/js/staff_subject_editor.js?v=20261022-unlimited-lessons"></script>
+<?php if ($contentManagerMode): ?><script src="assets/js/staff_content_manager.js?v=20261022-staff-content-manager-v10"></script><?php endif; ?>
 <script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>

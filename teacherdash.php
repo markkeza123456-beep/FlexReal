@@ -142,17 +142,21 @@ if (!empty($subjectIds)) {
     $lessonStmt = $conn->prepare('
         SELECT l.lesson_id AS lessons_id, l.title AS lessons_name, l.study_hours, l.quiz_duration_minutes, l.course_id AS subjects_id,
             COALESCE(l.updated_at, l.created_at) AS last_modified_at,
-            COALESCE(lesson_editor.full_name, l.updated_by, \'ยังไม่มีข้อมูล\') AS lesson_editor_name,
+            COALESCE(NULLIF(TRIM(lesson_teacher_editor.full_name), \'\'), NULLIF(TRIM(CONCAT_WS(\' \', lesson_staff_editor.first_name, lesson_staff_editor.last_name)), \'\'), lesson_editor_user.user_id, l.updated_by, l.created_by, \'ยังไม่มีข้อมูล\') AS lesson_editor_name,
             video_edit.last_modified_at AS video_last_modified_at,
             COALESCE(video_edit.editor_name, \'ยังไม่มีข้อมูล\') AS video_editor_name
         FROM public.lessons l
         INNER JOIN public.course_teachers ct ON ct.course_id = l.course_id
-        LEFT JOIN public.teachers lesson_editor ON lesson_editor.user_id = l.updated_by
+        LEFT JOIN public.teachers lesson_teacher_editor ON lesson_teacher_editor.user_id = COALESCE(l.updated_by, l.created_by)
+        LEFT JOIN public.staff lesson_staff_editor ON lesson_staff_editor.user_id = COALESCE(l.updated_by, l.created_by)
+        LEFT JOIN public.users lesson_editor_user ON lesson_editor_user.user_id = COALESCE(l.updated_by, l.created_by)
         LEFT JOIN LATERAL (
             SELECT COALESCE(r.updated_at, r.created_at) AS last_modified_at,
-                   COALESCE(video_editor.full_name, r.updated_by) AS editor_name
+                   COALESCE(NULLIF(TRIM(video_teacher_editor.full_name), \'\'), NULLIF(TRIM(CONCAT_WS(\' \', video_staff_editor.first_name, video_staff_editor.last_name)), \'\'), video_editor_user.user_id, r.updated_by, \'ยังไม่มีข้อมูล\') AS editor_name
             FROM public.lesson_resources r
-            LEFT JOIN public.teachers video_editor ON video_editor.user_id = r.updated_by
+            LEFT JOIN public.teachers video_teacher_editor ON video_teacher_editor.user_id = r.updated_by
+            LEFT JOIN public.staff video_staff_editor ON video_staff_editor.user_id = r.updated_by
+            LEFT JOIN public.users video_editor_user ON video_editor_user.user_id = r.updated_by
             WHERE r.lesson_id = l.lesson_id AND r.resource_type = \'video\'
             ORDER BY COALESCE(r.updated_at, r.created_at) DESC, r.resource_id DESC
             LIMIT 1

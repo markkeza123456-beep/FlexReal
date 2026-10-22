@@ -818,7 +818,7 @@ if ($displayName !== '') {
 
   <div class="toast" id="toast"></div>
 
-  <script src="assets/js/staffdash.js?v=20261022-graduation-status-colors"></script>
+  <script src="assets/js/staffdash.js?v=20261022-content-manager-route"></script>
 <script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>
