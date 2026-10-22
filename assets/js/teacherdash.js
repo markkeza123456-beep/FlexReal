@@ -12,7 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.querySelector(`.nav-item[data-view="${viewName}"]`)?.classList.add('active');
     }
-    switchView('dashboard');
+    const requestedView = new URLSearchParams(window.location.search).get('view');
+    const availableViews = ['dashboard', 'lessons', 'reports', 'graduation', 'settings'];
+    switchView(availableViews.includes(requestedView) ? requestedView : 'dashboard');
     navItems.forEach(item => item.addEventListener('click', e => {
         e.preventDefault(); switchView(item.dataset.view);
     }));

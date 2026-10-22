@@ -403,6 +403,10 @@ $stats = [
         document.querySelectorAll('.nav-item').forEach(function (item) { item.classList.remove('active'); });
         var activeItem = document.querySelector('.nav-item[data-view="' + viewName + '"]');
         if (activeItem) activeItem.classList.add('active');
+        var url = new URL(window.location.href);
+        if (viewName === 'dashboard') url.searchParams.delete('view');
+        else url.searchParams.set('view', viewName);
+        window.history.replaceState({}, '', url);
         if (viewName === 'reports') {
           var reportFrame = document.getElementById('teacherReportFrame');
           if (reportFrame && reportFrame.contentWindow) {
@@ -417,6 +421,18 @@ $stats = [
     </script>
     <nav class="sidebar-nav">
         <a href="#" onclick="return window.activateTeacherView('dashboard')" class="nav-item active" data-view="dashboard"><span class="nav-icon"></span><span>แดชบอร์ด</span></a>
+        <div class="sidebar-subject-filter">
+            <label for="teacherSubjectSelect">เลือกรายวิชา</label>
+            <select id="teacherSubjectSelect" aria-label="เลือกรายวิชา">
+                <?php if ($subjects === []): ?>
+                    <option value="">ยังไม่มีรายวิชา</option>
+                <?php else: ?>
+                    <?php foreach ($subjects as $subjectOption): ?>
+                        <option value="<?= h($subjectOption['id']) ?>" <?= $subjectOption['id'] === $selectedSubjectId ? 'selected' : '' ?>><?= h($subjectOption['title']) ?></option>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </select>
+        </div>
         <a href="#" onclick="return window.activateTeacherView('lessons')" class="nav-item" data-view="lessons"><span class="nav-icon"></span><span>บทเรียน</span></a>
         <a href="#" onclick="return window.activateTeacherView('reports')" class="nav-item" data-view="reports"><span class="nav-icon"></span><span>ออกรายงาน</span></a>
         <?php if ($canAccessTransferApproval): ?>
@@ -568,17 +584,6 @@ $stats = [
         <?php $defaultSubject = $selectedSubject; ?>
 
         <div id="lessonDetailSection" style="display:flex;flex-direction:column;gap:20px">
-            <div style="display:flex;align-items:center;justify-content:flex-start;gap:12px">
-                    <span style="font-size:13px;color:var(--text-muted)">รายละเอียดวิชา</span>
-                    <select id="teacherSubjectSelect" style="min-width:240px;padding:9px 12px;border-radius:8px;background:var(--bg3);color:var(--text);border:1px solid var(--border);font-family:'Kanit',sans-serif;">
-                        <?php foreach ($subjects as $subjectOption): ?>
-                            <option value="<?= h($subjectOption['id']) ?>" <?= $subjectOption['id'] === $defaultSubjectId ? 'selected' : '' ?>>
-                                <?= h($subjectOption['title']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-            </div>
-
             <div class="card" id="lessonDetailHeader" style="padding: 24px;">
                 <?php if ($defaultSubject): ?>
                     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
