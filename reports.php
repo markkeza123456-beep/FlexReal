@@ -21,7 +21,7 @@ $studentRows = $conn->query("WITH active_curricula AS (
         (UPPER(COALESCE(sc.status,''))='TR' OR (COUNT(l.lesson_id)>0 AND COUNT(l.lesson_id) FILTER (WHERE COALESCE(lp.is_transferred,FALSE) OR UPPER(COALESCE(lp.grade,''))='TR')=COUNT(l.lesson_id))) AS transferred
     FROM public.student_courses sc JOIN public.courses c ON c.course_id=sc.course_id
     LEFT JOIN public.lessons l ON l.course_id=c.course_id
-    LEFT JOIN public.lesson_progress lp ON lp.student_id=sc.student_id AND lp.lesson_id=l.lesson_id
+    LEFT JOIN public.lesson_progress_summary lp ON lp.student_id=sc.student_id AND lp.lesson_id=l.lesson_id
     LEFT JOIN LATERAL (SELECT status,score,total_score FROM public.quiz_attempts a WHERE a.student_id=sc.student_id AND a.lesson_id=l.lesson_id ORDER BY submitted_at DESC,attempt_number DESC LIMIT 1) qa ON TRUE
     GROUP BY sc.student_id,c.course_id,c.subject_type,sc.status
 ), assigned AS (
@@ -78,7 +78,7 @@ $subjectRows = $conn->query("SELECT c.course_id,c.code,c.name,c.subject_type,
 FROM public.courses c LEFT JOIN public.student_courses sc ON sc.course_id=c.course_id
 LEFT JOIN LATERAL (SELECT BOOL_AND(COALESCE(p.is_transferred,FALSE) OR UPPER(COALESCE(p.grade,''))='TR' OR a.status='passed' OR (a.status <> 'pending_review' AND COALESCE(a.total_score,0)>0 AND a.score>=CEIL(a.total_score))) AS course_passed,
     BOOL_AND(COALESCE(p.is_transferred,FALSE) OR UPPER(COALESCE(p.grade,''))='TR') AS course_transferred
-    FROM public.lessons l LEFT JOIN public.lesson_progress p ON p.lesson_id=l.lesson_id AND p.student_id=sc.student_id
+    FROM public.lessons l LEFT JOIN public.lesson_progress_summary p ON p.lesson_id=l.lesson_id AND p.student_id=sc.student_id
     LEFT JOIN LATERAL (SELECT status,score,total_score FROM public.quiz_attempts a WHERE a.student_id=sc.student_id AND a.lesson_id=l.lesson_id ORDER BY submitted_at DESC,attempt_number DESC LIMIT 1) a ON TRUE
     WHERE l.course_id=c.course_id) lp ON TRUE
 GROUP BY c.course_id,c.code,c.name,c.subject_type ORDER BY c.code,c.name")->fetchAll(PDO::FETCH_ASSOC);

@@ -51,7 +51,7 @@ $countQueries = array_filter([
   'registrations' => $hasEnrollments ? "(SELECT COUNT(*) FROM public.student_courses)" : null,
   'transfers' => $hasCurricula ? "(SELECT COUNT(*) FROM public.student_curricula WHERE status = 'active')" : null,
   'certificates' => $hasCourses ? "(SELECT COUNT(*) FROM public.courses WHERE status = 'active')" : null,
-  'learning' => $hasLearn ? "(SELECT COUNT(*) FROM public.lesson_progress)" : null,
+  'learning' => $hasLearn ? "(SELECT COUNT(*) FROM public.lesson_progress_summary)" : null,
   'tests' => $hasTest ? "(SELECT COUNT(*) FROM public.quiz_attempts)" : null,
 ]);
 $counts = [];
@@ -74,7 +74,7 @@ $students = $hasStudent ? rows($conn, "SELECT user_id AS student_id, full_name A
 $regs = $hasEnrollments ? rows($conn, "SELECT sc.student_id, s.full_name AS student_name, c.name AS subject_name, sc.status FROM public.student_courses sc JOIN public.students s ON s.user_id = sc.student_id JOIN public.courses c ON c.course_id = sc.course_id ORDER BY sc.enrolled_at DESC LIMIT 200") : [];
 $transfers = $hasCurricula ? rows($conn, "SELECT sc.student_id, s.full_name AS student_name, c.name AS curriculum_name, sc.status, sc.enrolled_at FROM public.student_curricula sc JOIN public.students s ON s.user_id = sc.student_id JOIN public.curricula c ON c.curriculum_id = sc.curriculum_id ORDER BY sc.enrolled_at DESC LIMIT 200") : [];
 $certs = $hasCourses ? rows($conn, "SELECT code, name, credits, status FROM public.courses ORDER BY created_at DESC LIMIT 200") : [];
-$learns = $hasLearn ? rows($conn, "SELECT lp.student_id, s.full_name AS student_name, l.title AS lesson_name, lp.opened_count, lp.video_open_count, lp.last_activity_at FROM public.lesson_progress lp JOIN public.students s ON s.user_id = lp.student_id JOIN public.lessons l ON l.lesson_id = lp.lesson_id ORDER BY lp.last_activity_at DESC LIMIT 200") : [];
+$learns = $hasLearn ? rows($conn, "SELECT lp.student_id, s.full_name AS student_name, l.title AS lesson_name, lp.opened_count, lp.video_open_count, lp.last_activity_at FROM public.lesson_progress_summary lp JOIN public.students s ON s.user_id = lp.student_id JOIN public.lessons l ON l.lesson_id = lp.lesson_id ORDER BY lp.last_activity_at DESC LIMIT 200") : [];
 $tests = $hasTest ? rows($conn, "SELECT qa.attempt_id AS test_id, qa.student_id, c.name AS course_name, qa.score, qa.total_score, qa.status, qa.submitted_at FROM public.quiz_attempts qa JOIN public.lessons l ON l.lesson_id = qa.lesson_id JOIN public.courses c ON c.course_id = l.course_id ORDER BY qa.submitted_at DESC LIMIT 200") : [];
 
 $summaryCards = [

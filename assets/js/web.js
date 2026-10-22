@@ -25,17 +25,11 @@ const QUIZ_PASS_RATIO = 0.8;
 
 const REQUEST_TIMEOUT_MS = 10000;
 const MAX_LESSONS_PER_SUBJECT = 3;
-const LEARNING_PROGRESS_SAVE_INTERVAL_MS = 15000;
-const learningProgressRequests = new Map();
-const pendingLearningEvents = new Map();
-let learningEventFlushTimer = null;
-let learningEventPostInFlight = false;
-let learningEventLastPostAt = 0;
 const courseProgressRequests = new Map();
 let activeVideoProgressSaver = null;
 let activeVideoProgressBeacon = null;
+let activeVideoProgressTimer = null;
 let pendingVideoProgressSave = Promise.resolve(true);
-let lastLearningProgressError = '';
 
 
 
@@ -268,7 +262,7 @@ function renderLessonAccordion(containerId) {
                     </div>
                     <p style="margin:-4px 0 10px;font-size:12px;color:#6b7280;">${status.breakdown}</p>
                     ${!canAccessLesson(lesson.index) ? `<p style="margin:0 0 8px;color:#d35400;font-size:13px;">${getLessonLockMessage(lesson.index)}</p>` : ''}
-                    ${lesson.content ? `<div style="margin:0 0 12px;padding:12px 14px;border:1px solid #f0d6c5;border-radius:10px;background:#fffaf7;white-space:pre-wrap;"><b>รายละเอียดบทเรียน</b><p style="margin:6px 0 0;">${escapeHtml(lesson.content)}</p></div>` : ''}
+                    ${lesson.content ? `<div class="lesson-article-reading" data-lesson-id="${escapeHtml(lesson.id)}" style="margin:0 0 12px;padding:12px 14px;border:1px solid #f0d6c5;border-radius:10px;background:#fffaf7;white-space:pre-wrap;"><b>รายละเอียดบทเรียน</b><p style="margin:6px 0 0;">${escapeHtml(lesson.content)}</p></div>` : ''}
                     <div class="curriculum-item">
                         <div class="curr-left">
                             <span class="curr-icon"><i class="fa-solid fa-file-lines" aria-hidden="true"></i></span>
@@ -288,7 +282,7 @@ function renderLessonAccordion(containerId) {
                             <span class="curr-icon"><i class="fa-solid fa-question" aria-hidden="true"></i></span>
                             <div class="curr-text"><b>แบบทดสอบประจำบท</b><p>ทดสอบความเข้าใจ</p></div>
                         </div>
-                        <button class="btn-outline-orange" onclick="startQuiz(${lesson.index})" ${isQuizUnlocked(lesson.index) ? '' : 'disabled'}>เริ่มทำ Quiz</button>
+                        <button class="btn-outline-orange" onclick="startQuiz(${lesson.index})" ${isLessonPassed(lesson.index) || !isQuizUnlocked(lesson.index) ? 'disabled' : ''}>${isLessonPassed(lesson.index) ? 'ผ่านแล้ว' : 'เริ่มทำ Quiz'}</button>
                     </div>
                     ${isQuizUnlocked(lesson.index) ? '' : `<p style="margin:8px 0 0;color:#7f8c8d;font-size:12px;">${getLessonLockMessage(lesson.index)}</p>`}
                 </div>
@@ -840,7 +834,7 @@ async function fetchCourseProgress(subjectId) {
     if (existingRequest) return existingRequest;
     const request = (async () => {
         try {
-            const response = await fetchJsonWithTimeout(`student_learning_api.php?action=summary&subject_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin', cache: 'no-store' });
+            const response = await fetchJsonWithTimeout(`course_progress.php?course_id=${encodeURIComponent(subjectId)}`, { credentials: 'same-origin', cache: 'no-store' });
             const result = await response.json();
             if (result.status === 'success' && courseProgressRequests.get(subjectId) === request && subjectId === currentSubjectId) applyCourseProgressSummary(result.summary || null);
         } catch (error) {
@@ -858,101 +852,6 @@ function refreshCourseProgress(subjectId) {
     return fetchCourseProgress(subjectId);
 }
 
-function recordLearningEvent(activityType, lessonIndex = 1, progressPercent = 0, resumePosition = 0, force = false, durationSeconds = 0) {
-    if (!currentSubjectId) {
-        lastLearningProgressError = 'ไม่พบรหัสรายวิชา';
-        return Promise.resolve(false);
-    }
-    const eventKey = `${currentSubjectId}:${lessonIndex}:${activityType}`;
-    const previous = pendingLearningEvents.get(eventKey);
-    return new Promise((resolve) => {
-        pendingLearningEvents.set(eventKey, {
-            args: [activityType, lessonIndex, progressPercent, resumePosition, force, durationSeconds],
-            resolvers: [...(previous?.resolvers || []), resolve]
-        });
-        scheduleLearningEventFlush(force);
-    });
-}
-
-function scheduleLearningEventFlush(immediate = false) {
-    if (pendingLearningEvents.size === 0) return;
-    if (learningEventFlushTimer) {
-        if (!immediate) return;
-        clearTimeout(learningEventFlushTimer);
-        learningEventFlushTimer = null;
-    }
-    if (immediate && !learningEventPostInFlight) {
-        learningEventFlushTimer = setTimeout(flushLearningEventQueue, 0);
-        return;
-    }
-    const delay = Math.max(0, LEARNING_PROGRESS_SAVE_INTERVAL_MS - (Date.now() - learningEventLastPostAt));
-    learningEventFlushTimer = setTimeout(flushLearningEventQueue, delay);
-}
-
-async function flushLearningEventQueue() {
-    learningEventFlushTimer = null;
-    if (learningEventPostInFlight || pendingLearningEvents.size === 0) return;
-    const [eventKey, entry] = [...pendingLearningEvents.entries()][0];
-    pendingLearningEvents.delete(eventKey);
-    learningEventPostInFlight = true;
-    learningEventLastPostAt = Date.now();
-    try {
-        const saved = await sendLearningEventNow(...entry.args);
-        entry.resolvers.forEach((resolve) => resolve(saved));
-    } catch (_) {
-        entry.resolvers.forEach((resolve) => resolve(false));
-    } finally {
-        learningEventPostInFlight = false;
-        scheduleLearningEventFlush();
-    }
-}
-
-async function sendLearningEventNow(activityType, lessonIndex = 1, progressPercent = 0, resumePosition = 0, force = false, durationSeconds = 0) {
-    if (!currentSubjectId) {
-        lastLearningProgressError = 'ไม่พบรหัสรายวิชา';
-        return false;
-    }
-    const eventKey = `${currentSubjectId}:${lessonIndex}:${activityType}`;
-    const now = Date.now();
-    const previous = learningProgressRequests.get(eventKey);
-    if (previous?.inFlight) return false;
-    learningProgressRequests.set(eventKey, { inFlight: true, savedAt: previous?.savedAt || 0 });
-    try {
-        const lesson = currentLessonsData.find((item) => item.index === Number(lessonIndex));
-        const formData = new FormData();
-        formData.append('action', 'record'); formData.append('subject_id', currentSubjectId);
-        formData.append('lesson_index', String(lessonIndex || 1));
-        formData.append('lesson_title', lesson ? lesson.title : `${currentCourseName} บทที่ ${lessonIndex || 1}`);
-        formData.append('activity_type', activityType);
-        formData.append('progress_percent', String(progressPercent));
-        formData.append('resume_position', String(resumePosition));
-        if (activityType === 'video_progress') {
-            formData.append('duration_seconds', String(Math.max(0, Number(durationSeconds) || 0)));
-        }
-
-
-
-        lastLearningProgressError = '';
-        const response = await fetchJsonWithTimeout('student_learning_api.php', { method: 'POST', body: formData, credentials: 'same-origin' }, 15000);
-        const result = await response.json();
-        if (result.status === 'success' && result.ok === true) {
-            learningProgressRequests.set(eventKey, { inFlight: false, savedAt: Date.now() });
-            return true;
-        }
-        lastLearningProgressError = result.message || `HTTP ${response.status}`;
-        console.warn('Learning progress was rejected:', lastLearningProgressError);
-        return false;
-    } catch (error) {
-        lastLearningProgressError = error.name === 'AbortError' ? 'หมดเวลารอการบันทึก' : (error.message || 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');
-        console.warn('Unable to save learning progress:', error);
-        return false;
-    }
-    finally {
-        const state = learningProgressRequests.get(eventKey);
-        if (state?.inFlight) learningProgressRequests.set(eventKey, { ...state, inFlight: false });
-    }
-}
-
 function toggleLesson(lessonIndex) {
     const targetLesson = getLessonRecord(lessonIndex);
     currentLessonsData = currentLessonsData.map((lesson) => {
@@ -961,7 +860,6 @@ function toggleLesson(lessonIndex) {
     });
     renderAllLessonAccordions();
     if (targetLesson && targetLesson.expanded === false && canAccessLesson(lessonIndex)) {
-        recordLearningEvent('lesson_open', lessonIndex);
     }
 }
 
@@ -1186,7 +1084,6 @@ function goToCourseLearning() {
     document.getElementById('learning-desc-top').innerText = document.getElementById('detail-desc-top').innerText;
     showPage('course-learning');
     openLearningTab({ currentTarget: document.querySelector("#course-learning .tab-btn[onclick*='learning-curriculum']") }, 'learning-curriculum');
-    recordLearningEvent('course_enter', 1);
 }
 
 async function checkCourseEnrollment(subjectId) {
@@ -1373,196 +1270,131 @@ function formatVideoTimestamp(seconds) {
 function renderVideoModalBody(lessonIndex) {
     const body = document.getElementById('modal-body');
     if (!body) return;
-
-
-    if (activeVideoProgressSaver) {
-        pendingVideoProgressSave = Promise.resolve(activeVideoProgressSaver()).catch(() => false);
-    }
+    if (activeVideoProgressTimer) window.clearInterval(activeVideoProgressTimer);
+    activeVideoProgressTimer = null;
+    if (activeVideoProgressSaver) pendingVideoProgressSave = Promise.resolve(activeVideoProgressSaver()).catch(() => false);
     activeVideoProgressSaver = null;
     activeVideoProgressBeacon = null;
+
     const safeIndex = Math.max(1, Math.min(currentLessonsData.length || 3, Number(lessonIndex) || 1));
-    const selectedLesson = getLessonRecord(safeIndex);
-    const selectedTitle = selectedLesson ? selectedLesson.title : `Lesson ${safeIndex}`;
+    const lesson = getLessonRecord(safeIndex);
     const videoCandidates = getLessonVideoCandidates(safeIndex);
     const videoPath = videoCandidates[0] || getLessonVideoPath(safeIndex);
-    const selectorOptions = currentLessonsData.map((lesson) => `
-        <option value="${lesson.index}" ${lesson.index === safeIndex ? 'selected' : ''}>
-            บทที่ ${lesson.index}: ${escapeHtml(lesson.title)}
-        </option>
-    `).join('');
+    const progressRow = getLessonProgressMap().get(safeIndex) || {};
+    const lessonId = Number(progressRow.lesson_id || lesson?.id || 0);
+    const title = lesson?.title || `Lesson ${safeIndex}`;
+    const options = currentLessonsData.map((item) => `<option value="${item.index}" ${item.index === safeIndex ? 'selected' : ''}>บทที่ ${item.index}: ${escapeHtml(item.title)}</option>`).join('');
 
     body.innerHTML = `
-        <h3 style="margin-bottom:10px; color:#E67E22;"> วิดีโอบทเรียน</h3>
-        <p style="margin-bottom:12px; color:#636e72;">กำลังดู: บทที่ ${safeIndex} - ${escapeHtml(selectedTitle)}</p>
-        <label for="video-lesson-select" style="display:block; margin-bottom:8px; font-weight:600; color:#303F9F;">เปลี่ยนบทเรียน</label>
-        <select id="video-lesson-select" onchange="changeModalLessonVideo(this.value)" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; margin-bottom:14px;">
-            ${selectorOptions}
-        </select>
-        <video id="lesson-video-player" width="100%" controls autoplay playsinline preload="metadata" style="border-radius:10px; background:#000;">
-            <source id="lesson-video-source" src="${videoPath}" type="video/mp4">
-            เบราว์เซอร์ไม่รองรับวิดีโอ
+        <h3 style="margin-bottom:10px;color:#E67E22;">วิดีโอบทเรียน</h3>
+        <p style="margin-bottom:12px;color:#636e72;">กำลังดู: บทที่ ${safeIndex} - ${escapeHtml(title)}</p>
+        <label for="video-lesson-select" style="display:block;margin-bottom:8px;font-weight:600;color:#303F9F;">เปลี่ยนบทเรียน</label>
+        <select id="video-lesson-select" onchange="changeModalLessonVideo(this.value)" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;margin-bottom:14px;">${options}</select>
+        <video id="lesson-video-player" width="100%" controls autoplay playsinline preload="metadata" disablepictureinpicture controlslist="nodownload noplaybackrate" style="border-radius:10px;background:#000;">
+            <source id="lesson-video-source" src="${videoPath}" type="video/mp4">เบราว์เซอร์ไม่รองรับวิดีโอ
         </video>
-        <p id="video-progress-status" aria-live="polite" style="margin:10px 0 0;color:#64748b;font-size:13px;">กำลังเตรียมข้อมูลวิดีโอ...</p>
-        <p id="video-fallback-status" style="display:none; margin-top:8px; color:#d35400; font-size:13px;"></p>
-    `;
+        <p id="video-fallback-status" style="display:none;margin-top:8px;color:#d35400;font-size:13px;"></p>`;
 
-    const videoElement = body.querySelector('video');
-    if (videoElement) {
-        const sourceElement = body.querySelector('#lesson-video-source');
-        const fallbackStatus = body.querySelector('#video-fallback-status');
-        const progressStatus = body.querySelector('#video-progress-status');
-        let candidateIndex = 0;
-        const progressRow = getLessonProgressMap().get(safeIndex) || {};
-        const savedPosition = Math.max(0, Number(progressRow.video_position_seconds || 0));
-        let watchedSeconds = 0;
-        let lastSavedWatchedSeconds = 0;
-        let lastSavedResumePosition = savedPosition;
-        let lastVideoProgressSaveAttemptAt = 0;
-        let videoProgressSaveRequest = null;
-        let lastPlaybackTime = null;
-        let progressSaveLabel = '';
-        const showSeekWarning = () => {
-            if (!fallbackStatus) return;
-            fallbackStatus.style.display = 'block';
-            fallbackStatus.textContent = 'ห้ามข้ามวิดีโอ ระบบจะนับเฉพาะช่วงที่เล่นจริง';
-            clearTimeout(showSeekWarning.timer);
-            showSeekWarning.timer = setTimeout(() => { fallbackStatus.style.display = 'none'; }, 3500);
+    const video = body.querySelector('#lesson-video-player');
+    const source = body.querySelector('#lesson-video-source');
+    const fallback = body.querySelector('#video-fallback-status');
+    let candidateIndex = 0;
+    let saving = false;
+    const parsedSavedSeconds = Number(progressRow.video_position_seconds);
+    const savedSeconds = Number.isFinite(parsedSavedSeconds) && parsedSavedSeconds > 0 ? parsedSavedSeconds : 0;
+    let maxPlayedTime = savedSeconds;
+    const persist = async (completed = false, keepalive = false, useBeacon = false) => {
+        if (!Number.isInteger(lessonId) || lessonId <= 0 || (saving && !useBeacon) || !video || !Number.isFinite(video.currentTime)) return false;
+        const durationSeconds = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
+        if (!durationSeconds) return false;
+        const currentSeconds = Math.max(0, Math.min(video.currentTime, durationSeconds));
+        const payload = {
+            lesson_id: lessonId,
+            progress_type: 'video',
+            progress_value: completed ? durationSeconds : currentSeconds,
+            duration_seconds: durationSeconds,
+            is_completed: completed
         };
-        const updateVideoProgressStatus = () => {
-            if (!progressStatus || !Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return;
-            const watchedPercent = Math.min(100, (watchedSeconds / videoElement.duration) * 100);
-            const lessonPercent = watchedPercent * 0.30;
-            const saveStatus = progressSaveLabel ? ` · ${progressSaveLabel}` : '';
-            progressStatus.textContent = `ดูแล้ว ${formatVideoTimestamp(watchedSeconds)} / ${formatVideoTimestamp(videoElement.duration)} · ${watchedPercent.toFixed(1)}% · คิดเป็น ${lessonPercent.toFixed(1)}% ของบทเรียน${saveStatus}`;
-        };
-        const saveVideoProgress = (force = false) => {
-            if (!Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return Promise.resolve(false);
-            const resumePosition = Math.max(0, videoElement.currentTime || 0);
-            const progressChanged = watchedSeconds > lastSavedWatchedSeconds + 0.1;
-            const resumeChanged = Math.abs(resumePosition - lastSavedResumePosition) > 0.1;
-            if (!progressChanged && !resumeChanged) return Promise.resolve(false);
-            if (videoProgressSaveRequest) {
-                return videoProgressSaveRequest.then((saved) => {
-                    if (saved && force) return saveVideoProgress(true);
-                    return saved;
-                });
+        if (!Number.isFinite(payload.progress_value) || !Number.isFinite(payload.duration_seconds)) return false;
+        console.log('Sending Payload:', payload);
+        if (useBeacon) {
+            const beaconBody = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+            const queued = navigator.sendBeacon('api_save_progress.php', beaconBody);
+            console.log('Video progress beacon queued:', queued, payload);
+            return queued;
+        }
+        saving = true;
+        try {
+            const response = await fetch('api_save_progress.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                credentials: 'same-origin',
+                keepalive: keepalive
+            });
+            const responseText = await response.text();
+            console.log('Backend Response:', responseText);
+            let result;
+            try { result = JSON.parse(responseText); }
+            catch (_) { result = { ok: false, message: responseText || 'Invalid JSON response' }; }
+            console.log('Progress API Response:', response.status, result);
+            if (response.ok && result.ok) {
+                return true;
             }
-            const progressReadyToSave = progressChanged && watchedSeconds - lastSavedWatchedSeconds >= 5;
-            const resumeReadyToSave = resumeChanged && Math.abs(resumePosition - lastSavedResumePosition) >= 5;
-            if (!force && ((!progressReadyToSave && !resumeReadyToSave) || Date.now() - lastVideoProgressSaveAttemptAt < 5000)) return Promise.resolve(false);
-            const watchedSecondsToSave = watchedSeconds;
-            const resumePositionToSave = resumePosition;
-            const percent = Math.min(99.9, (watchedSecondsToSave / videoElement.duration) * 100);
-            lastVideoProgressSaveAttemptAt = Date.now();
-            progressSaveLabel = 'กำลังบันทึก';
-            updateVideoProgressStatus();
-            videoProgressSaveRequest = recordLearningEvent('video_progress', safeIndex, percent, resumePositionToSave, force, videoElement.duration)
-                .then((saved) => {
-                    if (!saved) {
-                        progressSaveLabel = `บันทึกไม่สำเร็จ: ${lastLearningProgressError}`;
-                        updateVideoProgressStatus();
-                        return false;
-                    }
-                    lastSavedWatchedSeconds = Math.max(lastSavedWatchedSeconds, watchedSecondsToSave);
-                    lastSavedResumePosition = resumePositionToSave;
-                    progressSaveLabel = 'บันทึกแล้ว';
-                    updateVideoProgressStatus();
-                    if (currentSubjectId) refreshCourseProgress(currentSubjectId);
-                    return true;
-                })
-                .finally(() => { videoProgressSaveRequest = null; });
-            return videoProgressSaveRequest;
-        };
-        const saveVideoProgressOnExit = () => {
-            return saveVideoProgress(true);
-        };
-        activeVideoProgressSaver = saveVideoProgressOnExit;
-        activeVideoProgressBeacon = () => {
-            if (!Number.isFinite(videoElement.duration) || videoElement.duration <= 0) return false;
-            const percent = watchedSeconds >= videoElement.duration ? 100 : Math.min(99.9, (watchedSeconds / videoElement.duration) * 100);
-            const formData = new FormData();
-            formData.append('action', 'record');
-            formData.append('subject_id', currentSubjectId);
-            formData.append('lesson_index', String(safeIndex));
-            formData.append('lesson_title', selectedTitle);
-            formData.append('activity_type', 'video_progress');
-            formData.append('progress_percent', String(percent));
-            formData.append('resume_position', String(Math.max(0, videoElement.currentTime || 0)));
-            formData.append('duration_seconds', String(Math.max(0, Number(videoElement.duration) || 0)));
-            return navigator.sendBeacon('student_learning_api.php', formData);
-        };
-        videoElement.addEventListener('loadedmetadata', () => {
-            const savedPercent = Math.max(0, Math.min(100, Number(progressRow.video_progress_percent || 0)));
-            watchedSeconds = Math.min(videoElement.duration, Math.max(savedPosition, videoElement.duration * savedPercent / 100));
-            lastSavedWatchedSeconds = watchedSeconds;
-            lastSavedResumePosition = Math.min(videoElement.duration, savedPosition);
-            if (savedPercent < 100 && savedPosition > 0 && savedPosition < videoElement.duration - 1) {
-                videoElement.currentTime = savedPosition;
-            }
-            updateVideoProgressStatus();
-        }, { once: true });
-        videoElement.addEventListener('play', () => {
-            lastPlaybackTime = videoElement.currentTime;
-        });
-        videoElement.addEventListener('timeupdate', () => {
-            const currentTime = videoElement.currentTime;
-            if (!videoElement.paused && !videoElement.seeking && lastPlaybackTime !== null) {
-                if (currentTime > lastPlaybackTime + 0.02) {
-                    watchedSeconds = Math.min(videoElement.duration, Math.max(watchedSeconds, currentTime));
-                }
-            }
-            lastPlaybackTime = currentTime;
-            updateVideoProgressStatus();
-            saveVideoProgress();
-        });
-        videoElement.addEventListener('seeking', () => {
-            if (videoElement.currentTime > watchedSeconds + 0.1) {
-                videoElement.currentTime = Math.min(watchedSeconds, Math.max(0, videoElement.duration - 0.1));
-                showSeekWarning();
-            }
-            lastPlaybackTime = videoElement.currentTime;
-        });
-        videoElement.addEventListener('seeked', () => {
-            lastPlaybackTime = videoElement.currentTime;
-            saveVideoProgress(true);
-        });
-        videoElement.addEventListener('pause', () => {
-            lastPlaybackTime = null;
-            saveVideoProgress(true);
-        });
-        videoElement.addEventListener('error', () => {
-            if (!sourceElement) return;
-            candidateIndex += 1;
-            if (candidateIndex >= videoCandidates.length) {
-                if (fallbackStatus) {
-                    fallbackStatus.style.display = 'block';
-                    fallbackStatus.textContent = 'ไม่สามารถเล่นวิดีโอได้ กรุณาตรวจสอบไฟล์วิดีโอของบทนี้';
-                }
-                return;
-            }
-            sourceElement.src = videoCandidates[candidateIndex];
-            if (fallbackStatus) {
-                fallbackStatus.style.display = 'block';
-                fallbackStatus.textContent = `กำลังสลับไฟล์วิดีโอสำรอง (${candidateIndex + 1}/${videoCandidates.length})...`;
-            }
-            videoElement.load();
-            videoElement.play().catch(() => {});
-        });
-        videoElement.addEventListener('ended', () => {
-            watchedSeconds = videoElement.duration;
-            updateVideoProgressStatus();
-            Promise.resolve(videoProgressSaveRequest)
-                .then(() => recordLearningEvent('video_progress', safeIndex, 100, videoElement.duration, true, videoElement.duration))
-                .then((saved) => {
-                    if (saved) {
-                        lastSavedWatchedSeconds = videoElement.duration;
-                        if (currentSubjectId) refreshCourseProgress(currentSubjectId);
-                    }
-                });
-        }, { once: true });
-    }
+            console.error('Progress API returned an error:', result);
+        } catch (error) {
+            console.error('Progress API request failed:', error);
+        }
+        finally { saving = false; }
+        return false;
+    };
+    const restoreVideoPosition = () => {
+        if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+        const resumeAt = Math.max(0, Math.min(savedSeconds, video.duration));
+        maxPlayedTime = resumeAt;
+        if (resumeAt > 0 && resumeAt < video.duration - 1) video.currentTime = resumeAt;
+    };
+    video.disablePictureInPicture = true;
+    video.defaultPlaybackRate = 1;
+    video.playbackRate = 1;
+    video.addEventListener('ratechange', () => {
+        if (video.playbackRate !== 1) video.playbackRate = 1;
+    });
+    video.addEventListener('timeupdate', () => {
+        if (!video.seeking && video.currentTime > maxPlayedTime) maxPlayedTime = video.currentTime;
+    });
+    video.addEventListener('seeking', () => {
+        if (video.currentTime > maxPlayedTime) video.currentTime = maxPlayedTime;
+    });
+    video.addEventListener('loadedmetadata', restoreVideoPosition, { once: true });
+    // The element may already have loaded metadata by the time listeners are attached.
+    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) restoreVideoPosition();
+    video.addEventListener('pause', () => { persist(false); });
+    video.addEventListener('error', () => {
+        candidateIndex += 1;
+        if (candidateIndex >= videoCandidates.length) {
+            if (fallback) { fallback.style.display = 'block'; fallback.textContent = 'ไม่สามารถเล่นวิดีโอได้ กรุณาตรวจสอบไฟล์วิดีโอของบทนี้'; }
+            return;
+        }
+        source.src = videoCandidates[candidateIndex];
+        if (fallback) { fallback.style.display = 'block'; fallback.textContent = `กำลังสลับไฟล์วิดีโอสำรอง (${candidateIndex + 1}/${videoCandidates.length})...`; }
+        video.load();
+        video.play().catch(() => {});
+    });
+    video.addEventListener('ended', async () => {
+        let saved = await persist(true);
+        // If the interval request is still in flight, retry completion after it settles.
+        while (!saved && saving) await new Promise((resolve) => window.setTimeout(resolve, 50));
+        if (!saved) saved = await persist(true);
+        if (saved) window.location.reload();
+    });
+
+    activeVideoProgressSaver = () => persist(false, true);
+    activeVideoProgressBeacon = () => persist(false, true, true);
+    activeVideoProgressTimer = window.setInterval(() => {
+        if (video && !video.paused && !video.ended) persist(false);
+    }, 3000);
 }
-
 window.changeModalLessonVideo = async function(lessonIndex) {
     const targetIndex = Number(lessonIndex) || 1;
     if (!isVideoUnlocked(targetIndex)) {
@@ -1572,8 +1404,10 @@ window.changeModalLessonVideo = async function(lessonIndex) {
     if (activeVideoProgressSaver) {
         await activeVideoProgressSaver();
         activeVideoProgressSaver = null;
-        activeVideoProgressBeacon = null;
     }
+    activeVideoProgressBeacon = null;
+    if (activeVideoProgressTimer) window.clearInterval(activeVideoProgressTimer);
+    activeVideoProgressTimer = null;
     await refreshCourseProgress(currentSubjectId);
     renderVideoModalBody(targetIndex);
 }
@@ -1603,7 +1437,6 @@ function startQuiz(lessonIndex) {
     if (currentSubjectId) url.searchParams.set('subject_id', currentSubjectId);
     if (lessonIndex) url.searchParams.set('lesson', String(lessonIndex));
 
-    recordLearningEvent('lesson_open', lessonIndex || 1);
     window.location.href = url.pathname.split('/').pop() + url.search;
 }
 
@@ -1613,36 +1446,53 @@ function closeModal() {
     }
     activeVideoProgressSaver = null;
     activeVideoProgressBeacon = null;
+    if (activeVideoProgressTimer) window.clearInterval(activeVideoProgressTimer);
+    activeVideoProgressTimer = null;
     const modalBody = document.getElementById('modal-body');
     if(modalBody) modalBody.innerHTML = '';
     document.getElementById('modal-overlay').style.display = 'none';
 }
 
 document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && activeVideoProgressSaver) {
-        activeVideoProgressSaver();
-    }
+    if (document.visibilityState === 'hidden' && activeVideoProgressBeacon) activeVideoProgressBeacon();
 });
+let articleProgressDebounce = null;
+const articleProgressLastSaved = new Map();
+async function flushArticleScrollProgress() {
+    document.querySelectorAll('.lesson-article-reading[data-lesson-id]').forEach(async (article) => {
+        if (!article.offsetParent) return;
+        const lessonId = Number(article.dataset.lessonId || 0);
+        if (!lessonId) return;
+        const top = article.getBoundingClientRect().top + window.scrollY;
+        const height = Math.max(1, article.offsetHeight);
+        const readPixels = Math.max(0, Math.min(height, window.scrollY + window.innerHeight - top));
+        const percent = readPixels >= height ? 100 : Math.min(99.9, readPixels / height * 100);
+        const progressRow = [...getLessonProgressMap().values()].find((row) => Number(row.lesson_id) === lessonId) || {};
+        const savedPercent = Math.max(Number(articleProgressLastSaved.get(lessonId) || 0), Number(progressRow.document_progress_percent || 0));
+        if (percent <= savedPercent) return;
+        const data = new FormData();
+        data.append('lesson_id', String(lessonId));
+        data.append('progress_type', 'document');
+        data.append('progress_value', String(percent));
+        data.append('is_completed', percent >= 100 ? 'true' : 'false');
+        try {
+            const response = await fetch('save_progress.php', { method: 'POST', body: data, credentials: 'same-origin' });
+            const result = await response.json();
+            if (result.ok) {
+                articleProgressLastSaved.set(lessonId, percent);
+            }
+        } catch (_) {}
+    });
+}
+function scheduleArticleScrollProgress() {
+    window.clearTimeout(articleProgressDebounce);
+    articleProgressDebounce = window.setTimeout(flushArticleScrollProgress, 2000);
+}
+window.addEventListener('scroll', scheduleArticleScrollProgress, { passive: true });
+window.addEventListener('resize', scheduleArticleScrollProgress, { passive: true });
 window.addEventListener('pagehide', () => {
-    if (pendingLearningEvents.size > 0 && !learningEventPostInFlight) {
-        const entries = [...pendingLearningEvents.entries()];
-        const preferred = entries.find(([, entry]) => entry.args[0] === 'video_progress') || entries[entries.length - 1];
-        if (preferred) {
-            const [key, entry] = preferred;
-            pendingLearningEvents.delete(key);
-            const [activityType, lessonIndex, progressPercent, resumePosition, , durationSeconds] = entry.args;
-            const formData = new FormData();
-            formData.append('action', 'record'); formData.append('subject_id', currentSubjectId);
-            formData.append('lesson_index', String(lessonIndex)); formData.append('activity_type', activityType);
-            formData.append('progress_percent', String(progressPercent)); formData.append('resume_position', String(resumePosition));
-            if (activityType === 'video_progress') formData.append('duration_seconds', String(durationSeconds));
-            navigator.sendBeacon('student_learning_api.php', formData);
-            learningEventLastPostAt = Date.now();
-        }
-    } else if (activeVideoProgressBeacon && !learningEventPostInFlight) activeVideoProgressBeacon();
-    else if (activeVideoProgressSaver) activeVideoProgressSaver();
+    if (activeVideoProgressBeacon) activeVideoProgressBeacon();
 });
-
 function learningGuideShell() {
     return '<section class="learning-guide" aria-label="คู่มือการรับใบประกาศ">' +
         '<section class="learning-guide-section" aria-labelledby="certificateStepsTitle"><div class="learning-guide-section-heading"><span class="learning-guide-section-icon"><i class="fa-solid fa-award" aria-hidden="true"></i></span><div><h3 id="certificateStepsTitle">การรับใบประกาศนียบัตร</h3><p>ทำตามขั้นตอนง่าย ๆ เพื่อรับใบประกาศนียบัตรของคุณ</p></div></div>' +

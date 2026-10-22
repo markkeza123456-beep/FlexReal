@@ -720,7 +720,6 @@ try {
             $conn->prepare('DELETE FROM public.transcript_requests WHERE student_id = :id')->execute([':id' => $memberId]);
 
             if ($target['role'] === 'student') {
-                $conn->prepare('DELETE FROM public.learning_events WHERE student_id = :id')->execute([':id' => $memberId]);
                 $conn->prepare('DELETE FROM public.student_curricula WHERE student_id = :id')->execute([':id' => $memberId]);
                 $conn->prepare('DELETE FROM public.student_courses WHERE student_id = :id')->execute([':id' => $memberId]);
                 $conn->prepare('DELETE FROM public.quiz_attempts WHERE student_id = :id')->execute([':id' => $memberId]);
