@@ -10,9 +10,9 @@
  button.setAttribute('aria-controls',sidebar.id);
  button.setAttribute('aria-expanded','false');
  button.textContent='☰';
- const dashboardHeader=document.querySelector('.dashboard-container > .main-content > .header');
- if(dashboardHeader){document.body.classList.add('flh-student-dashboard');dashboardHeader.prepend(button);button.setAttribute('aria-label','เปิดเมนูแดชบอร์ด');}
- else document.body.appendChild(button);
+ const dashboardHeader=document.querySelector('.dashboard-container .main-content .header');
+ if(dashboardHeader){document.body.classList.add('flh-student-dashboard');button.setAttribute('aria-label','เปิดเมนูแดชบอร์ด');}
+ document.body.appendChild(button);
  const backdrop=document.createElement('div');
  backdrop.className='flh-sidebar-backdrop';
  document.body.appendChild(backdrop);

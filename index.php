@@ -165,7 +165,7 @@ $hubClientCourse = $hubCourse ? [
                 <span id="userName">ผู้ใช้งาน</span>
             </button>
             <div id="userMenu" class="user-menu">
-                <a href="student_dashboard.php">แดชบอร์ด</a>
+                <a href="student_dashboard.php#settings">ข้อมูลส่วนตัว</a>
                 <a href="logout.php?return=index.php">ออกจากระบบ</a>
             </div>
         </div>
