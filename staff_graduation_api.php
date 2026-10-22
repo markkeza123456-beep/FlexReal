@@ -24,11 +24,12 @@ function staffGraduationSafeError(Throwable $error): string
     return function_exists('mb_substr') ? mb_substr($message, 0, 700, 'UTF-8') : substr($message, 0, 700);
 }
 
-if (strtolower(trim((string) ($_SESSION['role'] ?? ''))) !== 'staff' || empty($_SESSION['user_id'])) {
-    staffGraduationJson(['status' => 'unauthorized', 'message' => 'กรุณาเข้าสู่ระบบเจ้าหน้าที่'], 401);
+$reviewerRole = strtolower(trim((string) ($_SESSION['role'] ?? '')));
+$reviewerId = (string) ($_SESSION['user_id'] ?? '');
+if (!in_array($reviewerRole, ['staff', 'teacher'], true) || $reviewerId === '') {
+    staffGraduationJson(['status' => 'unauthorized', 'message' => 'กรุณาเข้าสู่ระบบผู้ตรวจสอบ'], 401);
 }
-$staffId = (string) $_SESSION['user_id'];
-$staffName = (string) ($_SESSION['name'] ?? 'เจ้าหน้าที่');
+$reviewerName = (string) ($_SESSION['name'] ?? ($reviewerRole === 'teacher' ? 'อาจารย์' : 'เจ้าหน้าที่'));
 if (empty($_SESSION['graduation_review_csrf'])) {
     $_SESSION['graduation_review_csrf'] = bin2hex(random_bytes(32));
 }
@@ -40,6 +41,23 @@ try {
     require_once __DIR__ . '/config/db.php';
     require_once __DIR__ . '/graduation_document_lib.php';
 
+    if ($reviewerRole === 'staff') {
+        $permissionStmt = $conn->prepare("SELECT 1 FROM public.users WHERE user_id = :user_id AND role = 'staff'");
+        $permissionStmt->execute([':user_id' => $reviewerId]);
+    } else {
+        $permissionStmt = $conn->prepare(
+            "SELECT EXISTS (
+                SELECT 1 FROM public.transfer_permissions p
+                JOIN public.users u ON u.user_id = p.instructor_id
+                WHERE p.instructor_id = :user_id AND p.is_active = TRUE AND u.role = 'teacher'
+            )"
+        );
+        $permissionStmt->execute([':user_id' => $reviewerId]);
+    }
+    if (!$permissionStmt->fetchColumn()) {
+        staffGraduationJson(['status' => 'unauthorized', 'message' => 'บัญชีนี้ไม่มีสิทธิ์ตรวจทรานสคริปต์หรืออนุมัติจบการศึกษา'], 403);
+    }
+
     if ($method === 'GET') {
         $stmt = $conn->query(
             "SELECT gr.request_id, gr.student_id, gr.total_credits, gr.submitted_at, gr.status,
@@ -47,9 +65,8 @@ try {
                     s.full_name AS student_name
              FROM public.graduation_requests gr
              JOIN public.students s ON s.user_id = gr.student_id
-             WHERE gr.status = 'pending'
-                OR (gr.status = 'approved' AND (gr.document_bucket IS NULL OR gr.document_object_path IS NULL))
-             ORDER BY CASE WHEN gr.status = 'pending' THEN 0 ELSE 1 END, gr.submitted_at ASC"
+             WHERE gr.status = 'pending' OR gr.status = 'approved'
+             ORDER BY CASE WHEN gr.status = 'pending' THEN 0 ELSE 1 END, gr.submitted_at DESC"
         );
         $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
         foreach ($requests as &$request) {
@@ -69,7 +86,7 @@ try {
         staffGraduationJson(['status' => 'error', 'message' => 'คำขอหมดอายุ กรุณาโหลดหน้าใหม่'], 419);
     }
     $action = (string) ($_POST['action'] ?? '');
-    if (!in_array($action, ['approve', 'retry_pdf'], true)) {
+    if (!in_array($action, ['approve', 'retry_pdf', 'regenerate_pdf'], true)) {
         staffGraduationJson(['status' => 'error', 'message' => 'ไม่รองรับคำสั่งนี้'], 400);
     }
     $requestId = filter_var($_POST['request_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
@@ -77,16 +94,18 @@ try {
 
     $conn->beginTransaction();
     $requestStatus = $action === 'approve' ? 'pending' : 'approved';
-    $retryGuard = $action === 'retry_pdf'
-        ? 'AND (gr.document_bucket IS NULL OR gr.document_object_path IS NULL)'
-        : '';
+    $documentGuard = match ($action) {
+        'retry_pdf' => 'AND (gr.document_bucket IS NULL OR gr.document_object_path IS NULL)',
+        'regenerate_pdf' => 'AND gr.document_bucket IS NOT NULL AND gr.document_object_path IS NOT NULL',
+        default => '',
+    };
     $requestStmt = $conn->prepare(
         "SELECT gr.request_id, gr.student_id, s.full_name, s.email, gr.status,
                 gr.document_bucket, gr.document_object_path
          FROM public.graduation_requests gr
          JOIN public.students s ON s.user_id = gr.student_id
          WHERE gr.request_id = :request_id AND gr.status = :status
-           {$retryGuard}
+           {$documentGuard}
          FOR UPDATE OF gr"
     );
     $requestStmt->execute([':request_id' => $requestId, ':status' => $requestStatus]);
@@ -100,6 +119,10 @@ try {
         $conn->rollBack();
         staffGraduationJson(['status' => 'error', 'message' => 'นักเรียนมีรายวิชาที่ยังไม่ผ่าน ระบบจึงยังอนุมัติจบไม่ได้'], 409);
     }
+    if ($action === 'approve') {
+        // Check mPDF's writable workspace before changing the request to approved.
+        graduationDocumentTempDir();
+    }
     $credits = array_sum(array_map(static fn(array $row): float => (float) $row['credits'], $courses));
     if ($action === 'approve') {
         $updateStmt = $conn->prepare(
@@ -108,7 +131,7 @@ try {
                  total_credits = :total_credits, updated_at = NOW()
              WHERE request_id = :request_id AND status = 'pending'"
         );
-        $updateStmt->execute([':approved_by' => $staffId, ':total_credits' => $credits, ':request_id' => $requestId]);
+        $updateStmt->execute([':approved_by' => $reviewerId, ':total_credits' => $credits, ':request_id' => $requestId]);
         if ($updateStmt->rowCount() !== 1) throw new RuntimeException('คำขอเปลี่ยนสถานะระหว่างอนุมัติ');
     }
     $conn->commit();
@@ -118,7 +141,7 @@ try {
     $uploadedPath = null;
     try {
         require_once __DIR__ . '/transcript_storage.php';
-        $pdf = generateGraduationTranscriptPdf($request, $courses, $credits, $staffName);
+        $pdf = generateGraduationTranscriptPdf($request, $courses, $credits, $reviewerName);
 
         $phase = 'ตรวจสอบการตั้งค่า Supabase Storage';
         [, , $defaultBucket] = transcriptStorageConfig();
@@ -128,17 +151,35 @@ try {
         transcriptStorageUploadBytes($uploadedBucket, $uploadedPath, $pdf, 'application/pdf');
 
         $phase = 'บันทึกตำแหน่ง PDF ในฐานข้อมูล';
+        $oldBucket = $request['document_bucket'] ?? null;
+        $oldPath = $request['document_object_path'] ?? null;
+        $documentCondition = $action === 'regenerate_pdf'
+            ? 'AND document_bucket = :old_bucket AND document_object_path = :old_path'
+            : 'AND (document_bucket IS NULL OR document_object_path IS NULL)';
         $documentStmt = $conn->prepare(
             "UPDATE public.graduation_requests
              SET document_bucket = :bucket, document_object_path = :object_path, updated_at = NOW()
-             WHERE request_id = :request_id AND status = 'approved'
-               AND (document_bucket IS NULL OR document_object_path IS NULL)"
+             WHERE request_id = :request_id AND status = 'approved' {$documentCondition}"
         );
-        $documentStmt->execute([':bucket' => $uploadedBucket, ':object_path' => $uploadedPath, ':request_id' => $requestId]);
+        $documentParams = [':bucket' => $uploadedBucket, ':object_path' => $uploadedPath, ':request_id' => $requestId];
+        if ($action === 'regenerate_pdf') {
+            $documentParams[':old_bucket'] = $oldBucket;
+            $documentParams[':old_path'] = $oldPath;
+        }
+        $documentStmt->execute($documentParams);
         if ($documentStmt->rowCount() !== 1) {
             throw new RuntimeException('ไม่สามารถผูกไฟล์ที่อัปโหลดเข้ากับคำขอที่อนุมัติแล้วได้');
         }
-        staffGraduationJson(['status' => 'success', 'message' => 'อนุมัติการจบและออกใบสรุปผลการเรียนแล้ว']);
+        if ($action === 'regenerate_pdf' && $oldBucket && $oldPath) {
+            try { transcriptStorageDelete((string) $oldBucket, (string) $oldPath); }
+            catch (Throwable $cleanupError) { error_log('Old graduation PDF cleanup failed: ' . $cleanupError->getMessage()); }
+        }
+        $successMessage = match ($action) {
+            'approve' => 'อนุมัติการจบและออกใบสรุปผลการเรียนแล้ว',
+            'regenerate_pdf' => 'สร้างใบสรุปผลฉบับใหม่แล้ว',
+            default => 'สร้างใบสรุปผลการเรียน PDF เรียบร้อยแล้ว',
+        };
+        staffGraduationJson(['status' => 'success', 'message' => $successMessage]);
     } catch (Throwable $e) {
         if ($uploadedBucket !== null && $uploadedPath !== null) {
             try { transcriptStorageDelete($uploadedBucket, $uploadedPath); }

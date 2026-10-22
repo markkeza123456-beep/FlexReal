@@ -70,6 +70,20 @@ function graduationTranscriptEligible(array $courseRows): bool
     return true;
 }
 
+function graduationDocumentTempDir(): string
+{
+    $processId = function_exists('posix_geteuid') ? (string) posix_geteuid() : (string) getmyuid();
+    $safeProcessId = preg_replace('/[^0-9A-Za-z_-]/', '', $processId);
+    $tempBases = array_unique([sys_get_temp_dir(), '/tmp', '/Applications/XAMPP/xamppfiles/temp']);
+    foreach ($tempBases as $tempBase) {
+        if (!is_dir($tempBase) || !is_writable($tempBase)) continue;
+        $tempDir = rtrim($tempBase, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'flexreal-mpdf-' . $safeProcessId;
+        if (!is_dir($tempDir)) @mkdir($tempDir, 0700, true);
+        if (is_dir($tempDir) && is_writable($tempDir)) return $tempDir;
+    }
+    throw new RuntimeException('ไม่สามารถเตรียมโฟลเดอร์ชั่วคราวที่เขียนได้สำหรับสร้าง PDF');
+}
+
 function generateGraduationTranscriptPdf(array $student, array $courseRows, float $totalCredits, string $approvedByName): string
 {
     $autoload = __DIR__ . '/vendor/autoload.php';
@@ -81,10 +95,7 @@ function generateGraduationTranscriptPdf(array $student, array $courseRows, floa
     $boldFont = $fontDir . '/Sarabun-Bold.ttf';
     if (!is_file($regularFont) || !is_file($boldFont)) throw new RuntimeException('ไม่พบไฟล์ฟอนต์ Sarabun สำหรับสร้าง PDF');
 
-    $tempDir = __DIR__ . '/tmp/mpdf';
-    if (!is_dir($tempDir) && !mkdir($tempDir, 0750, true) && !is_dir($tempDir)) {
-        throw new RuntimeException('ไม่สามารถเตรียมโฟลเดอร์ชั่วคราวของ mPDF ได้');
-    }
+    $tempDir = graduationDocumentTempDir();
     $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
     $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
     $mpdf = new \Mpdf\Mpdf([
@@ -103,12 +114,14 @@ function generateGraduationTranscriptPdf(array $student, array $courseRows, floa
         'autoScriptToLang' => true,
         'autoLangToFont' => true,
     ]);
+    $mpdf->SetDefaultBodyCSS('background', '#FFFFFF');
+    $mpdf->SetDefaultBodyCSS('background-color', '#FFFFFF');
     $mpdf->SetTitle('ใบสรุปผลการเรียน Credit Bank');
     $mpdf->SetAuthor('Flexible Learning Hub');
     $mpdf->SetHTMLFooter('<div style="text-align:center;color:#64748b;font-size:9pt">Flexible Learning Hub · หน้า {PAGENO}/{nbpg}</div>');
 
     $html = '<html lang="th"><head><meta charset="UTF-8"><style>
-        body{font-family:sarabun;font-size:12pt;color:#203451;background:#FFFFFF}
+        html,body{font-family:sarabun;font-size:12pt;color:#203451;background:#FFFFFF;background-color:#FFFFFF}
         h1{text-align:center;font-size:23pt;margin:0;color:#303F9F}
         .subtitle{text-align:center;color:#63758a;margin:0 0 16px}
         .student{border:1px solid #9FA8DA;background:#fff;padding:10px 14px;margin:14px 0}
@@ -120,11 +133,13 @@ function generateGraduationTranscriptPdf(array $student, array $courseRows, floa
         .grade-tr{color:#203451;background:#FFFFFF;font-weight:bold}
         .grade-pass{color:#166534;font-weight:bold}.grade-fail{color:#b91c1c;font-weight:bold}
         .summary{margin-top:14px;padding:10px 12px;background:#FFFFFF;border-left:4px solid #5C6BC0;font-size:13pt}
-        .signatures{margin-top:40px;width:100%}.signatures td{text-align:center;width:50%;padding-top:22px}
-        .signature-line{border-top:1px solid #64748b;margin:0 30px;padding-top:5px}
-        .note{font-size:9pt;color:#64748b;margin-top:20px}
+        .signatures{margin-top:34px;width:100%;border-collapse:collapse;table-layout:fixed}
+        .signatures td{text-align:center;width:50%;vertical-align:top;padding:0 18px;line-height:1.35}
+        table.signature-line{width:82%;border-collapse:collapse;margin:0 auto 5px}
+        .signature-line td{height:28px;padding:0;border-bottom:1px solid #64748b}
+        .signature-role{font-weight:bold}.signature-name{min-height:20px}
     </style></head><body>';
-    $html .= '<h1>ใบสรุปผลการเรียน</h1><p class="subtitle">ระบบธนาคารหน่วยกิต · Flexible Learning Hub</p>';
+    $html .= '<h1>ใบสรุปผลการเรียน</h1><p class="subtitle">Flexible Learning Hub</p>';
     $html .= '<table class="student" width="100%"><tr><td class="label">ชื่อ - นามสกุล</td><td><b>' . graduationDocumentH((string) ($student['full_name'] ?? '')) . '</b></td><td class="label">รหัสนักเรียน</td><td>' . graduationDocumentH((string) $student['student_id']) . '</td></tr>';
     $html .= '<tr><td class="label">วันที่อนุมัติ</td><td>' . graduationDocumentH(date('d/m/') . (date('Y') + 543)) . '</td><td class="label">หน่วยกิตสะสม</td><td><b>' . number_format($totalCredits, 2) . '</b></td></tr></table>';
     $html .= '<table class="courses"><thead><tr><th style="width:11%">รหัสวิชา</th><th>รายวิชา</th><th style="width:12%">หน่วยกิต</th><th style="width:15%">บทเรียนที่เทียบโอน</th><th style="width:19%">ผลการเรียน</th></tr></thead><tbody>';
@@ -137,8 +152,8 @@ function generateGraduationTranscriptPdf(array $student, array $courseRows, floa
         $html .= '<td class="center ' . $gradeClass . '">' . graduationDocumentH((string) $row['grade_label']) . '</td></tr>';
     }
     $html .= '</tbody></table><div class="summary">หน่วยกิตที่นับเพื่อขอจบการศึกษา: <b>' . number_format($totalCredits, 2) . ' หน่วยกิต</b></div>';
-    $html .= '<table class="signatures"><tr><td><div class="signature-line">ผู้อนุมัติ<br>' . graduationDocumentH($approvedByName) . '</div></td><td><div class="signature-line">ผู้รับรองผลการเรียน<br>Flexible Learning Hub</div></td></tr></table>';
-    $html .= '<p class="note">เอกสารฉบับนี้ออกจากระบบธนาคารหน่วยกิต Flexible Learning Hub เพื่อสรุปผลการเรียนและรายการเทียบโอน</p></body></html>';
+    $html .= '<table class="signatures"><tr><td><table class="signature-line"><tr><td>&nbsp;</td></tr></table><div class="signature-role">ผู้อนุมัติ</div><div class="signature-name">' . graduationDocumentH($approvedByName) . '</div></td><td><table class="signature-line"><tr><td>&nbsp;</td></tr></table><div class="signature-role">ผู้รับรองผลการเรียน</div><div class="signature-name">Flexible Learning Hub</div></td></tr></table>';
+    $html .= '</body></html>';
     $mpdf->WriteHTML($html);
     return $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN);
 }

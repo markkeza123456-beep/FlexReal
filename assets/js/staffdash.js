@@ -11,6 +11,8 @@
   const initialPage = new URLSearchParams(window.location.search).get('page') || 'dashboard';
   let currentPage = initialPage;
   let currentSubjectId = null;
+  let graduationRequests = [];
+  let graduationRequestFilter = 'pending';
 
   const pageNames = {
     'dashboard': 'แดชบอร์ด',
@@ -211,22 +213,29 @@
   });
 
   document.getElementById('graduationRequestsList')?.addEventListener('click', async event => {
-    const button = event.target.closest('[data-approve-graduation], [data-retry-graduation]');
+    const button = event.target.closest('[data-approve-graduation], [data-retry-graduation], [data-regenerate-graduation]');
     if (!button || button.disabled) return;
     const isRetry = button.hasAttribute('data-retry-graduation');
-    const requestId = isRetry ? button.dataset.retryGraduation : button.dataset.approveGraduation;
+    const isRegenerate = button.hasAttribute('data-regenerate-graduation');
+    const requestId = isRetry ? button.dataset.retryGraduation : isRegenerate ? button.dataset.regenerateGraduation : button.dataset.approveGraduation;
     const confirmMessage = isRetry
       ? 'ยืนยันลองสร้างและอัปโหลด PDF สำหรับคำขอที่อนุมัติแล้วอีกครั้ง?'
-      : 'ยืนยันอนุมัติจบการศึกษาและออกใบสรุปผลการเรียน PDF?';
+      : isRegenerate
+        ? 'ยืนยันสร้างใบสรุปผลการเรียน PDF ฉบับใหม่แทนไฟล์เดิม?'
+        : 'ยืนยันอนุมัติจบการศึกษาและออกใบสรุปผลการเรียน PDF?';
     if (!window.confirm(confirmMessage)) return;
     button.disabled = true;
     const formData = new FormData();
-    formData.append('action', isRetry ? 'retry_pdf' : 'approve');
+    formData.append('action', isRetry ? 'retry_pdf' : isRegenerate ? 'regenerate_pdf' : 'approve');
     formData.append('request_id', requestId);
     formData.append('csrf_token', graduationReviewCsrf);
     try {
       const result = await fetchJson('staff_graduation_api.php', { method: 'POST', credentials: 'same-origin', body: formData });
       showToast(result.message || 'อนุมัติเรียบร้อย', 'success');
+      if (!isRetry && !isRegenerate) {
+        graduationRequestFilter = 'approved';
+        document.querySelectorAll('[data-graduation-filter]').forEach(tab => tab.classList.toggle('active', tab.dataset.graduationFilter === 'approved'));
+      }
       await loadGraduationRequests();
     } catch (error) {
       if (error.payload?.approved) {
@@ -238,6 +247,15 @@
     }
   });
 
+  document.querySelectorAll('[data-graduation-filter]').forEach(button => {
+    button.addEventListener('click', () => {
+      graduationRequestFilter = button.dataset.graduationFilter || 'pending';
+      document.querySelectorAll('[data-graduation-filter]').forEach(tab => tab.classList.toggle('active', tab === button));
+      renderGraduationRequests();
+    });
+  });
+  document.getElementById('graduationRequestSearch')?.addEventListener('input', renderGraduationRequests);
+
   async function loadGraduationRequests() {
     const list = document.getElementById('graduationRequestsList');
     const message = document.getElementById('graduationRequestsMessage');
@@ -247,10 +265,36 @@
     try {
       const result = await fetchJson('staff_graduation_api.php', { credentials: 'same-origin' });
       graduationReviewCsrf = String(result.csrf_token || '');
-      const requests = Array.isArray(result.requests) ? result.requests : [];
-      message.hidden = requests.length > 0;
-      message.textContent = requests.length ? '' : 'ไม่มีคำขอจบการศึกษาที่รอพิจารณา';
-      list.innerHTML = requests.map(request => {
+      graduationRequests = Array.isArray(result.requests) ? result.requests : [];
+      renderGraduationRequests();
+    } catch (error) {
+      message.hidden = false;
+      message.textContent = error.message || 'ไม่สามารถโหลดคำขอได้';
+      list.innerHTML = '';
+    }
+  }
+
+  function renderGraduationRequests() {
+    const list = document.getElementById('graduationRequestsList');
+    const message = document.getElementById('graduationRequestsMessage');
+    if (!list || !message) return;
+    const pendingCount = graduationRequests.filter(request => request.status === 'pending').length;
+    const approvedCount = graduationRequests.filter(request => request.status === 'approved').length;
+    const pendingCountElement = document.getElementById('graduationPendingCount');
+    const approvedCountElement = document.getElementById('graduationApprovedCount');
+    if (pendingCountElement) pendingCountElement.textContent = String(pendingCount);
+    if (approvedCountElement) approvedCountElement.textContent = String(approvedCount);
+    const query = (document.getElementById('graduationRequestSearch')?.value || '').trim().toLocaleLowerCase();
+    const requests = graduationRequests.filter(request => {
+      if (!query && request.status !== graduationRequestFilter) return false;
+      if (!query) return true;
+      return `${request.student_name || ''} ${request.student_id || ''}`.toLocaleLowerCase().includes(query);
+    });
+    message.hidden = requests.length > 0;
+    message.textContent = requests.length ? '' : graduationRequests.length
+      ? (query ? 'ไม่พบคำขอที่ตรงกับคำค้นหา' : graduationRequestFilter === 'pending' ? 'ไม่มีคำขอที่รออนุมัติ' : 'ยังไม่มีคำขอที่อนุมัติแล้ว')
+      : 'ไม่มีคำขอจบการศึกษา';
+    list.innerHTML = requests.map(request => {
         const courses = Array.isArray(request.courses) ? request.courses : [];
         const rows = courses.map(course => `<tr>
           <td class="mono">${escapeHtml(course.code || '-')}</td>
@@ -259,21 +303,27 @@
           <td>${Number(course.transferred_lessons || 0) > 0 ? `<span class="graduation-grade-tr">TR · เทียบโอน (${escapeHtml(course.transfer_summary)})</span>` : escapeHtml(course.grade_label || '-')}</td>
         </tr>`).join('');
         const eligible = Boolean(request.eligible);
-        const retryPdf = request.status === 'approved';
-        const actionAttribute = retryPdf
-          ? `data-retry-graduation="${escapeHtml(request.request_id)}"`
-          : `data-approve-graduation="${escapeHtml(request.request_id)}"`;
+        const approved = request.status === 'approved';
+        const hasPdf = Boolean(request.document_bucket && request.document_object_path);
+        const retryPdf = approved && !hasPdf;
+        const regeneratePdf = approved && hasPdf;
+        const actionAttribute = regeneratePdf
+          ? `data-regenerate-graduation="${escapeHtml(request.request_id)}"`
+          : retryPdf
+            ? `data-retry-graduation="${escapeHtml(request.request_id)}"`
+            : `data-approve-graduation="${escapeHtml(request.request_id)}"`;
+        const approvalLabel = regeneratePdf
+          ? ' · อนุมัติแล้ว มี PDF แล้ว'
+          : retryPdf ? ' · อนุมัติแล้ว รอสร้าง PDF' : ' · รออนุมัติ';
+        const actionLabel = regeneratePdf
+          ? 'สร้าง PDF ฉบับใหม่'
+          : retryPdf ? 'ลองออก PDF อีกครั้ง' : 'อนุมัติและออก PDF';
         return `<article class="form-card graduation-request-card">
-          <div class="graduation-request-heading"><div><h2>${escapeHtml(request.student_name || 'นักเรียน')}</h2><p>รหัส ${escapeHtml(request.student_id)} · ส่งเมื่อ ${escapeHtml(formatRegistrationDate(request.submitted_at))}${retryPdf ? ' · อนุมัติแล้ว รอสร้าง PDF' : ''}</p></div><strong>${Number(request.total_credits || 0).toLocaleString('th-TH')} หน่วยกิต</strong></div>
+          <div class="graduation-request-heading"><div><h2>${escapeHtml(request.student_name || 'นักเรียน')}</h2><p>รหัส ${escapeHtml(request.student_id)} · ส่งเมื่อ ${escapeHtml(formatRegistrationDate(request.submitted_at))}${approvalLabel}</p></div><strong>${Number(request.total_credits || 0).toLocaleString('th-TH')} หน่วยกิต</strong></div>
           <div class="table-wrap"><table class="data-table"><thead><tr><th>รหัสวิชา</th><th>รายวิชา</th><th>หน่วยกิต</th><th>ผลการเรียน</th></tr></thead><tbody>${rows || '<tr><td colspan="4">ไม่พบรายวิชา</td></tr>'}</tbody></table></div>
-          <div class="graduation-request-actions">${retryPdf ? '<span class="graduation-ineligible">อนุมัติแล้ว แต่ไฟล์ PDF ยังไม่พร้อม</span>' : eligible ? '<span>ตรวจสอบครบทุกวิชาแล้ว</span>' : '<span class="graduation-ineligible">ยังมีวิชาที่ไม่ผ่าน จึงอนุมัติไม่ได้</span>'}<button type="button" class="btn-primary" ${actionAttribute} ${eligible || retryPdf ? '' : 'disabled'}>${retryPdf ? 'ลองออก PDF อีกครั้ง' : 'อนุมัติและออก PDF'}</button></div>
+          <div class="graduation-request-actions">${regeneratePdf ? '<span>ไฟล์ปัจจุบันสร้างไว้แล้ว สามารถสร้างใหม่ตามแบบล่าสุดได้</span>' : retryPdf ? '<span class="graduation-ineligible">อนุมัติแล้ว แต่ไฟล์ PDF ยังไม่พร้อม</span>' : eligible ? '<span>ตรวจสอบครบทุกวิชาแล้ว</span>' : '<span class="graduation-ineligible">ยังมีวิชาที่ไม่ผ่าน จึงอนุมัติไม่ได้</span>'}<button type="button" class="btn-primary" ${actionAttribute} ${eligible || approved ? '' : 'disabled'}>${actionLabel}</button></div>
         </article>`;
-      }).join('');
-    } catch (error) {
-      message.hidden = false;
-      message.textContent = error.message || 'ไม่สามารถโหลดคำขอได้';
-      list.innerHTML = '';
-    }
+    }).join('');
   }
 
   window.addEventListener('popstate', () => {

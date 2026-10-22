@@ -355,7 +355,7 @@ $stats = [
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261022-video-success-visible">
+    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261022-teacher-graduation">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px;
@@ -405,6 +405,7 @@ $stats = [
             });
           }
         }
+        if (viewName === 'graduation') window.loadTeacherGraduationRequests?.();
         return false;
       };
     </script>
@@ -414,6 +415,7 @@ $stats = [
         <a href="#" onclick="return window.activateTeacherView('reports')" class="nav-item" data-view="reports"><span class="nav-icon"></span><span>ออกรายงาน</span></a>
         <?php if ($canAccessTransferApproval): ?>
         <a href="review_transcript.php" class="nav-item"><span class="nav-icon"></span><span>ตรวจทรานสคริปต์</span></a>
+        <a href="#" onclick="return window.activateTeacherView('graduation')" class="nav-item" data-view="graduation"><span class="nav-icon"></span><span>อนุมัติจบการศึกษา</span></a>
         <?php endif; ?>
     </nav>
 
@@ -1092,6 +1094,21 @@ $stats = [
         </div>
     </div>
 
+    <?php if ($canAccessTransferApproval): ?>
+    <div id="view-graduation" class="page-view teacher-graduation-view" style="display:none">
+        <header class="topbar"><div class="topbar-left"><h1 class="page-title">อนุมัติจบการศึกษา</h1><span class="page-sub">ตรวจสอบผลการเรียนและออกใบสรุปผลการเรียน PDF</span></div></header>
+        <div id="teacherGraduationMessage" class="teacher-graduation-message" role="status">กำลังโหลดคำขอ...</div>
+        <div class="teacher-graduation-toolbar">
+          <div class="teacher-graduation-filters" role="tablist" aria-label="สถานะคำขอจบการศึกษา">
+            <button type="button" class="active" data-teacher-graduation-filter="pending">รออนุมัติ <span id="teacherGraduationPendingCount">0</span></button>
+            <button type="button" data-teacher-graduation-filter="approved">อนุมัติแล้ว <span id="teacherGraduationApprovedCount">0</span></button>
+          </div>
+          <label class="teacher-graduation-search"><span aria-hidden="true">⌕</span><input id="teacherGraduationSearch" type="search" placeholder="ค้นหาชื่อนักเรียน หรือรหัสนักเรียน" autocomplete="off"></label>
+        </div>
+        <div id="teacherGraduationList" class="teacher-graduation-list"></div>
+    </div>
+    <?php endif; ?>
+
 </main>
 
 <div id="cropModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;">
@@ -1576,6 +1593,9 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 </script>
 
     <script src="assets/js/teacherdash.js?v=20261022-delete-lesson-fix"></script>
+<?php if ($canAccessTransferApproval): ?>
+    <script src="assets/js/teacher_graduation.js?v=20261022-teacher-graduation-search-all-statuses"></script>
+<?php endif; ?>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>
