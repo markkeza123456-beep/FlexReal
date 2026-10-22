@@ -53,6 +53,9 @@
       const stateText = regeneratePdf
         ? 'อนุมัติแล้ว · มี PDF แล้ว สามารถสร้างใหม่ตามแบบล่าสุดได้'
         : retryPdf ? 'อนุมัติแล้ว · PDF ยังไม่พร้อม' : item.eligible ? 'ตรวจสอบครบทุกวิชาแล้ว' : 'ยังมีวิชาที่ไม่ผ่าน จึงอนุมัติไม่ได้';
+      const statusBadge = approved
+        ? `<span class="teacher-graduation-status is-approved">อนุมัติแล้ว${hasPdf ? '' : ' · PDF ยังไม่พร้อม'}</span>`
+        : '<span class="teacher-graduation-status is-pending">รออนุมัติ</span>';
       const rows = courses.map(course => `<tr>
         <td>${escapeHtml(course.code || '-')}</td>
         <td>${escapeHtml(course.name || '-')}</td>
@@ -60,7 +63,7 @@
         <td>${Number(course.transferred_lessons || 0) > 0 ? `TR · เทียบโอน (${escapeHtml(course.transfer_summary || '-')})` : escapeHtml(course.grade_label || '-')}</td>
       </tr>`).join('');
       return `<article class="teacher-graduation-card">
-        <header class="teacher-graduation-heading"><div><h2>${escapeHtml(item.student_name || 'นักเรียน')}</h2><p>รหัส ${escapeHtml(item.student_id)} · ส่งเมื่อ ${escapeHtml(formatDate(item.submitted_at))}${approved ? ' · อนุมัติแล้ว' : ' · รออนุมัติ'}</p></div><strong>${Number(item.total_credits || 0).toLocaleString('th-TH')} หน่วยกิต</strong></header>
+        <header class="teacher-graduation-heading"><div><h2>${escapeHtml(item.student_name || 'นักเรียน')}</h2><p>รหัส ${escapeHtml(item.student_id)} · ส่งเมื่อ ${escapeHtml(formatDate(item.submitted_at))} · ${statusBadge}</p></div><strong>${Number(item.total_credits || 0).toLocaleString('th-TH')} หน่วยกิต</strong></header>
         <div class="teacher-graduation-table-wrap"><table class="teacher-graduation-table"><thead><tr><th>รหัสวิชา</th><th>รายวิชา</th><th>หน่วยกิต</th><th>ผลการเรียน</th></tr></thead><tbody>${rows || '<tr><td colspan="4">ไม่พบรายวิชา</td></tr>'}</tbody></table></div>
         <footer class="teacher-graduation-actions"><span class="${!item.eligible && !approved ? 'teacher-graduation-ineligible' : ''}">${stateText}</span><button type="button" data-action="${action}" data-request-id="${escapeHtml(item.request_id)}" ${!item.eligible && !approved ? 'disabled' : ''}>${buttonText}</button></footer>
       </article>`;

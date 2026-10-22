@@ -218,6 +218,9 @@ html, body {
 .teacher-graduation-actions { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .teacher-graduation-heading h2 { margin: 0; color: var(--text); font-size: 1.1rem; }
 .teacher-graduation-heading p { margin-top: 4px; color: var(--text-muted); font-size: .88rem; }
+.teacher-graduation-status { display:inline-block; padding:2px 9px; border-radius:999px; font-size:.9em; font-weight:600; white-space:nowrap; }
+.teacher-graduation-status.is-approved { color:#15803d; background:#dcfce7; }
+.teacher-graduation-status.is-pending { color:#b42318; background:#fee2e2; }
 .teacher-graduation-heading strong { white-space: nowrap; color: var(--text); }
 .teacher-graduation-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
 .teacher-graduation-table { width: 100%; border-collapse: collapse; min-width: 620px; color: var(--text); }

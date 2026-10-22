@@ -355,7 +355,7 @@ $stats = [
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261022-teacher-graduation">
+    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261022-graduation-status-colors">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px;
@@ -1594,7 +1594,7 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 
     <script src="assets/js/teacherdash.js?v=20261022-delete-lesson-fix"></script>
 <?php if ($canAccessTransferApproval): ?>
-    <script src="assets/js/teacher_graduation.js?v=20261022-teacher-graduation-search-all-statuses"></script>
+    <script src="assets/js/teacher_graduation.js?v=20261022-graduation-status-colors"></script>
 <?php endif; ?>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>

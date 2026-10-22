@@ -312,14 +312,14 @@
           : retryPdf
             ? `data-retry-graduation="${escapeHtml(request.request_id)}"`
             : `data-approve-graduation="${escapeHtml(request.request_id)}"`;
-        const approvalLabel = regeneratePdf
-          ? ' · อนุมัติแล้ว มี PDF แล้ว'
-          : retryPdf ? ' · อนุมัติแล้ว รอสร้าง PDF' : ' · รออนุมัติ';
+        const approvalLabel = approved
+          ? `<span class="graduation-status-badge is-approved">อนุมัติแล้ว${hasPdf ? '' : ' · PDF ยังไม่พร้อม'}</span>`
+          : '<span class="graduation-status-badge is-pending">รออนุมัติ</span>';
         const actionLabel = regeneratePdf
           ? 'สร้าง PDF ฉบับใหม่'
           : retryPdf ? 'ลองออก PDF อีกครั้ง' : 'อนุมัติและออก PDF';
         return `<article class="form-card graduation-request-card">
-          <div class="graduation-request-heading"><div><h2>${escapeHtml(request.student_name || 'นักเรียน')}</h2><p>รหัส ${escapeHtml(request.student_id)} · ส่งเมื่อ ${escapeHtml(formatRegistrationDate(request.submitted_at))}${approvalLabel}</p></div><strong>${Number(request.total_credits || 0).toLocaleString('th-TH')} หน่วยกิต</strong></div>
+          <div class="graduation-request-heading"><div><h2>${escapeHtml(request.student_name || 'นักเรียน')}</h2><p>รหัส ${escapeHtml(request.student_id)} · ส่งเมื่อ ${escapeHtml(formatRegistrationDate(request.submitted_at))} · ${approvalLabel}</p></div><strong>${Number(request.total_credits || 0).toLocaleString('th-TH')} หน่วยกิต</strong></div>
           <div class="table-wrap"><table class="data-table"><thead><tr><th>รหัสวิชา</th><th>รายวิชา</th><th>หน่วยกิต</th><th>ผลการเรียน</th></tr></thead><tbody>${rows || '<tr><td colspan="4">ไม่พบรายวิชา</td></tr>'}</tbody></table></div>
           <div class="graduation-request-actions">${regeneratePdf ? '<span>ไฟล์ปัจจุบันสร้างไว้แล้ว สามารถสร้างใหม่ตามแบบล่าสุดได้</span>' : retryPdf ? '<span class="graduation-ineligible">อนุมัติแล้ว แต่ไฟล์ PDF ยังไม่พร้อม</span>' : eligible ? '<span>ตรวจสอบครบทุกวิชาแล้ว</span>' : '<span class="graduation-ineligible">ยังมีวิชาที่ไม่ผ่าน จึงอนุมัติไม่ได้</span>'}<button type="button" class="btn-primary" ${actionAttribute} ${eligible || approved ? '' : 'disabled'}>${actionLabel}</button></div>
         </article>`;
