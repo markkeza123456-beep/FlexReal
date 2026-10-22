@@ -133,7 +133,7 @@ try {
                     COALESCE(answer_scores.essay_feedback, '') AS essay_feedback,
                     COALESCE(qa.attempt_count, 0) AS attempt_count
              FROM public.lessons l
-             LEFT JOIN public.lesson_progress lp ON lp.lesson_id = l.lesson_id AND lp.student_id = :student_id
+             LEFT JOIN public.lesson_progress_summary lp ON lp.lesson_id = l.lesson_id AND lp.student_id = :student_id
              LEFT JOIN LATERAL (
                  SELECT attempt_id, attempt_number, status, score, total_score, submitted_at,
                         COUNT(*) OVER () AS attempt_count

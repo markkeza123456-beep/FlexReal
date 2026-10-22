@@ -32,7 +32,7 @@ try {
         "SELECT l.position AS lesson_no, a.score, a.total_score, a.status,
                 CASE WHEN COALESCE(lp.is_transferred, FALSE) THEN 1 ELSE 0 END AS is_transferred
          FROM public.lessons l
-         LEFT JOIN public.lesson_progress lp
+         LEFT JOIN public.lesson_progress_summary lp
            ON lp.lesson_id = l.lesson_id AND lp.student_id = :progress_student_id
          LEFT JOIN LATERAL (
              SELECT score, total_score, status

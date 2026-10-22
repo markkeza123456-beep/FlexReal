@@ -2,7 +2,6 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/config/db.php';
-require_once __DIR__ . '/learning_progress_lib.php';
 
 function quizResponse(array $payload, int $status = 200): void
 {
@@ -115,7 +114,6 @@ try {
     foreach ($savedAnswers as $answer) {
         $answerStmt->execute([':attempt_id' => $attemptId] + $answer);
     }
-    recordLearningActivity($conn, $studentId, $courseId, $lessonIndex, 'quiz_submit', (string) $lessonRow['title'], (int) $score, (int) $totalScore);
     $conn->commit();
     quizResponse(['status' => 'success', 'quiz_status' => $status, 'score' => $score, 'total_score' => $totalScore, 'required_score' => $requiredScore, 'pending_review' => $hasEssay && !$cheatingDetected, 'cheating_detected' => $cheatingDetected, 'message' => $cheatingDetected ? 'ระบบส่งข้อสอบอัตโนมัติและบันทึกผลไม่ผ่าน เนื่องจากสลับแท็บครบ 3 ครั้ง' : 'บันทึกผลสอบเรียบร้อย']);
 } catch (Throwable $e) {

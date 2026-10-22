@@ -26,7 +26,7 @@ function graduationTranscriptRows(PDO $conn, string $studentId): array
          FROM public.student_courses sc
          JOIN public.courses c ON c.course_id = sc.course_id
          LEFT JOIN public.lessons l ON l.course_id = c.course_id
-         LEFT JOIN public.lesson_progress lp ON lp.student_id = sc.student_id AND lp.lesson_id = l.lesson_id
+         LEFT JOIN public.lesson_progress_summary lp ON lp.student_id = sc.student_id AND lp.lesson_id = l.lesson_id
          LEFT JOIN LATERAL (
              SELECT a.status, a.score, a.total_score
              FROM public.quiz_attempts a

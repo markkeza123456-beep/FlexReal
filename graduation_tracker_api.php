@@ -42,7 +42,7 @@ function graduationSummary(PDO $conn, string $studentId): array
             LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = ac.curriculum_id AND cc.course_id = c.course_id
             LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_enrollment_id
             LEFT JOIN public.lessons l ON l.course_id = c.course_id
-            LEFT JOIN public.lesson_progress lp
+            LEFT JOIN public.lesson_progress_summary lp
                    ON lp.student_id = :student_progress_id AND lp.lesson_id = l.lesson_id
             LEFT JOIN LATERAL (
                 SELECT a.status, a.score, a.total_score

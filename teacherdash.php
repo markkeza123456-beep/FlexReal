@@ -225,7 +225,7 @@ $studentStmt = $conn->prepare("
     INNER JOIN public.courses c ON c.course_id = sc.course_id
     INNER JOIN public.course_teachers ct ON ct.course_id = c.course_id AND ct.teacher_id = :teacher_id
     LEFT JOIN public.lessons l ON l.course_id = c.course_id
-    LEFT JOIN public.lesson_progress lp ON lp.student_id = st.user_id AND lp.lesson_id = l.lesson_id
+    LEFT JOIN public.lesson_progress_summary lp ON lp.student_id = st.user_id AND lp.lesson_id = l.lesson_id
     LEFT JOIN LATERAL (SELECT attempt_id, score, total_score, status FROM public.quiz_attempts a WHERE a.student_id = st.user_id AND a.lesson_id = l.lesson_id ORDER BY a.submitted_at DESC LIMIT 1) qa ON true
     GROUP BY st.user_id, st.full_name, st.student_level
     ORDER BY st.full_name ASC
@@ -249,7 +249,7 @@ $lessonScoreStmt = $conn->prepare("
     INNER JOIN public.courses c ON c.course_id = sc.course_id
     INNER JOIN public.course_teachers ct ON ct.course_id = c.course_id AND ct.teacher_id = :teacher_id
     INNER JOIN public.lessons l ON l.course_id = c.course_id
-    LEFT JOIN public.lesson_progress lp ON lp.student_id = st.user_id AND lp.lesson_id = l.lesson_id
+    LEFT JOIN public.lesson_progress_summary lp ON lp.student_id = st.user_id AND lp.lesson_id = l.lesson_id
     LEFT JOIN LATERAL (
         SELECT attempt_id, score, total_score
         FROM public.quiz_attempts a
