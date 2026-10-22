@@ -35,6 +35,9 @@ $kpis = $conn->query("SELECT
     COUNT(*) FILTER (WHERE role IN ('staff', 'director')) AS staff
     FROM public.users")->fetch(PDO::FETCH_ASSOC) ?: [];
 $courseCount = (int) $conn->query('SELECT COUNT(*) FROM public.courses')->fetchColumn();
+$dailyVisitors = (int) $conn->query("SELECT COUNT(DISTINCT user_id)
+    FROM public.site_visits
+    WHERE entered_at::date = CURRENT_DATE")->fetchColumn();
 
 $courseRows = $conn->query("SELECT c.name, COUNT(sc.student_id) FILTER (WHERE sc.status = 'active') AS student_count
     FROM public.courses c
@@ -42,31 +45,8 @@ $courseRows = $conn->query("SELECT c.name, COUNT(sc.student_id) FILTER (WHERE sc
     GROUP BY c.course_id, c.name
     ORDER BY COUNT(sc.student_id) FILTER (WHERE sc.status = 'active') DESC, c.name")->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
-$completionRows = $conn->query("WITH student_lesson_totals AS (
-    SELECT s.user_id AS student_id,
-           COUNT(l.lesson_id)::int AS total_lessons,
-           COUNT(l.lesson_id) FILTER (WHERE COALESCE(lp.is_completed, FALSE))::int AS completed_lessons,
-           COUNT(l.lesson_id) FILTER (WHERE COALESCE(lp.is_completed, FALSE)
-               OR COALESCE(lp.document_progress_percent, 0) > 0
-               OR COALESCE(lp.video_progress_percent, 0) > 0
-               OR COALESCE(lp.opened_count, 0) > 0
-               OR COALESCE(lp.video_open_count, 0) > 0)::int AS started_lessons
-    FROM public.students s
-    LEFT JOIN public.student_courses sc ON sc.student_id = s.user_id AND sc.status = 'active'
-    LEFT JOIN public.lessons l ON l.course_id = sc.course_id
-    LEFT JOIN public.lesson_progress_summary lp ON lp.student_id = s.user_id AND lp.lesson_id = l.lesson_id
-    GROUP BY s.user_id
-)
-SELECT CASE
-           WHEN total_lessons > 0 AND completed_lessons = total_lessons THEN 'เรียนจบแล้ว'
-           WHEN started_lessons > 0 THEN 'กำลังเรียน'
-           ELSE 'ยังไม่เริ่มเรียน'
-       END AS status,
-       COUNT(*)::int AS student_count
-FROM student_lesson_totals
-GROUP BY status")->fetchAll(PDO::FETCH_ASSOC) ?: [];
-$completionCounts = ['เรียนจบแล้ว' => 0, 'กำลังเรียน' => 0, 'ยังไม่เริ่มเรียน' => 0];
-foreach ($completionRows as $row) $completionCounts[(string) $row['status']] = (int) $row['student_count'];
+require_once __DIR__ . '/director_graduation_status.php';
+$graduationStatusCounts = directorGraduationStatusCounts($conn);
 
 $inactiveStudents = $conn->query("WITH student_activity AS (
     SELECT s.user_id, s.full_name, s.student_level, s.created_at,
@@ -137,6 +117,7 @@ LIMIT 5")->fetchAll(PDO::FETCH_ASSOC) ?: [];
       <article class="director-kpi"><span>ครูผู้สอน</span><strong><?= number_format((int) ($kpis['teachers'] ?? 0)) ?></strong><small>บัญชีบทบาทอาจารย์</small></article>
       <article class="director-kpi"><span>รายวิชาทั้งหมด</span><strong><?= number_format($courseCount) ?></strong><small>รายการในระบบ</small></article>
       <article class="director-kpi"><span>เจ้าหน้าที่และผู้บริหาร</span><strong><?= number_format((int) ($kpis['staff'] ?? 0)) ?></strong><small>บัญชี staff และ director</small></article>
+      <article class="director-kpi"><span>ผู้ใช้ที่เข้าสู่ระบบวันนี้</span><strong><?= number_format($dailyVisitors) ?></strong><small>นับบัญชีผู้ใช้ไม่ซ้ำจากบันทึกเข้าเว็บไซต์</small></article>
     </section>
 
     <section class="director-panels director-analytics">
@@ -147,14 +128,21 @@ LIMIT 5")->fetchAll(PDO::FETCH_ASSOC) ?: [];
       </article>
 
       <article class="director-panel director-completion-panel">
-        <div class="director-panel-heading"><div><h2>สัดส่วนความคืบหน้าการเรียน</h2><p>จัดกลุ่มจากบทเรียนในรายวิชาที่ลงทะเบียนอยู่</p></div></div>
+        <div class="director-panel-heading"><div><h2>สถานะนักเรียนและการยื่นจบ</h2><p>แบ่งนักเรียนตามสถานะการเรียนและสถานะคำร้องจบการศึกษา</p></div></div>
         <div class="director-doughnut-wrap"><canvas id="completionChart" aria-label="กราฟสัดส่วนการเรียนจบ"></canvas></div>
         <div class="director-chart-legend">
-          <?php foreach ($completionCounts as $label => $count): ?>
+          <?php foreach ($graduationStatusCounts as $label => $count): ?>
             <span><?= directorEscape($label) ?><strong><?= number_format($count) ?> คน</strong></span>
           <?php endforeach; ?>
         </div>
       </article>
+    </section>
+
+    <section class="director-graduation-kpis" aria-label="สถานะคำขอจบการศึกษา">
+      <article class="director-graduation-kpi is-approved"><span>🟢 อนุมัติแล้ว (ออกใบได้)</span><strong><?= number_format($graduationStatusCounts['อนุมัติแล้ว (ออกใบได้)']) ?></strong><small>นักเรียนที่เจ้าหน้าที่อนุมัติแล้ว</small></article>
+      <article class="director-graduation-kpi is-pending"><span>🟡 รออนุมัติ</span><strong><?= number_format($graduationStatusCounts['รออนุมัติ']) ?></strong><small>ส่งคำร้องแล้ว รอเจ้าหน้าที่พิจารณา</small></article>
+      <article class="director-graduation-kpi is-eligible"><span>🔴 รอยื่นจบ</span><strong><?= number_format($graduationStatusCounts['รอยื่นจบ']) ?></strong><small>ผ่านเกณฑ์วิชาบังคับ แต่ยังไม่ส่งคำร้อง</small></article>
+      <article class="director-graduation-kpi is-normal"><span>🔵 นักเรียนปกติ</span><strong><?= number_format($graduationStatusCounts['นักเรียนปกติ']) ?></strong><small>ยังไม่ผ่านเกณฑ์ยื่นจบและไม่มีคำร้องค้าง</small></article>
     </section>
 
     <section class="director-panels director-follow-up">
@@ -201,7 +189,7 @@ LIMIT 5")->fetchAll(PDO::FETCH_ASSOC) ?: [];
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script>
     const courseRows = <?= json_encode($courseRows, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
-    const completionCounts = <?= json_encode($completionCounts, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+    const graduationStatusCounts = <?= json_encode($graduationStatusCounts, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
     const chartCanvas = document.getElementById('courseEnrollmentChart');
     if (chartCanvas && window.Chart) {
       new Chart(chartCanvas, {
@@ -235,8 +223,8 @@ LIMIT 5")->fetchAll(PDO::FETCH_ASSOC) ?: [];
       new Chart(completionCanvas, {
         type: 'doughnut',
         data: {
-          labels: Object.keys(completionCounts),
-          datasets: [{ data: Object.values(completionCounts), backgroundColor: ['#50a879', '#4191dd', '#d9e3ef'], borderColor: '#fff', borderWidth: 3 }]
+          labels: Object.keys(graduationStatusCounts),
+          datasets: [{ data: Object.values(graduationStatusCounts), backgroundColor: ['#10B981', '#F59E0B', '#EF4444', '#3B82F6'], borderColor: '#fff', borderWidth: 3 }]
         },
         options: { maintainAspectRatio: false, responsive: true, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { color: '#52647d', padding: 18, usePointStyle: true } } } }
       });

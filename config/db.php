@@ -1,5 +1,7 @@
 <?php
 
+date_default_timezone_set('Asia/Bangkok');
+
 /** Read SAPI/process environment sources without assuming variables_order includes ENV. */
 function flexrealProcessEnv(string $key): ?string
 {
@@ -111,6 +113,7 @@ try {
     ]);
     $dbConnectMs = (microtime(true) - $dbConnectStartedAt) * 1000;
     $conn->exec('SET client_encoding TO \'UTF8\'');
+    $conn->exec("SET TIME ZONE 'Asia/Bangkok'");
     $conn->exec('SET statement_timeout TO 8000');
 } catch (PDOException $e) {
     error_log('Supabase database connection failed: ' . $e->getMessage());

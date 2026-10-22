@@ -64,27 +64,8 @@ $courseChartRows = $conn->query("SELECT c.name, COUNT(sc.student_id) FILTER (WHE
     LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id
     GROUP BY c.course_id, c.name
     ORDER BY COUNT(sc.student_id) FILTER (WHERE sc.status = 'active') DESC, c.name")->fetchAll(PDO::FETCH_ASSOC) ?: [];
-$completionRows = $conn->query("WITH student_lesson_totals AS (
-    SELECT s.user_id,
-           COUNT(l.lesson_id)::int AS total_lessons,
-           COUNT(l.lesson_id) FILTER (WHERE COALESCE(lp.is_completed, FALSE))::int AS completed_lessons,
-           COUNT(l.lesson_id) FILTER (WHERE COALESCE(lp.is_completed, FALSE)
-               OR COALESCE(lp.document_progress_percent, 0) > 0
-               OR COALESCE(lp.video_progress_percent, 0) > 0
-               OR COALESCE(lp.opened_count, 0) > 0
-               OR COALESCE(lp.video_open_count, 0) > 0)::int AS started_lessons
-    FROM public.students s
-    LEFT JOIN public.student_courses sc ON sc.student_id = s.user_id AND sc.status = 'active'
-    LEFT JOIN public.lessons l ON l.course_id = sc.course_id
-    LEFT JOIN public.lesson_progress_summary lp ON lp.student_id = s.user_id AND lp.lesson_id = l.lesson_id
-    GROUP BY s.user_id
-)
-SELECT CASE WHEN total_lessons > 0 AND completed_lessons = total_lessons THEN 'เรียนจบแล้ว'
-            WHEN started_lessons > 0 THEN 'กำลังเรียน' ELSE 'ยังไม่เริ่มเรียน' END AS status,
-       COUNT(*)::int AS student_count
-FROM student_lesson_totals GROUP BY status")->fetchAll(PDO::FETCH_ASSOC) ?: [];
-$completionCounts = ['เรียนจบแล้ว' => 0, 'กำลังเรียน' => 0, 'ยังไม่เริ่มเรียน' => 0];
-foreach ($completionRows as $row) $completionCounts[(string) $row['status']] = (int) $row['student_count'];
+require_once __DIR__ . '/director_graduation_status.php';
+$graduationStatusCounts = directorGraduationStatusCounts($conn);
 $inactiveStudents = $conn->query("WITH student_activity AS (
     SELECT s.user_id, s.full_name, s.student_level, s.created_at,
            MAX(COALESCE(lp.last_activity_at, lp.updated_at)) AS last_learning_activity,
@@ -146,7 +127,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
       </section>
       <section class="report-panels">
         <article class="panel"><div class="panel-heading"><h2>นักเรียนลงทะเบียนรายวิชา</h2><p>นับเฉพาะการลงทะเบียนที่ยังใช้งานอยู่</p></div><div class="chart-wrap"><canvas id="courseChart"></canvas></div></article>
-        <article class="panel"><div class="panel-heading"><h2>สัดส่วนความคืบหน้าการเรียน</h2><p>แบ่งตามสถานะการเรียนของนักเรียน</p></div><div class="donut-wrap"><canvas id="completionChart"></canvas></div><div class="legend"><?php foreach ($completionCounts as $label => $count): ?><span><?= directorReportEscape($label) ?><strong><?= number_format($count) ?> คน</strong></span><?php endforeach; ?></div></article>
+        <article class="panel"><div class="panel-heading"><h2>สถานะการยื่นจบการศึกษา</h2><p>แสดงเฉพาะนักเรียนในขั้นตอนการยื่นจบ</p></div><div class="donut-wrap"><canvas id="completionChart"></canvas></div><div class="legend"><?php foreach ($graduationStatusCounts as $label => $count): ?><span><?= directorReportEscape($label) ?><strong><?= number_format($count) ?> คน</strong></span><?php endforeach; ?></div></article>
       </section>
       <section class="lower-panels">
         <article class="panel"><div class="panel-heading"><h2>นักเรียนที่ไม่มีความเคลื่อนไหวเกิน 7 วัน</h2></div>
@@ -178,10 +159,10 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script>
     const courseRows = <?= json_encode($courseChartRows, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
-    const completionCounts = <?= json_encode($completionCounts, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+    const graduationStatusCounts = <?= json_encode($graduationStatusCounts, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
     if (window.Chart) {
       new Chart(document.getElementById('courseChart'), {type:'bar',data:{labels:courseRows.map(row=>row.name),datasets:[{data:courseRows.map(row=>Number(row.student_count)),backgroundColor:'rgba(65,145,221,.78)',borderColor:'#3576b9',borderWidth:1,borderRadius:6}]},options:{indexAxis:'y',maintainAspectRatio:false,responsive:true,animation:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0,color:'#52647d'},grid:{color:'#e8eff7'}},y:{grid:{display:false},ticks:{color:'#52647d'}}}}});
-      new Chart(document.getElementById('completionChart'), {type:'doughnut',data:{labels:Object.keys(completionCounts),datasets:[{data:Object.values(completionCounts),backgroundColor:['#50a879','#4191dd','#d9e3ef'],borderColor:'#fff',borderWidth:3}]},options:{maintainAspectRatio:false,responsive:true,animation:false,cutout:'68%',plugins:{legend:{position:'bottom',labels:{color:'#52647d',padding:12,usePointStyle:true,font:{size:10}}}}}});
+      new Chart(document.getElementById('completionChart'), {type:'doughnut',data:{labels:Object.keys(graduationStatusCounts),datasets:[{data:Object.values(graduationStatusCounts),backgroundColor:['#10B981','#F59E0B','#EF4444','#3B82F6'],borderColor:'#fff',borderWidth:3}]},options:{maintainAspectRatio:false,responsive:true,animation:false,cutout:'68%',plugins:{legend:{position:'bottom',labels:{color:'#52647d',padding:12,usePointStyle:true,font:{size:10}}}}}});
     }
     window.addEventListener('load', () => setTimeout(() => window.print(), 500));
   </script>

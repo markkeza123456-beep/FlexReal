@@ -890,7 +890,8 @@ body {
   border-radius: var(--radius-sm); padding: 12px 24px;
   font-size: .88rem; opacity: 0; pointer-events: none;
   transition: opacity .3s, transform .3s; z-index: 300;
-  white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  max-width: min(620px, calc(100vw - 32px)); max-height: 40vh; overflow: auto;
+  overflow-wrap: anywhere; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,.5);
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.success { border-color: var(--green); color: var(--green); }

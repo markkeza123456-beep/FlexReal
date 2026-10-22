@@ -345,7 +345,7 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .btn-graduation-request:disabled { cursor:default; opacity:.7; }
 .btn-graduation-request.is-pending:disabled { background:#94a3b8; color:#fff; opacity:1; }
 .btn-graduation-request[hidden] { display:none; }
-.btn-graduation-download { display:inline-block; border-radius:9px; padding:.65rem 1rem; background:var(--brand-400); color:var(--brand-700); font-size:.85rem; text-decoration:none; }
+.btn-graduation-download { display:inline-block; border-radius:9px; padding:.65rem 1rem; font-size:.85rem; text-decoration:none; }
 .btn-graduation-download[hidden] { display:none; }
 .course-transfer-status { display:inline-block; padding:.3rem .6rem; border-radius:999px; background:rgba(34,197,94,.13); color:#15803d; font-size:.78rem; font-weight:600; }
 .course-passed-status { color:#15803d; font-weight:600; }

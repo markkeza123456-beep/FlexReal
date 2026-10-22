@@ -80,14 +80,16 @@
     }
     toast.textContent = message;
     toast.className = `toast show ${type}`;
-    setTimeout(() => toast.classList.remove('show'), 3000);
+    setTimeout(() => toast.classList.remove('show'), type === 'error' ? 10000 : 3000);
   }
 
   async function fetchJson(url, options = {}) {
     const response = await fetch(url, options);
     const result = await response.json();
     if (!response.ok) {
-      throw new Error(result.message || 'Request failed');
+      const error = new Error(result.message || 'Request failed');
+      error.payload = result;
+      throw error;
     }
     return result;
   }
@@ -209,13 +211,17 @@
   });
 
   document.getElementById('graduationRequestsList')?.addEventListener('click', async event => {
-    const button = event.target.closest('[data-approve-graduation]');
+    const button = event.target.closest('[data-approve-graduation], [data-retry-graduation]');
     if (!button || button.disabled) return;
-    const requestId = button.dataset.approveGraduation;
-    if (!window.confirm('ยืนยันอนุมัติจบการศึกษาและออกใบสรุปผลการเรียน PDF?')) return;
+    const isRetry = button.hasAttribute('data-retry-graduation');
+    const requestId = isRetry ? button.dataset.retryGraduation : button.dataset.approveGraduation;
+    const confirmMessage = isRetry
+      ? 'ยืนยันลองสร้างและอัปโหลด PDF สำหรับคำขอที่อนุมัติแล้วอีกครั้ง?'
+      : 'ยืนยันอนุมัติจบการศึกษาและออกใบสรุปผลการเรียน PDF?';
+    if (!window.confirm(confirmMessage)) return;
     button.disabled = true;
     const formData = new FormData();
-    formData.append('action', 'approve');
+    formData.append('action', isRetry ? 'retry_pdf' : 'approve');
     formData.append('request_id', requestId);
     formData.append('csrf_token', graduationReviewCsrf);
     try {
@@ -223,7 +229,11 @@
       showToast(result.message || 'อนุมัติเรียบร้อย', 'success');
       await loadGraduationRequests();
     } catch (error) {
-      button.disabled = false;
+      if (error.payload?.approved) {
+        await loadGraduationRequests();
+      } else {
+        button.disabled = false;
+      }
       showToast(error.message || 'อนุมัติไม่สำเร็จ', 'error');
     }
   });
@@ -249,10 +259,14 @@
           <td>${Number(course.transferred_lessons || 0) > 0 ? `<span class="graduation-grade-tr">TR · เทียบโอน (${escapeHtml(course.transfer_summary)})</span>` : escapeHtml(course.grade_label || '-')}</td>
         </tr>`).join('');
         const eligible = Boolean(request.eligible);
+        const retryPdf = request.status === 'approved';
+        const actionAttribute = retryPdf
+          ? `data-retry-graduation="${escapeHtml(request.request_id)}"`
+          : `data-approve-graduation="${escapeHtml(request.request_id)}"`;
         return `<article class="form-card graduation-request-card">
-          <div class="graduation-request-heading"><div><h2>${escapeHtml(request.student_name || 'นักเรียน')}</h2><p>รหัส ${escapeHtml(request.student_id)} · ส่งเมื่อ ${escapeHtml(formatRegistrationDate(request.submitted_at))}</p></div><strong>${Number(request.total_credits || 0).toLocaleString('th-TH')} หน่วยกิต</strong></div>
+          <div class="graduation-request-heading"><div><h2>${escapeHtml(request.student_name || 'นักเรียน')}</h2><p>รหัส ${escapeHtml(request.student_id)} · ส่งเมื่อ ${escapeHtml(formatRegistrationDate(request.submitted_at))}${retryPdf ? ' · อนุมัติแล้ว รอสร้าง PDF' : ''}</p></div><strong>${Number(request.total_credits || 0).toLocaleString('th-TH')} หน่วยกิต</strong></div>
           <div class="table-wrap"><table class="data-table"><thead><tr><th>รหัสวิชา</th><th>รายวิชา</th><th>หน่วยกิต</th><th>ผลการเรียน</th></tr></thead><tbody>${rows || '<tr><td colspan="4">ไม่พบรายวิชา</td></tr>'}</tbody></table></div>
-          <div class="graduation-request-actions">${eligible ? '<span>ตรวจสอบครบทุกวิชาแล้ว</span>' : '<span class="graduation-ineligible">ยังมีวิชาที่ไม่ผ่าน จึงอนุมัติไม่ได้</span>'}<button type="button" class="btn-primary" data-approve-graduation="${escapeHtml(request.request_id)}" ${eligible ? '' : 'disabled'}>อนุมัติและออก PDF</button></div>
+          <div class="graduation-request-actions">${retryPdf ? '<span class="graduation-ineligible">อนุมัติแล้ว แต่ไฟล์ PDF ยังไม่พร้อม</span>' : eligible ? '<span>ตรวจสอบครบทุกวิชาแล้ว</span>' : '<span class="graduation-ineligible">ยังมีวิชาที่ไม่ผ่าน จึงอนุมัติไม่ได้</span>'}<button type="button" class="btn-primary" ${actionAttribute} ${eligible || retryPdf ? '' : 'disabled'}>${retryPdf ? 'ลองออก PDF อีกครั้ง' : 'อนุมัติและออก PDF'}</button></div>
         </article>`;
       }).join('');
     } catch (error) {

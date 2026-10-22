@@ -68,6 +68,19 @@ try {
         $_SESSION['current_student_id'] = $user['student_id'] ?? null;
     }
 
+    try {
+        $ipAddress = filter_var($_SERVER['REMOTE_ADDR'] ?? '', FILTER_VALIDATE_IP) ?: null;
+        $visit = $conn->prepare('INSERT INTO public.site_visits (user_id, user_role, ip_address) VALUES (:user_id, :role, CAST(:ip_address AS inet)) RETURNING visit_id');
+        $visit->execute([
+            ':user_id' => (string) $user['user_id'],
+            ':role' => $role,
+            ':ip_address' => $ipAddress,
+        ]);
+        $_SESSION['site_visit_id'] = (int) $visit->fetchColumn();
+    } catch (Throwable $trackingError) {
+        error_log('[site_visits] login tracking failed: ' . get_class($trackingError));
+    }
+
     $redirect = match ($role) {
         'parent' => 'parent_dashboard.php',
         'teacher' => 'teacherdash.php',

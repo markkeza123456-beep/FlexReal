@@ -108,18 +108,18 @@ function generateGraduationTranscriptPdf(array $student, array $courseRows, floa
     $mpdf->SetHTMLFooter('<div style="text-align:center;color:#64748b;font-size:9pt">Flexible Learning Hub · หน้า {PAGENO}/{nbpg}</div>');
 
     $html = '<html lang="th"><head><meta charset="UTF-8"><style>
-        body{font-family:sarabun;font-size:12pt;color:#303F9F;background:#9FA8DA}
+        body{font-family:sarabun;font-size:12pt;color:#203451;background:#FFFFFF}
         h1{text-align:center;font-size:23pt;margin:0;color:#303F9F}
         .subtitle{text-align:center;color:#63758a;margin:0 0 16px}
         .student{border:1px solid #9FA8DA;background:#fff;padding:10px 14px;margin:14px 0}
         .student td{padding:3px 8px}.label{color:#64748b;width:115px}
         table.courses{width:100%;border-collapse:collapse;margin-top:8px}
-        .courses th{background:#5C6BC0;color:#303F9F;font-weight:bold;padding:8px 6px;border:1px solid #5C6BC0}
+        .courses th{background:#FFFFFF;color:#203451;font-weight:bold;padding:8px 6px;border:1px solid #9FA8DA}
         .courses td{padding:7px 6px;border:1px solid #9FA8DA}
         .center{text-align:center}.right{text-align:right}
-        .grade-tr{color:#303F9F;background:#9FA8DA;font-weight:bold}
+        .grade-tr{color:#203451;background:#FFFFFF;font-weight:bold}
         .grade-pass{color:#166534;font-weight:bold}.grade-fail{color:#b91c1c;font-weight:bold}
-        .summary{margin-top:14px;padding:10px 12px;background:#9FA8DA;border-left:4px solid #5C6BC0;font-size:13pt}
+        .summary{margin-top:14px;padding:10px 12px;background:#FFFFFF;border-left:4px solid #5C6BC0;font-size:13pt}
         .signatures{margin-top:40px;width:100%}.signatures td{text-align:center;width:50%;padding-top:22px}
         .signature-line{border-top:1px solid #64748b;margin:0 30px;padding-top:5px}
         .note{font-size:9pt;color:#64748b;margin-top:20px}

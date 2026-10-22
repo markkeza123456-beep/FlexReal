@@ -4,9 +4,11 @@ function transcriptStorageConfig(): array
 {
     global $env, $supabaseUrl;
     $url = rtrim((string) ($env['SUPABASE_URL'] ?? $supabaseUrl ?? ''), '/');
-    $serviceKey = trim((string) ($env['SUPABASE_SERVICE_ROLE_KEY'] ?? ''));
-    $bucket = trim((string) ($env['SUPABASE_TRANSCRIPT_BUCKET'] ?? 'transcripts'));
-    if ($url === '' || $serviceKey === '' || $bucket === '') throw new RuntimeException('Transcript Storage is not configured');
+    $serviceKey = trim((string) ($env['SUPABASE_SERVICE_ROLE_KEY'] ?? $env['SUPABASE_SERVICE_KEY'] ?? ''));
+    $bucket = trim((string) ($env['SUPABASE_TRANSCRIPT_BUCKET'] ?? $env['BUCKET_NAME'] ?? 'transcripts'));
+    if ($url === '') throw new RuntimeException('ไม่พบ SUPABASE_URL ในการตั้งค่าฝั่งเซิร์ฟเวอร์');
+    if ($serviceKey === '') throw new RuntimeException('ไม่พบ SUPABASE_SERVICE_ROLE_KEY ในการตั้งค่าฝั่งเซิร์ฟเวอร์');
+    if ($bucket === '') throw new RuntimeException('ไม่พบชื่อ Storage bucket');
     return [$url, $serviceKey, $bucket];
 }
 
@@ -66,7 +68,16 @@ function transcriptStorageUpload(string $bucket, string $objectPath, string $loc
 function transcriptStorageUploadBytes(string $bucket, string $objectPath, string $body, string $mimeType): void
 {
     $response = transcriptStorageRequest('POST', $bucket, $objectPath, $body, $mimeType);
-    if ($response['status'] < 200 || $response['status'] >= 300) throw new RuntimeException('Storage upload rejected with HTTP ' . $response['status']);
+    if ($response['status'] < 200 || $response['status'] >= 300) {
+        $payload = json_decode((string) $response['body'], true);
+        $detail = is_array($payload)
+            ? (string) ($payload['message'] ?? $payload['error_description'] ?? $payload['error'] ?? '')
+            : trim(strip_tags((string) $response['body']));
+        if ($detail === '') $detail = 'ไม่ได้รับรายละเอียดจาก Storage API';
+        if (function_exists('mb_substr')) $detail = mb_substr($detail, 0, 450, 'UTF-8');
+        else $detail = substr($detail, 0, 450);
+        throw new RuntimeException('Supabase Storage upload ถูกปฏิเสธ (HTTP ' . $response['status'] . '): ' . $detail);
+    }
 }
 
 function transcriptStorageDelete(string $bucket, string $objectPath): void

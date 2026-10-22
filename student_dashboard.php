@@ -80,7 +80,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
                     <div class="graduation-tracker-footer">
                         <span id="graduationProgressPercent">0%</span>
                         <button type="button" id="graduationRequestBtn" class="btn-graduation-request" hidden>ยื่นขอจบการศึกษา</button>
-                        <a id="graduationDownloadLink" class="btn-graduation-download" href="#" hidden>ดาวน์โหลดใบสรุปผลการเรียน PDF</a>
+                        <a id="graduationDownloadLink" class="btn-primary btn-graduation-download" href="#" hidden>ดาวน์โหลดใบสรุปผลการเรียน PDF</a>
                     </div>
                 </section>
 
