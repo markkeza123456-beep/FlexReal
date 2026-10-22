@@ -609,6 +609,21 @@ body {
   margin-right: auto;
 }
 .graduation-requests-page > .graduation-review-message { max-width: 1000px; }
+.graduation-requests-page > .page-header { margin-bottom: 24px; }
+.graduation-requests-page .page-title {
+  color: var(--brand-700);
+  font-family: 'Kanit', 'IBM Plex Sans Thai', sans-serif;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.3;
+}
+.graduation-requests-page .page-sub {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: .95rem;
+  line-height: 1.6;
+}
 .graduation-request-card { display: grid; gap: 14px; }
 .graduation-request-heading, .graduation-request-actions { display:flex; align-items:center; justify-content:space-between; gap:14px; }
 .graduation-request-heading h2 { margin:0; font-size:1.05rem; }
