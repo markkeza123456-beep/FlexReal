@@ -490,7 +490,7 @@
           <td style="color:var(--text-secondary)">${member.email || '-'}</td>
           <td style="color:var(--text-secondary)">${member.phone || '-'}</td>
           <td><span class="badge ${member.role === 'Staff' ? 'required' : 'draft'}">${roleName[member.role] || member.role}</span></td>
-          <td><span class="badge ${member.status === 'active' ? 'active' : 'draft'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
+          <td><span class="badge ${member.status === 'active' ? 'active' : 'suspended'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
           <td>${formatRegistrationDate(member.registered_at)}</td>
           <td>${formatRegistrationDate(member.updated_at)}</td>
           <td>${escapeHtml(member.created_by_name || '-')}</td>
@@ -498,7 +498,9 @@
           <td>
             <div class="action-btns">
               <button type="button" class="btn-icon edit" onclick="editMember('${member.id}')">แก้ไข</button>
-              <button type="button" class="btn-icon del" onclick="deleteMember('${escapeHtml(member.id)}')">ลบถาวร</button>
+              ${member.status === 'inactive'
+                ? `<button type="button" class="btn-icon del" onclick="permanentlyDeleteMember('${escapeHtml(member.id)}')">ลบถาวร</button>`
+                : `<button type="button" class="btn-icon suspend" onclick="deleteMember('${escapeHtml(member.id)}')">ระงับบัญชี</button>`}
             </div>
           </td>
         </tr>

@@ -783,7 +783,14 @@ try {
         case 'deleteMember':
             $memberId = trim((string) ($_POST['id'] ?? ''));
             if ($memberId === '') { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
-            deleteMemberRecord($conn, $memberId, (string) $_SESSION['user_id']);
+            if ($memberId === (string) $_SESSION['user_id']) { jsonResponse(['status' => 'error', 'message' => 'ไม่สามารถระงับบัญชีที่กำลังใช้งานอยู่ได้'], 400); }
+            $statement = $conn->prepare("UPDATE public.users SET account_status = 'inactive', updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id");
+            $statement->execute([':id' => $memberId, ':updated_by' => (string) $_SESSION['user_id']]);
+            if ($statement->rowCount() === 0) {
+                $exists = $conn->prepare('SELECT 1 FROM public.users WHERE user_id = :id');
+                $exists->execute([':id' => $memberId]);
+                if (!$exists->fetchColumn()) { jsonResponse(['status' => 'error', 'message' => 'ไม่พบสมาชิกที่ต้องการระงับ'], 404); }
+            }
             jsonResponse(['status' => 'success']);
             break;
 
@@ -792,6 +799,12 @@ try {
             $actorId = (string) $_SESSION['user_id'];
             if ($memberId === '') { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
             if ($memberId === $actorId) { jsonResponse(['status' => 'error', 'message' => 'ไม่สามารถลบบัญชีที่กำลังใช้งานอยู่ได้'], 400); }
+
+            $statusStmt = $conn->prepare('SELECT account_status FROM public.users WHERE user_id = :id');
+            $statusStmt->execute([':id' => $memberId]);
+            $accountStatus = $statusStmt->fetchColumn();
+            if ($accountStatus === false) { jsonResponse(['status' => 'error', 'message' => 'ไม่พบบัญชีผู้ใช้งาน'], 404); }
+            if ($accountStatus !== 'inactive') { jsonResponse(['status' => 'error', 'message' => 'ลบถาวรได้เฉพาะบัญชีที่ระงับแล้ว'], 409); }
 
             deleteMemberRecord($conn, $memberId, $actorId);
             jsonResponse(['status' => 'success']);
