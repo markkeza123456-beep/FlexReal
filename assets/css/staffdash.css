@@ -450,6 +450,23 @@ body {
 }
 .panel-link:hover { color: var(--text-primary); }
 
+.panel-table-scroll {
+  max-height: 360px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.panel-table-scroll .mini-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--brand-200);
+}
+.panel-table-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.panel-table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(var(--brand-400-rgb), .35);
+  border-radius: 8px;
+}
+.panel-table-scroll::-webkit-scrollbar-track { background: transparent; }
 
 .mini-table { width: 100%; border-collapse: collapse; }
 .mini-table th {
