@@ -128,25 +128,42 @@ header('Content-Type: text/html; charset=utf-8');
 <html lang="th">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title>
   <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
   <style>
-    body { margin: 0; color: #24303b; font-family: "IBM Plex Sans Thai", system-ui, sans-serif; background: #f7f8fa; }
-    header { display:flex; gap:12px; align-items:center; justify-content:space-between; padding: 12px 20px; background: #fff; border-bottom: 1px solid #e8eaed; font-weight: 700; }
+    :root { --pdf-toolbar-height: 58px; --pdf-safe-top: env(safe-area-inset-top, 0px); --pdf-safe-bottom: env(safe-area-inset-bottom, 0px); }
+    * { box-sizing:border-box; }
+    html, body { width:100%; height:100%; min-height:100%; }
+    body { display:flex; flex-direction:column; margin:0; color:#24303b; font-family:"IBM Plex Sans Thai",system-ui,sans-serif; background:#525a67; overflow:hidden; }
+    .reader-header { display:flex; flex:0 0 auto; gap:12px; align-items:center; justify-content:space-between; min-height:var(--pdf-toolbar-height); padding:8px 58px 8px 14px; padding-top:max(8px, var(--pdf-safe-top)); background:#fff; border-bottom:1px solid #e8eaed; font-weight:700; }
     .header-title { display:flex; flex-direction:column; gap:2px; min-width:0; }.header-title > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    main { max-width: 980px; min-height: calc(100vh - 59px); margin: auto; padding: 20px; box-sizing: border-box; }
-    .pdf-reader { height:calc(100vh - 99px); overflow-y:auto; border:1px solid #d8dee9; border-radius:8px; background:#525a67; box-shadow:0 8px 26px rgba(15,23,42,.16); }
-    .pdf-pages { display:flex; flex-direction:column; align-items:center; gap:18px; padding:18px; }
-    .pdf-page { display:block; max-width:100%; height:auto; background:#fff; box-shadow:0 2px 12px rgba(15,23,42,.3); }
+    .pdf-toolbar { display:flex; flex:0 0 auto; align-items:center; gap:6px; }
+    .pdf-toolbar button { min-width:44px; min-height:44px; border:1px solid #d2d9e5; border-radius:9px; padding:7px 10px; background:#fff; color:#24303b; font:inherit; font-size:15px; cursor:pointer; touch-action:manipulation; }
+    .pdf-toolbar button:focus-visible { outline:3px solid #69a9e8; outline-offset:2px; }
+    .pdf-toolbar .zoom-label { min-width:48px; text-align:center; font-size:13px; font-weight:600; }
+    .pdf-reader { flex:1 1 auto; width:100%; min-width:0; min-height:0; margin:0; overflow:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; background:#525a67; }
+    .pdf-pages { display:flex; flex-direction:column; align-items:center; gap:18px; width:max-content; min-width:100%; padding:18px; }
+    .pdf-page { display:block; flex:0 0 auto; max-width:none; height:auto; background:#fff; box-shadow:0 2px 12px rgba(15,23,42,.3); }
     .pdf-loading { padding:28px; color:#fff; text-align:center; }
-    .book-image { display:block; max-width:100%; max-height:calc(100vh - 120px); margin:auto; box-shadow:0 8px 26px rgba(15,23,42,.16); background:#fff; }
+    main:not(.pdf-reader) { width:100%; max-width:980px; min-height:calc(100dvh - 58px); margin:auto; padding:20px; }
+    .book-image { display:block; max-width:100%; max-height:calc(100dvh - 120px); margin:auto; box-shadow:0 8px 26px rgba(15,23,42,.16); background:#fff; }
     .notice { padding: 18px; border-radius: 10px; background: #9FA8DA; color: #303F9F; }
+    @media (max-width:768px) {
+      .reader-header { gap:6px; padding-left:max(8px, env(safe-area-inset-left)); padding-right:max(58px, calc(env(safe-area-inset-right, 0px) + 52px)); }
+      .header-title { flex:1 1 auto; }
+      .pdf-toolbar { gap:3px; }
+      .pdf-toolbar button { min-width:42px; min-height:44px; padding:6px 8px; }
+      .pdf-toolbar #pdf-open-window { max-width:112px; line-height:1.15; font-size:12px; }
+      .pdf-pages { align-items:flex-start; gap:12px; padding:12px; }
+      .pdf-page { align-self:center; }
+      .pdf-reader { padding-bottom:var(--pdf-safe-bottom); }
+    }
   </style>
     <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-sidebar-menu-fix">
 </head>
 <body>
-  <header class="reader-header"><div class="header-title"><span><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span></div></header>
+  <header class="reader-header"><div class="header-title"><span><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span></div><?php if ($extension === 'pdf'): ?><div class="pdf-toolbar" role="toolbar" aria-label="เครื่องมืออ่าน PDF"><button type="button" id="pdf-zoom-out" aria-label="ซูมออก">−</button><span class="zoom-label" id="pdf-zoom-label" aria-live="polite">100%</span><button type="button" id="pdf-zoom-in" aria-label="ซูมเข้า">+</button><button type="button" id="pdf-open-window">เปิดเต็มจอ / แท็บใหม่</button></div><?php endif; ?></header>
 <?php if ($extension === 'pdf'): ?>
   <main class="pdf-reader" id="pdf-reader" aria-label="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>"><div id="pdf-pages" class="pdf-pages"><div class="pdf-loading">กำลังเปิดเอกสาร…</div></div></main>
 <?php elseif (in_array($extension, $officeExtensions, true)): ?>
@@ -162,6 +179,16 @@ header('Content-Type: text/html; charset=utf-8');
   const documentPayload = <?= $documentProgressPayload ?>;
   const reader = document.getElementById('pdf-reader');
   const pagesContainer = document.getElementById('pdf-pages');
+  const zoomLabel = document.getElementById('pdf-zoom-label');
+  const zoomOutButton = document.getElementById('pdf-zoom-out');
+  const zoomInButton = document.getElementById('pdf-zoom-in');
+  const openWindowButton = document.getElementById('pdf-open-window');
+  let pdfDocument = null;
+  let baseScale = 1;
+  let zoomFactor = 1;
+  let pageCanvases = [];
+  let renderVersion = 0;
+  let restoredInitialPage = false;
 
   let readingSaveInFlight = false;
   let readingLastSaveAt = 0;
@@ -209,36 +236,67 @@ header('Content-Type: text/html; charset=utf-8');
   }
   window.addEventListener('pagehide', flushReadingProgressOnExit);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushReadingProgressOnExit(); });
+  function updateZoomControls() {
+    if (zoomLabel) zoomLabel.textContent = `${Math.round(baseScale * zoomFactor * 100)}%`;
+    if (zoomOutButton) zoomOutButton.disabled = zoomFactor <= 0.65;
+    if (zoomInButton) zoomInButton.disabled = zoomFactor >= 3;
+  }
+
+  async function renderPages() {
+    const currentVersion = ++renderVersion;
+    const oldScrollTop = reader.scrollTop;
+    const oldScrollRatio = reader.scrollHeight > reader.clientHeight
+      ? oldScrollTop / (reader.scrollHeight - reader.clientHeight)
+      : 0;
+    const renderedCanvases = [];
+    pagesContainer.replaceChildren();
+    for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
+      const pdfPage = await pdfDocument.getPage(pageNumber);
+      if (currentVersion !== renderVersion) return;
+      const scale = baseScale * zoomFactor;
+      const viewport = pdfPage.getViewport({ scale });
+      const pixelRatio = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+      const canvas = document.createElement('canvas');
+      canvas.className = 'pdf-page';
+      canvas.dataset.pageNumber = String(pageNumber);
+      canvas.width = Math.ceil(viewport.width * pixelRatio);
+      canvas.height = Math.ceil(viewport.height * pixelRatio);
+      canvas.style.width = `${Math.ceil(viewport.width)}px`;
+      canvas.style.height = `${Math.ceil(viewport.height)}px`;
+      canvas.setAttribute('aria-label', `หน้า ${pageNumber} จาก ${pdfDocument.numPages}`);
+      pagesContainer.append(canvas);
+      await pdfPage.render({
+        canvasContext: canvas.getContext('2d', { alpha: false }),
+        viewport,
+        transform: pixelRatio === 1 ? null : [pixelRatio, 0, 0, pixelRatio, 0, 0],
+      }).promise;
+      if (currentVersion !== renderVersion) return;
+      renderedCanvases.push(canvas);
+    }
+    pageCanvases = renderedCanvases;
+    if (!restoredInitialPage && documentPayload.resumePage > 1) {
+      const resumeCanvas = pageCanvases[Math.min(pageCanvases.length - 1, documentPayload.resumePage - 1)];
+      if (resumeCanvas) reader.scrollTop = Math.max(0, resumeCanvas.offsetTop - 18);
+    } else {
+      reader.scrollTop = Math.max(0, (reader.scrollHeight - reader.clientHeight) * oldScrollRatio);
+    }
+    restoredInitialPage = true;
+  }
+
   async function renderPdf() {
     if (!reader || !pagesContainer) return;
 
     try {
       const pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs');
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
-      const pdf = await pdfjsLib.getDocument(documentPayload.documentUrl).promise;
-      const pageCanvases = [];
-      pagesContainer.replaceChildren();
-
-      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-        const pdfPage = await pdf.getPage(pageNumber);
-        const unscaledViewport = pdfPage.getViewport({ scale: 1 });
-        const availableWidth = Math.max(320, reader.clientWidth - 36);
-        const viewport = pdfPage.getViewport({ scale: Math.min(2, availableWidth / unscaledViewport.width) });
-        const canvas = document.createElement('canvas');
-        canvas.className = 'pdf-page';
-        canvas.dataset.pageNumber = String(pageNumber);
-        canvas.width = Math.ceil(viewport.width);
-        canvas.height = Math.ceil(viewport.height);
-        canvas.setAttribute('aria-label', `หน้า ${pageNumber} จาก ${pdf.numPages}`);
-        await pdfPage.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        pagesContainer.append(canvas);
-        pageCanvases.push(canvas);
-      }
-
-      if (documentPayload.resumePage > 1) {
-        const resumeCanvas = pageCanvases[Math.min(pageCanvases.length - 1, documentPayload.resumePage - 1)];
-        reader.scrollTop = Math.max(0, resumeCanvas.offsetTop - 18);
-      }
+      pdfDocument = await pdfjsLib.getDocument(documentPayload.documentUrl).promise;
+      const firstPage = await pdfDocument.getPage(1);
+      const baseViewport = firstPage.getViewport({ scale: 1 });
+      const availableWidth = Math.max(240, reader.clientWidth - 24);
+      // Keep phone text readable: never shrink the first render below 115%.
+      baseScale = Math.max(1.15, Math.min(2, availableWidth / baseViewport.width));
+      updateZoomControls();
+      await renderPages();
 
       let highestReadPage = Math.max(documentPayload.resumePage, Math.floor((documentPayload.documentProgressPercent / 100) * pdf.numPages));
       let highestReadPercent = documentPayload.documentProgressPercent;
@@ -269,6 +327,18 @@ header('Content-Type: text/html; charset=utf-8');
       pagesContainer.innerHTML = '<div class="notice">ไม่สามารถเปิดเอกสารได้ กรุณาลองใหม่อีกครั้ง</div>';
     }
   }
+
+  zoomOutButton?.addEventListener('click', () => { zoomFactor = Math.max(0.65, Math.round((zoomFactor - 0.15) * 100) / 100); updateZoomControls(); renderPages(); });
+  zoomInButton?.addEventListener('click', () => { zoomFactor = Math.min(3, Math.round((zoomFactor + 0.15) * 100) / 100); updateZoomControls(); renderPages(); });
+  openWindowButton?.addEventListener('click', async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+      else throw new Error('Fullscreen is unavailable');
+    } catch (_) {
+      window.open(window.location.href, '_blank', 'noopener,noreferrer');
+    }
+  });
 
   renderPdf();
 </script>

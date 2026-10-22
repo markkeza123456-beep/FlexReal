@@ -963,6 +963,72 @@ body.learning-guide-open { min-width: 0; overflow-x: hidden; }
     overflow-y: auto;
 }
 
+/* Dedicated full-screen layout for the lesson PDF.js reader. */
+.modal-overlay.document-preview-overlay {
+    box-sizing: border-box;
+    padding: 16px;
+}
+
+.modal-content.document-preview-modal {
+    display: flex;
+    flex-direction: column;
+    width: min(1100px, 96vw);
+    height: min(92dvh, 1000px);
+    max-width: none;
+    max-height: none;
+    padding: 0;
+    overflow: hidden;
+}
+
+.document-preview-modal #modal-body,
+.document-preview-frame {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    flex: 1 1 auto;
+    border: 0;
+    background: #525a67;
+}
+
+.document-preview-modal .close-modal {
+    z-index: 2;
+    top: 6px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .92);
+    text-align: center;
+    line-height: 34px;
+}
+
+@media (max-width: 768px) {
+    .modal-overlay.document-preview-overlay {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;
+        padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+        align-items: stretch;
+        justify-content: stretch;
+        overflow: hidden;
+    }
+
+    .modal-content.document-preview-modal {
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;
+        border-radius: 0;
+    }
+
+    .document-preview-modal .close-modal {
+        top: max(8px, env(safe-area-inset-top, 0px));
+        right: max(8px, env(safe-area-inset-right, 0px));
+    }
+}
+
 .close-modal {
     position: absolute;
     top: 15px;
