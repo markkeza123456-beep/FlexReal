@@ -36,6 +36,7 @@ try {
         }
         $otp = (string) random_int(100000, 999999);
         require_once __DIR__ . '/registration_mailer.php';
+        $failureStage = 'mail';
         sendStudentPinResetOtp((string) $student['email'], (string) $student['full_name'], $otp);
         $_SESSION['student_pin_reset'] = [
             'otp_hash' => password_hash($otp, PASSWORD_DEFAULT),
@@ -44,6 +45,7 @@ try {
             'attempts' => 0,
             'verified' => false,
         ];
+        $failureStage = 'database';
         studentPinResetResponse('success', 'ส่งรหัสยืนยันไปยังอีเมลที่ลงทะเบียนไว้แล้ว');
     }
 
@@ -85,8 +87,9 @@ try {
     studentPinResetResponse('error', 'คำขอไม่ถูกต้อง', 400);
 } catch (Throwable $error) {
     error_log('[student.pin-reset] ' . get_class($error) . ': ' . $error->getMessage());
-    $message = str_contains($error->getMessage(), 'SMTP_USERNAME and SMTP_PASSWORD')
-        ? 'ระบบส่งอีเมลยังตั้งค่าไม่ครบ กรุณาติดต่อผู้ดูแลระบบ'
-        : 'ส่งรหัสยืนยันไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
-    studentPinResetResponse('error', $message, 500);
+    $failureStage = $failureStage ?? 'database';
+    $message = $failureStage === 'mail'
+        ? (function_exists('flexibleMailFailureMessage') ? flexibleMailFailureMessage($error) : $error->getMessage())
+        : 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+    studentPinResetResponse('error', $message, $failureStage === 'mail' ? 502 : 500);
 }

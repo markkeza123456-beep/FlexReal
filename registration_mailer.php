@@ -69,11 +69,18 @@ function sendFlexibleMessage(string $recipient, string $subject, string $html, s
         if (!is_string($responseBody)) throw new RuntimeException('เชื่อมต่อ Google Apps Script ไม่สำเร็จ กรุณาตรวจ URL และการ Deploy เว็บแอป');
     }
 
+    if ($httpStatus === 404) {
+        throw new RuntimeException('ไม่พบ Google Apps Script deployment (HTTP 404) กรุณาคัดลอก Web app URL ใหม่จาก Manage deployments แล้วอัปเดต GOOGLE_APPS_SCRIPT_URL');
+    }
+    if ($httpStatus === 401 || $httpStatus === 403) {
+        throw new RuntimeException('Google Apps Script ปฏิเสธคำขอ (HTTP ' . $httpStatus . ') กรุณาตั้ง Web app ให้ Execute as: Me และอนุญาตผู้เข้าถึงตามที่ระบบต้องใช้');
+    }
+
     $result = json_decode($responseBody, true);
     if ($httpStatus < 200 || $httpStatus >= 300 || !is_array($result) || ($result['status'] ?? '') !== 'success') {
         $providerMessage = is_array($result) ? trim((string) ($result['message'] ?? '')) : '';
-        if ($providerMessage === '') $providerMessage = trim(substr(strip_tags($responseBody), 0, 300));
-        throw new RuntimeException('Google Apps Script ส่งอีเมลไม่สำเร็จ' . ($providerMessage !== '' ? ': ' . $providerMessage : ' (HTTP ' . ($httpStatus ?: 'ไม่มีคำตอบ') . ')'));
+        if ($providerMessage === '' && !is_array($result)) $providerMessage = 'ได้รับคำตอบที่ไม่ใช่ JSON จาก Google Apps Script';
+        throw new RuntimeException('Google Apps Script ส่งอีเมลไม่สำเร็จ' . ($providerMessage !== '' ? ': ' . substr($providerMessage, 0, 300) : ' (HTTP ' . ($httpStatus ?: 'ไม่มีคำตอบ') . ')'));
     }
 }
 

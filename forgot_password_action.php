@@ -52,7 +52,7 @@ try {
             ':exp' => $expiresAt,
         ]);
 
-        // Keep token changes uncommitted until SMTP accepts the PIN message.
+        // Keep token changes uncommitted until Google Apps Script accepts the PIN message.
         $failureStage = 'mail';
         sendPasswordResetOtp($email, (string) ($user['user_name'] ?? ''), $token);
         $failureStage = 'database';
