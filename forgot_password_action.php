@@ -2,10 +2,10 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-function passwordResetResponse(string $status, string $message, int $httpStatus = 200): never
+function passwordResetResponse(string $status, string $message, int $httpStatus = 200, array $extra = []): never
 {
     http_response_code($httpStatus);
-    echo json_encode(['status' => $status, 'message' => $message], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['status' => $status, 'message' => $message] + $extra, JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -67,11 +67,11 @@ try {
     $_SESSION['password_reset_requested_at'] = time();
     passwordResetResponse('success', 'ส่งรหัส PIN ไปยังอีเมลของคุณแล้ว');
 } catch (Throwable $error) {
-    error_log('[auth.password-reset] request failed (' . get_class($error) . '): ' . $error->getMessage());
-    require_once __DIR__ . '/registration_mailer.php';
+    $errorId = bin2hex(random_bytes(6));
+    error_log('[auth.password-reset] request failed [ref=' . $errorId . '] stage=' . $failureStage . ' type=' . get_class($error) . ' message=' . $error->getMessage());
     $message = $failureStage === 'mail'
         ? flexibleMailFailureMessage($error)
         : 'บันทึกคำขอรีเซ็ตรหัสผ่านไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
     if ($failureStage !== 'mail' && isFlexibleMailDebugEnabled()) $message .= ' (รายละเอียด: ' . substr(trim($error->getMessage()), 0, 400) . ')';
-    passwordResetResponse('error', $message, 500);
+    passwordResetResponse('error', $message, $failureStage === 'mail' ? 502 : 500, ['error_id' => $errorId]);
 }
