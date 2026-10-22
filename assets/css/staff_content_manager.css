@@ -31,6 +31,7 @@ body.content-manager-mode { margin:0; min-height:100vh; padding:24px; background
 .content-manager-existing summary { cursor:pointer; font-weight:600; }
 .content-manager-item { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border:1px solid #d7e0ed; border-radius:10px; background:#fff; overflow-wrap:anywhere; }
 .content-manager-item-main { display:grid; gap:4px; min-width:0; }
+.content-manager-video-main { flex:1 1 auto; }
 .content-manager-item-meta { color:#74839a; font-size:11px; line-height:1.45; }
 .content-manager-item a { color:#385b91; }
 .content-manager-item-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex:0 0 auto; }

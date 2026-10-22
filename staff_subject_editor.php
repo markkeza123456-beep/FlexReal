@@ -16,7 +16,7 @@ $contentManagerMode = (($_GET['view'] ?? '') === 'content');
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/staff_subject_editor.css?v=20261021-login-shared-background" />
-  <?php if ($contentManagerMode): ?><link rel="stylesheet" href="assets/css/staff_content_manager.css?v=20261022-content-manager-v10" /><?php endif; ?>
+  <?php if ($contentManagerMode): ?><link rel="stylesheet" href="assets/css/staff_content_manager.css?v=20261022-content-manager-v13" /><?php endif; ?>
     <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
     <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-sidebar-menu-fix">
 </head>
@@ -229,7 +229,7 @@ $contentManagerMode = (($_GET['view'] ?? '') === 'content');
 
   <div class="toast" id="toast"></div>
   <script src="assets/js/staff_subject_editor.js?v=20261022-unlimited-lessons"></script>
-<?php if ($contentManagerMode): ?><script src="assets/js/staff_content_manager.js?v=20261022-staff-content-manager-v10"></script><?php endif; ?>
+<?php if ($contentManagerMode): ?><script src="assets/js/staff_content_manager.js?v=20261022-staff-content-manager-v13"></script><?php endif; ?>
 <script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>
