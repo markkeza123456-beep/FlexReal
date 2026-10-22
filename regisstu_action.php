@@ -17,8 +17,7 @@ try {
     error_log('[auth.register] validation passed');
     $otp = (string) random_int(100000, 999999);
 
-    session_regenerate_id(true);
-    $_SESSION['pending_registration'] = [
+    $pendingRegistration = [
         'data' => $registration,
         'otp_hash' => password_hash($otp, PASSWORD_DEFAULT),
         'expires_at' => time() + 180,
@@ -32,11 +31,12 @@ try {
         sendRegistrationOtp($registration['email'], $registration['full_name'], $otp);
         error_log('[auth.register] OTP delivery accepted');
     } catch (Throwable $mailError) {
-        unset($_SESSION['pending_registration']);
-        error_log('[auth.register] OTP delivery failed: ' . get_class($mailError));
-        throw new RuntimeException('ส่งอีเมล OTP ไม่สำเร็จ กรุณาตรวจสอบอีเมลและลองใหม่', 502, $mailError);
+        error_log('[auth.register] OTP delivery failed (' . get_class($mailError) . '): ' . $mailError->getMessage());
+        throw new RuntimeException(flexibleMailFailureMessage($mailError), 502, $mailError);
     }
 
+    session_regenerate_id(true);
+    $_SESSION['pending_registration'] = $pendingRegistration;
     error_log('[auth.register] awaiting OTP verification');
     header('Location: registration_otp.php');
     exit;

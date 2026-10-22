@@ -11,7 +11,7 @@
     .toggle-pw .eye-slash { opacity: 0; transition: opacity 160ms ease; }
     .toggle-pw.is-visible .eye-slash { opacity: 1; }
   </style>
-    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-sidebar-menu-fix">
   <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2" />
 </head>
 <body>
@@ -202,6 +202,6 @@
       }
     });
   </script>
-<script src="assets/js/responsive.js?v=20261022-mobile-layout-v2" defer></script>
+<script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
 </body>
 </html>

@@ -116,22 +116,26 @@ $hubClientCourse = $hubCourse ? [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="assets/css/web.css?v=20261022-mobile-navbar-grid">
+    <link rel="stylesheet" href="assets/css/web.css?v=20261022-navigation-refresh">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
-    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-search-fix">
 </head>
 <body class="landing-page">
 
 <nav class="navbar">
-    <a href="index.php" class="logo">Flexible Learning Hub</a>
-    <div class="nav-links">
+    <div class="navbar-topline">
+        <button type="button" class="nav-toggle" aria-label="เปิดเมนู" aria-controls="site-navigation" aria-expanded="false"><span></span><span></span><span></span></button>
+        <a href="index.php" class="logo">Flexible Learning Hub</a>
+        <div class="mobile-profile-slot"></div>
+    </div>
+    <div class="nav-links" id="site-navigation">
         <input type="text" id="searchInput" class="nav-search-input" onfocus="showPage('home')" onkeyup="filterCourses()" placeholder="ค้นหาบทเรียนที่คุณสนใจ...">
         <a href="index.php" class="nav-home-link">หน้าหลัก</a>
         
         <div class="dropdown">
-            <button class="dropbtn">หมวดหมู่ ▾</button>
+            <button type="button" class="dropbtn" aria-expanded="false">หมวดหมู่ <span aria-hidden="true">⌄</span></button>
             <div class="dropdown-content" id="course-dropdown">
                 <?php foreach ($hubCourses as $course): ?><a href="index.php?subject_id=<?= rawurlencode((string) $course['course_id']) ?>"><?= hubEscape($course['name']) ?></a><?php endforeach; ?>
                 <?php if (!$hubCourses): ?><a href="#" onclick="return false;"><?= $hubLoadError ? 'ไม่สามารถโหลดรายวิชาได้' : 'ยังไม่มีรายวิชา' ?></a><?php endif; ?>
@@ -139,7 +143,7 @@ $hubClientCourse = $hubCourse ? [
         </div>
 
         <div class="dropdown">
-            <button class="dropbtn">คู่มือการเรียน ▾</button>
+            <button type="button" class="dropbtn" aria-expanded="false">คู่มือการเรียน <span aria-hidden="true">⌄</span></button>
             <div class="dropdown-content">
                 <a href="#" onclick="showGuide('register')">ขั้นตอนการสมัคร</a>
                 <a href="#" onclick="showGuide('certificate')">การรับใบประกาศ</a>
@@ -147,7 +151,7 @@ $hubClientCourse = $hubCourse ? [
         </div>
 
         <div class="dropdown">
-            <button class="dropbtn">ติดต่อเรา ▾</button>
+            <button type="button" class="dropbtn" aria-expanded="false">ติดต่อเรา <span aria-hidden="true">⌄</span></button>
             <div class="dropdown-content">
                 <a href="#" onclick="showContact('channel')">ช่องทางการติดต่อ</a>
                 <a href="#" onclick="showContact('location')">สถานที่ตั้ง</a>
@@ -161,7 +165,7 @@ $hubClientCourse = $hubCourse ? [
                 <span id="userName">ผู้ใช้งาน</span>
             </button>
             <div id="userMenu" class="user-menu">
-                <a href="student_dashboard.php">ข้อมูลส่วนตัว</a>
+                <a href="student_dashboard.php">แดชบอร์ด</a>
                 <a href="logout.php?return=index.php">ออกจากระบบ</a>
             </div>
         </div>
@@ -361,7 +365,7 @@ $hubClientCourse = $hubCourse ? [
 </footer>
 
 <script>window.FLEXREAL_INITIAL = <?= json_encode(['courses' => $hubClientCourses, 'course' => $hubClientCourse, 'lessons' => $hubLessons, 'instructors' => $hubInstructors], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;</script>
-<script src="assets/js/web.js?v=20261022-profile-link-settings"></script>
+<script src="assets/js/web.js?v=20261022-navigation-refresh"></script>
 
 </body>
 </html>

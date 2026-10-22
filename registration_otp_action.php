@@ -27,7 +27,7 @@ if ($action === 'resend') {
         sendRegistrationOtp((string) $pending['data']['email'], (string) $pending['data']['full_name'], $otp);
     } catch (Throwable $error) {
         error_log('Registration OTP resend failed: ' . $error->getMessage());
-        otpResponse('error', 'ส่งอีเมล OTP ไม่สำเร็จ กรุณาลองใหม่ภายหลัง', 500);
+        otpResponse('error', flexibleMailFailureMessage($error), 500);
     }
     $pending['otp_hash'] = password_hash($otp, PASSWORD_DEFAULT);
     $pending['expires_at'] = $now + 180;

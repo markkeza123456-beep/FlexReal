@@ -13,7 +13,7 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
   <title>จัดการวิดีโอรายวิชา | Flexible Learning Hub</title>
   <link rel="stylesheet" href="assets/css/staff_subject_editor.css?v=20261021-login-shared-background" />
   <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2" />
-    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-sidebar-menu-fix">
 </head>
 <body>
   <div class="bg-grid"></div><div class="glow-orb orb-1"></div><div class="glow-orb orb-2"></div>
@@ -52,6 +52,6 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
     </section>
     <section class="panel error-panel" id="errorPanel" hidden><div class="error-body" id="errorMessage"></div></section>
   </main><div class="toast" id="toast"></div><script src="assets/js/staff_video_editor.js"></script>
-<script src="assets/js/responsive.js?v=20261022-mobile-layout-v2" defer></script>
+<script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
 </body>
 </html>

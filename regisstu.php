@@ -44,7 +44,7 @@ try {
   <link rel="stylesheet" href="assets/css/login.css?v=20261021-brighter-success-green" />
   <link rel="stylesheet" href="assets/css/regisstu.css?v=20261021-login-shared-background" />
   <link rel="stylesheet" href="assets/css/login.css?v=20261021-brighter-success-green" />
-    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-sidebar-menu-fix">
   <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2" />
 </head>
 <body class="register-page">
@@ -243,6 +243,6 @@ try {
   </div>
   <div class="toast" id="toast"></div>
   <script src="assets/js/regisstu.js?v=20261021-registration-password-toggle"></script>
-<script src="assets/js/responsive.js?v=20261022-mobile-layout-v2" defer></script>
+<script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
 </body>
 </html>

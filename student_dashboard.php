@@ -16,7 +16,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261022-mobile-layout-v2">
     <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
-    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-student-sidebar-column">
     <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout">
 </head>
 <body>
@@ -274,6 +274,6 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
         </main>
     </div>
     <script src="assets/js/student_dashboard.js?v=20261022-mobile-layout-v2"></script>
-    <script src="assets/js/responsive.js?v=20261022-mobile-layout-v2" defer></script>
+    <script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
 </body>
 </html>

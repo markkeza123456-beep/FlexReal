@@ -42,7 +42,7 @@ try {
         .transfer-empty, .transfer-error { padding: 24px; color: var(--text-dim); text-align: center; }
         @media (max-width: 700px) { .transfer-content { padding: 24px 16px; } }
     </style>
-    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-sidebar-menu-fix">
 </head>
 <body>
 <aside class="sidebar">
@@ -84,6 +84,6 @@ try {
         </section>
     </div>
 </main>
-<script src="assets/js/responsive.js?v=20261022-mobile-layout-v2" defer></script>
+<script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
 </body>
 </html>

@@ -31,7 +31,7 @@ try {
     <link rel="stylesheet" href="assets/css/credit_transfer.css?v=20261021-login-shared-background">
     <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
     <script src="assets/js/credit_transfer.js" defer></script>
-    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-sidebar-menu-fix">
 </head>
 <body>
     <main class="transfer-page">
@@ -57,6 +57,6 @@ try {
             </form>
         </section>
     </main>
-<script src="assets/js/responsive.js?v=20261022-mobile-layout-v2" defer></script>
+<script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
 </body>
 </html>

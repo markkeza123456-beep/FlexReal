@@ -10,13 +10,15 @@
  button.setAttribute('aria-controls',sidebar.id);
  button.setAttribute('aria-expanded','false');
  button.textContent='☰';
- document.body.appendChild(button);
+ const dashboardHeader=document.querySelector('.dashboard-container > .main-content > .header');
+ if(dashboardHeader){document.body.classList.add('flh-student-dashboard');dashboardHeader.prepend(button);button.setAttribute('aria-label','เปิดเมนูแดชบอร์ด');}
+ else document.body.appendChild(button);
  const backdrop=document.createElement('div');
  backdrop.className='flh-sidebar-backdrop';
  document.body.appendChild(backdrop);
  const close=()=>{document.body.classList.remove('flh-menu-open');button.setAttribute('aria-expanded','false')};
  button.addEventListener('click',()=>{document.body.classList.toggle('flh-menu-open');button.setAttribute('aria-expanded',document.body.classList.contains('flh-menu-open'))});
  backdrop.addEventListener('click',close);
- sidebar.querySelectorAll('a').forEach(a=>a.addEventListener('click',close));
+ sidebar.querySelectorAll('a, button.menu-item').forEach(a=>a.addEventListener('click',close));
  document.addEventListener('keydown',event=>{if(event.key==='Escape')close()});
 })();

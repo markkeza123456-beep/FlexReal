@@ -51,7 +51,7 @@ function hTransferPermission(?string $value): string
   <link rel="stylesheet" href="assets/css/staffdash.css?v=20261021-login-shared-background" />
   <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2" />
   <script src="assets/js/staff_transfer_permissions.js" defer></script>
-    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-sidebar-menu-fix">
 </head>
 <body>
   <div class="bg-grid"></div>
@@ -108,6 +108,6 @@ function hTransferPermission(?string $value): string
   </div>
   <div class="toast" id="permissionToast" role="status" aria-live="polite"></div>
   <script>window.transferPermissionCsrf = <?= json_encode($csrfToken, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
-<script src="assets/js/responsive.js?v=20261022-mobile-layout-v2" defer></script>
+<script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
 </body>
 </html>
