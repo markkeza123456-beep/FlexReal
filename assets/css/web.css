@@ -117,6 +117,8 @@ body {
 
 .dropdown { position: relative; display: inline-block; }
 .dropbtn { background: none; border: none; font-size: 16px; font-weight: 500; cursor: pointer; color: var(--deep-blue); padding: 10px 0; }
+.dropbtn .dropdown-arrow { display:inline-block; width:8px; height:8px; margin:0 1px 3px 8px; border-right:2px solid currentColor; border-bottom:2px solid currentColor; transform:rotate(45deg); transition:transform .2s ease; }
+.dropdown.is-open .dropbtn .dropdown-arrow { transform:rotate(225deg); }
 .dropdown-content {
     display: none; position: absolute; background-color: white; min-width: 220px;
     box-shadow: 0px 10px 30px rgba(0,0,0,0.15); border-radius: 12px; top: 45px; border: 1px solid #eee;
@@ -167,7 +169,7 @@ body {
   .landing-page .navbar .dropbtn { width: 100%; min-height: 44px; padding: 0; display: flex; align-items: center; justify-content: space-between; text-align: left; }
   .dropdown-content { display: none; position: static; width: 100%; max-width: none; min-width: 0; margin: 0 0 8px; box-shadow: none; border: 0; border-left: 2px solid var(--brand-200); border-radius: 0; }
   .dropdown.is-open .dropdown-content { display: block; }
-  .dropdown.is-open .dropbtn span { transform: rotate(180deg); }
+  .dropdown.is-open .dropbtn .dropdown-arrow { transform: rotate(225deg); }
   .dropdown-content a { padding: 8px 14px; }
   .landing-page .navbar .user-profile-wrap { position: absolute; top: 8px; right: 12px; width: auto; max-width: 48px; margin: 0; }
   .landing-page .navbar .user-profile { padding: 4px; border: 0; background: transparent; }

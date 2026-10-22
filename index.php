@@ -135,7 +135,7 @@ $hubClientCourse = $hubCourse ? [
         <a href="index.php" class="nav-home-link">หน้าหลัก</a>
         
         <div class="dropdown">
-            <button type="button" class="dropbtn" aria-expanded="false">หมวดหมู่ <span aria-hidden="true">⌄</span></button>
+            <button type="button" class="dropbtn" aria-expanded="false">หมวดหมู่ <span class="dropdown-arrow" aria-hidden="true"></span></button>
             <div class="dropdown-content" id="course-dropdown">
                 <?php foreach ($hubCourses as $course): ?><a href="index.php?subject_id=<?= rawurlencode((string) $course['course_id']) ?>"><?= hubEscape($course['name']) ?></a><?php endforeach; ?>
                 <?php if (!$hubCourses): ?><a href="#" onclick="return false;"><?= $hubLoadError ? 'ไม่สามารถโหลดรายวิชาได้' : 'ยังไม่มีรายวิชา' ?></a><?php endif; ?>
@@ -143,7 +143,7 @@ $hubClientCourse = $hubCourse ? [
         </div>
 
         <div class="dropdown">
-            <button type="button" class="dropbtn" aria-expanded="false">คู่มือการเรียน <span aria-hidden="true">⌄</span></button>
+            <button type="button" class="dropbtn" aria-expanded="false">คู่มือการเรียน <span class="dropdown-arrow" aria-hidden="true"></span></button>
             <div class="dropdown-content">
                 <a href="#" onclick="showGuide('register')">ขั้นตอนการสมัคร</a>
                 <a href="#" onclick="showGuide('certificate')">การรับใบประกาศ</a>
@@ -151,7 +151,7 @@ $hubClientCourse = $hubCourse ? [
         </div>
 
         <div class="dropdown">
-            <button type="button" class="dropbtn" aria-expanded="false">ติดต่อเรา <span aria-hidden="true">⌄</span></button>
+            <button type="button" class="dropbtn" aria-expanded="false">ติดต่อเรา <span class="dropdown-arrow" aria-hidden="true"></span></button>
             <div class="dropdown-content">
                 <a href="#" onclick="showContact('channel')">ช่องทางการติดต่อ</a>
                 <a href="#" onclick="showContact('location')">สถานที่ตั้ง</a>
