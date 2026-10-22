@@ -19,6 +19,6 @@
  const close=()=>{document.body.classList.remove('flh-menu-open');button.setAttribute('aria-expanded','false')};
  button.addEventListener('click',()=>{document.body.classList.toggle('flh-menu-open');button.setAttribute('aria-expanded',document.body.classList.contains('flh-menu-open'))});
  backdrop.addEventListener('click',close);
- sidebar.querySelectorAll('a, button.menu-item').forEach(a=>a.addEventListener('click',close));
+ sidebar.querySelectorAll('a, button, .menu-item, .nav-item, .parent-profile, #btn-settings, [data-page], [data-view]').forEach(item=>item.addEventListener('click',close));
  document.addEventListener('keydown',event=>{if(event.key==='Escape')close()});
 })();

@@ -321,6 +321,6 @@ function teacherReportEscape(mixed $value): string { return htmlspecialchars((st
     </section>
     <p class="footnote">คะแนนเฉลี่ยของนักเรียนคำนวณเป็นเปอร์เซ็นต์จากผลสอบล่าสุดรายบท · TR นับเป็นบทเรียนสำเร็จ</p>
 </main>
-<script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
+<script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>

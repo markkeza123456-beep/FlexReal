@@ -187,6 +187,6 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
 
   <div class="toast" id="toast"></div>
   <script src="assets/js/staff_subject_editor.js?v=20261022-unlimited-lessons"></script>
-<script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
+<script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>

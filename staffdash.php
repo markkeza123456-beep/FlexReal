@@ -58,9 +58,9 @@ if ($displayName !== '') {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261022-staff-graduation-aligned" />
+  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261022-profile-thai-line-height" />
   <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2" />
-    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-sidebar-menu-fix">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-centered-mobile-logout">
   <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout" />
 </head>
 <body>
@@ -79,11 +79,7 @@ if ($displayName !== '') {
 
 
     <header class="topbar">
-      <button class="menu-btn" id="menuBtn" title="เปิดเมนู">เมนู
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-        </svg>
-      </button>
+      <button class="menu-btn" id="menuBtn" type="button" title="เปิดเมนู" aria-label="เปิดเมนู" aria-expanded="false">☰</button>
       <span class="topbar-title" id="topbarTitle">แดชบอร์ด</span>
     </header>
 
@@ -822,6 +818,6 @@ if ($displayName !== '') {
   <div class="toast" id="toast"></div>
 
   <script src="assets/js/staffdash.js?v=20261022-graduation-status-colors"></script>
-<script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
+<script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>

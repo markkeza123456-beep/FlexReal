@@ -5,6 +5,16 @@
 }
 
 @media (max-width: 800px) {
+  .sidebar .sidebar-logout,
+  .sidebar .btn-logout { align-self:center; justify-content:center; width:auto; margin:8px auto 0; text-align:center; }
+  .sidebar > .sidebar-logo { order:1; }
+  .sidebar > .sidebar-nav { order:2; flex:1 1 auto; }
+  .sidebar > .sidebar-profile { order:3; flex:0 0 auto; margin-top:auto; }
+  .sidebar > .sidebar-logout { order:4; flex:0 0 auto; margin-bottom:max(14px,env(safe-area-inset-bottom)); }
+  .sidebar > .sidebar-brand-link { order:1; }
+  .sidebar > .menu { order:2; flex:1 1 auto; }
+  .sidebar > .sidebar-footer { order:3; flex:0 0 auto; margin-top:auto; }
+  .sidebar > .btn-logout { order:4; flex:0 0 auto; margin-bottom:max(14px,env(safe-area-inset-bottom)); }
   body.flh-student-dashboard .dashboard-container { display:block; min-height:100dvh; height:auto; }
   body.flh-student-dashboard .main-content { padding:16px 16px 28px !important; overflow:visible; }
   body.flh-student-dashboard .header { position:sticky; top:0; z-index:1000; min-height:56px; margin:-16px -16px 20px; padding:6px 14px; background:#fff; box-shadow:0 3px 12px rgba(15,23,42,.08); flex-wrap:nowrap; }

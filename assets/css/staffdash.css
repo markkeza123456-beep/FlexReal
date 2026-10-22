@@ -216,7 +216,7 @@ body {
 .page-header.staff-profile-page-header { width: min(100%, 620px); margin: 0 auto 44px; justify-content: flex-start; text-align: left; }
 .staff-profile-page-header > div { width: 100%; }
 .staff-profile-page-header .page-title, .staff-profile-page-header .page-sub { font-family: 'Kanit', sans-serif !important; letter-spacing: 0; }
-.staff-profile-page-header .page-title { font-size: 26px; font-weight: 700; line-height: 1; color: var(--brand-700); }
+.staff-profile-page-header .page-title { font-size: 26px; font-weight: 700; line-height: 1.45; color: var(--brand-700); }
 .staff-profile-page-header .page-sub { font-size: 13px; line-height: 1.5; color: var(--text-dim); }
 .form-card.staff-profile-page-card { width: min(100%, 620px); max-width: 620px; padding: 28px; margin: 0 auto 18px; box-sizing: border-box; font-family: 'Kanit', sans-serif; }
 .staff-profile-card-title { display: flex; align-items: center; gap: 8px; margin: 0 0 20px; color: var(--text-primary); font-family: 'Kanit', sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 0; }
@@ -919,9 +919,9 @@ body:has(#page-graduation-requests.active) .main-wrap > .topbar { display: none;
     box-shadow: 4px 0 40px rgba(0,0,0,.8);
   }
   .sidebar.open { transform: translateX(0); }
-  .sidebar-close { display: flex; }
   .main-wrap { margin-left: 0; width: 100%; }
-  .menu-btn { display: flex; }
+  .topbar { padding-left:64px; }
+  .menu-btn { display:flex; align-items:center; justify-content:center; position:fixed; top:max(10px,env(safe-area-inset-top)); left:max(10px,env(safe-area-inset-left)); z-index:1203; width:44px; height:44px; border:1px solid #cbd9e3; border-radius:12px; background:#fff; color:var(--brand-700); font-family:Arial,sans-serif; font-size:26px; line-height:1; box-shadow:0 4px 16px rgba(var(--brand-700-rgb),.14); }
   .panel-row { grid-template-columns: 1fr; }
   .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
   .content { padding: 20px 16px; }

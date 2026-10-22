@@ -380,7 +380,7 @@ $stats = [
         @media (max-width: 760px) { .course-content-editor { grid-template-columns: 1fr !important; } }
     </style>
     <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
-    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-sidebar-menu-fix">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-logout-bottom">
     <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout">
 </head>
 <body>
@@ -1596,6 +1596,6 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 <?php if ($canAccessTransferApproval): ?>
     <script src="assets/js/teacher_graduation.js?v=20261022-graduation-status-colors"></script>
 <?php endif; ?>
-<script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
+<script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>

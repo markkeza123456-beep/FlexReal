@@ -383,6 +383,6 @@ exit;
 
   <div class="toast" id="toast"></div>
   <script src="assets/js/regisstu.js?v=20261021-registration-otp"></script>
-<script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
+<script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>
