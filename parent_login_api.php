@@ -4,8 +4,16 @@
 header('Content-Type: application/json; charset=utf-8');
 session_start();
 
-define('SB_URL', 'https://gwunrmptlmfpvidrxwdf.supabase.co');
-define('SB_KEY', 'YOUR_SUPABASE_ANON_KEY');
+try {
+    require_once __DIR__ . '/config/db.php';
+} catch (Throwable $error) {
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'ระบบเชื่อมต่อฐานข้อมูลขัดข้อง'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+define('SB_URL', $supabaseUrl);
+define('SB_KEY', $supabaseKey);
 
 
 $body     = json_decode(file_get_contents('php://input'), true) ?? [];

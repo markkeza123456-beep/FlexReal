@@ -1,0 +1,12 @@
+.git
+.github
+.vscode
+.idea
+node_modules
+vendor
+tmp
+*.log
+.env
+.env.*
+flexreal.env
+config/flexreal.env
