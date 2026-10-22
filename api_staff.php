@@ -113,6 +113,19 @@ function deleteUnreferencedLessonFiles(PDO $conn, array $urls): void
     }
 }
 
+function tableExists(PDO $conn, string $table): bool
+{
+    $statement = $conn->prepare("SELECT to_regclass(:table_name) IS NOT NULL");
+    $statement->execute([':table_name' => 'public.' . $table]);
+    return (bool) $statement->fetchColumn();
+}
+
+function deleteRowsIfTableExists(PDO $conn, string $table, string $whereSql, array $params): void
+{
+    if (!tableExists($conn, $table)) return;
+    $conn->prepare('DELETE FROM public.' . $table . ' WHERE ' . $whereSql)->execute($params);
+}
+
 function deleteMemberRecord(PDO $conn, string $memberId, string $actorId): void
 {
     if ($memberId === $actorId) throw new RuntimeException('ไม่สามารถลบบัญชีที่กำลังใช้งานอยู่ได้');
@@ -123,38 +136,45 @@ function deleteMemberRecord(PDO $conn, string $memberId, string $actorId): void
         $role = $targetStmt->fetchColumn();
         if ($role === false) throw new RuntimeException('ไม่พบบัญชีผู้ใช้งาน');
 
-        $conn->prepare('UPDATE public.students SET advisor_user_id = NULL WHERE advisor_user_id = :id')->execute([':id' => $memberId]);
-        $conn->prepare('UPDATE public.students SET parent_user_id = NULL WHERE parent_user_id = :id')->execute([':id' => $memberId]);
-        $conn->prepare('UPDATE public.courses SET created_by = NULL WHERE created_by = :id')->execute([':id' => $memberId]);
-        $conn->prepare('UPDATE public.courses SET updated_by = NULL WHERE updated_by = :id')->execute([':id' => $memberId]);
-        $conn->prepare('UPDATE public.curricula SET created_by = NULL WHERE created_by = :id')->execute([':id' => $memberId]);
-        $conn->prepare('UPDATE public.curricula SET updated_by = NULL WHERE updated_by = :id')->execute([':id' => $memberId]);
-        $conn->prepare('UPDATE public.lessons SET created_by = NULL WHERE created_by = :id')->execute([':id' => $memberId]);
-        $conn->prepare('UPDATE public.lessons SET updated_by = NULL WHERE updated_by = :id')->execute([':id' => $memberId]);
-        $conn->prepare('UPDATE public.graduation_requests SET approved_by = NULL WHERE approved_by = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.transfer_permissions WHERE instructor_id = :id OR granted_by = :id')->execute([':id' => $memberId]);
-        $conn->prepare('UPDATE public.transcript_requests SET reviewed_by = NULL, approved_by = NULL WHERE reviewed_by = :id OR approved_by = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.transcript_request_lessons WHERE reviewed_by = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.transcript_request_lessons WHERE request_id IN (SELECT request_id FROM public.transcript_requests WHERE student_id = :id)')->execute([':id' => $memberId]);
-        $conn->prepare('UPDATE public.lesson_progress SET transferred_by = NULL WHERE transferred_by = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.graduation_requests WHERE student_id = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.exam_logs WHERE student_id = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.lesson_progress WHERE student_id = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.transcript_requests WHERE student_id = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.student_curricula WHERE student_id = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.student_courses WHERE student_id = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.course_certificates WHERE student_id = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.quiz_attempt_answers WHERE attempt_id IN (SELECT attempt_id FROM public.quiz_attempts WHERE student_id = :id)')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.quiz_attempt_sessions WHERE student_id = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.quiz_attempts WHERE student_id = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.course_teachers WHERE teacher_id = :id')->execute([':id' => $memberId]);
-        $conn->prepare('UPDATE public.quiz_attempt_answers SET reviewer_id = NULL WHERE reviewer_id = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.staff WHERE user_id = :id')->execute([':id' => $memberId]);
+        if (tableExists($conn, 'students')) {
+            $conn->prepare('UPDATE public.students SET advisor_user_id = NULL WHERE advisor_user_id = :id')->execute([':id' => $memberId]);
+            $conn->prepare('UPDATE public.students SET parent_user_id = NULL WHERE parent_user_id = :id')->execute([':id' => $memberId]);
+        }
+        foreach (['courses', 'curricula', 'lessons'] as $auditTable) {
+            if (tableExists($conn, $auditTable)) {
+                foreach (['created_by', 'updated_by'] as $auditColumn) {
+                    $conn->prepare('UPDATE public.' . $auditTable . ' SET ' . $auditColumn . ' = NULL WHERE ' . $auditColumn . ' = :id')->execute([':id' => $memberId]);
+                }
+            }
+        }
+        if (tableExists($conn, 'graduation_requests')) $conn->prepare('UPDATE public.graduation_requests SET approved_by = NULL WHERE approved_by = :id')->execute([':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'transfer_permissions', 'instructor_id = :id OR granted_by = :id', [':id' => $memberId]);
+        if (tableExists($conn, 'transcript_requests')) $conn->prepare('UPDATE public.transcript_requests SET reviewed_by = NULL, approved_by = NULL WHERE reviewed_by = :id OR approved_by = :id')->execute([':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'transcript_request_lessons', 'reviewed_by = :id', [':id' => $memberId]);
+        if (tableExists($conn, 'transcript_request_lessons') && tableExists($conn, 'transcript_requests')) {
+            $conn->prepare('DELETE FROM public.transcript_request_lessons WHERE request_id IN (SELECT request_id FROM public.transcript_requests WHERE student_id = :id)')->execute([':id' => $memberId]);
+        }
+        if (tableExists($conn, 'lesson_progress')) $conn->prepare('UPDATE public.lesson_progress SET transferred_by = NULL WHERE transferred_by = :id')->execute([':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'graduation_requests', 'student_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'exam_logs', 'student_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'lesson_progress', 'student_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'transcript_requests', 'student_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'student_curricula', 'student_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'student_courses', 'student_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'course_certificates', 'student_id = :id', [':id' => $memberId]);
+        if (tableExists($conn, 'quiz_attempt_answers') && tableExists($conn, 'quiz_attempts')) {
+            $conn->prepare('DELETE FROM public.quiz_attempt_answers WHERE attempt_id IN (SELECT attempt_id FROM public.quiz_attempts WHERE student_id = :id)')->execute([':id' => $memberId]);
+        }
+        deleteRowsIfTableExists($conn, 'quiz_attempt_sessions', 'student_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'quiz_attempts', 'student_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'course_teachers', 'teacher_id = :id', [':id' => $memberId]);
+        if (tableExists($conn, 'quiz_attempt_answers')) $conn->prepare('UPDATE public.quiz_attempt_answers SET reviewer_id = NULL WHERE reviewer_id = :id')->execute([':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'staff', 'user_id = :id', [':id' => $memberId]);
         $profileTable = ['student' => 'students', 'teacher' => 'teachers', 'parent' => 'parents'][$role] ?? null;
-        if ($profileTable !== null) $conn->prepare('DELETE FROM public.' . $profileTable . ' WHERE user_id = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.user_addresses WHERE user_id = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.site_visits WHERE user_id = :id')->execute([':id' => $memberId]);
-        $conn->prepare('DELETE FROM public.password_reset_tokens WHERE user_id = :id')->execute([':id' => $memberId]);
+        if ($profileTable !== null) deleteRowsIfTableExists($conn, $profileTable, 'user_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'user_addresses', 'user_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'site_visits', 'user_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'password_reset_tokens', 'user_id = :id', [':id' => $memberId]);
         $conn->prepare('DELETE FROM public.users WHERE user_id = :id')->execute([':id' => $memberId]);
         $conn->commit();
     } catch (Throwable $error) {
@@ -457,7 +477,7 @@ try {
                 $conn->exec("DELETE FROM public.questions WHERE lesson_id IN ({$ids})");
                 $conn->exec("DELETE FROM public.lesson_resources WHERE lesson_id IN ({$ids})");
             }
-            $conn->prepare('DELETE FROM public.course_certificates WHERE course_id = :id')->execute([':id' => $subjectId]);
+            deleteRowsIfTableExists($conn, 'course_certificates', 'course_id = :id', [':id' => $subjectId]);
             $conn->prepare('DELETE FROM public.course_teachers WHERE course_id = :id')->execute([':id' => $subjectId]);
             $conn->prepare('DELETE FROM public.curriculum_courses WHERE course_id = :id')->execute([':id' => $subjectId]);
             $conn->prepare('DELETE FROM public.student_courses WHERE course_id = :id')->execute([':id' => $subjectId]);
