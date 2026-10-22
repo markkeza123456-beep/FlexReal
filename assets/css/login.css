@@ -199,7 +199,7 @@ body {
 
 .role-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, .9fr)) minmax(0, 1.55fr);
   gap: 6px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -229,6 +229,15 @@ body {
   white-space: normal;
   line-height: 1.25;
 }
+
+.role-tab[data-role="staff_or_director"] {
+  padding-right: 2px;
+  padding-left: 2px;
+  font-size: .68rem;
+  white-space: nowrap;
+}
+
+.role-tab[data-role="staff_or_director"] span { white-space: nowrap; }
 
 .role-tab .role-icon {
   font-size: 1.1rem;
@@ -633,6 +642,7 @@ body {
   .brand { margin-bottom: 14px; }
   .brand-flh { width: 184px; }
   .title { font-size: 1.5rem; }
+  .role-tab[data-role="staff_or_director"] { font-size: .6rem; }
 }
 
 @media (max-width: 600px), (max-height: 820px) {
