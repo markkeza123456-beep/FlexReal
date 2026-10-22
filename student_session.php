@@ -26,6 +26,7 @@ $dashboardUrlMap = [
     'student' => 'student_dashboard.php',
     'teacher' => 'teacherdash.php',
     'staff' => 'staffdash.php',
+    'director' => 'director_dash.php',
     'parent' => 'parent_dashboard.php',
 ];
 
@@ -36,6 +37,7 @@ try {
         'student' => 'students',
         'teacher' => 'teachers',
         'staff' => 'staff',
+        'director' => 'staff',
         'parent' => 'parents',
         default => null,
     };

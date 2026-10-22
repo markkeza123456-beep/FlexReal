@@ -10,7 +10,7 @@ $studentId = currentStudentId(); if ($studentId === null) { $_SESSION['after_log
 try {
     $courseId = findCourseId($conn, trim((string) ($_POST['course_id'] ?? $_POST['subject_id'] ?? $_GET['course_id'] ?? $_GET['subject_id'] ?? '')), trim((string) ($_POST['course_name'] ?? $_GET['course_name'] ?? '')));
     if ($courseId === null) jsonResponse(['status' => 'error', 'message' => 'ไม่พบรายวิชา'], 404);
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') $conn->prepare('INSERT INTO public.student_courses (student_id, course_id) VALUES (:student_id, :course_id) ON CONFLICT (student_id, course_id) DO NOTHING')->execute([':student_id' => $studentId, ':course_id' => $courseId]);
-    $s = $conn->prepare('SELECT 1 FROM public.student_courses WHERE student_id = :student_id AND course_id = :course_id'); $s->execute([':student_id' => $studentId, ':course_id' => $courseId]);
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') $conn->prepare("INSERT INTO public.student_courses (student_id, course_id, status) VALUES (:student_id, :course_id, 'active') ON CONFLICT (student_id, course_id) DO NOTHING")->execute([':student_id' => $studentId, ':course_id' => $courseId]);
+    $s = $conn->prepare("SELECT 1 FROM public.student_courses WHERE student_id = :student_id AND course_id = :course_id AND status = 'active'"); $s->execute([':student_id' => $studentId, ':course_id' => $courseId]);
     jsonResponse(['status' => 'success', 'enrolled' => (bool) $s->fetchColumn(), 'course_id' => $courseId, 'subject_id' => $courseId]);
 } catch (Throwable $e) { jsonResponse(['status' => 'error', 'message' => 'ระบบลงรายวิชาขัดข้อง: ' . $e->getMessage()], 500); }

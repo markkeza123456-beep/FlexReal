@@ -5,7 +5,7 @@ function uploadPublicAvatar(string $role, string $userId, string $png): string
 {
     global $env, $supabaseUrl;
 
-    if (!in_array($role, ['teacher', 'student', 'parent', 'staff'], true)) {
+    if (!in_array($role, ['teacher', 'student', 'parent', 'staff', 'director'], true)) {
         throw new InvalidArgumentException('Invalid avatar role.');
     }
     $url = rtrim((string) ($env['SUPABASE_URL'] ?? $supabaseUrl ?? ''), '/');

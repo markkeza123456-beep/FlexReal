@@ -109,7 +109,8 @@
         showToast('เข้าสู่ระบบสำเร็จ', 'success');
         if (activeRole === 'student') await warmStudentCourseCache(result.user_id);
         setTimeout(() => {
-          window.location.href = getSafeReturnUrl() || result.redirect_url;
+          const mustUseRoleDashboard = activeRole === 'staff_or_director';
+          window.location.href = (mustUseRoleDashboard ? '' : getSafeReturnUrl()) || result.redirect_url;
         }, 1000);
       } else {
         throw new Error(result.message);

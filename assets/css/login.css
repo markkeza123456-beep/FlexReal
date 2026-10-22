@@ -199,7 +199,7 @@ body {
 
 .role-tabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -226,7 +226,8 @@ body {
   cursor: pointer;
   transition: background var(--transition), color var(--transition), box-shadow var(--transition);
   position: relative;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.25;
 }
 
 .role-tab .role-icon {

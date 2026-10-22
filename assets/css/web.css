@@ -780,6 +780,7 @@ body.learning-guide-open { min-width: 0; overflow-x: hidden; }
 }
 
 .btn-enroll {
+    display: block;
     width: 100%;
     background: var(--primary-orange);
     color: white;
@@ -791,6 +792,8 @@ body.learning-guide-open { min-width: 0; overflow-x: hidden; }
     cursor: pointer;
     margin-bottom: 25px;
     transition: 0.3s;
+    text-align: center;
+    text-decoration: none;
 }
 
 .btn-enroll:hover { background: var(--dark-orange); }
