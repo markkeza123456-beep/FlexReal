@@ -37,24 +37,43 @@ function uploadLessonFile(string $fieldName, array $segments, string $prefix): a
     }
 
     $file = $_FILES[$fieldName];
-    if ((int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-        return ['path' => '', 'name' => ''];
+    $uploadError = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+    if ($uploadError === UPLOAD_ERR_NO_FILE) return ['path' => '', 'name' => ''];
+    if ($uploadError !== UPLOAD_ERR_OK) {
+        $message = match ($uploadError) {
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'ไฟล์มีขนาดใหญ่เกินที่ระบบรองรับ กรุณาเลือกไฟล์ที่เล็กลง',
+            UPLOAD_ERR_PARTIAL => 'อัปโหลดไฟล์ไม่ครบ กรุณาลองใหม่อีกครั้ง',
+            UPLOAD_ERR_NO_TMP_DIR => 'ระบบไม่พบพื้นที่พักไฟล์ กรุณาติดต่อผู้ดูแลระบบ',
+            UPLOAD_ERR_CANT_WRITE => 'ระบบบันทึกไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+            UPLOAD_ERR_EXTENSION => 'ระบบไม่อนุญาตให้อัปโหลดไฟล์นี้',
+            default => 'อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+        };
+        jsonResponse(['status' => 'error', 'message' => $message], 400);
     }
 
     $relativeDir = 'uploads/' . implode('/', $segments);
     $uploadDir = __DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativeDir);
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
+    if ((!is_dir($uploadDir) && !@mkdir($uploadDir, 0777, true)) || !is_writable($uploadDir)) {
+        // Some local XAMPP installs make uploads/courses read-only to Apache.
+        // The public uploads root is already the configured writable media area.
+        $relativeDir = 'uploads';
+        $uploadDir = __DIR__ . DIRECTORY_SEPARATOR . 'uploads';
+    }
+    if (!is_dir($uploadDir) || !is_writable($uploadDir)) {
+        error_log('Lesson media upload directory is not writable: ' . $uploadDir);
+        jsonResponse(['status' => 'error', 'message' => 'โฟลเดอร์อัปโหลดไม่มีสิทธิ์บันทึกไฟล์ กรุณาติดต่อผู้ดูแลระบบ'], 500);
     }
 
     $originalName = trim((string) ($file['name'] ?? ''));
     $safeName = preg_replace('/[^A-Za-z0-9._-]/', '_', basename($originalName));
     $safeName = $safeName !== '' ? $safeName : ($prefix . '_' . time());
-    $targetName = $prefix . '_' . time() . '_' . $safeName;
+    $scope = implode('_', array_map('sanitizePathSegment', $segments));
+    $targetName = $scope . '_' . $prefix . '_' . time() . '_' . bin2hex(random_bytes(4)) . '_' . $safeName;
     $targetPath = $uploadDir . DIRECTORY_SEPARATOR . $targetName;
 
     if (!move_uploaded_file((string) $file['tmp_name'], $targetPath)) {
-        return ['path' => '', 'name' => ''];
+        error_log('Failed to move uploaded lesson media into writable directory: ' . $uploadDir);
+        jsonResponse(['status' => 'error', 'message' => 'ระบบบันทึกไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'], 500);
     }
 
     return [
@@ -649,8 +668,14 @@ try {
             $lessonStmt = $conn->prepare("
                 SELECT
                     l.lesson_id AS id, l.title, l.content, l.created_at, l.updated_at,
+                    COALESCE(l.updated_at, l.created_at) AS last_modified_at,
+                    COALESCE(NULLIF(TRIM(lesson_editor.full_name), ''), NULLIF(TRIM(CONCAT_WS(' ', staff_editor.first_name, staff_editor.last_name)), ''), editor_user.user_id, l.updated_by, l.created_by, 'ยังไม่มีข้อมูล') AS editor_name,
                     COALESCE(d.url, '') AS document_path, COALESCE(d.title, '') AS document_name
-                FROM public.lessons l LEFT JOIN LATERAL (
+                FROM public.lessons l
+                LEFT JOIN public.teachers lesson_editor ON lesson_editor.user_id = COALESCE(l.updated_by, l.created_by)
+                LEFT JOIN public.staff staff_editor ON staff_editor.user_id = COALESCE(l.updated_by, l.created_by)
+                LEFT JOIN public.users editor_user ON editor_user.user_id = COALESCE(l.updated_by, l.created_by)
+                LEFT JOIN LATERAL (
                     SELECT title, url FROM public.lesson_resources WHERE lesson_id = l.lesson_id AND resource_type = 'document' ORDER BY position LIMIT 1
                 ) d ON true
                 WHERE l.course_id = :subject_id
@@ -670,17 +695,27 @@ try {
             $subjectId = $_POST['subject_id'] ?? '';
             if (empty($subjectId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
             $isNewLesson = trim((string) $lessonId) === '';
+            $documentUpload = uploadLessonFile('document', ['courses', sanitizePathSegment((string) $subjectId), 'documents'], 'lesson_doc');
+            if ($documentUpload['path'] !== '' && strtolower(pathinfo($documentUpload['name'], PATHINFO_EXTENSION)) !== 'pdf') {
+                @unlink(__DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $documentUpload['path']));
+                jsonResponse(['status' => 'error', 'message' => 'เอกสารประกอบต้องเป็นไฟล์ PDF'], 400);
+            }
             $actorId = (string) $_SESSION['user_id'];
             $params = [':course_id' => $subjectId, ':title' => postValue('title'), ':content' => postValue('content'), ':updated_by' => $actorId];
             if ($isNewLesson) {
                 $params[':created_by'] = $actorId;
-                $statement = $conn->prepare('INSERT INTO public.lessons (course_id, title, content, position, created_by, updated_by) VALUES (:course_id, :title, :content, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lessons WHERE course_id = :course_id), :created_by, :updated_by)');
+                $statement = $conn->prepare('INSERT INTO public.lessons (course_id, title, content, position, created_by, updated_by) VALUES (:course_id, :title, :content, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lessons WHERE course_id = :course_id), :created_by, :updated_by) RETURNING lesson_id');
             } else {
                 $params[':id'] = $lessonId;
                 $statement = $conn->prepare('UPDATE public.lessons SET title = :title, content = :content, updated_by = :updated_by, updated_at = NOW() WHERE lesson_id = :id AND course_id = :course_id');
             }
             $statement->execute($params);
-            jsonResponse(['status' => 'success']);
+            if ($isNewLesson) $lessonId = (string) $statement->fetchColumn();
+            if ($documentUpload['path'] !== '') {
+                $documentStmt = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position) VALUES (:lesson_id, 'document', :title, :url, 1)");
+                $documentStmt->execute([':lesson_id' => $lessonId, ':title' => $documentUpload['name'], ':url' => $documentUpload['path']]);
+            }
+            jsonResponse(['status' => 'success', 'lesson_id' => (string) $lessonId]);
             break;
 
         case 'deleteLesson':
@@ -727,9 +762,14 @@ try {
             $videoStmt = $conn->prepare("
                 SELECT
                     r.resource_id AS id, r.title, r.url, '' AS description, r.duration_seconds,
-                    r.position AS display_order, r.lesson_id AS lessons_id, l.title AS lesson_title
+                    r.position AS display_order, r.lesson_id AS lessons_id, l.title AS lesson_title,
+                    EXTRACT(EPOCH FROM COALESCE(r.updated_at, r.created_at)) AS last_modified_epoch,
+                    COALESCE(NULLIF(TRIM(video_editor.full_name), ''), NULLIF(TRIM(CONCAT_WS(' ', staff_editor.first_name, staff_editor.last_name)), ''), editor_user.user_id, r.updated_by, 'ยังไม่มีข้อมูล') AS editor_name
                 FROM public.lesson_resources r
                 INNER JOIN public.lessons l ON l.lesson_id = r.lesson_id
+                LEFT JOIN public.teachers video_editor ON video_editor.user_id = r.updated_by
+                LEFT JOIN public.staff staff_editor ON staff_editor.user_id = r.updated_by
+                LEFT JOIN public.users editor_user ON editor_user.user_id = r.updated_by
                 WHERE l.course_id = :subject_id AND r.resource_type = 'video'
                 ORDER BY r.position ASC, r.resource_id ASC
             ");
@@ -779,13 +819,14 @@ try {
                 ':duration' => postValue('duration') !== '' ? (int) postValue('duration') : null,
                 ':display_order' => max(1, (int) (postValue('display_order', '1') ?: 1)),
                 ':lesson_id' => $lessonId !== '' ? $lessonId : null,
+                ':updated_by' => (string) ($_SESSION['user_id'] ?? ''),
             ];
             if ($videoId === '') {
                 if ($lessonId === '') { jsonResponse(['status' => 'error', 'message' => 'กรุณาเลือกบทเรียนสำหรับวิดีโอ'], 400); }
-                $statement = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, duration_seconds, position) VALUES (:lesson_id, 'video', :title, :url, :duration, :display_order)");
+                $statement = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, duration_seconds, position, updated_at, updated_by) VALUES (:lesson_id, 'video', :title, :url, :duration, :display_order, clock_timestamp(), :updated_by)");
             } else {
                 $params[':id'] = $videoId;
-                $statement = $conn->prepare("UPDATE public.lesson_resources SET title = :title, url = :url, duration_seconds = :duration, position = :display_order, lesson_id = :lesson_id WHERE resource_id = :id AND resource_type = 'video'");
+                $statement = $conn->prepare("UPDATE public.lesson_resources SET title = :title, url = :url, duration_seconds = :duration, position = :display_order, lesson_id = :lesson_id, updated_at = clock_timestamp(), updated_by = :updated_by WHERE resource_id = :id AND resource_type = 'video'");
             }
             $statement->execute($params);
             jsonResponse(['status' => 'success']);
