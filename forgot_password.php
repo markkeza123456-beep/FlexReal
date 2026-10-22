@@ -112,11 +112,14 @@
       const btn = e.target.querySelector('button');
       btn.disabled = true;
       btn.innerText = 'กำลังส่ง...';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 45000);
 
       try {
         const res = await fetch('forgot_password_action.php', {
           method: 'POST',
-          body: new URLSearchParams({ email })
+          body: new URLSearchParams({ email }),
+          signal: controller.signal,
         });
 
         const text = await res.text();
@@ -133,11 +136,15 @@
           document.getElementById('step1').style.display = 'none';
           document.getElementById('step2').style.display = 'block';
         } else {
-          showToast(data.message, 'error-toast');
+          const errorRef = data.error_id ? ` (รหัสอ้างอิง: ${data.error_id})` : '';
+          showToast((data.message || 'ส่งรหัส PIN ไม่สำเร็จ') + errorRef, 'error-toast');
         }
       } catch (err) {
-        showToast('การเชื่อมต่อล้มเหลว', 'error-toast');
+        showToast(err.name === 'AbortError'
+          ? 'ระบบใช้เวลานานเกินไป กรุณาตรวจสอบ Render Logs แล้วลองใหม่'
+          : 'การเชื่อมต่อล้มเหลว กรุณาลองใหม่', 'error-toast');
       } finally {
+        clearTimeout(timeoutId);
         btn.disabled = false;
         btn.innerText = 'ขอรหัส PIN';
       }

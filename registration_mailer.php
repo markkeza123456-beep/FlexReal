@@ -32,6 +32,9 @@ function createFlexibleMailer(string $recipient): PHPMailer
         ? PHPMailer::ENCRYPTION_SMTPS
         : ($encryption === 'STARTTLS' ? PHPMailer::ENCRYPTION_STARTTLS : '');
     $mail->SMTPDebug = max(0, min(4, (int) $config('SMTP_DEBUG', '0')));
+    // Bound SMTP connection waits so a blocked cloud-host egress port cannot
+    // leave password reset and registration requests pending indefinitely.
+    $mail->Timeout = 15;
     $mail->Debugoutput = static function (string $message, int $level): void {
         error_log('[mail.smtp:' . $level . '] ' . trim($message));
     };
