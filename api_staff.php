@@ -702,46 +702,18 @@ try {
                 jsonResponse(['status' => 'error', 'message' => 'ลบถาวรได้เฉพาะบัญชีที่ระงับแล้ว'], 409);
             }
 
-            // Clear nullable audit references and remove dependent records that require a live user.
+            // Keep the user/profile rows so historical scores, enrollments and audit
+            // references remain attached to their original user_id. Release the email
+            // for reuse by replacing it on the archived profile with a unique value.
             $conn->prepare('UPDATE public.students SET parent_user_id = NULL WHERE parent_user_id = :id')->execute([':id' => $memberId]);
             $conn->prepare('UPDATE public.students SET advisor_user_id = NULL WHERE advisor_user_id = :id')->execute([':id' => $memberId]);
-            $conn->prepare('UPDATE public.courses SET created_by = NULL WHERE created_by = :id')->execute([':id' => $memberId]);
-            $conn->prepare('UPDATE public.graduation_requests SET approved_by = NULL WHERE approved_by = :id')->execute([':id' => $memberId]);
-            $conn->prepare('UPDATE public.transfer_permissions SET revoked_by = NULL WHERE revoked_by = :id')->execute([':id' => $memberId]);
-            $conn->prepare('DELETE FROM public.transfer_permissions WHERE instructor_id = :id OR granted_by = :id')->execute([':id' => $memberId]);
-            $conn->prepare('UPDATE public.transcript_requests SET reviewed_by = NULL, approved_by = NULL WHERE reviewed_by = :id OR approved_by = :id')->execute([':id' => $memberId]);
-            $conn->prepare('UPDATE public.lesson_progress SET transferred_by = NULL WHERE transferred_by = :id')->execute([':id' => $memberId]);
-
-            if ($target['role'] === 'student') {
-                // Progress rows can point to the student's transfer request, so remove them first.
-                $conn->prepare('DELETE FROM public.lesson_progress WHERE student_id = :id')->execute([':id' => $memberId]);
-            }
-
-            // Remove transcript requests owned by the account and review rows that cannot retain a deleted reviewer ID.
-            $conn->prepare('DELETE FROM public.transcript_request_lessons WHERE request_id IN (SELECT request_id FROM public.transcript_requests WHERE student_id = :id) OR reviewed_by = :id')->execute([':id' => $memberId]);
-            $conn->prepare('DELETE FROM public.transcript_requests WHERE student_id = :id')->execute([':id' => $memberId]);
-
-            if ($target['role'] === 'student') {
-                $conn->prepare('DELETE FROM public.student_curricula WHERE student_id = :id')->execute([':id' => $memberId]);
-                $conn->prepare('DELETE FROM public.student_courses WHERE student_id = :id')->execute([':id' => $memberId]);
-                $conn->prepare('DELETE FROM public.quiz_attempts WHERE student_id = :id')->execute([':id' => $memberId]);
-            } elseif ($target['role'] === 'teacher') {
-                $conn->prepare('DELETE FROM public.course_teachers WHERE teacher_id = :id')->execute([':id' => $memberId]);
-                $conn->prepare('DELETE FROM public.quiz_attempt_answers WHERE reviewer_id = :id')->execute([':id' => $memberId]);
-            }
-
-            // Clean the staff profile even if its role metadata is inconsistent.
-            // The FK currently uses NO ACTION, so remove this child row before users.
-            $conn->prepare('DELETE FROM public.staff WHERE user_id = :id')->execute([':id' => $memberId]);
-
             $profileTable = ['student' => 'students', 'teacher' => 'teachers', 'parent' => 'parents'][$target['role']] ?? null;
             if ($profileTable !== null) {
-                $profileDelete = $conn->prepare('DELETE FROM public.' . $profileTable . ' WHERE user_id = :id');
-                $profileDelete->execute([':id' => $memberId]);
+                $releaseEmail = $conn->prepare("UPDATE public." . $profileTable . " SET email = CASE WHEN email IS NULL OR email = '' THEN email ELSE email || '_deleted_' || :suffix END WHERE user_id = :id");
+                $releaseEmail->execute([':suffix' => $memberId, ':id' => $memberId]);
             }
-            $deleteUser = $conn->prepare('DELETE FROM public.users WHERE user_id = :id');
-            $deleteUser->execute([':id' => $memberId]);
-            if ($deleteUser->rowCount() !== 1) { throw new RuntimeException('ไม่สามารถลบบัญชีผู้ใช้งานได้'); }
+            $archiveUser = $conn->prepare("UPDATE public.users SET account_status = 'inactive', updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id");
+            $archiveUser->execute([':updated_by' => $actorId, ':id' => $memberId]);
             $conn->commit();
             jsonResponse(['status' => 'success']);
             break;
