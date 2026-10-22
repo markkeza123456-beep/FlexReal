@@ -204,12 +204,9 @@ function getLessonStatusInfo(lessonIndex) {
     const passed = hasAttempt ? (score / Math.max(total, 1)) >= QUIZ_PASS_RATIO : isLessonPassed(lessonIndex);
 
     const progress = Number(row.progress_percent || 0);
-    const documentReadPercent = Math.round(Number(row.document_progress_percent || 0) * 10) / 10;
-    const videoWatchedPercent = Math.round(Number(row.video_progress_percent || 0) * 10) / 10;
-    const breakdown = `อ่าน ${documentReadPercent}% (คิด ${Number(row.document_progress || 0)}%) • วิดีโอ ${videoWatchedPercent}% (คิด ${Number(row.video_progress || 0)}%) • Quiz ${Number(row.quiz_progress || 0)}%`;
-    if (passed) return { label: 'ผ่าน', color: '#1e8449', bg: '#eafaf1', scoreText: hasAttempt ? `${score}/${total}` : '-', progress, breakdown };
-    if (hasAttempt) return { label: 'ไม่ผ่าน', color: '#c0392b', bg: '#fdecea', scoreText: `${score}/${total}`, progress, breakdown };
-    return { label: 'ยังไม่ทำ', color: '#7f8c8d', bg: '#f4f6f7', scoreText: '-', progress, breakdown };
+    if (passed) return { label: 'ผ่าน', color: '#1e8449', bg: '#eafaf1', scoreText: hasAttempt ? `${score}/${total}` : '-', progress };
+    if (hasAttempt) return { label: 'ไม่ผ่าน', color: '#c0392b', bg: '#fdecea', scoreText: `${score}/${total}`, progress };
+    return { label: 'ยังไม่ทำ', color: '#7f8c8d', bg: '#f4f6f7', scoreText: '-', progress };
 }
 
 
@@ -263,7 +260,6 @@ function renderLessonAccordion(containerId) {
                         <span style="font-size:12px;color:#2c3e50;">คะแนนบทนี้: ${status.scoreText}</span>
                         <span style="font-size:12px;color:#2c3e50;">ความคืบหน้า: ${status.progress}%</span>
                     </div>
-                    <p style="margin:-4px 0 10px;font-size:12px;color:#6b7280;">${status.breakdown}</p>
                     ${!canAccessLesson(lesson.index) ? `<p style="margin:0 0 8px;color:#d35400;font-size:13px;">${getLessonLockMessage(lesson.index)}</p>` : ''}
                     ${lesson.content ? `<div class="lesson-article-reading" data-lesson-id="${escapeHtml(lesson.id)}" style="margin:0 0 12px;padding:12px 14px;border:1px solid #f0d6c5;border-radius:10px;background:#fffaf7;white-space:pre-wrap;"><b>รายละเอียดบทเรียน</b><p style="margin:6px 0 0;">${escapeHtml(lesson.content)}</p></div>` : ''}
                     <div class="curriculum-item">
