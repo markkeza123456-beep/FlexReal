@@ -1592,7 +1592,7 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-    <script src="assets/js/teacherdash.js?v=20261022-delete-lesson-fix"></script>
+    <script src="assets/js/teacherdash.js?v=20261022-refresh-new-lesson-v1"></script>
 <?php if ($canAccessTransferApproval): ?>
     <script src="assets/js/teacher_graduation.js?v=20261022-graduation-status-colors"></script>
 <?php endif; ?>

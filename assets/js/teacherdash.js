@@ -226,6 +226,8 @@ document.addEventListener('DOMContentLoaded', () => {
             showSaveFeedback(status, 'เพิ่มเสร็จแล้ว บทเรียนถูกบันทึกเรียบร้อย');
             btn.textContent = 'เพิ่มเสร็จแล้ว';
             btn.disabled = true;
+            window.location.reload();
+            return;
         } catch (error) {
             console.error('saveLesson failed:', error);
             showSaveFeedback(status, error.message || 'บันทึกบทเรียนไม่สำเร็จ', true);
@@ -242,6 +244,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.btn-edit-lsn').forEach(btn => {
         btn.addEventListener('click', () => openContentManager(btn.dataset.id, btn.dataset.name));
     });
+
+    try {
+        const reopenLesson = JSON.parse(sessionStorage.getItem('teacherReopenLessonManager') || 'null');
+        if (reopenLesson?.id) {
+            sessionStorage.removeItem('teacherReopenLessonManager');
+            const editButton = [...document.querySelectorAll('.btn-edit-lsn')]
+                .find(button => String(button.dataset.id) === String(reopenLesson.id));
+            if (editButton) openContentManager(editButton.dataset.id, editButton.dataset.name);
+        }
+    } catch (_) {}
 
     document.querySelectorAll('.btn-del-lsn').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -560,6 +572,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             showSaveFeedback(status, wasNewLesson ? 'เพิ่มเสร็จแล้ว บทเรียนถูกบันทึกเรียบร้อย' : 'บันทึกบทเรียนเรียบร้อยแล้ว');
             saveButton.textContent = 'บันทึกการแก้ไข';
+            if (wasNewLesson) {
+                if (managedLessonId) {
+                    try {
+                        sessionStorage.setItem('teacherReopenLessonManager', JSON.stringify({ id: managedLessonId }));
+                    } catch (_) {}
+                }
+                window.location.reload();
+                return;
+            }
         } catch (error) {
             showSaveFeedback(status, error.message || 'บันทึกบทเรียนไม่สำเร็จ', true);
             saveButton.textContent = managedLessonId ? 'บันทึกการแก้ไข' : 'บันทึกบทเรียน';
