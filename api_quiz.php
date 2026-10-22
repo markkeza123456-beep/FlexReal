@@ -59,7 +59,7 @@ function inferQuestionType(array $options, string $correctAnswer): string
 
 function loadLessons(PDO $conn, string $subjectId): array
 {
-    $stmt = $conn->prepare("SELECT lesson_id AS lessons_id, title AS lessons_name, study_hours, course_id AS subjects_id FROM public.lessons WHERE course_id = ? ORDER BY position ASC");
+    $stmt = $conn->prepare("SELECT lesson_id AS lessons_id, title AS lessons_name, study_hours, quiz_duration_minutes, course_id AS subjects_id FROM public.lessons WHERE course_id = ? ORDER BY position ASC");
     $stmt->execute([$subjectId]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -145,7 +145,8 @@ try {
     $draftScope = !empty($_SESSION['user_id'])
         ? hash_hmac('sha256', (string) $_SESSION['user_id'], session_id())
         : 'guest';
-    echo json_encode(['status' => 'success', 'draft_scope' => $draftScope, 'questions' => $formatted], JSON_UNESCAPED_UNICODE);
+    $durationMinutes = max(1, (int) ($lessons[$offset]['quiz_duration_minutes'] ?? 60));
+    echo json_encode(['status' => 'success', 'draft_scope' => $draftScope, 'duration_seconds' => $durationMinutes * 60, 'questions' => $formatted], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
 }

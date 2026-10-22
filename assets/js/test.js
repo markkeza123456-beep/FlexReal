@@ -14,6 +14,7 @@ const submitBtn = document.getElementById('submitBtn');
 const quizActions = document.querySelector('.quiz-actions');
 const resultBox = document.getElementById('resultBox');
 const backToCourse = document.getElementById('backToCourse');
+const quizTimer = document.getElementById('quizTimer');
 const QUIZ_PASS_RATIO = 1.0;
 const REQUEST_TIMEOUT_MS = 8000;
 
@@ -22,12 +23,19 @@ let answers = [];
 let currentQuestion = 0;
 let lastResultPassed = false;
 let quizSubmissionStarted = false;
+let quizSessionId = 0;
+let quizExpiresAtMs = 0;
+let quizTimerInterval = null;
+let quizLeaving = false;
+let pendingTabSwitch = null;
+let tabSwitchFailed = false;
+let tabSwitchCount = 0;
 let draftKey = `quiz-draft:guest:${subjectId}:${lessonIndex}`;
 
 function saveQuizDraft() {
     if (!quiz.questions.length || quizSubmissionStarted) return;
     try {
-        localStorage.setItem(draftKey, JSON.stringify({ questions: quiz.questions, answers, currentQuestion }));
+        localStorage.setItem(draftKey, JSON.stringify({ questions: quiz.questions, answers, currentQuestion, sessionId: quizSessionId }));
     } catch (error) {
         console.warn('[quiz-draft] unable to save draft', error);
     }
@@ -53,6 +61,47 @@ function randomizeQuizQuestions(questions) {
             answer: originalAnswer
         };
     }));
+}
+
+async function requestQuizSession(action = 'start') {
+    const response = await fetchJsonWithTimeout('quiz_session.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ action, course_id: subjectId, lesson_index: lessonIndex, session_id: quizSessionId || undefined })
+    });
+    const result = await response.json();
+    if (!response.ok && result.status !== 'already_passed') throw new Error(result.message || `HTTP ${response.status}`);
+    return result;
+}
+
+function formatRemainingTime(totalSeconds) {
+    const seconds = Math.max(0, Math.floor(totalSeconds));
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainder = seconds % 60;
+    return hours > 0
+        ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`
+        : `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
+}
+
+function updateQuizTimer() {
+    if (!quizExpiresAtMs || !quizTimer) return;
+    const secondsLeft = Math.max(0, Math.ceil((quizExpiresAtMs - Date.now()) / 1000));
+    quizTimer.textContent = `เวลาที่เหลือ ${formatRemainingTime(secondsLeft)}`;
+    quizTimer.style.color = secondsLeft <= 300 ? '#b91c1c' : '';
+    if (secondsLeft === 0 && !quizSubmissionStarted) {
+        window.clearInterval(quizTimerInterval);
+        window.alert('หมดเวลาทำข้อสอบ ระบบกำลังส่งคำตอบที่บันทึกไว้');
+        showResult({ action: 'timeout' });
+    }
+}
+
+function startQuizTimer() {
+    if (!quizExpiresAtMs) return;
+    if (quizTimerInterval) window.clearInterval(quizTimerInterval);
+    updateQuizTimer();
+    quizTimerInterval = window.setInterval(updateQuizTimer, 1000);
 }
 
 quizTitle.innerText = `แบบทดสอบวิชา ${courseName} (บทที่ ${lessonIndex})`;
@@ -135,7 +184,7 @@ function saveCurrentAnswer() {
     saveQuizDraft();
 }
 
-async function saveTestResult(score, totalScore = quiz.questions.length) {
+async function saveTestResult(score, totalScore = quiz.questions.length, action = 'submit') {
     const response = await fetchJsonWithTimeout('test_submit.php', {
         method: 'POST',
         credentials: 'same-origin',
@@ -145,6 +194,8 @@ async function saveTestResult(score, totalScore = quiz.questions.length) {
             subject_id: subjectId,
             lesson_index: lessonIndex,
             lesson_no: lessonIndex,
+            action,
+            session_id: quizSessionId,
             score,
             total_score: totalScore,
             answers: Object.fromEntries(quiz.questions.map((question, index) => [String(question.question_id), answers[index]]))
@@ -203,9 +254,10 @@ function bindResultAction(isPassed) {
     };
 }
 
-async function showResult() {
+async function showResult(options = {}) {
     if (quizSubmissionStarted) return;
     quizSubmissionStarted = true;
+    if (quizTimerInterval) window.clearInterval(quizTimerInterval);
     saveCurrentAnswer();
     const totalScore = quiz.questions.reduce((total, item) => total + Number(item.max_score || 1), 0);
     const essayCount = quiz.questions.filter((item) => isEssayQuestion(item)).length;
@@ -217,13 +269,13 @@ async function showResult() {
     const score = calculatedScore;
     const requiredScore = totalScore * QUIZ_PASS_RATIO;
     const isPassed = score >= requiredScore;
-    const effectivePassed = isPassed;
+    const effectivePassed = isPassed && options.action !== 'timeout';
 
     resultBox.hidden = false;
     resultBox.innerHTML = `
         <h2>ผลคะแนน</h2>
         <p>คุณได้ <span class="score">${score}/${totalScore}</span> คะแนน</p>
-        <p>${isPassed ? 'ผ่านเกณฑ์แล้ว สามารถกลับไปหน้ารายวิชาได้' : hasPendingEssay ? 'ส่งข้อเขียนแล้ว รออาจารย์ตรวจผลก่อน' : 'ยังไม่ผ่านเกณฑ์ กรุณาทำซ้ำบทเดิมอีกครั้ง'}</p>
+        <p id="quizResultMessage">${options.action === 'timeout' ? 'หมดเวลาแล้ว ระบบส่งคำตอบที่บันทึกไว้' : isPassed ? 'ผ่านเกณฑ์แล้ว สามารถกลับไปหน้ารายวิชาได้' : hasPendingEssay ? 'ส่งข้อเขียนแล้ว รออาจารย์ตรวจผลก่อน' : 'ยังไม่ผ่านเกณฑ์ กรุณาทำซ้ำบทเดิมอีกครั้ง'}</p>
         <p>เกณฑ์ผ่าน: ${requiredScore} คะแนน</p>
         ${essayCount > 0 ? `<p>มีข้อเขียน ${essayCount} ข้อ รอครูตรวจ</p>` : ''}
         <p id="saveStatus">กำลังบันทึกผลแบบทดสอบ...</p>
@@ -240,7 +292,7 @@ async function showResult() {
     const saveStatus = document.getElementById('saveStatus');
     window.__lastQuizSaveResult = { ok: false, status: 'pending', score, totalScore };
     try {
-        const result = await saveTestResult(score, totalScore);
+        const result = await saveTestResult(score, totalScore, options.action || 'submit');
         if (result.status === 'unauthorized') {
             window.__lastQuizSaveResult = { ok: false, status: 'unauthorized', error: result.message || 'unauthorized', score, totalScore };
             saveStatus.innerText = '';
@@ -258,6 +310,16 @@ async function showResult() {
                 requiredScore,
             };
             saveStatus.innerText = 'บันทึกผลแล้ว';
+            const resultMessage = document.getElementById('quizResultMessage');
+            if (resultMessage) {
+                resultMessage.innerText = lastResultPassed
+                    ? 'ผ่านเกณฑ์แล้ว สามารถกลับไปหน้ารายวิชาได้'
+                    : result.pending_review
+                        ? 'ส่งข้อเขียนแล้ว รออาจารย์ตรวจผลก่อน'
+                        : result.quiz_status === 'failed'
+                            ? 'ไม่ผ่านเกณฑ์ กรุณาทำแบบทดสอบใหม่'
+                            : resultMessage.innerText;
+            }
             if (lastResultPassed) {
                 const answerKey = document.createElement('div');
                 answerKey.innerHTML = renderAnswerKey();
@@ -277,8 +339,13 @@ async function showResult() {
             }
             console.info('[quiz-save] success', window.__lastQuizSaveResult);
             const actionWrap = resultBox.querySelector('.result-action-wrap');
+            const updatedAction = renderResultActionButton(lastResultPassed, Boolean(result.pending_review));
             if (actionWrap) {
-                actionWrap.outerHTML = renderResultActionButton(lastResultPassed, Boolean(result.pending_review));
+                if (updatedAction) actionWrap.outerHTML = updatedAction;
+                else actionWrap.remove();
+                bindResultAction(lastResultPassed);
+            } else if (updatedAction) {
+                resultBox.insertAdjacentHTML('beforeend', updatedAction);
                 bindResultAction(lastResultPassed);
             }
         } else if (result.status === 'already_passed') {
@@ -344,6 +411,22 @@ async function loadQuizFromDatabase() {
             return;
         }
 
+        const session = await requestQuizSession('start');
+        if (session.status === 'already_passed') {
+            quizSubtitle.innerText = 'คุณผ่านแบบทดสอบบทนี้แล้ว';
+            quizForm.innerHTML = '<p>ผ่านแบบทดสอบบทนี้แล้ว จึงไม่สามารถทำซ้ำได้</p>';
+            prevBtn.hidden = true;
+            nextBtn.hidden = true;
+            submitBtn.hidden = true;
+            if (quizActions) quizActions.hidden = true;
+            return;
+        }
+        if (session.status !== 'success') throw new Error(session.message || 'เริ่มเซสชันข้อสอบไม่สำเร็จ');
+        quizSessionId = Number(session.session_id);
+        quizExpiresAtMs = Number(session.expires_at_ms);
+        tabSwitchCount = Number(session.tab_switch_count || 0);
+        if (session.previous_timed_out) window.alert('เวลาสอบครั้งก่อนหมดแล้ว ระบบบันทึกผลเป็นไม่ผ่าน คุณสามารถเริ่มทำใหม่ได้');
+
         draftKey = `quiz-draft:${result.draft_scope || 'guest'}:${subjectId}:${lessonIndex}`;
         let draft = null;
         try { draft = JSON.parse(localStorage.getItem(draftKey) || 'null'); } catch (_) {}
@@ -351,7 +434,8 @@ async function loadQuizFromDatabase() {
         const draftQuestionIds = Array.isArray(draft?.questions) ? draft.questions.map((question) => Number(question.question_id)).sort((a, b) => a - b) : [];
         const validDraft = serverQuestionIds.length === draftQuestionIds.length
             && serverQuestionIds.every((id, index) => id === draftQuestionIds[index])
-            && Array.isArray(draft.answers) && draft.answers.length === result.questions.length;
+            && Array.isArray(draft.answers) && draft.answers.length === result.questions.length
+            && Number(draft.sessionId) === quizSessionId;
         quiz = {
             subtitle: `ทำแบบทดสอบบทที่ ${lessonIndex}`,
             questions: validDraft ? draft.questions : randomizeQuizQuestions(result.questions)
@@ -361,6 +445,7 @@ async function loadQuizFromDatabase() {
         quizSubtitle.innerText = quiz.subtitle;
         renderQuestion();
         saveQuizDraft();
+        startQuizTimer();
     } catch (error) {
         quizSubtitle.innerText = 'โหลดข้อสอบไม่สำเร็จ';
         quizForm.innerHTML = '<p>ไม่สามารถเชื่อมต่อฐานข้อมูลข้อสอบได้ หรือใช้เวลานานเกินไป</p><button type="button" class="primary-btn" id="retryQuizBtn" style="margin-top:12px;">ลองโหลดใหม่</button>';
@@ -420,3 +505,75 @@ submitBtn.addEventListener('click', () => {
 loadQuizFromDatabase();
 quizForm.addEventListener('input', saveCurrentAnswer);
 quizForm.addEventListener('change', saveCurrentAnswer);
+
+backToCourse.addEventListener('click', async (event) => {
+    if (!quizSessionId || quizSubmissionStarted || quizLeaving) return;
+    event.preventDefault();
+    const shouldExit = window.confirm('ยืนยันออกจากแบบทดสอบหรือไม่? หากออกตอนนี้ ระบบจะบันทึกผลเป็นไม่ผ่าน และต้องเริ่มทำข้อสอบใหม่');
+    if (!shouldExit) return;
+    saveCurrentAnswer();
+    quizLeaving = true;
+    if (quizTimerInterval) window.clearInterval(quizTimerInterval);
+    try {
+        const result = await requestQuizSession('abandon');
+        if (result.status !== 'success') throw new Error(result.message || 'บันทึกผลไม่ผ่านไม่สำเร็จ');
+        localStorage.removeItem(draftKey);
+        window.location.assign(backToCourse.href);
+    } catch (error) {
+        quizLeaving = false;
+        alert(error.message || 'บันทึกผลสอบไม่สำเร็จ กรุณาลองอีกครั้ง');
+        startQuizTimer();
+    }
+});
+
+window.addEventListener('beforeunload', (event) => {
+    if (!quizSessionId || quizSubmissionStarted || quizLeaving) return;
+    event.preventDefault();
+    event.returnValue = '';
+});
+
+window.addEventListener('pagehide', () => {
+    if (!quizSessionId || quizSubmissionStarted || quizLeaving) return;
+    const body = new Blob([JSON.stringify({
+        action: 'abandon',
+        course_id: subjectId,
+        lesson_index: lessonIndex,
+        session_id: quizSessionId
+    })], { type: 'application/json' });
+    navigator.sendBeacon('quiz_session.php', body);
+});
+
+function handlePendingTabSwitch() {
+    if (!pendingTabSwitch || document.visibilityState !== 'visible') return;
+    const event = pendingTabSwitch;
+    pendingTabSwitch = null;
+    if (event.auto_failed) {
+        tabSwitchFailed = true;
+        quizLeaving = true;
+        quizSubmissionStarted = true;
+        if (quizTimerInterval) window.clearInterval(quizTimerInterval);
+        localStorage.removeItem(draftKey);
+        alert('คุณสลับแท็บหลังได้รับคำเตือนครบ 3 ครั้ง ระบบบันทึกผลเป็นไม่ผ่านและกำลังกลับไปหน้ารายวิชา');
+        window.location.assign(backToCourse.href);
+        return;
+    }
+    const warning = event.tab_switch_count >= 3
+        ? 'คุณได้รับคำเตือนครบ 3 ครั้งแล้ว หากสลับอีกครั้งระบบจะบันทึกผลเป็นไม่ผ่าน'
+        : 'หากสลับครบ 3 ครั้งแล้วสลับอีก ระบบจะบันทึกผลเป็นไม่ผ่าน';
+    alert(`เตือน: คุณสลับออกจากหน้าข้อสอบครั้งที่ ${event.tab_switch_count} จาก 3 ครั้ง ${warning}`);
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        if (!quizSessionId || quizSubmissionStarted || quizLeaving) return;
+        requestQuizSession('tab_switch').then((result) => {
+            if (result.status === 'success') {
+                tabSwitchCount = Number(result.tab_switch_count || tabSwitchCount);
+                pendingTabSwitch = result;
+                handlePendingTabSwitch();
+            }
+        }).catch((error) => console.warn('[quiz-session] unable to record tab switch', error));
+        return;
+    }
+    handlePendingTabSwitch();
+});

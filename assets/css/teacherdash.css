@@ -491,6 +491,12 @@ html, body {
 .course-content-editor .btn-save { min-width: 180px; padding: 12px 22px; }
 .course-content-editor form { gap: 12px; }
 .course-content-editor form .btn-save { margin-top: 6px; align-self: flex-start; }
+.lesson-list-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; }
+.lesson-list-heading h3 { margin:0; }
+.teacher-subject-stats { display:flex; flex-direction:column; align-items:flex-end; gap:4px; text-align:right; font-size:13.5px; }
+.teacher-subject-stats-title { margin-bottom:2px; color:var(--text-muted); font-size:11.5px; font-weight:500; }
+.teacher-subject-stats-label { color:var(--text-dim); }
+.teacher-subject-stats-count { color:var(--text); font-weight:600; }
 #inlineLessonDocumentHint, #inlineVideoFileHint, #inlineVideoForm > p { display: none; }
 #inlineVideoList { display: none; }
 #inlineVideoForm .btn-cancel { margin-left: 6px; }
@@ -500,6 +506,8 @@ html, body {
     .course-content-editor > div:last-child { grid-column: auto; }
     .content-manager-modal { padding-inline: 16px; }
 }
+@media (max-width: 520px) { .teacher-subject-stats { align-items:flex-start; text-align:left; } }
+@media (max-width: 520px) { .lesson-list-heading { align-items:flex-start; flex-direction:column; } }
 
 .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .modal-title { font-size: 17px; font-weight: 600; color: var(--brand-700); }

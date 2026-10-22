@@ -571,6 +571,26 @@ try {
         exit;
     }
 
+    if ($action === 'set_quiz_duration') {
+        $lessonId = trim((string) ($_POST['lesson_id'] ?? ''));
+        $hours = filter_var($_POST['hours'] ?? null, FILTER_VALIDATE_INT);
+        $minutes = filter_var($_POST['minutes'] ?? null, FILTER_VALIDATE_INT);
+        if ($lessonId === '' || $hours === false || $minutes === false || $hours < 0 || $hours > 24 || $minutes < 0 || $minutes > 59) {
+            throw new Exception('กรุณาระบุชั่วโมงและนาทีให้ถูกต้อง');
+        }
+        $durationMinutes = ($hours * 60) + $minutes;
+        if ($durationMinutes < 1 || $durationMinutes > 1440) {
+            throw new Exception('เวลาสอบต้องอยู่ระหว่าง 1 นาทีถึง 24 ชั่วโมง');
+        }
+        if (!teacherOwnsLesson($conn, $teacherId, $lessonId)) {
+            throw new Exception('คุณไม่มีสิทธิ์ตั้งเวลาข้อสอบบทเรียนนี้');
+        }
+        $conn->prepare('UPDATE public.lessons SET quiz_duration_minutes = :duration, updated_at = now(), updated_by = :teacher_id WHERE lesson_id = :lesson_id')
+            ->execute([':duration' => $durationMinutes, ':teacher_id' => $teacherId, ':lesson_id' => $lessonId]);
+        echo json_encode(['success' => true, 'duration_minutes' => $durationMinutes, 'message' => 'บันทึกเวลาทำข้อสอบแล้ว']);
+        exit;
+    }
+
     if ($action === 'add_quiz') {
         $lessonId = trim((string) ($_POST['lesson_id'] ?? ''));
         $type = trim((string) ($_POST['type'] ?? 'choice'));

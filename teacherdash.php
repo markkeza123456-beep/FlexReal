@@ -143,7 +143,7 @@ $selectedSubject = $selectedSubjectId !== '' ? ($subjectMap[$selectedSubjectId] 
 $subLessonsBySubject = [];
 if (!empty($subjectIds)) {
     $lessonStmt = $conn->prepare('
-        SELECT l.lesson_id AS lessons_id, l.title AS lessons_name, l.study_hours, l.course_id AS subjects_id,
+        SELECT l.lesson_id AS lessons_id, l.title AS lessons_name, l.study_hours, l.quiz_duration_minutes, l.course_id AS subjects_id,
             COALESCE(l.updated_at, l.created_at) AS last_modified_at,
             COALESCE(lesson_editor.full_name, l.updated_by, \'ยังไม่มีข้อมูล\') AS lesson_editor_name,
             video_edit.last_modified_at AS video_last_modified_at,
@@ -169,6 +169,7 @@ if (!empty($subjectIds)) {
             'id' => $lessonRow['lessons_id'],
             'title' => $lessonRow['lessons_name'],
             'duration' => $lessonRow['study_hours'] > 0 ? $lessonRow['study_hours'] . ' ชั่วโมง' : 'ไม่ระบุเวลา',
+            'quiz_duration_minutes' => max(1, (int) ($lessonRow['quiz_duration_minutes'] ?? 60)),
             'last_modified_at' => $lessonRow['last_modified_at'],
             'lesson_editor_name' => $lessonRow['lesson_editor_name'],
             'video_last_modified_at' => $lessonRow['video_last_modified_at'],
@@ -357,7 +358,7 @@ $stats = [
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261022-content-manager-header">
+    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261022-subject-stats-right">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px;
@@ -562,8 +563,7 @@ $stats = [
         <?php $defaultSubject = $selectedSubject; ?>
 
         <div id="lessonDetailSection" style="display:flex;flex-direction:column;gap:20px">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-                <div style="display:flex;align-items:center;gap:12px">
+            <div style="display:flex;align-items:center;justify-content:flex-start;gap:12px">
                     <span style="font-size:13px;color:var(--text-muted)">รายละเอียดวิชา</span>
                     <select id="teacherSubjectSelect" style="min-width:240px;padding:9px 12px;border-radius:8px;background:var(--bg3);color:var(--text);border:1px solid var(--border);font-family:'Kanit',sans-serif;">
                         <?php foreach ($subjects as $subjectOption): ?>
@@ -572,10 +572,6 @@ $stats = [
                             </option>
                         <?php endforeach; ?>
                     </select>
-                </div>
-                <div style="display:flex;gap:8px;align-items:center">
-                    <button type="button" class="btn-add-lesson" id="openContentManagerBtn" style="font-size:13px;padding:8px 14px" <?= $defaultSubjectId === '' ? 'disabled' : '' ?>> จัดการเนื้อหา</button>
-                </div>
             </div>
 
             <div class="card" id="lessonDetailHeader" style="padding: 24px;">
@@ -613,20 +609,17 @@ $stats = [
                                     <div><span style="color:var(--text-dim)">คำอธิบาย:</span> <?= h($defaultSubject['subject']) ?></div>
                                 </div>
                             </div>
-                            <div>
-                                <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:6px;font-weight:500">สถิติเบื้องต้น</div>
-                                <div style="display:flex;flex-direction:column;gap:8px;font-size:13.5px">
-                                    <div style="display:flex;justify-content:space-between">
-                                        <span style="color:var(--text-dim)">นักเรียนลงทะเบียน</span>
-                                        <span class="mono" style="color:var(--text)"><?= (int)$defaultSubject['students'] ?> คน</span>
-                                    </div>
-                                </div>
+                            <div class="teacher-subject-stats">
+                                <div class="teacher-subject-stats-title">สถิติเบื้องต้น</div>
+                                <span class="teacher-subject-stats-label">นักเรียนลงทะเบียน</span>
+                                <span class="teacher-subject-stats-count mono"><?= (int)$defaultSubject['students'] ?> คน</span>
                             </div>
                         </div>
 
                         <div style="border-top:1px solid var(--border);padding-top:24px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <div class="lesson-list-heading">
                                 <h3 style="font-size:16px;color:var(--text);font-weight:600;">รายการบทเรียนย่อย</h3>
+                                <button type="button" class="btn-add-lesson" id="openContentManagerBtn" style="font-size:13px;padding:8px 14px" <?= $defaultSubjectId === '' ? 'disabled' : '' ?>>＋ เพิ่มบทเรียน</button>
                             </div>
                             <div style="display:flex;flex-direction:column;gap:12px;">
                                 <?php
@@ -794,6 +787,14 @@ $stats = [
                                 <span class="badge badge-draft"><?= count($lessonQuizzes) ?> ข้อ</span>
                             </summary>
                             <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:10px;">
+                                <?php $quizDurationMinutes = max(1, (int) ($lessonGroup['quiz_duration_minutes'] ?? 60)); ?>
+                                <div style="display:flex;flex-wrap:wrap;align-items:end;gap:8px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);">
+                                    <strong style="width:100%;font-size:13px;">กำหนดเวลาทำข้อสอบ</strong>
+                                    <label style="font-size:12px;">ชั่วโมง <input class="quiz-duration-hours" type="number" min="0" max="24" value="<?= intdiv($quizDurationMinutes, 60) ?>" style="width:72px;padding:7px;border:1px solid var(--border);border-radius:6px;"></label>
+                                    <label style="font-size:12px;">นาที <input class="quiz-duration-minutes" type="number" min="0" max="59" value="<?= $quizDurationMinutes % 60 ?>" style="width:72px;padding:7px;border:1px solid var(--border);border-radius:6px;"></label>
+                                    <button type="button" class="btn-save-quiz-duration" data-lesson-id="<?= h($lessonId) ?>" style="padding:8px 12px;">บันทึกเวลา</button>
+                                    <span class="quiz-duration-status" aria-live="polite" style="font-size:12px;color:var(--text-muted);"></span>
+                                </div>
                                 <button class="btn-open-add-quiz" data-id="<?= h($lessonId) ?>" data-name="<?= h($lessonGroup['title']) ?>" style="align-self:flex-start;"><span style="font-size:16px;line-height:1;">+</span> เพิ่มข้อสอบบทนี้</button>
                                 <?php if (empty($lessonQuizzes)): ?>
                                     <div style="padding:18px;color:var(--text-muted);font-size:13px;border:1px dashed var(--border);border-radius:8px;">ยังไม่มีข้อสอบในบทนี้</div>
@@ -1577,7 +1578,7 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-    <script src="assets/js/teacherdash.js?v=20261020-integer-question-scores"></script>
+    <script src="assets/js/teacherdash.js?v=20261022-quiz-duration-settings"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>
