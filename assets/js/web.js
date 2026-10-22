@@ -1246,7 +1246,9 @@ function openCourseDocument(lessonIndex) {
     const body = document.getElementById('modal-body');
     const modal = document.getElementById('modal-overlay');
     if (!body || !modal) return;
-    body.innerHTML = `<h3 style="margin:0 0 12px;color:#E67E22;"> ${escapeHtml(lesson?.documentName || lesson?.title || 'เอกสารประกอบบทเรียน')}</h3><iframe title="เอกสารประกอบบทเรียน" src="view_course_lesson.php?${params.toString()}" style="display:block;width:100%;height:min(72vh,780px);border:1px solid #e5e7eb;border-radius:8px;background:#fff;"></iframe>`;
+    body.innerHTML = `<iframe class="document-preview-frame" title="เอกสารประกอบบทเรียน: ${escapeHtml(lesson?.documentName || lesson?.title || 'เอกสารประกอบบทเรียน')}" src="view_course_lesson.php?${params.toString()}" allow="fullscreen" allowfullscreen></iframe>`;
+    modal.classList.add('document-preview-overlay');
+    modal.querySelector('.modal-content')?.classList.add('document-preview-modal');
     modal.style.display = 'flex';
 }
 
@@ -1472,7 +1474,12 @@ function closeModal() {
     activeVideoProgressTimer = null;
     const modalBody = document.getElementById('modal-body');
     if(modalBody) modalBody.innerHTML = '';
-    document.getElementById('modal-overlay').style.display = 'none';
+    const modal = document.getElementById('modal-overlay');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('document-preview-overlay');
+        modal.querySelector('.modal-content')?.classList.remove('document-preview-modal');
+    }
 }
 
 document.addEventListener('visibilitychange', () => {

@@ -113,10 +113,10 @@ $hubClientCourse = $hubCourse ? [
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Flexible Learning Hub</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="assets/css/web.css?v=20261022-mobile-login-topline">
+    <link rel="stylesheet" href="assets/css/web.css?v=20261022-pdf-reader-zoom-v1">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
@@ -365,7 +365,7 @@ $hubClientCourse = $hubCourse ? [
 </footer>
 
 <script>window.FLEXREAL_INITIAL = <?= json_encode(['courses' => $hubClientCourses, 'course' => $hubClientCourse, 'lessons' => $hubLessons, 'instructors' => $hubInstructors], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;</script>
-<script src="assets/js/web.js?v=20261022-mobile-login-topline"></script>
+<script src="assets/js/web.js?v=20261022-pdf-reader-zoom-v1"></script>
 
 </body>
 </html>
