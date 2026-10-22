@@ -14,7 +14,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261021-profile-two-column-fields">
+    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261022-course-progress-table-align">
     <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-background-only">
     <link rel="stylesheet" href="assets/css/responsive.css">
     <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout">
@@ -108,7 +108,13 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
                         <input type="text" id="courseSearch" placeholder="ค้นหาวิชาเรียน...">
                     </div>
                     <div class="table-responsive">
-                        <table class="data-table">
+                        <table class="data-table course-progress-table">
+                            <colgroup>
+                                <col class="course-col-number">
+                                <col class="course-col-name">
+                                <col class="course-col-progress">
+                                <col class="course-col-result">
+                            </colgroup>
                             <thead>
                                 <tr>
                                     <th>ลำดับ</th>
