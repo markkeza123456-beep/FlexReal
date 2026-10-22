@@ -30,7 +30,6 @@ if ($firstName === '' || $lastName === '' || mb_strlen($firstName) > 100 || mb_s
 if ($newPassword !== '' && (mb_strlen($newPassword) < 6 || $currentPassword === '' || $newPassword !== $confirmPassword)) {
     profileJson(['success' => false, 'message' => 'กรุณาตรวจสอบรหัสผ่านปัจจุบัน รหัสผ่านใหม่ และการยืนยันรหัสผ่าน'], 422);
 }
-
 require_once __DIR__ . '/config/db.php';
 try {
     $conn->beginTransaction();
@@ -60,7 +59,8 @@ try {
         ->execute([':updated_by' => $userId, ':id' => $userId]);
     $conn->commit();
     $_SESSION['name'] = $name;
-    profileJson(['success' => true, 'message' => $newPassword !== '' ? 'เปลี่ยนรหัสผ่านสำเร็จ' : 'บันทึกข้อมูลสำเร็จ']);
+    $message = $newPassword !== '' ? 'เปลี่ยนรหัสผ่านสำเร็จ' : 'บันทึกข้อมูลสำเร็จ';
+    profileJson(['success' => true, 'message' => $message]);
 } catch (Throwable $e) {
     if ($conn->inTransaction()) $conn->rollBack();
     error_log('Student profile update failed: ' . $e->getMessage());
