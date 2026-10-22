@@ -169,8 +169,10 @@ try {
           <div class="field" id="field-province">
             <label class="label" for="province">จังหวัด<span class="required">*</span></label>
             <div class="input-wrap">
-              <input type="text" id="province" name="province" list="province-options" placeholder="พิมพ์หรือเลือกจังหวัด" autocomplete="address-level1" required />
-              <datalist id="province-options"></datalist>
+              <select id="province" name="province" autocomplete="address-level1" required>
+                <option value="">เลือกจังหวัด...</option>
+              </select>
+              <span class="select-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
               <span class="focus-bar"></span>
             </div>
             <span class="error-msg" id="province-error"></span>
@@ -179,8 +181,10 @@ try {
           <div class="field" id="field-amphoe">
             <label class="label" for="amphoe">อำเภอ / เขต<span class="required">*</span></label>
             <div class="input-wrap">
-              <input type="text" id="amphoe" name="amphoe" list="amphoe-options" placeholder="เลือกจังหวัดก่อน" autocomplete="address-level2" required disabled />
-              <datalist id="amphoe-options"></datalist>
+              <select id="amphoe" name="amphoe" autocomplete="address-level2" required disabled>
+                <option value="">เลือกอำเภอ...</option>
+              </select>
+              <span class="select-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
               <span class="focus-bar"></span>
             </div>
             <span class="error-msg" id="amphoe-error"></span>
@@ -191,8 +195,10 @@ try {
           <div class="field" id="field-tambon">
             <label class="label" for="tambon">ตำบล / แขวง<span class="required">*</span></label>
             <div class="input-wrap">
-              <input type="text" id="tambon" name="tambon" list="tambon-options" placeholder="เลือกอำเภอก่อน" autocomplete="address-level3" required disabled />
-              <datalist id="tambon-options"></datalist>
+              <select id="tambon" name="tambon" autocomplete="address-level3" required disabled>
+                <option value="">เลือกตำบล...</option>
+              </select>
+              <span class="select-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 18"/></svg></span>
               <span class="focus-bar"></span>
             </div>
             <span class="error-msg" id="tambon-error"></span>
@@ -201,7 +207,7 @@ try {
           <div class="field" id="field-zipcode">
             <label class="label" for="zipcode">รหัสไปรษณีย์<span class="required">*</span></label>
             <div class="input-wrap">
-              <input type="text" id="zipcode" name="zipcode" placeholder="XXXXX" maxlength="5" required />
+              <input type="text" id="zipcode" name="zipcode" placeholder="XXXXX" maxlength="5" inputmode="numeric" readonly required />
               <span class="focus-bar"></span>
             </div>
             <span class="error-msg" id="zipcode-error"></span>
