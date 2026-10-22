@@ -164,9 +164,13 @@ try {
             $lastName = postValue('lastname');
             $email = postValue('email');
             $phone = postValue('phone');
+            $requestedRole = strtolower(postValue('role', 'staff'));
 
-            if (strlen($memberId) !== 13 || $password === '' || $firstName === '' || $lastName === '') {
+            if (strlen($memberId) !== 13 || strlen($password) < 6 || $firstName === '' || $lastName === '') {
                 jsonResponse(['status' => 'error', 'message' => 'ข้อมูลเจ้าหน้าที่ไม่ครบถ้วน'], 400);
+            }
+            if (!in_array($requestedRole, ['staff', 'director'], true)) {
+                jsonResponse(['status' => 'error', 'message' => 'ระดับสิทธิ์ไม่ถูกต้อง'], 400);
             }
             if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 jsonResponse(['status' => 'error', 'message' => 'รูปแบบอีเมลไม่ถูกต้อง'], 400);
@@ -174,8 +178,8 @@ try {
 
             $conn->beginTransaction();
             $actorId = (string) $_SESSION['user_id'];
-            $conn->prepare('INSERT INTO public.users (user_id, password_hash, role, created_by, updated_by) VALUES (:id, :password_hash, \'staff\', :created_by, :updated_by)')
-                ->execute([':id' => $memberId, ':password_hash' => password_hash($password, PASSWORD_DEFAULT), ':created_by' => $actorId, ':updated_by' => $actorId]);
+            $conn->prepare('INSERT INTO public.users (user_id, password_hash, role, created_by, updated_by) VALUES (:id, :password_hash, :role, :created_by, :updated_by)')
+                ->execute([':id' => $memberId, ':password_hash' => password_hash($password, PASSWORD_DEFAULT), ':role' => $requestedRole, ':created_by' => $actorId, ':updated_by' => $actorId]);
             $conn->prepare('INSERT INTO public.staff (user_id, first_name, last_name, email, phone, created_by, updated_by) VALUES (:id, :first_name, :last_name, :email, :phone, :created_by, :updated_by)')
                 ->execute([':id' => $memberId, ':first_name' => $firstName, ':last_name' => $lastName, ':email' => $email !== '' ? $email : null, ':phone' => $phone !== '' ? $phone : null, ':created_by' => $actorId, ':updated_by' => $actorId]);
             $conn->commit();
@@ -191,7 +195,7 @@ try {
             $requestedRole = strtolower(postValue('role'));
             $accountStatus = strtolower(postValue('status', 'active'));
 
-            $roles = ['student' => true, 'teacher' => true, 'parent' => true, 'staff' => true];
+            $roles = ['student' => true, 'teacher' => true, 'parent' => true, 'staff' => true, 'director' => true];
 
             if ($memberId === '' || $firstName === '') {
                 jsonResponse(['status' => 'error', 'message' => 'กรุณาระบุรหัสสมาชิกและชื่อ'], 400);
@@ -251,6 +255,7 @@ try {
                     break;
 
                 case 'staff':
+                case 'director':
                     $profile = $conn->prepare('SELECT 1 FROM public.staff WHERE user_id = :id');
                     $profile->execute([':id' => $memberId]);
                     $staffProfileExists = (bool) $profile->fetchColumn();

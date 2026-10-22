@@ -615,6 +615,7 @@ if ($displayName !== '') {
                   <option value="teacher">อาจารย์</option>
                   <option value="parent">ผู้ปกครอง</option>
                   <option value="staff">เจ้าหน้าที่</option>
+                  <option value="director">ผู้อำนวยการ</option>
                 </select>
                 <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
@@ -642,12 +643,12 @@ if ($displayName !== '') {
       <section class="page staff-add-page" id="page-staff-add">
         <div class="page-header">
           <div>
-            <div class="page-title">เพิ่มเจ้าหน้าที่</div>
-            <div class="page-sub">สร้างบัญชีเจ้าหน้าที่ใหม่ในระบบ</div>
+            <div class="page-title">เพิ่มเจ้าหน้าที่ / ผู้บริหาร</div>
+            <div class="page-sub">สร้างบัญชีและกำหนดระดับสิทธิ์ในระบบ</div>
           </div>
         </div>
         <form class="form-card" id="staffCreateForm">
-          <div class="form-section-label">ข้อมูลเจ้าหน้าที่</div>
+          <div class="form-section-label">ข้อมูลเจ้าหน้าที่ / ผู้บริหาร</div>
           <div class="form-field">
             <label class="form-label" for="stf-user-id">เลขบัตรประชาชน <span class="req">*</span></label>
             <div class="input-wrap">
@@ -675,6 +676,15 @@ if ($displayName !== '') {
             <div class="form-field"><label class="form-label" for="stf-email">อีเมล</label><div class="input-wrap"><input type="email" id="stf-email" placeholder="email@example.com" /></div></div>
             <div class="form-field"><label class="form-label" for="stf-phone">เบอร์โทรศัพท์</label><div class="input-wrap"><input type="tel" id="stf-phone" placeholder="เบอร์โทรศัพท์" /></div></div>
           </div>
+          <div class="form-field">
+            <label class="form-label" for="stf-role">ระดับสิทธิ์</label>
+            <div class="input-wrap select-wrap">
+              <select id="stf-role">
+                <option value="staff">เจ้าหน้าที่</option>
+                <option value="director">ผู้อำนวยการ</option>
+              </select>
+            </div>
+          </div>
           <div class="form-grid-2">
             <div class="form-field">
               <label class="form-label" for="stf-password">รหัสผ่าน <span class="req">*</span></label>
@@ -695,7 +705,7 @@ if ($displayName !== '') {
           </div>
           <div class="form-actions">
             <button type="button" class="btn-ghost" id="staffResetBtn">ล้างฟอร์ม</button>
-            <button type="submit" class="btn-primary"><span class="btn-text">สร้างบัญชีเจ้าหน้าที่</span></button>
+            <button type="submit" class="btn-primary"><span class="btn-text">สร้างบัญชี</span></button>
           </div>
         </form>
 

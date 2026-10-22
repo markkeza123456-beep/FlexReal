@@ -14,12 +14,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     loginResponse('error', 405, ['message' => 'คำขอไม่ถูกต้อง']);
 }
 
-$role = strtolower(trim((string) ($_POST['role'] ?? '')));
+$requestedRole = strtolower(trim((string) ($_POST['role'] ?? '')));
 $rawId = trim((string) ($_POST['email'] ?? ''));
 $id = str_replace(['-', ' ', "\t", "\r", "\n"], '', $rawId);
 $password = (string) ($_POST['password'] ?? '');
 
-if (!in_array($role, ['student', 'parent', 'teacher', 'staff'], true)
+if (!in_array($requestedRole, ['student', 'parent', 'teacher', 'staff', 'director', 'staff_or_director'], true)
     || !preg_match('/^[0-9]{13}$/', $id)
     || $password === '') {
     error_log('[auth.login] rejected invalid request fields');
@@ -30,14 +30,20 @@ try {
     require_once __DIR__ . '/config/db.php';
     require_once __DIR__ . '/curriculum_subjects_lib.php';
 
-    $profile = match ($role) {
+    $role = $requestedRole === 'staff_or_director' ? null : $requestedRole;
+    $profile = match ($requestedRole) {
         'student' => 'SELECT full_name AS name, student_level, NULL::varchar AS student_id FROM public.students WHERE user_id = u.user_id',
         'parent' => 'SELECT p.full_name AS name, NULL::varchar AS student_level, (SELECT s.user_id FROM public.students s WHERE s.parent_user_id = u.user_id LIMIT 1) AS student_id FROM public.parents p WHERE p.user_id = u.user_id',
         'teacher' => 'SELECT full_name AS name, NULL::varchar AS student_level, NULL::varchar AS student_id FROM public.teachers WHERE user_id = u.user_id',
-        'staff' => "SELECT CONCAT(first_name, ' ', last_name) AS name, NULL::varchar AS student_level, NULL::varchar AS student_id FROM public.staff WHERE user_id = u.user_id",
+        'staff', 'director', 'staff_or_director' => "SELECT CONCAT(first_name, ' ', last_name) AS name, NULL::varchar AS student_level, NULL::varchar AS student_id FROM public.staff WHERE user_id = u.user_id",
     };
-    $stmt = $conn->prepare("SELECT u.user_id, u.password_hash, u.account_status, p.name, p.student_level, p.student_id FROM public.users u CROSS JOIN LATERAL ({$profile}) p WHERE u.user_id = :id AND u.role = :role");
-    $stmt->execute([':id' => $id, ':role' => $role]);
+    $roleCondition = $requestedRole === 'staff_or_director'
+        ? "u.role IN ('staff', 'director')"
+        : 'u.role = :role';
+    $stmt = $conn->prepare("SELECT u.user_id, u.password_hash, u.account_status, u.role AS actual_role, p.name, p.student_level, p.student_id FROM public.users u CROSS JOIN LATERAL ({$profile}) p WHERE u.user_id = :id AND {$roleCondition}");
+    $params = [':id' => $id];
+    if ($requestedRole !== 'staff_or_director') $params[':role'] = $role;
+    $stmt->execute($params);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user || !password_verify($password, (string) $user['password_hash'])) {
@@ -49,6 +55,7 @@ try {
         loginResponse('error', 403, ['message' => 'บัญชีนี้ไม่พร้อมใช้งาน']);
     }
 
+    $role = strtolower((string) $user['actual_role']);
     if ($role === 'student' && !empty($user['student_level'])) {
         assignCurriculumAndEnrollRequiredSubjects($conn, (string) $user['user_id'], (string) $user['student_level']);
     }
@@ -65,6 +72,7 @@ try {
         'parent' => 'parent_dashboard.php',
         'teacher' => 'teacherdash.php',
         'staff' => 'staffdash.php',
+        'director' => 'director_dash.php',
         default => 'index.php',
     };
     error_log('[auth.login] success');

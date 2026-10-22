@@ -88,6 +88,7 @@ function getDashboardUrlForRole(role) {
         student: 'student_dashboard.php',
         teacher: 'teacherdash.php',
         staff: 'staffdash.php',
+        director: 'director_dash.php',
         parent: 'parent_dashboard.php'
     };
     return map[String(role || '').toLowerCase()] || 'index.php';
@@ -1077,12 +1078,14 @@ function showCourse(subjectId) {
     window.location.assign(destination.href);
 }
 
-function goToCourseLearning() {
+function goToCourseLearning(event) {
+    if (event) event.preventDefault();
     if (!enrolledCourses[currentSubjectId]) { alert('กรุณาลงรายวิชาก่อนเข้าเนื้อหาบทเรียน'); return; }
     document.getElementById('learning-title').innerText = document.getElementById('detail-title').innerText;
     document.getElementById('learning-desc-top').innerText = document.getElementById('detail-desc-top').innerText;
     showPage('course-learning');
     openLearningTab({ currentTarget: document.querySelector("#course-learning .tab-btn[onclick*='learning-curriculum']") }, 'learning-curriculum');
+    window.requestAnimationFrame(() => document.getElementById('lessons')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
 }
 
 async function checkCourseEnrollment(subjectId) {
@@ -1124,11 +1127,30 @@ function setEnrollmentButtonLoading() {
 }
 
 function updateEnrollButton(isEnrolled) {
-    const button = document.getElementById('enroll-course-btn');
+    let button = document.getElementById('enroll-course-btn');
     if (!button) return;
-    button.disabled = false;
-    if(isEnrolled) { button.innerText = 'เข้าเรียน'; button.classList.add('is-enrolled'); }
-    else { button.innerText = 'ลงทะเบียน'; button.classList.remove('is-enrolled'); }
+
+    const shouldBeLink = Boolean(isEnrolled);
+    if ((button.tagName === 'A') !== shouldBeLink) {
+        const replacement = document.createElement(shouldBeLink ? 'a' : 'button');
+        replacement.id = 'enroll-course-btn';
+        replacement.className = 'btn-enroll';
+        button.replaceWith(replacement);
+        button = replacement;
+    }
+
+    button.classList.toggle('is-enrolled', shouldBeLink);
+    button.textContent = shouldBeLink ? 'กำลังเรียน' : 'เข้าเรียน';
+    if (shouldBeLink) {
+        button.href = '#lessons';
+        button.onclick = goToCourseLearning;
+        button.removeAttribute('disabled');
+    } else {
+        button.type = 'button';
+        button.onclick = enrollCourseAndOpenLearning;
+        button.disabled = false;
+        button.removeAttribute('href');
+    }
 }
 
 async function enrollCourseAndOpenLearning() {
@@ -1148,6 +1170,7 @@ async function enrollCourseAndOpenLearning() {
         }
         if (result.status !== 'success') { alert(result.message || 'ไม่สามารถลงรายวิชาได้'); return; }
 
+        if (!result.enrolled) { alert('ระบบยังไม่พบสถานะลงทะเบียนที่ใช้งานอยู่ กรุณาลองอีกครั้ง'); return; }
         enrolledCourses[currentSubjectId] = true; updateEnrollButton(true); setCurriculumAccess(true);
         loadAllCourses();
         fetchCourseProgress(currentSubjectId); goToCourseLearning();

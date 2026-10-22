@@ -59,7 +59,7 @@ $hubInstructors = [];
 $hubLoadError = false;
 try {
     require_once __DIR__ . '/config/db.php';
-    $courseSql = "SELECT c.course_id, c.code, c.name, c.description, c.image_path, COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' END, c.subject_type, 'elective') AS subject_type, (cc.course_id IS NOT NULL) AS in_curriculum, (sc.course_id IS NOT NULL) AS is_enrolled FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id WHERE c.status = 'active' ORDER BY (cc.course_id IS NULL), c.name";
+    $courseSql = "SELECT c.course_id, c.code, c.name, c.description, c.image_path, COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' END, c.subject_type, 'elective') AS subject_type, (cc.course_id IS NOT NULL) AS in_curriculum, (sc.course_id IS NOT NULL) AS is_enrolled FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id AND sc.status = 'active' WHERE c.status = 'active' ORDER BY (cc.course_id IS NULL), c.name";
     $courseStatement = $conn->prepare($courseSql);
     $studentIdForQuery = $hubRole === 'student' ? $hubUserId : '';
     $courseStatement->execute([':student_id' => $studentIdForQuery]);
@@ -68,7 +68,7 @@ try {
     $requestedCourse = trim((string) ($_GET['subject_id'] ?? ''));
     if ($requestedCourse === '' && isset($_GET['course'])) $requestedCourse = trim((string) $_GET['course']);
     if ($requestedCourse !== '') {
-        $detailStatement = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, c.image_path, c.credits, COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' END, c.subject_type, 'elective') AS subject_type, (sc.course_id IS NOT NULL) AS is_enrolled FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id WHERE c.status = 'active' AND (c.course_id::text = :id OR c.name = :name) LIMIT 1");
+        $detailStatement = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, c.image_path, c.credits, COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' END, c.subject_type, 'elective') AS subject_type, (sc.course_id IS NOT NULL) AS is_enrolled FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id AND sc.status = 'active' WHERE c.status = 'active' AND (c.course_id::text = :id OR c.name = :name) LIMIT 1");
         $detailStatement->execute([':student_id' => $studentIdForQuery, ':id' => $requestedCourse, ':name' => $requestedCourse]);
         $hubCourse = $detailStatement->fetch(PDO::FETCH_ASSOC) ?: null;
         if ($hubCourse) {
@@ -262,7 +262,11 @@ $hubClientCourse = $hubCourse ? [
 
             <div class="course-sidebar">
                 <div class="sidebar-card">
-                    <button class="btn-enroll<?= !empty($hubCourse['is_enrolled']) ? ' is-enrolled' : '' ?>" id="enroll-course-btn" onclick="enrollCourseAndOpenLearning()"<?= !$hubDetailActive ? ' disabled' : '' ?>><?= !empty($hubCourse['is_enrolled']) ? 'เข้าเรียน' : 'ลงทะเบียน' ?></button>
+                    <?php if (!empty($hubCourse['is_enrolled'])): ?>
+                        <a class="btn-enroll is-enrolled" id="enroll-course-btn" href="#lessons" onclick="goToCourseLearning(event)">กำลังเรียน</a>
+                    <?php else: ?>
+                        <button class="btn-enroll" id="enroll-course-btn" type="button" onclick="enrollCourseAndOpenLearning()"<?= !$hubDetailActive ? ' disabled' : '' ?>>เข้าเรียน</button>
+                    <?php endif; ?>
                     
                     <div class="meta-list">
                         <div class="meta-item"><span> Lessons</span> <b id="detail-lesson-count"><?= (int) ($hubCourse['lesson_count'] ?? 0) ?> บทเรียน</b></div>
@@ -298,7 +302,7 @@ $hubClientCourse = $hubCourse ? [
 
                 <div id="learning-curriculum" class="learning-tab-content active">
                     <div class="info-card">
-                        <div id="learning-lesson-text-list" class="lesson-accordion-list"><?= $hubDetailActive ? hubLessonList($hubLessons) : '' ?></div>
+                        <div id="lessons"><div id="learning-lesson-text-list" class="lesson-accordion-list"><?= $hubDetailActive ? hubLessonList($hubLessons) : '' ?></div></div>
                     </div>
                 </div>
 

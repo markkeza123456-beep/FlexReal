@@ -22,7 +22,7 @@
     'lesson-add': 'เพิ่ม/แก้ไขบทเรียน',
     'member-list': 'จัดการผู้ใช้งาน',
     'member-edit': 'แก้ไขข้อมูลสมาชิก',
-    'staff-add': 'เพิ่มเจ้าหน้าที่',
+    'staff-add': 'เพิ่มเจ้าหน้าที่ / ผู้บริหาร',
     'graduation-requests': 'อนุมัติจบการศึกษา',
     'profile': 'โปรไฟล์ของฉัน',
   };
@@ -401,6 +401,7 @@
       teacher: 'อาจารย์',
       parent: 'ผู้ปกครอง',
       staff: 'เจ้าหน้าที่',
+      director: 'ผู้อำนวยการ',
     };
 
     const statusFilter = document.getElementById('memberStatusFilter')?.value || 'active';
@@ -439,13 +440,13 @@
   function renderStaffList() {
     const body = document.getElementById('staffListBody');
     if (!body) return;
-    const staffMembers = members.filter(member => String(member.roleValue).toLowerCase() === 'staff' && member.status === 'active');
+    const staffMembers = members.filter(member => ['staff', 'director'].includes(member.roleValue) && member.status === 'active');
     body.innerHTML = staffMembers.length
       ? staffMembers.map(member => `
         <tr>
           <td>${escapeHtml(member.name)}</td>
           <td>${escapeHtml(member.id)}</td>
-          <td><span class="badge ${member.status === 'active' ? 'active' : 'draft'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
+          <td><span class="badge ${member.status === 'active' ? 'active' : 'draft'}">${member.roleValue === 'director' ? 'ผู้อำนวยการ' : 'เจ้าหน้าที่'} · ${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
           <td>${formatRegistrationDate(member.registered_at)}</td>
           <td>${formatRegistrationDate(member.updated_at)}</td>
           <td>${escapeHtml(member.created_by_name || '-')}</td>
@@ -954,11 +955,12 @@
     formData.append('lastname', lastname);
     formData.append('email', document.getElementById('stf-email').value);
     formData.append('phone', document.getElementById('stf-phone').value);
+    formData.append('role', document.getElementById('stf-role').value);
 
     try {
       const result = await fetchJson('api_staff.php', { method: 'POST', body: formData });
       if (result.status === 'success') {
-        showToast('บันทึกเจ้าหน้าที่เรียบร้อย', 'success');
+        showToast('สร้างบัญชีเรียบร้อย', 'success');
         resetStaffForm();
       }
     } catch (error) {
