@@ -224,7 +224,7 @@ try {
                     COALESCE(s.full_name, t.full_name, p.full_name, NULLIF(TRIM(stf.first_name || \' \' || stf.last_name), \'\'), \'-\') as name,
                     COALESCE(s.email, t.email, p.email, stf.email, \'-\') as email,
                     COALESCE(s.phone, t.phone, p.phone, stf.phone, \'-\') as phone,
-                    COALESCE(parent_students.student_names, \'\') AS linked_student_names,
+                    COALESCE(parent_students.linked_students, \'[]\'::json) AS linked_students,
                     COALESCE(NULLIF(TRIM(CONCAT_WS(\' \', creator_staff.first_name, creator_staff.last_name)), \'\'), u.created_by, \'-\') AS created_by_name,
                     COALESCE(NULLIF(TRIM(CONCAT_WS(\' \', editor_staff.first_name, editor_staff.last_name)), \'\'), u.updated_by, \'-\') AS updated_by_name
                 FROM public.users u
@@ -233,7 +233,7 @@ try {
                 LEFT JOIN public.parents p ON p.user_id = u.user_id
                 LEFT JOIN public.staff stf ON u.user_id = stf.user_id
                 LEFT JOIN LATERAL (
-                    SELECT STRING_AGG(s.full_name, \', \' ORDER BY s.full_name) AS student_names
+                    SELECT JSON_AGG(JSON_BUILD_OBJECT(\'id\', s.user_id::text, \'name\', s.full_name) ORDER BY s.full_name) AS linked_students
                     FROM public.students s
                     WHERE s.parent_user_id = u.user_id
                 ) parent_students ON TRUE
@@ -241,6 +241,7 @@ try {
                 LEFT JOIN public.staff editor_staff ON editor_staff.user_id = u.updated_by
                 ORDER BY u.user_id DESC
             ');
+            $studentsStmt = $conn->query("SELECT s.user_id::text AS id, s.full_name AS name, s.parent_user_id::text AS parent_id, COALESCE(p.full_name, '') AS parent_name FROM public.students s LEFT JOIN public.parents p ON p.user_id = s.parent_user_id ORDER BY s.full_name, s.user_id");
             $curriculaStmt = $conn->query("SELECT c.curriculum_id AS id, c.code, c.name, c.level, c.status, c.created_at, c.updated_at, COALESCE(NULLIF(TRIM(CONCAT_WS(' ', creator_staff.first_name, creator_staff.last_name)), ''), creator_user.user_id, '-') AS created_by_name, COALESCE(NULLIF(TRIM(CONCAT_WS(' ', editor_staff.first_name, editor_staff.last_name)), ''), editor_user.user_id, '-') AS updated_by_name FROM public.curricula c LEFT JOIN public.users creator_user ON creator_user.user_id = c.created_by LEFT JOIN public.staff creator_staff ON creator_staff.user_id = c.created_by LEFT JOIN public.users editor_user ON editor_user.user_id = c.updated_by LEFT JOIN public.staff editor_staff ON editor_staff.user_id = c.updated_by ORDER BY c.curriculum_id ASC");
             $subjectsStmt = $conn->query("
                 SELECT c.course_id AS id, c.code, c.name, c.credits AS credit, c.description, c.image_path,
@@ -282,6 +283,7 @@ try {
             jsonResponse([
                 'status' => 'success',
                 'members' => fetchAllRows($membersStmt),
+                'students' => fetchAllRows($studentsStmt),
                 'curricula' => fetchAllRows($curriculaStmt),
                 'subjects' => fetchAllRows($subjectsStmt),
                 'curriculum_subjects' => fetchAllRows($curriculumSubjectsStmt),
@@ -327,6 +329,8 @@ try {
             $phone = postValue('phone');
             $requestedRole = strtolower(postValue('role'));
             $accountStatus = strtolower(postValue('status', 'active'));
+            $linkedStudentIds = [];
+            $hasLinkedStudentIds = array_key_exists('linked_student_ids', $_POST);
 
             $roles = ['student' => true, 'teacher' => true, 'parent' => true, 'staff' => true, 'director' => true];
 
@@ -341,6 +345,21 @@ try {
             }
             if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 jsonResponse(['status' => 'error', 'message' => 'รูปแบบอีเมลไม่ถูกต้อง'], 400);
+            }
+            if ($requestedRole === 'parent' && $hasLinkedStudentIds) {
+                $submittedStudentIds = json_decode((string) ($_POST['linked_student_ids'] ?? '[]'), true);
+                if (!is_array($submittedStudentIds)) {
+                    jsonResponse(['status' => 'error', 'message' => 'รายชื่อนักเรียนไม่ถูกต้อง'], 400);
+                }
+                foreach ($submittedStudentIds as $studentId) {
+                    if (!is_scalar($studentId)) {
+                        jsonResponse(['status' => 'error', 'message' => 'รายชื่อนักเรียนไม่ถูกต้อง'], 400);
+                    }
+                }
+                $linkedStudentIds = array_values(array_unique(array_filter(array_map(
+                    static fn($id): string => trim((string) $id),
+                    $submittedStudentIds
+                ), static fn(string $id): bool => $id !== '')));
             }
 
             $userStmt = $conn->prepare('SELECT user_id FROM public.users WHERE user_id = :id FOR UPDATE');
@@ -405,6 +424,44 @@ try {
 
             $statement = $conn->prepare('UPDATE public.users SET role = :role, account_status = :account_status, updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id');
             $statement->execute([':id' => $memberId, ':role' => $requestedRole, ':account_status' => $accountStatus, ':updated_by' => $actorId]);
+
+            if ($requestedRole === 'parent' && $hasLinkedStudentIds) {
+                $studentParams = [':parent_id' => $memberId];
+                $studentPlaceholders = [];
+                foreach ($linkedStudentIds as $index => $studentId) {
+                    $placeholder = ':student_' . $index;
+                    $studentPlaceholders[] = $placeholder;
+                    $studentParams[$placeholder] = $studentId;
+                }
+
+                if ($studentPlaceholders !== []) {
+                    $availableStmt = $conn->prepare(
+                        'SELECT user_id FROM public.students WHERE user_id IN (' . implode(', ', $studentPlaceholders) . ')
+                         AND (parent_user_id IS NULL OR parent_user_id = :parent_id) FOR UPDATE'
+                    );
+                    $availableStmt->execute($studentParams);
+                    if (count($availableStmt->fetchAll(PDO::FETCH_COLUMN)) !== count($linkedStudentIds)) {
+                        $conn->rollBack();
+                        jsonResponse(['status' => 'error', 'message' => 'นักเรียนบางคนถูกเชื่อมกับผู้ปกครองบัญชีอื่นแล้ว กรุณาโหลดข้อมูลใหม่'], 409);
+                    }
+                    $detachStmt = $conn->prepare(
+                        'UPDATE public.students SET parent_user_id = NULL, updated_at = NOW()
+                         WHERE parent_user_id = :parent_id AND user_id NOT IN (' . implode(', ', $studentPlaceholders) . ')'
+                    );
+                    $detachStmt->execute($studentParams);
+                    $linkStmt = $conn->prepare(
+                        'UPDATE public.students SET parent_user_id = :parent_id, updated_at = NOW()
+                         WHERE user_id IN (' . implode(', ', $studentPlaceholders) . ')'
+                    );
+                    $linkStmt->execute($studentParams);
+                } else {
+                    $conn->prepare('UPDATE public.students SET parent_user_id = NULL, updated_at = NOW() WHERE parent_user_id = :parent_id')
+                        ->execute([':parent_id' => $memberId]);
+                }
+            } elseif ($requestedRole !== 'parent') {
+                $conn->prepare('UPDATE public.students SET parent_user_id = NULL, updated_at = NOW() WHERE parent_user_id = :parent_id')
+                    ->execute([':parent_id' => $memberId]);
+            }
             $conn->commit();
             jsonResponse(['status' => 'success']);
             break;

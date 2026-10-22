@@ -6,6 +6,7 @@
   let curriculumSubjects = [];
   let curriculumIssues = [];
   let members = [];
+  let students = [];
   let teachers = [];
   let lessons = [];
   let memberSearchTerm = '';
@@ -125,6 +126,10 @@
 
   function normalizeMember(member) {
     const nameParts = splitMemberName(member.name);
+    let linkedStudents = member.linked_students || [];
+    if (typeof linkedStudents === 'string') {
+      try { linkedStudents = JSON.parse(linkedStudents); } catch (_) { linkedStudents = []; }
+    }
 
     return {
       ...member,
@@ -136,6 +141,7 @@
       role: String(member.role || ''),
       roleValue: String(member.role || '').toLowerCase(),
       status: String(member.status || member.status_account || 'active').toLowerCase(),
+      linkedStudents: Array.isArray(linkedStudents) ? linkedStudents : [],
     };
   }
 
@@ -348,6 +354,7 @@
       const data = await fetchJson('api_staff.php?action=getAllData');
       curricula = data.curricula || [];
       subjects = data.subjects || [];
+      students = data.students || [];
       curriculumSubjects = data.curriculum_subjects || [];
       curriculumIssues = data.curriculum_issues || [];
       members = (data.members || []).map(normalizeMember);
@@ -479,7 +486,8 @@
     const filteredMembers = members.filter(member => {
       if (statusFilter !== 'all' && member.status !== statusFilter) return false;
       if (!memberSearchTerm) return true;
-      const searchable = `${member.name} ${member.email} ${member.phone} ${member.linked_student_names || ''}`.toLocaleLowerCase();
+      const linkedNames = (member.linkedStudents || []).map(student => student.name || '').join(' ');
+      const searchable = `${member.name} ${member.email} ${member.phone} ${linkedNames}`.toLocaleLowerCase();
       return searchable.includes(memberSearchTerm);
     });
 
@@ -490,7 +498,6 @@
           <td style="color:var(--text-secondary)">${member.email || '-'}</td>
           <td style="color:var(--text-secondary)">${member.phone || '-'}</td>
           <td><span class="badge ${member.role === 'Staff' ? 'required' : 'draft'}">${roleName[member.role] || member.role}</span></td>
-          <td>${member.roleValue === 'parent' ? escapeHtml(member.linked_student_names || 'ยังไม่ได้เชื่อมกับนักเรียน') : '-'}</td>
           <td><span class="badge ${member.status === 'active' ? 'active' : 'suspended'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
           <td>${formatRegistrationDate(member.registered_at)}</td>
           <td>${formatRegistrationDate(member.updated_at)}</td>
@@ -506,7 +513,7 @@
           </td>
         </tr>
       `).join('')
-      : '<tr><td colspan="11" style="text-align:center; padding:30px;">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>';
+      : '<tr><td colspan="10" style="text-align:center; padding:30px;">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>';
   }
 
   function renderStaffList() {
@@ -543,8 +550,32 @@
     document.getElementById('mf-phone').value = member.phone;
     document.getElementById('mf-role').value = member.roleValue || 'student';
     document.getElementById('mf-status').value = member.status;
+    renderParentStudentOptions(member);
     goTo('member-edit');
   };
+
+  function renderParentStudentOptions(member) {
+    const card = document.getElementById('parentStudentCard');
+    const select = document.getElementById('mf-linked-students');
+    const roleSelect = document.getElementById('mf-role');
+    if (!card || !select || !roleSelect) return;
+
+    card.hidden = roleSelect.value !== 'parent';
+    const linkedIds = new Set((member?.linkedStudents || []).map(student => String(student.id)));
+    select.innerHTML = students.map(student => {
+      const id = String(student.id || '');
+      const assignedToOtherParent = Boolean(student.parent_id) && String(student.parent_id) !== String(member?.id || '');
+      const name = escapeHtml(student.name || id);
+      const parentLabel = assignedToOtherParent ? ` · ดูแลโดย ${escapeHtml(student.parent_name || student.parent_id)}` : '';
+      return `<option value="${escapeHtml(id)}" ${linkedIds.has(id) ? 'selected' : ''} ${assignedToOtherParent ? 'disabled' : ''}>${name} · ${escapeHtml(id)}${parentLabel}</option>`;
+    }).join('');
+  }
+
+  document.getElementById('mf-role')?.addEventListener('change', () => {
+    const memberId = document.getElementById('mf-id')?.value;
+    const member = members.find(item => String(item.id) === String(memberId));
+    renderParentStudentOptions(member);
+  });
 
   document.getElementById('memberForm')?.addEventListener('submit', async e => {
     e.preventDefault();
@@ -558,6 +589,10 @@
     formData.append('phone', document.getElementById('mf-phone').value);
     formData.append('role', document.getElementById('mf-role').value);
     formData.append('status', document.getElementById('mf-status').value);
+    const linkedStudentIds = document.getElementById('mf-role').value === 'parent'
+      ? Array.from(document.getElementById('mf-linked-students')?.selectedOptions || []).map(option => option.value)
+      : [];
+    formData.append('linked_student_ids', JSON.stringify(linkedStudentIds));
 
     try {
       const result = await fetchJson('api_staff.php', { method: 'POST', body: formData });

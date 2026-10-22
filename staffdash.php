@@ -547,7 +547,6 @@ if ($displayName !== '') {
                 <th>อีเมล</th>
                 <th>เบอร์โทรศัพท์</th>
                 <th>บทบาท</th>
-                <th>นักเรียนที่เป็นผู้ปกครองให้</th>
                 <th>สถานะ</th>
                 <th>วันที่สมัคร</th>
                 <th>แก้ไขล่าสุด</th>
@@ -557,7 +556,7 @@ if ($displayName !== '') {
               </tr>
             </thead>
             <tbody id="memberBody">
-              <tr><td colspan="11" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
+              <tr><td colspan="10" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
@@ -572,7 +571,8 @@ if ($displayName !== '') {
           </div>
           <button class="btn-ghost btn-back" data-goto="member-list">← กลับรายการ</button>
         </div>
-        <form class="form-card" id="memberForm">
+        <div class="member-edit-layout">
+        <form class="form-card member-edit-form" id="memberForm">
           <input type="hidden" id="mf-id" />
           <div class="form-field"><label class="form-label" for="mf-user-id">รหัสประจำตัว</label><div class="input-wrap"><input type="text" id="mf-user-id" readonly /></div></div>
           <div class="form-section-label">ข้อมูลสมาชิก</div>
@@ -635,6 +635,16 @@ if ($displayName !== '') {
             <button type="submit" class="btn-primary"><span class="btn-text">บันทึกข้อมูล</span></button>
           </div>
         </form>
+        <aside class="parent-student-card" id="parentStudentCard" hidden>
+          <div class="parent-student-card-heading">
+            <h2>นักเรียนในการดูแล</h2>
+            <p>เลือกนักเรียนที่เชื่อมโยงกับบัญชีผู้ปกครองนี้</p>
+          </div>
+          <label class="form-label" for="mf-linked-students">รายชื่อนักเรียน</label>
+          <select id="mf-linked-students" multiple size="10" aria-describedby="parentStudentHint"></select>
+          <p class="parent-student-hint" id="parentStudentHint">กด Ctrl (หรือ Command บน Mac) ค้างไว้เพื่อเลือกหลายคน นักเรียนที่ผูกกับผู้ปกครองอื่นจะเลือกไม่ได้</p>
+        </aside>
+        </div>
       </section>
 
 

@@ -674,6 +674,40 @@ body:has(#page-graduation-requests.active) .main-wrap > .topbar { display: none;
   border-radius: var(--radius); padding: 32px;
   max-width: 720px;
 }
+.member-edit-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+.member-edit-layout .member-edit-form { width: 100%; max-width: none; min-width: 0; }
+.parent-student-card {
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: 0 8px 24px rgba(27, 48, 87, .06);
+}
+.parent-student-card[hidden] { display: none !important; }
+.parent-student-card-heading { margin-bottom: 18px; }
+.parent-student-card-heading h2 { margin: 0 0 5px; color: var(--text-primary); font-size: 1rem; }
+.parent-student-card-heading p,
+.parent-student-hint { margin: 0; color: var(--text-muted); font-size: .78rem; line-height: 1.6; }
+.parent-student-card > .form-label { display: block; margin-bottom: 7px; }
+.parent-student-card select {
+  display: block;
+  width: 100%;
+  min-height: 220px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-primary);
+  font: 400 .86rem 'IBM Plex Sans Thai', sans-serif;
+}
+.parent-student-card select option { padding: 7px 6px; }
+.parent-student-hint { margin-top: 10px; }
 .form-card.graduation-request-card { width:100%; max-width:none; padding:24px; }
 .curriculum-add-page > .page-header,
 .curriculum-add-page > .form-card,
@@ -1022,3 +1056,9 @@ body:has(#page-graduation-requests.active) .main-wrap > .topbar { display: none;
   color: #FFFFFF;
 }
 .sidebar > .sidebar-footer.staff-profile-trigger.active:hover { filter: none; }
+
+@media (max-width: 900px) {
+  .member-edit-layout { grid-template-columns: minmax(0, 1fr); }
+  .member-edit-layout .member-edit-form { padding: 22px; }
+  .parent-student-card { padding: 20px; }
+}
