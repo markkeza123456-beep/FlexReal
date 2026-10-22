@@ -1674,13 +1674,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggle = navbar?.querySelector('.nav-toggle');
     const navLinks = navbar?.querySelector('.nav-links');
     const profile = navbar?.querySelector('.user-profile-wrap');
+    const login = navbar?.querySelector('#loginBtn');
     const profileSlot = navbar?.querySelector('.mobile-profile-slot');
-    const placeProfile = () => {
-        if (!profile || !navLinks || !profileSlot) return;
-        (window.matchMedia('(max-width: 768px)').matches ? profileSlot : navLinks).appendChild(profile);
+    const placeAccountControls = () => {
+        if (!navLinks || !profileSlot) return;
+        if (window.matchMedia('(max-width: 768px)').matches) {
+            if (login) profileSlot.appendChild(login);
+            if (profile) profileSlot.appendChild(profile);
+        } else {
+            if (login) navLinks.insertBefore(login, profile?.parentElement === navLinks ? profile : null);
+            if (profile) navLinks.appendChild(profile);
+        }
     };
-    placeProfile();
-    window.addEventListener('resize', placeProfile, { passive: true });
+    placeAccountControls();
+    window.addEventListener('resize', placeAccountControls, { passive: true });
     const setMenu = (open) => {
         navbar?.classList.toggle('is-open', open);
         navbar?.classList.toggle('menu-open', open);
