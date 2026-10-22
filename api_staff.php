@@ -205,6 +205,7 @@ try {
                     COALESCE(s.full_name, t.full_name, p.full_name, NULLIF(TRIM(stf.first_name || \' \' || stf.last_name), \'\'), \'-\') as name,
                     COALESCE(s.email, t.email, p.email, stf.email, \'-\') as email,
                     COALESCE(s.phone, t.phone, p.phone, stf.phone, \'-\') as phone,
+                    COALESCE(parent_students.student_names, \'\') AS linked_student_names,
                     COALESCE(NULLIF(TRIM(CONCAT_WS(\' \', creator_staff.first_name, creator_staff.last_name)), \'\'), u.created_by, \'-\') AS created_by_name,
                     COALESCE(NULLIF(TRIM(CONCAT_WS(\' \', editor_staff.first_name, editor_staff.last_name)), \'\'), u.updated_by, \'-\') AS updated_by_name
                 FROM public.users u
@@ -212,6 +213,11 @@ try {
                 LEFT JOIN public.teachers t ON t.user_id = u.user_id
                 LEFT JOIN public.parents p ON p.user_id = u.user_id
                 LEFT JOIN public.staff stf ON u.user_id = stf.user_id
+                LEFT JOIN LATERAL (
+                    SELECT STRING_AGG(s.full_name, \', \' ORDER BY s.full_name) AS student_names
+                    FROM public.students s
+                    WHERE s.parent_user_id = u.user_id
+                ) parent_students ON TRUE
                 LEFT JOIN public.staff creator_staff ON creator_staff.user_id = u.created_by
                 LEFT JOIN public.staff editor_staff ON editor_staff.user_id = u.updated_by
                 ORDER BY u.user_id DESC

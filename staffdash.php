@@ -547,6 +547,7 @@ if ($displayName !== '') {
                 <th>อีเมล</th>
                 <th>เบอร์โทรศัพท์</th>
                 <th>บทบาท</th>
+                <th>นักเรียนที่เป็นผู้ปกครองให้</th>
                 <th>สถานะ</th>
                 <th>วันที่สมัคร</th>
                 <th>แก้ไขล่าสุด</th>
@@ -556,7 +557,7 @@ if ($displayName !== '') {
               </tr>
             </thead>
             <tbody id="memberBody">
-              <tr><td colspan="10" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
+              <tr><td colspan="11" style="text-align:center;padding:30px;">กำลังโหลด...</td></tr>
             </tbody>
           </table>
         </div>
