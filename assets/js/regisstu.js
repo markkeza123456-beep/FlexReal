@@ -291,7 +291,7 @@
     if (btnLoader) btnLoader.style.display = loading ? 'flex' : 'none';
   }
 
-  form.addEventListener('submit', (event) => {
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
     let valid = true;
@@ -418,9 +418,26 @@
 
     setLoading(true);
     try {
-      form.submit();
+      const response = await fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { Accept: 'application/json' },
+      });
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (parseError) {
+        throw new Error('เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง');
+      }
+      if (!response.ok || data.status !== 'success') {
+        showToast(data.message || 'สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่', 'error-toast');
+        setLoading(false);
+        return;
+      }
+      window.location.assign(data.redirect_url || 'registration_otp.php');
     } catch (error) {
-      showToast('เกิดข้อผิดพลาดในการส่งฟอร์ม', 'error-toast');
+      showToast(error.message || 'เกิดข้อผิดพลาดในการส่งฟอร์ม', 'error-toast');
       setLoading(false);
     }
   });

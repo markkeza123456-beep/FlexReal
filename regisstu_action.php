@@ -1,10 +1,16 @@
 <?php
 session_start();
+header('Content-Type: application/json; charset=utf-8');
+
+function registrationResponse(string $status, string $message, int $httpStatus = 200, array $extra = []): never
+{
+    http_response_code($httpStatus);
+    echo json_encode(['status' => $status, 'message' => $message] + $extra, JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    header('Location: regisstu.php');
-    exit;
+    registrationResponse('error', 'คำขอไม่ถูกต้อง', 405);
 }
 
 try {
@@ -38,17 +44,13 @@ try {
     session_regenerate_id(true);
     $_SESSION['pending_registration'] = $pendingRegistration;
     error_log('[auth.register] awaiting OTP verification');
-    header('Location: registration_otp.php');
-    exit;
+    registrationResponse('success', 'ส่งรหัส OTP ไปยังอีเมลของคุณแล้ว', 200, ['redirect_url' => 'registration_otp.php']);
 } catch (Throwable $error) {
     $sqlState = $error instanceof PDOException ? (string) $error->getCode() : '';
     $status = $error instanceof PDOException ? ($sqlState === '23505' ? 409 : 500) : ((int) $error->getCode() >= 400 ? (int) $error->getCode() : 422);
     $messageText = $status === 500
         ? 'ระบบสมัครสมาชิกขัดข้อง กรุณาลองใหม่ภายหลัง'
         : ($status === 409 ? 'เลขบัตรประชาชนหรืออีเมลนี้ถูกใช้แล้ว' : $error->getMessage());
-    error_log('[auth.register] failed with HTTP ' . $status . ' (' . get_class($error) . ')');
-    http_response_code($status);
-    header('Content-Type: text/html; charset=utf-8');
-    $message = json_encode($messageText, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-    echo "<!doctype html><html lang='th'><meta charset='utf-8'><script>alert({$message});history.back();</script></html>";
+    error_log('[auth.register] failed with HTTP ' . $status . ' (' . get_class($error) . '): ' . $error->getMessage());
+    registrationResponse('error', $messageText, $status);
 }
