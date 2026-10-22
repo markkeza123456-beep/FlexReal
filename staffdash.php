@@ -193,6 +193,7 @@ if ($displayName !== '') {
             <span class="btn-text">เพิ่มหลักสูตรใหม่</span>
           </button>
         </div>
+        <div id="curriculumIssuesNotice" role="status" hidden style="margin:0 0 16px;padding:14px 16px;border:1px solid #f59e0b;border-radius:12px;background:#fffbeb;color:#92400e;"></div>
         <div class="table-wrap">
           <table class="data-table">
             <thead>

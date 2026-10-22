@@ -11,9 +11,8 @@ function directorGraduationStatusCounts(PDO $conn): array
     ORDER BY student_id, enrolled_at DESC
 ), course_progress AS (
     SELECT s.user_id AS student_id,
-           COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory'
-                         WHEN cc.requirement_type = 'elective' THEN 'elective' END,
-                    c.subject_type, 'elective') AS subject_type,
+           CASE WHEN cc.requirement_type = 'required' THEN 'compulsory'
+                WHEN cc.requirement_type = 'elective' THEN 'elective' ELSE NULL END AS subject_type,
            sc.status AS enrollment_status,
            COUNT(l.lesson_id)::int AS lesson_count,
            COUNT(l.lesson_id) FILTER (

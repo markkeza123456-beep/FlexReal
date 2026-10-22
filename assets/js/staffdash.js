@@ -4,6 +4,7 @@
   let curricula = [];
   let subjects = [];
   let curriculumSubjects = [];
+  let curriculumIssues = [];
   let members = [];
   let teachers = [];
   let lessons = [];
@@ -343,6 +344,7 @@
       curricula = data.curricula || [];
       subjects = data.subjects || [];
       curriculumSubjects = data.curriculum_subjects || [];
+      curriculumIssues = data.curriculum_issues || [];
       members = (data.members || []).map(normalizeMember);
       teachers = data.teachers || [];
       if (currentPage === 'subject-add') {
@@ -636,6 +638,14 @@
         </tr>
       `).join('')
       : '<tr><td colspan="9" style="text-align:center;">ไม่มีข้อมูลหลักสูตร</td></tr>';
+
+    const issuesNotice = document.getElementById('curriculumIssuesNotice');
+    if (issuesNotice) {
+      issuesNotice.hidden = curriculumIssues.length === 0;
+      issuesNotice.innerHTML = curriculumIssues.length
+        ? `<strong>ต้องตรวจสอบรายวิชาที่ไม่อยู่ในหลักสูตร</strong><ul style="margin:8px 0 0;padding-left:22px;">${curriculumIssues.map(issue => `<li>${escapeHtml(issue.curriculum_code || issue.curriculum_id)} · ${escapeHtml(issue.subject_code || issue.course_id)} ${escapeHtml(issue.subject_name)} (นักเรียน ${Number(issue.affected_students)} คน) <button type="button" class="btn-icon" onclick="manageCurriculumSubjects('${escapeHtml(issue.curriculum_id)}','${escapeHtml(issue.curriculum_name)}')">กำหนดประเภทและลำดับ</button></li>`).join('')}</ul>`
+        : '';
+    }
   }
 
   document.querySelector('[data-goto="curriculum-add"]')?.addEventListener('click', () => {
@@ -1046,14 +1056,19 @@
       } else {
          listContainer.innerHTML = data.subjects.map(sub => {
             const isChecked = Array.isArray(data.selected) && data.selected.some(id => String(id) === String(sub.id)) ? 'checked' : '';
-            const mappedType = data.selected_types?.[String(sub.id)] || (['required', 'compulsory'].includes(String(sub.type).toLowerCase()) ? 'compulsory' : 'elective');
+            const mappedType = data.selected_types?.[String(sub.id)] || '';
+            const mappedOrder = data.selected_orders?.[String(sub.id)] ?? '';
             return `
               <div class="curriculum-subject-row" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px; border-radius:10px; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,107,26,0.05)'" onmouseout="this.style.background='transparent'">
                 <label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex:1;min-width:240px"><input type="checkbox" name="curriculum_subjects[]" value="${escapeHtml(sub.id)}" ${isChecked} style="width:18px; height:18px; accent-color:var(--orange); cursor:pointer;"><span><strong style="color:var(--orange);">${escapeHtml(sub.code || sub.id)}</strong> - ${escapeHtml(sub.name)}</span></label>
                 <select name="curriculum_subject_type[${escapeHtml(sub.id)}]" aria-label="ประเภทวิชาในหลักสูตรสำหรับ ${escapeHtml(sub.name)}" style="min-width:145px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);">
+                  <option value="" ${mappedType === '' ? 'selected' : ''}>เลือกประเภทวิชา</option>
                   <option value="compulsory" ${mappedType === 'compulsory' ? 'selected' : ''}>วิชาบังคับ</option>
                   <option value="elective" ${mappedType === 'elective' ? 'selected' : ''}>วิชาเลือก</option>
                 </select>
+                <label style="display:flex;align-items:center;gap:6px;white-space:nowrap">ลำดับ
+                  <input type="number" name="curriculum_subject_order[${escapeHtml(sub.id)}]" min="1" step="1" value="${escapeHtml(mappedOrder)}" aria-label="ลำดับหลักสูตรสำหรับ ${escapeHtml(sub.name)}" style="width:82px;padding:7px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);">
+                </label>
               </div>
             `;
          }).join('');
@@ -1071,8 +1086,18 @@
     const checkboxes = document.querySelectorAll('input[name="curriculum_subjects[]"]:checked');
     const selectedSubjects = Array.from(checkboxes).map(cb => ({
       id: cb.value,
-      type: document.querySelector(`[name="curriculum_subject_type[${CSS.escape(cb.value)}]"]`)?.value || 'elective'
+      type: document.querySelector(`[name="curriculum_subject_type[${CSS.escape(cb.value)}]"]`)?.value || '',
+      order: document.querySelector(`[name="curriculum_subject_order[${CSS.escape(cb.value)}]"]`)?.value || ''
     }));
+    if (selectedSubjects.some(subject => !['compulsory', 'elective'].includes(subject.type))) {
+      showToast('กรุณาเลือกประเภทวิชาของรายวิชาที่อยู่ในหลักสูตรให้ครบ', 'error');
+      return;
+    }
+    const orders = selectedSubjects.map(subject => Number(subject.order));
+    if (orders.some(order => !Number.isInteger(order) || order < 1) || new Set(orders).size !== orders.length) {
+      showToast('กรุณากำหนดลำดับหลักสูตรเป็นจำนวนเต็มบวกที่ไม่ซ้ำกัน', 'error');
+      return;
+    }
 
     const formData = new FormData();
     formData.append('action', 'saveCurriculumSubjects');

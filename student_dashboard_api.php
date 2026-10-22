@@ -83,21 +83,19 @@ try {
     $student = $studentStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
     $courseStmt = $conn->prepare(
-        "SELECT DISTINCT c.course_id, c.code, c.name, COALESCE(c.description, '') AS description,
+        "SELECT c.course_id, c.code, c.name, COALESCE(c.description, '') AS description,
+                cc.curriculum_id, cc.curriculum_order,
                 COALESCE(sc.status, 'active') AS enrollment_status,
-                COALESCE(CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' END, c.subject_type, 'elective') AS subject_type
-         FROM public.student_courses sc
-         INNER JOIN public.courses c ON c.course_id = sc.course_id
-         LEFT JOIN LATERAL (
+                CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' ELSE NULL END AS subject_type
+         FROM (
              SELECT curriculum_id FROM public.student_curricula
              WHERE student_id = :student_id AND status = 'active'
              ORDER BY enrolled_at DESC LIMIT 1
-         ) active_curriculum ON true
-         LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id
-         -- Show every course linked to this student, including historical enrollments
-         -- and courses hidden from the active catalog, so dashboard totals match DB links.
-         WHERE sc.student_id = :student_id
-         ORDER BY c.name ASC"
+         ) active_curriculum
+         INNER JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id
+         INNER JOIN public.courses c ON c.course_id = cc.course_id
+         LEFT JOIN public.student_courses sc ON sc.student_id = :student_id AND sc.course_id = c.course_id
+         ORDER BY cc.curriculum_order ASC NULLS LAST, c.code ASC NULLS LAST, c.course_id ASC"
     );
     $courseStmt->execute([':student_id' => $studentId]);
 
@@ -253,12 +251,14 @@ try {
             $completedCourses++;
         }
         $courses[] = [
-            'id' => str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT),
+            'id' => $row['curriculum_order'] !== null ? str_pad((string) $row['curriculum_order'], 2, '0', STR_PAD_LEFT) : '',
             'subject_id' => (string) ($row['course_id'] ?? ''),
             'code' => (string) ($row['code'] ?? ''),
+            'curriculum_id' => (string) ($row['curriculum_id'] ?? ''),
+            'curriculum_order' => $row['curriculum_order'] !== null ? (int) $row['curriculum_order'] : null,
             'name' => (string) ($row['name'] ?? 'ไม่ระบุชื่อวิชา'),
             'description' => (string) ($row['description'] ?? ''),
-            'subject_type' => (string) ($row['subject_type'] ?? 'elective'),
+            'subject_type' => $row['subject_type'] !== null ? (string) $row['subject_type'] : null,
             'lesson_count' => $lessonCount,
             'attempted_lessons' => $attempted,
             'passed_lessons' => $passedLessonCount,

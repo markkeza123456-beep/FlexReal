@@ -59,7 +59,8 @@ function statusLabel(score) {
 }
 
 function subjectTypeBadge(subjectType) {
-    const type = String(subjectType || 'elective').toLowerCase();
+    const type = String(subjectType || '').toLowerCase();
+    if (!['required', 'compulsory', 'elective'].includes(type)) return '<span class="subject-type-badge unknown">ยังไม่กำหนดประเภท</span>';
     const compulsory = type === 'required' || type === 'compulsory';
     const label = compulsory ? 'วิชาบังคับ' : 'วิชาเลือก';
     return '<span class="subject-type-badge ' + (compulsory ? 'required' : 'elective') + '">' + label + '</span>';
@@ -99,7 +100,7 @@ function renderTable(courses) {
         const resultCell = item.is_transferred
             ? '<span class="course-transfer-status">TR</span>'
             : item.is_passed ? '<span class="course-passed-status">ผ่าน</span>' : '<span>กำลังศึกษา</span>';
-        return `<tr><td style="color:#888">${escapeHtml(item.id)}</td><td>${escapeHtml(item.name)} ${subjectTypeBadge(item.subject_type)}</td><td>${progressCell}</td><td>${resultCell}</td></tr>`;
+        return `<tr><td style="color:#888">${escapeHtml(item.id || '—')}</td><td>${escapeHtml(item.code ? `${item.code} · ` : '')}${escapeHtml(item.name)} ${subjectTypeBadge(item.subject_type)}</td><td>${progressCell}</td><td>${resultCell}</td></tr>`;
     }).join('');
 }
 

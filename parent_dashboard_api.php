@@ -48,7 +48,7 @@ try {
     $children = [];
     $courseStmt = $conn->prepare(
         "SELECT DISTINCT c.course_id, c.name AS subject_name,
-                COALESCE(cc.requirement_type, 'elective') AS subject_type
+                CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' ELSE NULL END AS subject_type
          FROM public.student_courses sc
          INNER JOIN public.courses c ON c.course_id = sc.course_id
          LEFT JOIN LATERAL (
@@ -149,7 +149,7 @@ try {
             $lastActivities = array_filter(array_column($lessons, 'last_activity_at'));
             $subjects[] = [
                 'course_id' => (string) $course['course_id'],
-                'subject_name' => $course['subject_name'], 'subject_type' => $course['subject_type'] ?? 'elective', 'score_mid' => 0, 'score_final' => $percent,
+                'subject_name' => $course['subject_name'], 'subject_type' => $course['subject_type'] !== null ? (string) $course['subject_type'] : null, 'score_mid' => 0, 'score_final' => $percent,
                 'total_score' => $percent, 'grade' => gradeFromScore($percent),
                 'score_earned' => $scoreEarned,
                 'score_possible' => $scorePossible,

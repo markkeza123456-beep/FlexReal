@@ -26,7 +26,7 @@ $studentRows = $conn->query("WITH active_curricula AS (
     GROUP BY sc.student_id,c.course_id,c.subject_type,sc.status
 ), assigned AS (
     SELECT s.user_id AS student_id, c.course_id,
-        COALESCE(CASE WHEN cc.requirement_type='required' THEN 'compulsory' WHEN cc.requirement_type='elective' THEN 'elective' END,c.subject_type,'elective') AS subject_type,
+        CASE WHEN cc.requirement_type='required' THEN 'compulsory' WHEN cc.requirement_type='elective' THEN 'elective' END AS subject_type,
         COALESCE(cp.passed,FALSE) AS passed, COALESCE(cp.transferred,FALSE) AS transferred
     FROM public.students s
     LEFT JOIN active_curricula ac ON ac.student_id=s.user_id
@@ -35,7 +35,7 @@ $studentRows = $conn->query("WITH active_curricula AS (
     LEFT JOIN course_progress cp ON cp.student_id=s.user_id AND cp.course_id=c.course_id
     UNION
     SELECT s.user_id, c.course_id,
-        COALESCE(CASE WHEN cc.requirement_type='required' THEN 'compulsory' WHEN cc.requirement_type='elective' THEN 'elective' END,c.subject_type,'elective'),
+        CASE WHEN cc.requirement_type='required' THEN 'compulsory' WHEN cc.requirement_type='elective' THEN 'elective' END,
         COALESCE(cp.passed,FALSE), COALESCE(cp.transferred,FALSE)
     FROM public.students s JOIN public.student_courses sc ON sc.student_id=s.user_id
     JOIN public.courses c ON c.course_id=sc.course_id
@@ -71,17 +71,24 @@ $studentCount = count($studentRows);
 $readyCount = count(array_filter($studentRows, static fn($r) => (int)$r['eligible'] === 1 || (int)$r['has_request'] === 1));
 $overallProgress = $studentCount ? round(array_sum(array_map(static fn($r) => (float)$r['progress_percent'], $studentRows))/$studentCount,1) : 0;
 
-$subjectRows = $conn->query("SELECT c.course_id,c.code,c.name,c.subject_type,
+$subjectRows = $conn->query("WITH active_curricula AS (
+    SELECT DISTINCT ON (student_id) student_id, curriculum_id FROM public.student_curricula
+    WHERE status='active' ORDER BY student_id, enrolled_at DESC
+)
+SELECT c.course_id,c.code,c.name,cc.requirement_type AS subject_type,cu.name AS curriculum_name,
     COUNT(DISTINCT sc.student_id) FILTER (WHERE LOWER(COALESCE(sc.status,'')) IN ('passed','completed','tr') OR COALESCE(lp.course_passed,FALSE)) AS passed_count,
     COUNT(DISTINCT sc.student_id) FILTER (WHERE UPPER(COALESCE(sc.status,''))='TR' OR COALESCE(lp.course_transferred,FALSE)) AS transferred_count,
     CASE WHEN COUNT(DISTINCT sc.student_id)=0 THEN 0 ELSE ROUND(100.0*COUNT(DISTINCT sc.student_id) FILTER (WHERE LOWER(COALESCE(sc.status,'')) IN ('passed','completed','tr') OR COALESCE(lp.course_passed,FALSE))/COUNT(DISTINCT sc.student_id),1) END AS pass_rate
-FROM public.courses c LEFT JOIN public.student_courses sc ON sc.course_id=c.course_id
+FROM public.curriculum_courses cc JOIN public.curricula cu ON cu.curriculum_id=cc.curriculum_id
+JOIN public.courses c ON c.course_id=cc.course_id
+LEFT JOIN active_curricula stu ON stu.curriculum_id=cc.curriculum_id
+LEFT JOIN public.student_courses sc ON sc.course_id=c.course_id AND sc.student_id=stu.student_id
 LEFT JOIN LATERAL (SELECT BOOL_AND(COALESCE(p.is_transferred,FALSE) OR UPPER(COALESCE(p.grade,''))='TR' OR a.status='passed' OR (a.status <> 'pending_review' AND COALESCE(a.total_score,0)>0 AND a.score>=CEIL(a.total_score))) AS course_passed,
     BOOL_AND(COALESCE(p.is_transferred,FALSE) OR UPPER(COALESCE(p.grade,''))='TR') AS course_transferred
     FROM public.lessons l LEFT JOIN public.lesson_progress_summary p ON p.lesson_id=l.lesson_id AND p.student_id=sc.student_id
     LEFT JOIN LATERAL (SELECT status,score,total_score FROM public.quiz_attempts a WHERE a.student_id=sc.student_id AND a.lesson_id=l.lesson_id ORDER BY submitted_at DESC,attempt_number DESC LIMIT 1) a ON TRUE
     WHERE l.course_id=c.course_id) lp ON TRUE
-GROUP BY c.course_id,c.code,c.name,c.subject_type ORDER BY c.code,c.name")->fetchAll(PDO::FETCH_ASSOC);
+GROUP BY c.course_id,c.code,c.name,cc.requirement_type,cu.curriculum_id,cu.name ORDER BY c.code,c.name,cu.name")->fetchAll(PDO::FETCH_ASSOC);
 $pendingRequests = $conn->query("SELECT r.request_id,r.student_id,COALESCE(s.full_name,r.student_id::text) AS full_name,r.original_file_name,r.submitted_at
     FROM public.transcript_requests r LEFT JOIN public.students s ON s.user_id=r.student_id WHERE r.status='pending' ORDER BY r.submitted_at ASC")->fetchAll(PDO::FETCH_ASSOC);
 function reportEscape($v): string { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
@@ -100,9 +107,9 @@ body{font-family:Kanit,sans-serif;background:#f4f7fb;color:#172033;margin:0}.wra
 <section class="panel"><div class="panel-head"><h2>ความคืบหน้านักเรียนรายบุคคล</h2><input id="studentSearch" class="search" type="search" placeholder="ค้นหาชื่อหรือรหัสนักเรียน"></div><div class="scroll"><table id="studentsTable"><thead><tr><th>รหัสนักเรียน</th><th>ชื่อ-นามสกุล</th><th>วิชาบังคับที่ผ่าน</th><th>วิชาเลือกที่ผ่าน</th><th>สถานะหลักสูตร</th><th>สิทธิ์การขอจบ</th></tr></thead><tbody>
 <?php foreach($studentRows as $r): ?><tr><td><?= reportEscape($r['student_id']) ?></td><td><?= reportEscape($r['full_name']) ?></td><td><?= (int)$r['compulsory_passed'] ?> / <?= (int)$r['compulsory_total'] ?> วิชา</td><td><?= (int)$r['elective_passed'] ?> วิชา</td><td class="progress"><?= reportEscape($r['progress_percent']) ?>%</td><td><?= $r['eligible']?'พร้อมจบ':'กำลังศึกษา' ?><?= $r['has_request']?' · ส่งคำขอแล้ว':'' ?></td></tr><?php endforeach; ?>
 <?php if(!$studentRows): ?><tr><td class="empty" colspan="6">ยังไม่มีข้อมูลนักเรียน</td></tr><?php endif; ?></tbody></table></div></section>
-<section class="panel"><h2>สถิติรายวิชา</h2><div class="scroll"><table><thead><tr><th>รหัสวิชา</th><th>ชื่อวิชา</th><th>ประเภทวิชา</th><th>เรียนผ่าน</th><th>เทียบโอน (TR)</th><th>อัตราการผ่าน</th></tr></thead><tbody>
-<?php foreach($subjectRows as $r): $isElective = $r['subject_type'] === 'elective'; ?><tr><td><?= reportEscape($r['code'] ?: $r['course_id']) ?></td><td><?= reportEscape($r['name']) ?></td><td><span class="badge <?= $isElective ? 'elective' : 'required' ?>"><?= $isElective ? 'วิชาเลือก' : 'วิชาบังคับ' ?></span></td><td><?= (int)$r['passed_count'] ?> คน</td><td><?= (int)$r['transferred_count'] ?> คน</td><td><?= reportEscape($r['pass_rate']) ?>%</td></tr><?php endforeach; ?>
-<?php if(!$subjectRows): ?><tr><td class="empty" colspan="6">ยังไม่มีข้อมูลรายวิชา</td></tr><?php endif; ?></tbody></table></div></section>
+<section class="panel"><h2>สถิติรายวิชา</h2><div class="scroll"><table><thead><tr><th>หลักสูตร</th><th>รหัสวิชา</th><th>ชื่อวิชา</th><th>ประเภทวิชา</th><th>เรียนผ่าน</th><th>เทียบโอน (TR)</th><th>อัตราการผ่าน</th></tr></thead><tbody>
+<?php foreach($subjectRows as $r): $isElective = $r['subject_type'] === 'elective'; ?><tr><td><?= reportEscape($r['curriculum_name']) ?></td><td><?= reportEscape($r['code'] ?: $r['course_id']) ?></td><td><?= reportEscape($r['name']) ?></td><td><span class="badge <?= $isElective ? 'elective' : 'required' ?>"><?= $isElective ? 'วิชาเลือก' : 'วิชาบังคับ' ?></span></td><td><?= (int)$r['passed_count'] ?> คน</td><td><?= (int)$r['transferred_count'] ?> คน</td><td><?= reportEscape($r['pass_rate']) ?>%</td></tr><?php endforeach; ?>
+<?php if(!$subjectRows): ?><tr><td class="empty" colspan="7">ยังไม่มีข้อมูลรายวิชา</td></tr><?php endif; ?></tbody></table></div></section>
 <section class="panel"><h2>คำขอเทียบโอนทรานสคริปต์ที่รออนุมัติ (<?= count($pendingRequests) ?>)</h2><div class="scroll"><table><thead><tr><th>รหัสนักเรียน</th><th>ชื่อ-นามสกุล</th><th>ไฟล์</th><th>วันที่ส่ง</th><th>สถานะ</th></tr></thead><tbody><?php foreach($pendingRequests as $r): ?><tr><td><?= reportEscape($r['student_id']) ?></td><td><?= reportEscape($r['full_name']) ?></td><td><?= reportEscape($r['original_file_name']) ?></td><td><?= reportEscape($r['submitted_at']) ?></td><td>รออนุมัติ</td></tr><?php endforeach; ?><?php if(!$pendingRequests): ?><tr><td class="empty" colspan="5">ไม่มีคำขอค้างอนุมัติ</td></tr><?php endif; ?></tbody></table></div></section>
 </main><script>document.getElementById('studentSearch').addEventListener('input',function(){const q=this.value.trim().toLocaleLowerCase();document.querySelectorAll('#studentsTable tbody tr').forEach(r=>{r.hidden=!r.textContent.toLocaleLowerCase().includes(q)})});</script><script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
 </body></html>
