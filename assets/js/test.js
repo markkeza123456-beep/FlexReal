@@ -28,8 +28,6 @@ let quizExpiresAtMs = 0;
 let quizTimerInterval = null;
 let quizLeaving = false;
 let pendingTabSwitch = null;
-let tabSwitchFailed = false;
-let tabSwitchCount = 0;
 let draftKey = `quiz-draft:guest:${subjectId}:${lessonIndex}`;
 
 function saveQuizDraft() {
@@ -337,7 +335,6 @@ async function showResult(options = {}) {
                 pendingNotice.style.fontWeight = '600';
                 saveStatus.before(pendingNotice);
             }
-            console.info('[quiz-save] success', window.__lastQuizSaveResult);
             const actionWrap = resultBox.querySelector('.result-action-wrap');
             const updatedAction = renderResultActionButton(lastResultPassed, Boolean(result.pending_review));
             if (actionWrap) {
@@ -424,7 +421,6 @@ async function loadQuizFromDatabase() {
         if (session.status !== 'success') throw new Error(session.message || 'เริ่มเซสชันข้อสอบไม่สำเร็จ');
         quizSessionId = Number(session.session_id);
         quizExpiresAtMs = Number(session.expires_at_ms);
-        tabSwitchCount = Number(session.tab_switch_count || 0);
         if (session.previous_timed_out) window.alert('เวลาสอบครั้งก่อนหมดแล้ว ระบบบันทึกผลเป็นไม่ผ่าน คุณสามารถเริ่มทำใหม่ได้');
 
         draftKey = `quiz-draft:${result.draft_scope || 'guest'}:${subjectId}:${lessonIndex}`;
@@ -548,7 +544,6 @@ function handlePendingTabSwitch() {
     const event = pendingTabSwitch;
     pendingTabSwitch = null;
     if (event.auto_failed) {
-        tabSwitchFailed = true;
         quizLeaving = true;
         quizSubmissionStarted = true;
         if (quizTimerInterval) window.clearInterval(quizTimerInterval);
@@ -568,7 +563,6 @@ document.addEventListener('visibilitychange', () => {
         if (!quizSessionId || quizSubmissionStarted || quizLeaving) return;
         requestQuizSession('tab_switch').then((result) => {
             if (result.status === 'success') {
-                tabSwitchCount = Number(result.tab_switch_count || tabSwitchCount);
                 pendingTabSwitch = result;
                 handlePendingTabSwitch();
             }

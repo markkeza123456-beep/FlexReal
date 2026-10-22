@@ -111,7 +111,6 @@ try {
 
 
     $rows = loadFromTestQuestions($conn, $lessonId);
-    $fromQuizQuestions = false;
 
     if (empty($rows)) {
         echo json_encode(['status' => 'error', 'message' => 'ยังไม่มีข้อสอบของบทนี้'], JSON_UNESCAPED_UNICODE);
@@ -120,13 +119,14 @@ try {
 
     $formatted = [];
     foreach ($rows as $q) {
-        $questionText = $fromQuizQuestions ? (string) ($q['question_text'] ?? '') : (string) ($q['questions_text'] ?? '');
-        $a = $fromQuizQuestions ? (string) ($q['option_a'] ?? '') : (string) ($q['choice_a'] ?? '');
-        $b = $fromQuizQuestions ? (string) ($q['option_b'] ?? '') : (string) ($q['choice_b'] ?? '');
-        $c = $fromQuizQuestions ? (string) ($q['option_c'] ?? '') : (string) ($q['choice_c'] ?? '');
-        $d = $fromQuizQuestions ? (string) ($q['option_d'] ?? '') : (string) ($q['choice_d'] ?? '');
+        $questionText = (string) ($q['questions_text'] ?? '');
+        $options = [
+            (string) ($q['choice_a'] ?? ''),
+            (string) ($q['choice_b'] ?? ''),
+            (string) ($q['choice_c'] ?? ''),
+            (string) ($q['choice_d'] ?? ''),
+        ];
 
-        $options = [$a, $b, $c, $d];
         $correctAnswer = (string) ($q['correct_answer'] ?? '');
         $questionType = strtolower((string) ($q['question_type'] ?? inferQuestionType($options, $correctAnswer)));
         $answerIndex = $questionType === 'essay' ? -1 : resolveAnswerIndex($correctAnswer, $options);

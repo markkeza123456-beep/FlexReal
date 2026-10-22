@@ -51,11 +51,6 @@ try {
 $action = $_POST['action'] ?? '';
 $teacherId = (string) $_SESSION['user_id'];
 
-function ensureLessonMediaColumns(PDO $conn): void
-{
-
-}
-
 function sanitizePathSegment(string $value, string $fallback = 'unknown'): string
 {
     $value = trim($value);
@@ -66,11 +61,6 @@ function sanitizePathSegment(string $value, string $fallback = 'unknown'): strin
     $value = preg_replace('/[^A-Za-z0-9._-]+/', '_', $value);
     $value = trim((string) $value, "._-");
     return $value !== '' ? $value : $fallback;
-}
-
-function generateLessonId(PDO $conn): string
-{
-    throw new LogicException('public.lessons generates lesson_id automatically');
 }
 
 function buildLessonMediaSegments(string $teacherId, string $subjectId, string $lessonId, string $mediaType): array
@@ -89,37 +79,6 @@ function buildLessonMediaSegments(string $teacherId, string $subjectId, string $
 function buildVideoMediaSegments(string $teacherId, string $subjectId): array
 {
     return ['teachers', sanitizePathSegment($teacherId), 'subjects', sanitizePathSegment($subjectId), 'videos'];
-}
-
-function ensureEssaySubmissionTable(PDO $conn): void
-{
-    $conn->exec("CREATE TABLE IF NOT EXISTS public.essay_submissions (
-        submission_id BIGSERIAL PRIMARY KEY,
-        test_id INTEGER NOT NULL,
-        student_id VARCHAR(50) NOT NULL,
-        subjects_id VARCHAR(50) NOT NULL,
-        lessons_id VARCHAR(50) NOT NULL,
-        questions_id INTEGER NOT NULL,
-        answer_text TEXT NOT NULL,
-        review_status VARCHAR(20) NOT NULL DEFAULT 'pending',
-        teacher_id VARCHAR(50),
-        teacher_comment TEXT,
-        reviewed_at TIMESTAMP,
-        submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )");
-}
-
-function ensureCourseWorkTables(PDO $conn): void
-{
-    $conn->exec("CREATE TABLE IF NOT EXISTS public.course_assignments (
-        assignment_id BIGSERIAL PRIMARY KEY, course_id bigint NOT NULL REFERENCES public.courses(course_id) ON DELETE CASCADE,
-        teacher_id varchar(50) NOT NULL REFERENCES public.teachers(user_id), title varchar(255) NOT NULL, description text NOT NULL DEFAULT '',
-        due_at timestamptz NOT NULL, max_score numeric(7,2) NOT NULL DEFAULT 10, created_at timestamptz NOT NULL DEFAULT now()
-    )");
-    $conn->exec("CREATE TABLE IF NOT EXISTS public.course_announcements (
-        announcement_id BIGSERIAL PRIMARY KEY, course_id bigint NOT NULL REFERENCES public.courses(course_id) ON DELETE CASCADE,
-        teacher_id varchar(50) NOT NULL REFERENCES public.teachers(user_id), title varchar(255) NOT NULL, body text NOT NULL DEFAULT '', created_at timestamptz NOT NULL DEFAULT now()
-    )");
 }
 
 function uploadLessonFile(string $fieldName, array $segments, string $prefix, bool $required = false, ?array $allowedExtensions = null): array
@@ -331,76 +290,6 @@ function teacherOwnsQuiz(PDO $conn, string $teacherId, string $quizId): bool
 }
 
 try {
-    if ($action === 'check_storage_config') {
-        $storageKey = trim((string) ($env['SUPABASE_SERVICE_ROLE_KEY'] ?? ''));
-        $storageUrl = rtrim((string) ($env['SUPABASE_URL'] ?? $supabaseUrl ?? ''), '/');
-        $bucket = trim((string) ($env['SUPABASE_LESSON_BUCKET'] ?? 'lesson-media'));
-        $keyConfigured = $storageKey !== '' && !str_starts_with($storageKey, 'replace_with_');
-        $bucketStmt = $conn->prepare('SELECT public FROM storage.buckets WHERE id = :bucket LIMIT 1');
-        $bucketStmt->execute([':bucket' => $bucket]);
-        $bucketRow = $bucketStmt->fetch(PDO::FETCH_ASSOC);
-        $bucketExists = $bucketRow !== false;
-        $bucketPublic = $bucketExists ? filter_var($bucketRow['public'], FILTER_VALIDATE_BOOLEAN) : null;
-        $storageHttpStatus = null;
-        $storageApiAccepted = null;
-        $storageStatusMessage = 'ตั้งค่าไม่ครบ';
-        if (!$keyConfigured) {
-            $storageStatusMessage = 'PHP ไม่พบ SUPABASE_SERVICE_ROLE_KEY ใน flexreal.env หรือ Environment Variables ของ Apache';
-        } elseif ($storageUrl === '' || str_contains($storageUrl, 'your_project_ref')) {
-            $storageStatusMessage = 'SUPABASE_URL ไม่มีค่าหรือยังเป็นค่า placeholder';
-        } elseif (!$bucketExists) {
-            $storageStatusMessage = 'ไม่พบ bucket ' . $bucket . ' ใน Supabase Storage';
-        } else {
-            $headers = ['apikey: ' . $storageKey];
-            if (!str_starts_with($storageKey, 'sb_secret_')) $headers[] = 'Authorization: Bearer ' . $storageKey;
-            $probe = curl_init($storageUrl . '/storage/v1/bucket/' . rawurlencode($bucket));
-            curl_setopt_array($probe, [CURLOPT_HTTPHEADER => $headers, CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 8, CURLOPT_TIMEOUT => 15]);
-            $probeBody = curl_exec($probe);
-            $storageHttpStatus = (int) curl_getinfo($probe, CURLINFO_RESPONSE_CODE);
-            $probeError = curl_error($probe);
-            curl_close($probe);
-            $storageApiAccepted = $probeBody !== false && $storageHttpStatus >= 200 && $storageHttpStatus < 300;
-            $storageStatusMessage = $storageApiAccepted ? 'คีย์ได้รับการยอมรับและเข้าถึง bucket ได้' : ($storageHttpStatus ? 'Supabase ปฏิเสธการตรวจสอบ (HTTP ' . $storageHttpStatus . '); ตรวจสอบว่า URL และคีย์เป็นของโปรเจกต์เดียวกันและคีย์มีสิทธิ์ Storage' : 'เชื่อมต่อ Supabase Storage ไม่สำเร็จ: ' . $probeError);
-        }
-        echo json_encode([
-            'success' => true,
-            'status' => [
-                'url_configured' => $storageUrl !== '' && !str_contains($storageUrl, 'your_project_ref'),
-                'service_role_key_configured' => $keyConfigured,
-                'bucket' => $bucket,
-                'bucket_exists' => $bucketExists,
-                'bucket_public' => $bucketPublic,
-                'storage_api_accepted_key' => $storageApiAccepted,
-                'storage_http_status' => $storageHttpStatus,
-                'message' => $storageStatusMessage,
-            ],
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-    ensureCourseWorkTables($conn);
-    if ($action === 'get_course_work') {
-        $subjectId = trim((string) ($_POST['subject_id'] ?? ''));
-        if ($subjectId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) throw new Exception('คุณไม่มีสิทธิ์จัดการรายวิชานี้');
-        $assignments = $conn->prepare("SELECT a.assignment_id, a.title, a.description, a.due_at, a.max_score, 0 AS submission_count, 0 AS pending_count FROM public.course_assignments a WHERE a.course_id = :course_id AND a.teacher_id = :teacher_id ORDER BY a.due_at ASC");
-        $assignments->execute([':course_id' => $subjectId, ':teacher_id' => $teacherId]);
-        $announcements = $conn->prepare('SELECT announcement_id, title, body, created_at FROM public.course_announcements WHERE course_id = :course_id AND teacher_id = :teacher_id ORDER BY created_at DESC');
-        $announcements->execute([':course_id' => $subjectId, ':teacher_id' => $teacherId]);
-        echo json_encode(['success' => true, 'assignments' => $assignments->fetchAll(PDO::FETCH_ASSOC), 'announcements' => $announcements->fetchAll(PDO::FETCH_ASSOC)]); exit;
-    }
-    if ($action === 'save_assignment') {
-        $subjectId = trim((string) ($_POST['subject_id'] ?? '')); $title = trim((string) ($_POST['title'] ?? '')); $dueAt = trim((string) ($_POST['due_at'] ?? ''));
-        if ($subjectId === '' || $title === '' || $dueAt === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) throw new Exception('กรุณากรอกชื่องานและกำหนดส่งให้ครบถ้วน');
-        $stmt = $conn->prepare('INSERT INTO public.course_assignments (course_id, teacher_id, title, description, due_at, max_score) VALUES (:course_id, :teacher_id, :title, :description, :due_at, :max_score)');
-        $stmt->execute([':course_id' => $subjectId, ':teacher_id' => $teacherId, ':title' => $title, ':description' => trim((string) ($_POST['description'] ?? '')), ':due_at' => $dueAt, ':max_score' => max(0, (float) ($_POST['max_score'] ?? 10))]);
-        echo json_encode(['success' => true, 'message' => 'สร้างงานและแจ้งนักเรียนเรียบร้อยแล้ว']); exit;
-    }
-    if ($action === 'save_announcement') {
-        $subjectId = trim((string) ($_POST['subject_id'] ?? '')); $title = trim((string) ($_POST['title'] ?? ''));
-        if ($subjectId === '' || $title === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) throw new Exception('กรุณากรอกหัวข้อประกาศ');
-        $stmt = $conn->prepare('INSERT INTO public.course_announcements (course_id, teacher_id, title, body) VALUES (:course_id, :teacher_id, :title, :body)');
-        $stmt->execute([':course_id' => $subjectId, ':teacher_id' => $teacherId, ':title' => $title, ':body' => trim((string) ($_POST['body'] ?? ''))]);
-        echo json_encode(['success' => true, 'message' => 'เผยแพร่ประกาศเรียบร้อยแล้ว']); exit;
-    }
     if ($action === 'add_lesson') {
         $lessonName = trim((string) ($_POST['lesson_name'] ?? ''));
         $lessonContent = trim((string) ($_POST['lesson_content'] ?? ''));

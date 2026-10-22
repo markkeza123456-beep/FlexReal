@@ -1315,11 +1315,9 @@ function renderVideoModalBody(lessonIndex) {
             is_completed: completed
         };
         if (!Number.isFinite(payload.progress_value) || !Number.isFinite(payload.duration_seconds)) return false;
-        console.log('Sending Payload:', payload);
         if (useBeacon) {
             const beaconBody = new Blob([JSON.stringify(payload)], { type: 'application/json' });
             const queued = navigator.sendBeacon('api_save_progress.php', beaconBody);
-            console.log('Video progress beacon queued:', queued, payload);
             return queued;
         }
         saving = true;
@@ -1332,11 +1330,9 @@ function renderVideoModalBody(lessonIndex) {
                 keepalive: keepalive
             });
             const responseText = await response.text();
-            console.log('Backend Response:', responseText);
             let result;
             try { result = JSON.parse(responseText); }
             catch (_) { result = { ok: false, message: responseText || 'Invalid JSON response' }; }
-            console.log('Progress API Response:', response.status, result);
             if (response.ok && result.ok) {
                 return true;
             }

@@ -1,4 +1,6 @@
-# Database column audit — 2026-10-21
+# Historical database column audit — 2026-10-21
+
+This is a dated snapshot and is superseded for current table inventory by [database_cleanup_20261022.md](database_cleanup_20261022.md).
 
 Current inventory of the connected PostgreSQL `public` schema after approved cleanup: 30 tables and 279 columns. Row counts and NULL/blank percentages were measured against the live schema; no row values were exported.
 
