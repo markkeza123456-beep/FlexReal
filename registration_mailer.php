@@ -5,6 +5,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 require_once __DIR__ . '/PHPMailer/Exception.php';
 require_once __DIR__ . '/PHPMailer/PHPMailer.php';
 require_once __DIR__ . '/PHPMailer/SMTP.php';
+require_once __DIR__ . '/gmail_oauth.php';
 
 function flexibleMailConfig(string $key, string $default = ''): string
 {
@@ -47,9 +48,14 @@ function createFlexibleMailer(string $recipient): PHPMailer
     return $mail;
 }
 
-/** Send with Resend's HTTPS API when configured; otherwise retain local SMTP support. */
+/** Prefer Gmail API HTTPS, then Resend HTTPS, then SMTP for local/paid hosts. */
 function sendFlexibleMessage(string $recipient, string $subject, string $html, string $text): void
 {
+    if (flexibleMailConfig('GMAIL_REFRESH_TOKEN') !== '') {
+        gmailApiSend($recipient, $subject, $html, $text);
+        return;
+    }
+
     $apiKey = flexibleMailConfig('RESEND_API_KEY');
     if ($apiKey === '') {
         $mail = createFlexibleMailer($recipient);
