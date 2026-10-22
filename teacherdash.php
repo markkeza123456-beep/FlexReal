@@ -229,12 +229,13 @@ $studentStmt = $conn->prepare("
     LEFT JOIN public.lessons l ON l.course_id = c.course_id
     LEFT JOIN public.lesson_progress_summary lp ON lp.student_id = st.user_id AND lp.lesson_id = l.lesson_id
     LEFT JOIN LATERAL (SELECT attempt_id, score, total_score, status FROM public.quiz_attempts a WHERE a.student_id = st.user_id AND a.lesson_id = l.lesson_id ORDER BY a.submitted_at DESC LIMIT 1) qa ON true
+    WHERE c.course_id = :selected_subject_id
     GROUP BY st.user_id, st.full_name, st.student_level
     ORDER BY st.full_name ASC
 ");
-$studentStmt->execute([':teacher_id' => $teacherId]);
+$studentStmt->execute([':teacher_id' => $teacherId, ':selected_subject_id' => $selectedSubjectId]);
 
-// Load each student's latest result per lesson across courses assigned to this teacher.
+// Load each selected-course student's latest result per lesson.
 $lessonScoreStmt = $conn->prepare("
     SELECT st.user_id AS student_id, c.course_id, l.lesson_id, l.position, l.title AS lesson_title,
            qa.score, qa.total_score, qa.attempt_id,
@@ -259,9 +260,10 @@ $lessonScoreStmt = $conn->prepare("
         ORDER BY a.submitted_at DESC, a.attempt_number DESC
         LIMIT 1
     ) qa ON TRUE
+    WHERE c.course_id = :selected_subject_id
     ORDER BY st.user_id, c.name, l.position, l.lesson_id
 ");
-$lessonScoreStmt->execute([':teacher_id' => $teacherId]);
+$lessonScoreStmt->execute([':teacher_id' => $teacherId, ':selected_subject_id' => $selectedSubjectId]);
 $lessonScoresByStudent = [];
 foreach ($lessonScoreStmt->fetchAll(PDO::FETCH_ASSOC) as $lessonScore) {
     $lessonScoresByStudent[(string) $lessonScore['student_id']][] = [
@@ -346,8 +348,8 @@ $teacher = [
 
 $stats = [
     'students' => count($students),
-    'lessons' => $totalLessonCount,
-    'subjects' => count($subjects),
+    'lessons' => $selectedSubject ? (int) $selectedSubject['lesson_count'] : 0,
+    'subjects' => $selectedSubject ? 1 : 0,
     'avg_score' => $overallAvgScore,
 ];
 ?>
@@ -1596,7 +1598,7 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-    <script src="assets/js/teacherdash.js?v=20261022-live-lesson-list"></script>
+    <script src="assets/js/teacherdash.js?v=20261022-refresh-new-lesson-v1"></script>
 <?php if ($canAccessTransferApproval): ?>
     <script src="assets/js/teacher_graduation.js?v=20261022-graduation-status-colors"></script>
 <?php endif; ?>

@@ -110,6 +110,98 @@ function uploadCourseCover(): ?string
     return 'data:' . $mime . ';base64,' . base64_encode($imageBytes);
 }
 
+function localUploadPath(string $storedPath): ?string
+{
+    $storedPath = strtok(trim(str_replace('\\', '/', $storedPath)), '?');
+    if ($storedPath === '' || !str_starts_with($storedPath, 'uploads/')) return null;
+    $uploadsRoot = realpath(__DIR__ . '/uploads');
+    $candidate = realpath(__DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $storedPath));
+    if ($uploadsRoot === false || $candidate === false || !str_starts_with($candidate, $uploadsRoot . DIRECTORY_SEPARATOR) || !is_file($candidate)) return null;
+    return $candidate;
+}
+
+function deleteUnreferencedLessonFiles(PDO $conn, array $urls): void
+{
+    $uniqueUrls = array_values(array_unique(array_filter(array_map('trim', $urls))));
+    $check = $conn->prepare('SELECT EXISTS (SELECT 1 FROM public.lesson_resources WHERE url = :url)');
+    foreach ($uniqueUrls as $url) {
+        $check->execute([':url' => $url]);
+        if ($check->fetchColumn()) continue;
+        $path = localUploadPath($url);
+        if ($path !== null && !unlink($path)) throw new RuntimeException('ไม่สามารถลบไฟล์สื่อที่เกี่ยวข้องได้');
+    }
+}
+
+function tableExists(PDO $conn, string $table): bool
+{
+    $statement = $conn->prepare("SELECT to_regclass(:table_name) IS NOT NULL");
+    $statement->execute([':table_name' => 'public.' . $table]);
+    return (bool) $statement->fetchColumn();
+}
+
+function deleteRowsIfTableExists(PDO $conn, string $table, string $whereSql, array $params): void
+{
+    if (!tableExists($conn, $table)) return;
+    $conn->prepare('DELETE FROM public.' . $table . ' WHERE ' . $whereSql)->execute($params);
+}
+
+function deleteMemberRecord(PDO $conn, string $memberId, string $actorId): void
+{
+    if ($memberId === $actorId) throw new RuntimeException('ไม่สามารถลบบัญชีที่กำลังใช้งานอยู่ได้');
+    $conn->beginTransaction();
+    try {
+        $targetStmt = $conn->prepare('SELECT role FROM public.users WHERE user_id = :id FOR UPDATE');
+        $targetStmt->execute([':id' => $memberId]);
+        $role = $targetStmt->fetchColumn();
+        if ($role === false) throw new RuntimeException('ไม่พบบัญชีผู้ใช้งาน');
+
+        if (tableExists($conn, 'students')) {
+            $conn->prepare('UPDATE public.students SET advisor_user_id = NULL WHERE advisor_user_id = :id')->execute([':id' => $memberId]);
+            $conn->prepare('UPDATE public.students SET parent_user_id = NULL WHERE parent_user_id = :id')->execute([':id' => $memberId]);
+        }
+        foreach (['courses', 'curricula', 'lessons'] as $auditTable) {
+            if (tableExists($conn, $auditTable)) {
+                foreach (['created_by', 'updated_by'] as $auditColumn) {
+                    $conn->prepare('UPDATE public.' . $auditTable . ' SET ' . $auditColumn . ' = NULL WHERE ' . $auditColumn . ' = :id')->execute([':id' => $memberId]);
+                }
+            }
+        }
+        if (tableExists($conn, 'graduation_requests')) $conn->prepare('UPDATE public.graduation_requests SET approved_by = NULL WHERE approved_by = :id')->execute([':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'transfer_permissions', 'instructor_id = :id OR granted_by = :id', [':id' => $memberId]);
+        if (tableExists($conn, 'transcript_requests')) $conn->prepare('UPDATE public.transcript_requests SET reviewed_by = NULL, approved_by = NULL WHERE reviewed_by = :id OR approved_by = :id')->execute([':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'transcript_request_lessons', 'reviewed_by = :id', [':id' => $memberId]);
+        if (tableExists($conn, 'transcript_request_lessons') && tableExists($conn, 'transcript_requests')) {
+            $conn->prepare('DELETE FROM public.transcript_request_lessons WHERE request_id IN (SELECT request_id FROM public.transcript_requests WHERE student_id = :id)')->execute([':id' => $memberId]);
+        }
+        if (tableExists($conn, 'lesson_progress')) $conn->prepare('UPDATE public.lesson_progress SET transferred_by = NULL WHERE transferred_by = :id')->execute([':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'graduation_requests', 'student_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'exam_logs', 'student_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'lesson_progress', 'student_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'transcript_requests', 'student_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'student_curricula', 'student_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'student_courses', 'student_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'course_certificates', 'student_id = :id', [':id' => $memberId]);
+        if (tableExists($conn, 'quiz_attempt_answers') && tableExists($conn, 'quiz_attempts')) {
+            $conn->prepare('DELETE FROM public.quiz_attempt_answers WHERE attempt_id IN (SELECT attempt_id FROM public.quiz_attempts WHERE student_id = :id)')->execute([':id' => $memberId]);
+        }
+        deleteRowsIfTableExists($conn, 'quiz_attempt_sessions', 'student_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'quiz_attempts', 'student_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'course_teachers', 'teacher_id = :id', [':id' => $memberId]);
+        if (tableExists($conn, 'quiz_attempt_answers')) $conn->prepare('UPDATE public.quiz_attempt_answers SET reviewer_id = NULL WHERE reviewer_id = :id')->execute([':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'staff', 'user_id = :id', [':id' => $memberId]);
+        $profileTable = ['student' => 'students', 'teacher' => 'teachers', 'parent' => 'parents'][$role] ?? null;
+        if ($profileTable !== null) deleteRowsIfTableExists($conn, $profileTable, 'user_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'user_addresses', 'user_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'site_visits', 'user_id = :id', [':id' => $memberId]);
+        deleteRowsIfTableExists($conn, 'password_reset_tokens', 'user_id = :id', [':id' => $memberId]);
+        $conn->prepare('DELETE FROM public.users WHERE user_id = :id')->execute([':id' => $memberId]);
+        $conn->commit();
+    } catch (Throwable $error) {
+        if ($conn->inTransaction()) $conn->rollBack();
+        throw $error;
+    }
+}
+
 if (!isset($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? '')) !== 'staff') {
     jsonResponse([
         'status' => 'error',
@@ -381,19 +473,36 @@ try {
             if ($subjectId === '') { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
 
             $conn->beginTransaction();
-            $exists = $conn->prepare('SELECT 1 FROM public.courses WHERE course_id = :id FOR UPDATE');
+            $exists = $conn->prepare('SELECT image_path FROM public.courses WHERE course_id = :id FOR UPDATE');
             $exists->execute([':id' => $subjectId]);
-            if (!$exists->fetchColumn()) {
+            $courseImage = $exists->fetchColumn();
+            if ($courseImage === false) {
                 $conn->rollBack();
                 jsonResponse(['status' => 'error', 'message' => 'ไม่พบรายวิชาที่ต้องการลบ'], 404);
             }
-
-            $conn->prepare('DELETE FROM public.transcript_request_lessons WHERE lesson_id IN (SELECT lesson_id FROM public.lessons WHERE course_id = :id)')->execute([':id' => $subjectId]);
-            $conn->prepare('DELETE FROM public.quiz_attempts WHERE lesson_id IN (SELECT lesson_id FROM public.lessons WHERE course_id = :id)')->execute([':id' => $subjectId]);
+            $resources = $conn->prepare('SELECT r.url FROM public.lesson_resources r JOIN public.lessons l ON l.lesson_id = r.lesson_id WHERE l.course_id = :id');
+            $resources->execute([':id' => $subjectId]);
+            $resourceUrls = $resources->fetchAll(PDO::FETCH_COLUMN);
+            $lessons = $conn->prepare('SELECT lesson_id FROM public.lessons WHERE course_id = :id');
+            $lessons->execute([':id' => $subjectId]);
+            $lessonIds = $lessons->fetchAll(PDO::FETCH_COLUMN);
+            if ($lessonIds) {
+                $ids = implode(',', array_map('intval', $lessonIds));
+                $conn->exec("DELETE FROM public.quiz_attempt_answers WHERE attempt_id IN (SELECT attempt_id FROM public.quiz_attempts WHERE lesson_id IN ({$ids}))");
+                $conn->exec("DELETE FROM public.quiz_attempts WHERE lesson_id IN ({$ids})");
+                $conn->exec("DELETE FROM public.quiz_attempt_sessions WHERE lesson_id IN ({$ids})");
+                $conn->exec("DELETE FROM public.lesson_progress WHERE lesson_id IN ({$ids})");
+                $conn->exec("DELETE FROM public.transcript_request_lessons WHERE lesson_id IN ({$ids})");
+                $conn->exec("DELETE FROM public.questions WHERE lesson_id IN ({$ids})");
+                $conn->exec("DELETE FROM public.lesson_resources WHERE lesson_id IN ({$ids})");
+            }
+            deleteRowsIfTableExists($conn, 'course_certificates', 'course_id = :id', [':id' => $subjectId]);
+            $conn->prepare('DELETE FROM public.course_teachers WHERE course_id = :id')->execute([':id' => $subjectId]);
             $conn->prepare('DELETE FROM public.curriculum_courses WHERE course_id = :id')->execute([':id' => $subjectId]);
             $conn->prepare('DELETE FROM public.student_courses WHERE course_id = :id')->execute([':id' => $subjectId]);
             $conn->prepare('DELETE FROM public.courses WHERE course_id = :id')->execute([':id' => $subjectId]);
             $conn->commit();
+            deleteUnreferencedLessonFiles($conn, array_merge($resourceUrls, [(string) $courseImage]));
             jsonResponse(['status' => 'success']);
             break;
 
@@ -500,6 +609,13 @@ try {
                 jsonResponse(['status' => 'error', 'message' => 'ไม่พบหลักสูตรที่ต้องการลบ'], 404);
             }
 
+            $conn->prepare('DELETE FROM public.transcript_request_lessons WHERE request_id IN (SELECT tr.request_id FROM public.transcript_requests tr JOIN public.students s ON s.user_id = tr.student_id JOIN public.student_curricula sc ON sc.student_id = s.user_id WHERE sc.curriculum_id = :id)')->execute([':id' => $curriculumId]);
+            $conn->prepare('DELETE FROM public.transcript_requests WHERE student_id IN (SELECT student_id FROM public.student_curricula WHERE curriculum_id = :id)')->execute([':id' => $curriculumId]);
+            $conn->prepare('DELETE FROM public.lesson_progress WHERE student_id IN (SELECT student_id FROM public.student_curricula WHERE curriculum_id = :id)')->execute([':id' => $curriculumId]);
+            $conn->prepare('DELETE FROM public.quiz_attempt_answers WHERE attempt_id IN (SELECT attempt_id FROM public.quiz_attempts WHERE student_id IN (SELECT student_id FROM public.student_curricula WHERE curriculum_id = :id))')->execute([':id' => $curriculumId]);
+            $conn->prepare('DELETE FROM public.quiz_attempts WHERE student_id IN (SELECT student_id FROM public.student_curricula WHERE curriculum_id = :id)')->execute([':id' => $curriculumId]);
+            $conn->prepare('DELETE FROM public.quiz_attempt_sessions WHERE student_id IN (SELECT student_id FROM public.student_curricula WHERE curriculum_id = :id)')->execute([':id' => $curriculumId]);
+            $conn->prepare('DELETE FROM public.exam_logs WHERE student_id IN (SELECT student_id FROM public.student_curricula WHERE curriculum_id = :id)')->execute([':id' => $curriculumId]);
             $conn->prepare('DELETE FROM public.student_curricula WHERE curriculum_id = :id')->execute([':id' => $curriculumId]);
             $conn->prepare('DELETE FROM public.curriculum_courses WHERE curriculum_id = :id')->execute([':id' => $curriculumId]);
             $conn->prepare('DELETE FROM public.curricula WHERE curriculum_id = :id')->execute([':id' => $curriculumId]);
@@ -609,10 +725,19 @@ try {
                 jsonResponse(['status' => 'error', 'message' => 'ไม่พบบทเรียนที่ต้องการลบ'], 404);
             }
 
-            $conn->prepare('DELETE FROM public.transcript_request_lessons WHERE lesson_id = :id')->execute([':id' => $lessonId]);
+            $resources = $conn->prepare('SELECT url FROM public.lesson_resources WHERE lesson_id = :id');
+            $resources->execute([':id' => $lessonId]);
+            $resourceUrls = $resources->fetchAll(PDO::FETCH_COLUMN);
+            $conn->prepare('DELETE FROM public.quiz_attempt_answers WHERE attempt_id IN (SELECT attempt_id FROM public.quiz_attempts WHERE lesson_id = :id)')->execute([':id' => $lessonId]);
             $conn->prepare('DELETE FROM public.quiz_attempts WHERE lesson_id = :id')->execute([':id' => $lessonId]);
+            $conn->prepare('DELETE FROM public.quiz_attempt_sessions WHERE lesson_id = :id')->execute([':id' => $lessonId]);
+            $conn->prepare('DELETE FROM public.lesson_progress WHERE lesson_id = :id')->execute([':id' => $lessonId]);
+            $conn->prepare('DELETE FROM public.transcript_request_lessons WHERE lesson_id = :id')->execute([':id' => $lessonId]);
+            $conn->prepare('DELETE FROM public.questions WHERE lesson_id = :id')->execute([':id' => $lessonId]);
+            $conn->prepare('DELETE FROM public.lesson_resources WHERE lesson_id = :id')->execute([':id' => $lessonId]);
             $conn->prepare('DELETE FROM public.lessons WHERE lesson_id = :id AND course_id = :course_id')->execute([':id' => $lessonId, ':course_id' => $subjectId]);
             $conn->commit();
+            deleteUnreferencedLessonFiles($conn, $resourceUrls);
             jsonResponse(['status' => 'success']);
             break;
 
@@ -705,15 +830,21 @@ try {
             $videoId = trim((string) ($_POST['id'] ?? ''));
             $subjectId = postValue('subject_id');
             if ($videoId === '' || $subjectId === '') { jsonResponse(['status' => 'error', 'message' => 'Missing video ID'], 400); }
-            $statement = $conn->prepare("DELETE FROM public.lesson_resources r USING public.lessons l WHERE r.lesson_id = l.lesson_id AND r.resource_id = :id AND l.course_id = :subject_id AND r.resource_type = 'video'");
-            $statement->execute([':id' => $videoId, ':subject_id' => $subjectId]);
+            $conn->beginTransaction();
+            $urlStmt = $conn->prepare("SELECT r.url FROM public.lesson_resources r JOIN public.lessons l ON l.lesson_id = r.lesson_id WHERE r.resource_id = :id AND l.course_id = :subject_id AND r.resource_type = 'video' FOR UPDATE OF r");
+            $urlStmt->execute([':id' => $videoId, ':subject_id' => $subjectId]);
+            $videoUrl = $urlStmt->fetchColumn();
+            if ($videoUrl === false) { $conn->rollBack(); jsonResponse(['status' => 'error', 'message' => 'ไม่พบวิดีโอที่ต้องการลบ'], 404); }
+            $conn->prepare("DELETE FROM public.lesson_resources WHERE resource_id = :id AND resource_type = 'video'")->execute([':id' => $videoId]);
+            $conn->commit();
+            deleteUnreferencedLessonFiles($conn, [(string) $videoUrl]);
             jsonResponse(['status' => 'success']);
             break;
 
         case 'deleteMember':
-            $memberId = $_POST['id'] ?? '';
-            if (empty($memberId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
-
+            $memberId = trim((string) ($_POST['id'] ?? ''));
+            if ($memberId === '') { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
+            if ($memberId === (string) $_SESSION['user_id']) { jsonResponse(['status' => 'error', 'message' => 'ไม่สามารถระงับบัญชีที่กำลังใช้งานอยู่ได้'], 400); }
             $statement = $conn->prepare("UPDATE public.users SET account_status = 'inactive', updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id");
             $statement->execute([':id' => $memberId, ':updated_by' => (string) $_SESSION['user_id']]);
             if ($statement->rowCount() === 0) {
@@ -730,73 +861,13 @@ try {
             if ($memberId === '') { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
             if ($memberId === $actorId) { jsonResponse(['status' => 'error', 'message' => 'ไม่สามารถลบบัญชีที่กำลังใช้งานอยู่ได้'], 400); }
 
-            $conn->beginTransaction();
-            $targetStmt = $conn->prepare('SELECT role, account_status FROM public.users WHERE user_id = :id FOR UPDATE');
-            $targetStmt->execute([':id' => $memberId]);
-            $target = $targetStmt->fetch(PDO::FETCH_ASSOC);
-            if (!$target) {
-                $conn->rollBack();
-                jsonResponse(['status' => 'error', 'message' => 'ไม่พบบัญชีผู้ใช้งาน'], 404);
-            }
-            if ($target['account_status'] !== 'inactive') {
-                $conn->rollBack();
-                jsonResponse(['status' => 'error', 'message' => 'ลบถาวรได้เฉพาะบัญชีที่ระงับแล้ว'], 409);
-            }
+            $statusStmt = $conn->prepare('SELECT account_status FROM public.users WHERE user_id = :id');
+            $statusStmt->execute([':id' => $memberId]);
+            $accountStatus = $statusStmt->fetchColumn();
+            if ($accountStatus === false) { jsonResponse(['status' => 'error', 'message' => 'ไม่พบบัญชีผู้ใช้งาน'], 404); }
+            if ($accountStatus !== 'inactive') { jsonResponse(['status' => 'error', 'message' => 'ลบถาวรได้เฉพาะบัญชีที่ระงับแล้ว'], 409); }
 
-            // Clear nullable audit references and remove dependent records that require a live user.
-            $conn->prepare('UPDATE public.students SET parent_user_id = NULL WHERE parent_user_id = :id')->execute([':id' => $memberId]);
-            $conn->prepare('UPDATE public.students SET advisor_user_id = NULL WHERE advisor_user_id = :id')->execute([':id' => $memberId]);
-            $conn->prepare('UPDATE public.courses SET created_by = NULL WHERE created_by = :id')->execute([':id' => $memberId]);
-            $conn->prepare('UPDATE public.graduation_requests SET approved_by = NULL WHERE approved_by = :id')->execute([':id' => $memberId]);
-            $conn->prepare('UPDATE public.transfer_permissions SET revoked_by = NULL WHERE revoked_by = :id')->execute([':id' => $memberId]);
-            $conn->prepare('DELETE FROM public.transfer_permissions WHERE instructor_id = :id OR granted_by = :id')->execute([':id' => $memberId]);
-            $conn->prepare('UPDATE public.transcript_requests SET reviewed_by = NULL, approved_by = NULL WHERE reviewed_by = :id OR approved_by = :id')->execute([':id' => $memberId]);
-            $conn->prepare('UPDATE public.lesson_progress SET transferred_by = NULL WHERE transferred_by = :id')->execute([':id' => $memberId]);
-
-            if ($target['role'] === 'student') {
-                // Progress rows can point to the student's transfer request, so remove them first.
-                $conn->prepare('DELETE FROM public.lesson_progress WHERE student_id = :id')->execute([':id' => $memberId]);
-            }
-
-            // Remove transcript requests owned by the account and review rows that cannot retain a deleted reviewer ID.
-            $conn->prepare('DELETE FROM public.transcript_request_lessons WHERE request_id IN (SELECT request_id FROM public.transcript_requests WHERE student_id = :id) OR reviewed_by = :id')->execute([':id' => $memberId]);
-            $conn->prepare('DELETE FROM public.transcript_requests WHERE student_id = :id')->execute([':id' => $memberId]);
-
-            if ($target['role'] === 'student') {
-                $conn->prepare('DELETE FROM public.student_curricula WHERE student_id = :id')->execute([':id' => $memberId]);
-                $conn->prepare('DELETE FROM public.student_courses WHERE student_id = :id')->execute([':id' => $memberId]);
-                $conn->prepare('DELETE FROM public.quiz_attempts WHERE student_id = :id')->execute([':id' => $memberId]);
-            } elseif ($target['role'] === 'teacher') {
-                $conn->prepare('DELETE FROM public.course_teachers WHERE teacher_id = :id')->execute([':id' => $memberId]);
-                $conn->prepare('DELETE FROM public.quiz_attempt_answers WHERE reviewer_id = :id')->execute([':id' => $memberId]);
-            }
-
-            // Clean the staff profile even if its role metadata is inconsistent.
-            // The FK currently uses NO ACTION, so remove this child row before users.
-            $conn->prepare('DELETE FROM public.staff WHERE user_id = :id')->execute([':id' => $memberId]);
-
-            $profileTable = ['student' => 'students', 'teacher' => 'teachers', 'parent' => 'parents'][$target['role']] ?? null;
-            if ($profileTable !== null) {
-                $profileDelete = $conn->prepare('DELETE FROM public.' . $profileTable . ' WHERE user_id = :id');
-                $profileDelete->execute([':id' => $memberId]);
-            }
-            $deleteUser = $conn->prepare('DELETE FROM public.users WHERE user_id = :id');
-            $deleteUser->execute([':id' => $memberId]);
-            if ($deleteUser->rowCount() !== 1) { throw new RuntimeException('ไม่สามารถลบบัญชีผู้ใช้งานได้'); }
-            $conn->commit();
-            jsonResponse(['status' => 'success']);
-            break;
-
-        case 'restoreMember':
-            $memberId = $_POST['id'] ?? '';
-            if (empty($memberId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
-            $statement = $conn->prepare("UPDATE public.users SET account_status = 'active', updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id");
-            $statement->execute([':id' => $memberId, ':updated_by' => (string) $_SESSION['user_id']]);
-            if ($statement->rowCount() === 0) {
-                $exists = $conn->prepare('SELECT 1 FROM public.users WHERE user_id = :id');
-                $exists->execute([':id' => $memberId]);
-                if (!$exists->fetchColumn()) { jsonResponse(['status' => 'error', 'message' => 'ไม่พบสมาชิกที่ต้องการเปิดใช้งาน'], 404); }
-            }
+            deleteMemberRecord($conn, $memberId, $actorId);
             jsonResponse(['status' => 'success']);
             break;
 

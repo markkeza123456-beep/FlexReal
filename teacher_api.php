@@ -81,6 +81,20 @@ function buildVideoMediaSegments(string $teacherId, string $subjectId): array
     return ['teachers', sanitizePathSegment($teacherId), 'subjects', sanitizePathSegment($subjectId), 'videos'];
 }
 
+function deleteUnreferencedMedia(PDO $conn, array $urls): void
+{
+    $check = $conn->prepare('SELECT EXISTS (SELECT 1 FROM public.lesson_resources WHERE url = :url)');
+    foreach (array_values(array_unique(array_filter(array_map('trim', $urls)))) as $url) {
+        $check->execute([':url' => $url]);
+        if ($check->fetchColumn() || !str_starts_with($url, 'uploads/')) continue;
+        $root = realpath(__DIR__ . '/uploads');
+        $path = realpath(__DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, strtok($url, '?')));
+        if ($root !== false && $path !== false && str_starts_with($path, $root . DIRECTORY_SEPARATOR) && is_file($path) && !unlink($path)) {
+            throw new RuntimeException('ไม่สามารถลบไฟล์สื่อที่เกี่ยวข้องได้');
+        }
+    }
+}
+
 function uploadLessonFile(string $fieldName, array $segments, string $prefix, bool $required = false, ?array $allowedExtensions = null): array
 {
     if (!isset($_FILES[$fieldName]) || !is_array($_FILES[$fieldName])) {
@@ -446,11 +460,20 @@ try {
         $lesson = $conn->prepare('SELECT lesson_id FROM public.lessons WHERE lesson_id = :id FOR UPDATE');
         $lesson->execute([':id' => $lessonId]);
         if (!$lesson->fetchColumn()) throw new Exception('ไม่พบบทเรียนที่ต้องการลบ');
-        // These tables reference lessons without ON DELETE CASCADE.
+        $resourcesStmt = $conn->prepare('SELECT url FROM public.lesson_resources WHERE lesson_id = :id');
+        $resourcesStmt->execute([':id' => $lessonId]);
+        $resourceUrls = $resourcesStmt->fetchAll(PDO::FETCH_COLUMN);
+        $conn->prepare('DELETE FROM public.quiz_attempt_answers WHERE attempt_id IN (SELECT attempt_id FROM public.quiz_attempts WHERE lesson_id = :id)')->execute([':id' => $lessonId]);
         $conn->prepare('DELETE FROM public.transcript_request_lessons WHERE lesson_id = :id')->execute([':id' => $lessonId]);
         $conn->prepare('DELETE FROM public.quiz_attempts WHERE lesson_id = :id')->execute([':id' => $lessonId]);
+        $conn->prepare('DELETE FROM public.quiz_attempt_sessions WHERE lesson_id = :id')->execute([':id' => $lessonId]);
+        $conn->prepare('DELETE FROM public.exam_logs WHERE exam_id = :id')->execute([':id' => $lessonId]);
+        $conn->prepare('DELETE FROM public.lesson_progress WHERE lesson_id = :id')->execute([':id' => $lessonId]);
+        $conn->prepare('DELETE FROM public.questions WHERE lesson_id = :id')->execute([':id' => $lessonId]);
+        $conn->prepare('DELETE FROM public.lesson_resources WHERE lesson_id = :id')->execute([':id' => $lessonId]);
         $conn->prepare('DELETE FROM public.lessons WHERE lesson_id = :id')->execute([':id' => $lessonId]);
         $conn->commit();
+        deleteUnreferencedMedia($conn, $resourceUrls);
         echo json_encode(['success' => true, 'message' => 'ลบบทเรียนสำเร็จ']);
         exit;
     }
@@ -617,7 +640,10 @@ try {
             throw new Exception('คุณไม่มีสิทธิ์ลบข้อสอบนี้');
         }
 
-        $conn->prepare('DELETE FROM public.questions WHERE question_id = ?')->execute([$quizId]);
+        $conn->beginTransaction();
+        $conn->prepare('DELETE FROM public.quiz_attempt_answers WHERE question_id = :id')->execute([':id' => $quizId]);
+        $conn->prepare('DELETE FROM public.questions WHERE question_id = :id')->execute([':id' => $quizId]);
+        $conn->commit();
         echo json_encode(['success' => true, 'message' => 'ลบคำถามสำเร็จ']);
         exit;
     }
@@ -731,7 +757,14 @@ try {
         $subjectId = trim((string) ($_POST['subject_id'] ?? ''));
         $videoId = trim((string) ($_POST['video_id'] ?? ''));
         if ($subjectId === '' || $videoId === '' || !teacherOwnsSubject($conn, $teacherId, $subjectId)) throw new Exception('คุณไม่มีสิทธิ์ลบวิดีโอนี้');
-        $conn->prepare("DELETE FROM public.lesson_resources r USING public.lessons l WHERE r.lesson_id = l.lesson_id AND r.resource_id = :id AND l.course_id = :subject_id AND r.resource_type = 'video'")->execute([':id' => $videoId, ':subject_id' => $subjectId]);
+        $conn->beginTransaction();
+        $resourceStmt = $conn->prepare("SELECT r.url FROM public.lesson_resources r JOIN public.lessons l ON l.lesson_id = r.lesson_id WHERE r.resource_id = :id AND l.course_id = :subject_id AND r.resource_type = 'video' FOR UPDATE OF r");
+        $resourceStmt->execute([':id' => $videoId, ':subject_id' => $subjectId]);
+        $videoUrl = $resourceStmt->fetchColumn();
+        if ($videoUrl === false) { $conn->rollBack(); throw new Exception('ไม่พบวิดีโอที่ต้องการลบ'); }
+        $conn->prepare("DELETE FROM public.lesson_resources WHERE resource_id = :id AND resource_type = 'video'")->execute([':id' => $videoId]);
+        $conn->commit();
+        deleteUnreferencedMedia($conn, [(string) $videoUrl]);
         echo json_encode(['success' => true, 'message' => 'ลบวิดีโอสำเร็จ']);
         exit;
     }

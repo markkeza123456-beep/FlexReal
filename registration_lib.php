@@ -38,7 +38,18 @@ function validateRegistrationPayload(PDO $conn, array $post): array
     $idCheck->execute([':id' => $userId]);
     if ($idCheck->fetchColumn()) throw new RuntimeException('เลขบัตรประชาชนนี้มีบัญชีผู้ใช้งานแล้ว');
 
-    $emailCheck = $conn->prepare("SELECT EXISTS (SELECT 1 FROM public.students WHERE LOWER(email) = :student_email) OR EXISTS (SELECT 1 FROM public.teachers WHERE LOWER(email) = :teacher_email) OR EXISTS (SELECT 1 FROM public.parents WHERE LOWER(email) = :parent_email)");
+    // A profile only owns an email while its parent account is active. Older
+    // installations may not have email columns on users, so join via user_id.
+    $emailCheck = $conn->prepare("SELECT EXISTS (
+        SELECT 1 FROM public.students s JOIN public.users u ON u.user_id = s.user_id
+        WHERE LOWER(s.email) = :student_email AND u.account_status = 'active'
+    ) OR EXISTS (
+        SELECT 1 FROM public.teachers t JOIN public.users u ON u.user_id = t.user_id
+        WHERE LOWER(t.email) = :teacher_email AND u.account_status = 'active'
+    ) OR EXISTS (
+        SELECT 1 FROM public.parents p JOIN public.users u ON u.user_id = p.user_id
+        WHERE LOWER(p.email) = :parent_email AND u.account_status = 'active'
+    )");
     $emailCheck->execute([':student_email' => $email, ':teacher_email' => $email, ':parent_email' => $email]);
     if ($emailCheck->fetchColumn()) throw new RuntimeException('อีเมลนี้มีบัญชีผู้ใช้งานแล้ว');
 
