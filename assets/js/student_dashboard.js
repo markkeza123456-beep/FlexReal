@@ -1,6 +1,7 @@
 let dashboardState = {
     student: null,
-    courses: []
+    courses: [],
+    registeredCourses: []
 };
 
 let graduationCsrfToken = '';
@@ -36,7 +37,7 @@ function showPage(pageKey) {
         }
     });
 
-    if (pageKey === 'lessons') renderLessons(dashboardState.courses);
+    if (pageKey === 'lessons') renderLessons(dashboardState.registeredCourses);
     if (pageKey === 'reports') renderReports(dashboardState.courses, dashboardState.stats || {});
 }
 
@@ -92,15 +93,20 @@ function renderTable(courses) {
         return;
     }
 
-    tbody.innerHTML = courses.map((item) => {
+    tbody.innerHTML = courses.map((item, index) => {
         const progress = Math.max(0, Math.min(100, Number(item.progress) || 0));
-        const progressCell = item.is_transferred
+        const progressCell = !item.is_enrolled
+            ? '<span>—</span>'
+            : item.is_transferred
             ? '<span class="course-transfer-status">ผ่านการเทียบโอน</span>'
             : `<span>${progress}%</span>`;
-        const resultCell = item.is_transferred
+        const resultCell = !item.is_enrolled
+            ? '<span>ยังไม่ได้ลงทะเบียน</span>'
+            : item.is_transferred
             ? '<span class="course-transfer-status">TR</span>'
             : item.is_passed ? '<span class="course-passed-status">ผ่าน</span>' : '<span>กำลังศึกษา</span>';
-        return `<tr><td style="color:#888">${escapeHtml(item.id || '—')}</td><td>${escapeHtml(item.code ? `${item.code} · ` : '')}${escapeHtml(item.name)} ${subjectTypeBadge(item.subject_type)}</td><td>${progressCell}</td><td>${resultCell}</td></tr>`;
+        const curriculumNote = item.is_in_curriculum === false ? '<small class="catalog-course-note">รายวิชาบนเว็บไซต์</small>' : '';
+        return `<tr><td style="color:#888">${escapeHtml(item.id || String(index + 1).padStart(2, '0'))}</td><td>${escapeHtml(item.code ? `${item.code} · ` : '')}${escapeHtml(item.name)} ${subjectTypeBadge(item.subject_type)}${curriculumNote}</td><td>${progressCell}</td><td>${resultCell}</td></tr>`;
     }).join('');
 }
 
@@ -186,7 +192,7 @@ function renderReports(courses) {
     const fmt = (value) => Number(value || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
 
     summary.innerHTML = `
-        <div class="stat-card orange"><strong class="report-stat-heading">วิชาที่ลงทะเบียน</strong><p class="value">${visibleCourses.length}</p><span class="sub-value">เฉพาะวิชาของนักเรียน</span></div>
+        <div class="stat-card orange"><strong class="report-stat-heading">รายวิชาที่แสดง</strong><p class="value">${visibleCourses.length}</p><span class="sub-value">รายวิชาบนเว็บไซต์ที่เปิดสอน</span></div>
         <div class="stat-card blue"><strong class="report-stat-heading">บทเรียนที่มีผล</strong><p class="value">${attempted}/${lessonTotal}</p><span class="sub-value">รวมผลสอบและผลเทียบโอน</span></div>
         <div class="stat-card blue"><strong class="report-stat-heading">ครั้งที่ส่งข้อสอบ</strong><p class="value">${quizAttempts}</p><span class="sub-value">รวมทุกครั้งในรายวิชาที่เลือก</span></div>
         <div class="stat-card green"><strong class="report-stat-heading">ความคืบหน้า</strong><p class="value">${progress}%</p><span class="sub-value">สัดส่วนบทที่ส่งแบบทดสอบ</span></div>
@@ -201,11 +207,15 @@ function renderReports(courses) {
             const pending = courseLessons.reduce((sum, lesson) => sum + (Number(lesson.essay_pending_count) || 0), 0);
             const description = String(course.description || '').trim();
             const hasDescription = description && !['ไม่มีคำอธิบาย', 'ไม่มีคำอธิบายรายวิชา'].includes(description);
-            const score = course.is_transferred
+            const score = !course.is_enrolled
+                ? '—'
+                : course.is_transferred
                 ? 'TR (ผ่านการเทียบโอน)'
                 : Number(course.score_total) > 0 ? `${fmt(course.score_earned)}/${fmt(course.score_total)}` : '—';
             const courseName = `<strong>${escapeHtml(course.name)}</strong>${hasDescription ? `<small>${escapeHtml(description)}</small>` : ''}`;
-            return `<tr><td>${courseName}</td><td>${subjectTypeBadge(course.subject_type)}</td><td>${course.is_transferred ? 'ไม่ต้องสอบ' : `${Number(course.attempted_lessons)}/${Number(course.lesson_count)} บท`}</td><td>${fmt(course.progress)}%</td><td>${score}</td><td>${pending ? `<span class="report-status pending">${pending} ข้อ</span>` : '—'}</td></tr>`;
+            const lessonStatus = !course.is_enrolled ? 'ยังไม่ได้ลงทะเบียน' : course.is_transferred ? 'ไม่ต้องสอบ' : `${Number(course.attempted_lessons)} / ${Number(course.lesson_count)} บท`;
+            const progressStatus = course.is_enrolled ? `${fmt(course.progress)}%` : '—';
+            return `<tr><td>${courseName}</td><td>${subjectTypeBadge(course.subject_type)}</td><td>${lessonStatus}</td><td>${progressStatus}</td><td>${score}</td><td>${pending ? `<span class="report-status pending">${pending} ข้อ</span>` : '—'}</td></tr>`;
         }).join('');
     }
 
@@ -319,7 +329,7 @@ function updateProfile(student) {
 }
 
 function updateStats(stats, courses) {
-    const courseCount = Number(stats?.course_count || 0);
+    const courseCount = Number(stats?.catalog_course_count ?? stats?.course_count ?? 0);
     const attemptedLessons = Number(stats?.attempted_lessons || 0);
     const quizAttempts = Number(stats?.quiz_attempts || 0);
     const totalLessons = Number(stats?.total_lessons || 0);
@@ -442,15 +452,39 @@ async function loadDashboardData() {
         throw new Error(result.message || 'load failed');
     }
 
+    const registeredCourses = Array.isArray(result.courses) ? result.courses : [];
+    const registeredIds = new Set(registeredCourses.map((course) => String(course.subject_id)));
+    const catalogCourses = Array.isArray(result.catalog_courses) ? result.catalog_courses : [];
+    const unassignedCourses = catalogCourses
+        .filter((course) => !registeredIds.has(String(course.subject_id)))
+        .map((course) => ({
+            ...course,
+            id: '',
+            curriculum_id: '',
+            curriculum_order: null,
+            attempted_lessons: 0,
+            passed_lessons: 0,
+            is_transferred: false,
+            is_passed: false,
+            score_earned: 0,
+            score_total: 0,
+            progress: 0,
+            score: 0,
+            status: 'ยังไม่มีคะแนน',
+            class: 'no-score',
+            lessons: []
+        }));
+    const allCourses = [...registeredCourses, ...unassignedCourses];
     dashboardState = {
         student: result.student || null,
-        courses: Array.isArray(result.courses) ? result.courses : [],
+        courses: allCourses,
+        registeredCourses,
         stats: result.stats || {}
     };
 
     updateProfile(dashboardState.student);
     updateStats(result.stats || {}, dashboardState.courses);
-    renderLessons(dashboardState.courses);
+    renderLessons(dashboardState.registeredCourses);
     renderReports(dashboardState.courses, dashboardState.stats);
     loadGraduationTracker().catch((error) => {
         const message = document.getElementById('graduationTrackerMessage');
