@@ -40,11 +40,7 @@ try {
     $token = (string) random_int(100000, 999999);
     $expiresAt = date('Y-m-d H:i:s', strtotime('+15 minutes'));
 
-    // Deliver first; only invalidate prior tokens or persist this token after SMTP accepts the message.
-    $failureStage = 'mail';
-    sendPasswordResetOtp($email, (string) ($user['user_name'] ?? ''), $token);
     $failureStage = 'database';
-
     $conn->beginTransaction();
     try {
         $conn->prepare('UPDATE public.password_reset_tokens SET used_at = NOW() WHERE user_id = :uid AND used_at IS NULL')
@@ -55,6 +51,11 @@ try {
             ':token_hash' => password_hash($token, PASSWORD_DEFAULT),
             ':exp' => $expiresAt,
         ]);
+
+        // Keep token changes uncommitted until SMTP accepts the PIN message.
+        $failureStage = 'mail';
+        sendPasswordResetOtp($email, (string) ($user['user_name'] ?? ''), $token);
+        $failureStage = 'database';
         $conn->commit();
     } catch (Throwable $error) {
         if ($conn->inTransaction()) $conn->rollBack();
