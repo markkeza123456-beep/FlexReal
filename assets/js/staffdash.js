@@ -498,6 +498,7 @@
           <td style="color:var(--text-secondary)">${member.email || '-'}</td>
           <td style="color:var(--text-secondary)">${member.phone || '-'}</td>
           <td><span class="badge ${member.role === 'Staff' ? 'required' : 'draft'}">${roleName[member.role] || member.role}</span></td>
+          <td>${member.role === 'student' ? `<span class="badge ${member.student_pin_set ? 'active' : 'suspended'}">${member.student_pin_set ? 'ตั้งแล้ว' : 'ยังไม่ได้ตั้ง'}</span>` : '-'}</td>
           <td><span class="badge ${member.status === 'active' ? 'active' : 'suspended'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
           <td>${formatRegistrationDate(member.registered_at)}</td>
           <td>${formatRegistrationDate(member.updated_at)}</td>
@@ -513,7 +514,7 @@
           </td>
         </tr>
       `).join('')
-      : '<tr><td colspan="10" style="text-align:center; padding:30px;">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>';
+      : '<tr><td colspan="11" style="text-align:center; padding:30px;">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>';
   }
 
   function renderStaffList() {

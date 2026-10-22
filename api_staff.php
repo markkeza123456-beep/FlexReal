@@ -213,7 +213,7 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 try {
     switch ($action) {
         case 'getAllData':
-
+            $conn->exec('ALTER TABLE public.students ADD COLUMN IF NOT EXISTS pin_hash TEXT');
             $membersStmt = $conn->query('
                 SELECT
                     u.user_id as id,
@@ -222,6 +222,7 @@ try {
                     u.created_at as registered_at,
                     u.updated_at,
                     COALESCE(s.full_name, t.full_name, p.full_name, NULLIF(TRIM(stf.first_name || \' \' || stf.last_name), \'\'), \'-\') as name,
+                    (s.pin_hash IS NOT NULL AND s.pin_hash <> \'\') AS student_pin_set,
                     COALESCE(s.email, t.email, p.email, stf.email, \'-\') as email,
                     COALESCE(s.phone, t.phone, p.phone, stf.phone, \'-\') as phone,
                     COALESCE(parent_students.linked_students, \'[]\'::json) AS linked_students,

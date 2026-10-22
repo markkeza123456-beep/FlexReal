@@ -1,5 +1,7 @@
 <?php
 if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+$studentPinResetCsrf = (string) ($_SESSION['student_pin_reset_csrf'] ?? bin2hex(random_bytes(32)));
+$_SESSION['student_pin_reset_csrf'] = $studentPinResetCsrf;
 $profileRole = strtolower((string) ($_SESSION['role'] ?? ''));
 $profileContactReadonly = $profileRole === 'staff' ? '' : 'readonly';
 if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
@@ -263,6 +265,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
                             </div>
                         </div>
 
+                        <div style="margin-top:12px;text-align:right;"><a href="student_forgot_pin.php" style="color:var(--text-secondary);font-size:.9rem;text-decoration:underline;">ลืม PIN</a></div>
                         <div id="passwordFeedback" class="profile-feedback" style="display:none;"></div>
                         <button class="btn-save-profile" id="changePasswordBtn" onclick="changePassword()">เปลี่ยนรหัสผ่าน</button>
                     </div>
@@ -273,7 +276,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
 
         </main>
     </div>
-    <script src="assets/js/student_dashboard.js?v=20261022-full-course-catalog"></script>
+    <script src="assets/js/student_dashboard.js?v=20261022-student-pin-reset"></script>
     <script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>
