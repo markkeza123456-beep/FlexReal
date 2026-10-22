@@ -4,7 +4,8 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
 try {
-    if (empty($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? '')) !== 'staff') {
+    $avatarRole = strtolower((string) ($_SESSION['role'] ?? ''));
+    if (empty($_SESSION['user_id']) || !in_array($avatarRole, ['staff', 'director'], true)) {
         http_response_code(401);
         echo json_encode(['success' => false, 'message' => 'กรุณาล็อกอินใหม่'], JSON_UNESCAPED_UNICODE);
         exit;
@@ -27,7 +28,7 @@ try {
     require_once __DIR__ . '/avatar_storage.php';
     $conn->exec('ALTER TABLE public.staff ADD COLUMN IF NOT EXISTS avatar_url TEXT');
     $userId = (string) $_SESSION['user_id'];
-    $url = uploadPublicAvatar('staff', $userId, $png);
+    $url = uploadPublicAvatar($avatarRole, $userId, $png);
     $stmt = $conn->prepare('UPDATE public.staff SET avatar_url = :url, updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id');
     $stmt->execute([':url' => $url, ':updated_by' => $userId, ':id' => $userId]);
     if ($stmt->rowCount() === 0) {
@@ -39,7 +40,7 @@ try {
         ->execute([':updated_by' => $userId, ':id' => $userId]);
     echo json_encode(['success' => true, 'url' => $url], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $error) {
-    error_log('Staff avatar save failed: ' . $error->getMessage());
+    error_log('Staff/director avatar save failed: ' . $error->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'บันทึกรูปไม่สำเร็จ กรุณาลองใหม่'], JSON_UNESCAPED_UNICODE);
 }

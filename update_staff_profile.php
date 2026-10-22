@@ -10,7 +10,8 @@ function staffProfileResponse(array $payload, int $status = 200): never
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_SESSION['user_id']) || strtolower((string) ($_SESSION['role'] ?? '')) !== 'staff') {
+$sessionRole = strtolower((string) ($_SESSION['role'] ?? ''));
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_SESSION['user_id']) || !in_array($sessionRole, ['staff', 'director'], true)) {
     staffProfileResponse(['success' => false, 'message' => 'กรุณาล็อกอินใหม่'], 401);
 }
 
@@ -31,6 +32,9 @@ $confirmPassword = (string) ($_POST['pwd_confirm'] ?? '');
 
 if ($firstName === '' || $lastName === '' || mb_strlen($firstName) > 100 || mb_strlen($lastName) > 100) {
     staffProfileResponse(['success' => false, 'message' => 'กรุณากรอกชื่อและนามสกุลให้ถูกต้อง'], 422);
+}
+if ($sessionRole === 'director' && $newUserId !== $userId) {
+    staffProfileResponse(['success' => false, 'message' => 'ผู้บริหารไม่สามารถเปลี่ยนเลขบัตรประจำตัวประชาชนจากหน้านี้ได้'], 403);
 }
 if ($email !== '' && (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 254)) {
     staffProfileResponse(['success' => false, 'message' => 'รูปแบบอีเมลไม่ถูกต้อง'], 422);
@@ -85,32 +89,39 @@ try {
         $userId = $newUserId;
     }
 
-    $stmt = $conn->prepare('UPDATE public.staff SET first_name = :first_name, last_name = :last_name, email = :email, phone = :phone, updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id');
-    $stmt->execute([
-        ':first_name' => $firstName,
-        ':last_name' => $lastName,
-        ':email' => $email !== '' ? $email : null,
-        ':phone' => $phone !== '' ? $phone : null,
-        ':updated_by' => $userId,
-        ':id' => $userId,
-    ]);
+    if ($sessionRole === 'director') {
+        $stmt = $conn->prepare('UPDATE public.staff SET first_name = :first_name, last_name = :last_name, updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id');
+        $stmt->execute([':first_name' => $firstName, ':last_name' => $lastName, ':updated_by' => $userId, ':id' => $userId]);
+    } else {
+        $stmt = $conn->prepare('UPDATE public.staff SET first_name = :first_name, last_name = :last_name, email = :email, phone = :phone, updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id');
+        $stmt->execute([
+            ':first_name' => $firstName,
+            ':last_name' => $lastName,
+            ':email' => $email !== '' ? $email : null,
+            ':phone' => $phone !== '' ? $phone : null,
+            ':updated_by' => $userId,
+            ':id' => $userId,
+        ]);
+    }
     if ($stmt->rowCount() === 0) {
         $check = $conn->prepare('SELECT 1 FROM public.staff WHERE user_id = :id');
         $check->execute([':id' => $userId]);
         if (!$check->fetchColumn()) throw new RuntimeException('ไม่พบข้อมูลเจ้าหน้าที่');
     }
-    $addressCheck = $conn->prepare('SELECT address_id FROM public.user_addresses WHERE user_id = :id ORDER BY is_primary DESC, address_id ASC LIMIT 1 FOR UPDATE');
-    $addressCheck->execute([':id' => $userId]);
-    $addressId = $addressCheck->fetchColumn();
-    $addressParams = [':line' => $addressLine !== '' ? $addressLine : null, ':subdistrict' => $subdistrict !== '' ? $subdistrict : null,
-        ':district' => $district !== '' ? $district : null, ':province' => $province !== '' ? $province : null,
-        ':postal_code' => $postalCode !== '' ? $postalCode : null];
-    if ($addressId) {
-        $addressParams[':id'] = $addressId;
-        $conn->prepare('UPDATE public.user_addresses SET address_line = :line, subdistrict = :subdistrict, district = :district, province = :province, postal_code = :postal_code, updated_at = NOW() WHERE address_id = :id')->execute($addressParams);
-    } else {
-        $addressParams[':user_id'] = $userId;
-        $conn->prepare('INSERT INTO public.user_addresses (user_id, address_line, subdistrict, district, province, postal_code, is_primary) VALUES (:user_id, :line, :subdistrict, :district, :province, :postal_code, TRUE)')->execute($addressParams);
+    if ($sessionRole !== 'director') {
+        $addressCheck = $conn->prepare('SELECT address_id FROM public.user_addresses WHERE user_id = :id ORDER BY is_primary DESC, address_id ASC LIMIT 1 FOR UPDATE');
+        $addressCheck->execute([':id' => $userId]);
+        $addressId = $addressCheck->fetchColumn();
+        $addressParams = [':line' => $addressLine !== '' ? $addressLine : null, ':subdistrict' => $subdistrict !== '' ? $subdistrict : null,
+            ':district' => $district !== '' ? $district : null, ':province' => $province !== '' ? $province : null,
+            ':postal_code' => $postalCode !== '' ? $postalCode : null];
+        if ($addressId) {
+            $addressParams[':id'] = $addressId;
+            $conn->prepare('UPDATE public.user_addresses SET address_line = :line, subdistrict = :subdistrict, district = :district, province = :province, postal_code = :postal_code, updated_at = NOW() WHERE address_id = :id')->execute($addressParams);
+        } else {
+            $addressParams[':user_id'] = $userId;
+            $conn->prepare('INSERT INTO public.user_addresses (user_id, address_line, subdistrict, district, province, postal_code, is_primary) VALUES (:user_id, :line, :subdistrict, :district, :province, :postal_code, TRUE)')->execute($addressParams);
+        }
     }
     $conn->prepare('UPDATE public.users SET updated_by = :updated_by, updated_at = NOW() WHERE user_id = :id')
         ->execute([':updated_by' => $userId, ':id' => $userId]);

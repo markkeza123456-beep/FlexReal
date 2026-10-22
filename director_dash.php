@@ -24,10 +24,12 @@ function directorEscape(mixed $value): string
     return htmlspecialchars((string) ($value ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-$profile = $conn->prepare('SELECT first_name, last_name FROM public.staff WHERE user_id = :user_id LIMIT 1');
+$profile = $conn->prepare('SELECT first_name, last_name, avatar_url FROM public.staff WHERE user_id = :user_id LIMIT 1');
 $profile->execute([':user_id' => $userId]);
 $profileRow = $profile->fetch(PDO::FETCH_ASSOC) ?: [];
 $directorName = trim((string) ($profileRow['first_name'] ?? '') . ' ' . (string) ($profileRow['last_name'] ?? '')) ?: 'ผู้บริหาร';
+$directorAvatarUrl = trim((string) ($profileRow['avatar_url'] ?? ''));
+$directorInitial = mb_substr($directorName, 0, 1, 'UTF-8');
 
 $kpis = $conn->query("SELECT
     COUNT(*) FILTER (WHERE role = 'student') AS students,
@@ -90,7 +92,7 @@ LIMIT 5")->fetchAll(PDO::FETCH_ASSOC) ?: [];
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/theme.css">
-  <link rel="stylesheet" href="assets/css/director_dash.css">
+  <link rel="stylesheet" href="assets/css/director_dash.css?v=20261022-director-personal-info-underline-fix">
 </head>
 <body class="director-dashboard">
   <header class="director-topbar">
@@ -98,11 +100,17 @@ LIMIT 5")->fetchAll(PDO::FETCH_ASSOC) ?: [];
       <img src="images/flexible-learning-hub-logo-transparent.png" alt="Flexible Learning Hub">
     </a>
     <div class="director-account">
-      <div class="director-user">
-        <div><strong><?= directorEscape($directorName) ?></strong><span>ผู้บริหาร</span></div>
-        <a class="director-download" href="export_director_report.php" target="_blank" rel="noopener">📥 ดาวน์โหลดรายงานภาพรวม PDF</a>
-      </div>
-      <a href="logout.php">ออกจากระบบ</a>
+      <a class="director-download" href="export_director_report.php" target="_blank" rel="noopener">📥 ดาวน์โหลดไฟล์ PDF</a>
+      <details class="director-profile-menu">
+        <summary>
+          <span class="director-avatar" aria-hidden="true"><?php if ($directorAvatarUrl !== ''): ?><img src="<?= directorEscape($directorAvatarUrl) ?>" alt=""><?php else: ?><?= directorEscape($directorInitial) ?><?php endif; ?></span>
+          <strong><?= directorEscape($directorName) ?></strong>
+        </summary>
+        <div class="director-profile-dropdown">
+          <a class="director-menu-item" href="director_profile.php">ข้อมูลส่วนตัว</a>
+          <a class="director-menu-logout" href="logout.php">ออกจากระบบ</a>
+        </div>
+      </details>
     </div>
   </header>
 
