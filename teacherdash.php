@@ -357,7 +357,7 @@ $stats = [
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261022-content-manager-header">
+    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261022-subject-stats-right">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px;
@@ -562,8 +562,7 @@ $stats = [
         <?php $defaultSubject = $selectedSubject; ?>
 
         <div id="lessonDetailSection" style="display:flex;flex-direction:column;gap:20px">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-                <div style="display:flex;align-items:center;gap:12px">
+            <div style="display:flex;align-items:center;justify-content:flex-start;gap:12px">
                     <span style="font-size:13px;color:var(--text-muted)">รายละเอียดวิชา</span>
                     <select id="teacherSubjectSelect" style="min-width:240px;padding:9px 12px;border-radius:8px;background:var(--bg3);color:var(--text);border:1px solid var(--border);font-family:'Kanit',sans-serif;">
                         <?php foreach ($subjects as $subjectOption): ?>
@@ -572,10 +571,6 @@ $stats = [
                             </option>
                         <?php endforeach; ?>
                     </select>
-                </div>
-                <div style="display:flex;gap:8px;align-items:center">
-                    <button type="button" class="btn-add-lesson" id="openContentManagerBtn" style="font-size:13px;padding:8px 14px" <?= $defaultSubjectId === '' ? 'disabled' : '' ?>> จัดการเนื้อหา</button>
-                </div>
             </div>
 
             <div class="card" id="lessonDetailHeader" style="padding: 24px;">
@@ -613,20 +608,17 @@ $stats = [
                                     <div><span style="color:var(--text-dim)">คำอธิบาย:</span> <?= h($defaultSubject['subject']) ?></div>
                                 </div>
                             </div>
-                            <div>
-                                <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:6px;font-weight:500">สถิติเบื้องต้น</div>
-                                <div style="display:flex;flex-direction:column;gap:8px;font-size:13.5px">
-                                    <div style="display:flex;justify-content:space-between">
-                                        <span style="color:var(--text-dim)">นักเรียนลงทะเบียน</span>
-                                        <span class="mono" style="color:var(--text)"><?= (int)$defaultSubject['students'] ?> คน</span>
-                                    </div>
-                                </div>
+                            <div class="teacher-subject-stats">
+                                <div class="teacher-subject-stats-title">สถิติเบื้องต้น</div>
+                                <span class="teacher-subject-stats-label">นักเรียนลงทะเบียน</span>
+                                <span class="teacher-subject-stats-count mono"><?= (int)$defaultSubject['students'] ?> คน</span>
                             </div>
                         </div>
 
                         <div style="border-top:1px solid var(--border);padding-top:24px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <div class="lesson-list-heading">
                                 <h3 style="font-size:16px;color:var(--text);font-weight:600;">รายการบทเรียนย่อย</h3>
+                                <button type="button" class="btn-add-lesson" id="openContentManagerBtn" style="font-size:13px;padding:8px 14px" <?= $defaultSubjectId === '' ? 'disabled' : '' ?>>＋ เพิ่มบทเรียน</button>
                             </div>
                             <div style="display:flex;flex-direction:column;gap:12px;">
                                 <?php
