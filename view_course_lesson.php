@@ -189,6 +189,7 @@ header('Content-Type: text/html; charset=utf-8');
   let pageCanvases = [];
   let renderVersion = 0;
   let restoredInitialPage = false;
+  let suspendProgressUntilUserScroll = false;
 
   let readingSaveInFlight = false;
   let readingLastSaveAt = 0;
@@ -311,11 +312,15 @@ header('Content-Type: text/html; charset=utf-8');
       let lastRecordedPage = documentPayload.resumePage;
       let scrollQueued = false;
       let userScrollIntent = false;
-      reader.addEventListener('wheel', () => { userScrollIntent = true; }, { passive: true });
-      reader.addEventListener('touchmove', () => { userScrollIntent = true; }, { passive: true });
-      reader.addEventListener('pointerdown', () => { userScrollIntent = true; }, { passive: true });
+      const markUserScrollIntent = () => {
+        userScrollIntent = true;
+        suspendProgressUntilUserScroll = false;
+      };
+      reader.addEventListener('wheel', markUserScrollIntent, { passive: true });
+      reader.addEventListener('touchmove', markUserScrollIntent, { passive: true });
+      reader.addEventListener('pointerdown', markUserScrollIntent, { passive: true });
       reader.addEventListener('keydown', (event) => {
-        if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '].includes(event.key)) userScrollIntent = true;
+        if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '].includes(event.key)) markUserScrollIntent();
       });
       const recordScrolledPages = () => {
         scrollQueued = false;
@@ -327,9 +332,11 @@ header('Content-Type: text/html; charset=utf-8');
           const canvasBottom = reader.scrollTop + canvasRect.bottom - readerTop;
           if (visibleBottom >= canvasBottom - Math.min(canvas.offsetHeight * 0.2, reader.clientHeight * 0.2)) currentPage = index + 1;
         });
-        const atEnd = visibleBottom >= reader.scrollHeight - 8;
-        const pagePercent = Math.floor((currentPage / pdfDocument.numPages) * 100);
-        const percent = Math.max(highestReadPercent, atEnd ? 100 : pagePercent);
+        const maxScroll = Math.max(0, reader.scrollHeight - reader.clientHeight);
+        const remainingScroll = Math.max(0, maxScroll - reader.scrollTop);
+        const atEnd = maxScroll > 0 && remainingScroll <= 12;
+        const scrollPercent = maxScroll > 0 ? Math.floor((reader.scrollTop / maxScroll) * 100) : 0;
+        const percent = Math.max(highestReadPercent, atEnd ? 100 : Math.min(99, scrollPercent));
         if (percent <= highestReadPercent && currentPage === lastRecordedPage) return;
         highestReadPercent = percent;
         lastRecordedPage = currentPage;
@@ -338,7 +345,7 @@ header('Content-Type: text/html; charset=utf-8');
 
       reader.addEventListener('scroll', (event) => {
         // Ignore programmatic scrolling during initial layout or resume restoration.
-        if (!event.isTrusted || !userScrollIntent) return;
+        if (!event.isTrusted || !userScrollIntent || suspendProgressUntilUserScroll) return;
         if (!scrollQueued) {
           scrollQueued = true;
           requestAnimationFrame(recordScrolledPages);
@@ -350,8 +357,22 @@ header('Content-Type: text/html; charset=utf-8');
     }
   }
 
-  zoomOutButton?.addEventListener('click', () => { zoomFactor = Math.max(0.65, Math.round((zoomFactor - 0.15) * 100) / 100); updateZoomControls(); renderPages(); });
-  zoomInButton?.addEventListener('click', () => { zoomFactor = Math.min(3, Math.round((zoomFactor + 0.15) * 100) / 100); updateZoomControls(); renderPages(); });
+  zoomOutButton?.addEventListener('click', () => {
+    const nextZoom = Math.max(0.65, Math.round((zoomFactor - 0.15) * 100) / 100);
+    if (nextZoom === zoomFactor) return;
+    zoomFactor = nextZoom;
+    suspendProgressUntilUserScroll = true;
+    updateZoomControls();
+    renderPages();
+  });
+  zoomInButton?.addEventListener('click', () => {
+    const nextZoom = Math.min(3, Math.round((zoomFactor + 0.15) * 100) / 100);
+    if (nextZoom === zoomFactor) return;
+    zoomFactor = nextZoom;
+    suspendProgressUntilUserScroll = true;
+    updateZoomControls();
+    renderPages();
+  });
   openWindowButton?.addEventListener('click', async () => {
     try {
       if (document.fullscreenElement) await document.exitFullscreen();
