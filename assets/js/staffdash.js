@@ -52,7 +52,12 @@
     if (currentPage === 'member-list') renderMembers();
   });
 
-  document.getElementById('menuBtn')?.addEventListener('click', () => sidebar?.classList.toggle('open'));
+  document.getElementById('menuBtn')?.addEventListener('click', (event) => {
+    sidebar?.classList.toggle('open');
+    const isOpen = sidebar?.classList.contains('open') || false;
+    event.currentTarget.setAttribute('aria-expanded', String(isOpen));
+    event.currentTarget.setAttribute('aria-label', isOpen ? 'ปิดเมนู' : 'เปิดเมนู');
+  });
   document.getElementById('sidebarClose')?.addEventListener('click', () => sidebar?.classList.remove('open'));
   modalOverlay?.addEventListener('click', e => {
     if (e.target === modalOverlay) {

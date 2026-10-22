@@ -231,6 +231,6 @@ try {
   <div class="toast" id="toast"></div>
   <script src="assets/js/thai-address.js?v=20261022-cascading-search"></script>
   <script src="assets/js/regisstu.js?v=20261021-registration-password-toggle"></script>
-<script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
+<script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>

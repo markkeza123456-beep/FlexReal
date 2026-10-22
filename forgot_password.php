@@ -211,6 +211,6 @@
       }
     });
   </script>
-<script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
+<script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>

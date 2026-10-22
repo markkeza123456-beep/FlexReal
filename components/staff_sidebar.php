@@ -33,7 +33,6 @@ $sidebarEscape = static fn($value): string => htmlspecialchars((string) $value, 
     <a class="brand-home-link sidebar-brand-link" href="staffdash.php" title="กลับหน้าหลักและรายวิชา">
       <img class="sidebar-brand-logo" src="images/flexible-learning-hub-logo-transparent.png" alt="Flexible Learning Hub">
     </a>
-    <button class="sidebar-close" id="sidebarClose" type="button" title="ปิดเมนู">ปิด</button>
   </div>
   <div class="nav">
     <span class="nav-section-label">หลัก</span>

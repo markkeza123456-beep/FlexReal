@@ -156,7 +156,7 @@ header('Content-Type: text/html; charset=utf-8');
 <?php else: ?>
   <main><div class="notice">ไฟล์ชนิดนี้ยังไม่รองรับการแสดงเป็นหน้าหนังสือ กรุณาดาวน์โหลดเพื่อเปิดด้วยโปรแกรมที่รองรับ</div></main>
 <?php endif; ?>
-<script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
+<script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 <script type="module">
   const documentPayload = <?= $documentProgressPayload ?>;

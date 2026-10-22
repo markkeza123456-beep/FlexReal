@@ -52,6 +52,6 @@ if (empty($_SESSION['user_id']) || strtolower(trim((string) ($_SESSION['role'] ?
     </section>
     <section class="panel error-panel" id="errorPanel" hidden><div class="error-body" id="errorMessage"></div></section>
   </main><div class="toast" id="toast"></div><script src="assets/js/staff_video_editor.js"></script>
-<script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
+<script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>
