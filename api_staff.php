@@ -175,7 +175,6 @@ function deleteMemberRecord(PDO $conn, string $memberId, string $actorId): void
         }
         if (tableExists($conn, 'lesson_progress')) $conn->prepare('UPDATE public.lesson_progress SET transferred_by = NULL WHERE transferred_by = :id')->execute([':id' => $memberId]);
         deleteRowsIfTableExists($conn, 'graduation_requests', 'student_id = :id', [':id' => $memberId]);
-        deleteRowsIfTableExists($conn, 'exam_logs', 'student_id = :id', [':id' => $memberId]);
         deleteRowsIfTableExists($conn, 'lesson_progress', 'student_id = :id', [':id' => $memberId]);
         deleteRowsIfTableExists($conn, 'transcript_requests', 'student_id = :id', [':id' => $memberId]);
         deleteRowsIfTableExists($conn, 'student_curricula', 'student_id = :id', [':id' => $memberId]);
@@ -679,7 +678,6 @@ try {
             $conn->prepare('DELETE FROM public.quiz_attempt_answers WHERE attempt_id IN (SELECT attempt_id FROM public.quiz_attempts WHERE student_id IN (SELECT student_id FROM public.student_curricula WHERE curriculum_id = :id))')->execute([':id' => $curriculumId]);
             $conn->prepare('DELETE FROM public.quiz_attempts WHERE student_id IN (SELECT student_id FROM public.student_curricula WHERE curriculum_id = :id)')->execute([':id' => $curriculumId]);
             $conn->prepare('DELETE FROM public.quiz_attempt_sessions WHERE student_id IN (SELECT student_id FROM public.student_curricula WHERE curriculum_id = :id)')->execute([':id' => $curriculumId]);
-            $conn->prepare('DELETE FROM public.exam_logs WHERE student_id IN (SELECT student_id FROM public.student_curricula WHERE curriculum_id = :id)')->execute([':id' => $curriculumId]);
             $conn->prepare('DELETE FROM public.student_curricula WHERE curriculum_id = :id')->execute([':id' => $curriculumId]);
             $conn->prepare('DELETE FROM public.curriculum_courses WHERE curriculum_id = :id')->execute([':id' => $curriculumId]);
             $conn->prepare('DELETE FROM public.curricula WHERE curriculum_id = :id')->execute([':id' => $curriculumId]);

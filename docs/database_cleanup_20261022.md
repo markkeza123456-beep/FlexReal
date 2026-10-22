@@ -29,9 +29,12 @@ The `course_teachers.assigned_at` column was also removed: all four existing val
 
 ## Retained
 
-- `exam_logs` has three historical rows. Current exam logic uses `quiz_attempt_sessions`; the old table was retained to preserve its existing records.
 - Other empty tables with active reads/writes remain; being empty alone does not make a table unused.
 - Other populated columns without direct source-code references were retained unless their values were proven redundant. A source-code search alone cannot rule out SQL consumers, reports, or integrations outside this repository.
+
+## Removed later on 2026-10-22
+
+- `exam_logs` (3 historical rows) was removed after user approval. No active read/write flow or foreign-key dependents were found; current exam sessions use `quiz_attempt_sessions`. Its remaining cleanup statements were removed from `api_staff.php` and `teacher_api.php`. See `migrations/20261022_drop_exam_logs.sql`.
 
 ## Frontend cleanup
 

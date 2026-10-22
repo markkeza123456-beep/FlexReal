@@ -467,7 +467,6 @@ try {
         $conn->prepare('DELETE FROM public.transcript_request_lessons WHERE lesson_id = :id')->execute([':id' => $lessonId]);
         $conn->prepare('DELETE FROM public.quiz_attempts WHERE lesson_id = :id')->execute([':id' => $lessonId]);
         $conn->prepare('DELETE FROM public.quiz_attempt_sessions WHERE lesson_id = :id')->execute([':id' => $lessonId]);
-        $conn->prepare('DELETE FROM public.exam_logs WHERE exam_id = :id')->execute([':id' => $lessonId]);
         $conn->prepare('DELETE FROM public.lesson_progress WHERE lesson_id = :id')->execute([':id' => $lessonId]);
         $conn->prepare('DELETE FROM public.questions WHERE lesson_id = :id')->execute([':id' => $lessonId]);
         $conn->prepare('DELETE FROM public.lesson_resources WHERE lesson_id = :id')->execute([':id' => $lessonId]);
