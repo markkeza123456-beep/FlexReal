@@ -13,13 +13,31 @@ function loadLessons(PDO $conn, string $courseId): array {
 try {
     $studentId = (($_SESSION['role'] ?? '') === 'student') ? (string) ($_SESSION['user_id'] ?? '') : '';
     if ($action === 'get_all') {
-        $stmt = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, c.image_path, CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' ELSE NULL END AS subject_type, (cc.course_id IS NOT NULL) AS in_curriculum, (CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' ELSE NULL END = 'compulsory') AS is_curriculum_required, (sc.course_id IS NOT NULL) AS is_enrolled FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id AND sc.status = 'active' WHERE c.status = 'active' ORDER BY (cc.course_id IS NULL), c.name");
+        $stmt = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, c.image_path,
+                cc.curriculum_id,
+                cc.curriculum_order,
+                CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' ELSE NULL END AS subject_type,
+                (cc.course_id IS NOT NULL) AS in_curriculum,
+                (cc.requirement_type = 'required') AS is_curriculum_required,
+                (sc.course_id IS NOT NULL) AS is_enrolled
+         FROM public.courses c
+         LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true
+         LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id
+         LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id AND sc.status = 'active'
+         WHERE c.status = 'active'
+         ORDER BY (cc.course_id IS NULL), cc.curriculum_order ASC NULLS LAST, c.code ASC NULLS LAST, c.course_id ASC");
         $stmt->execute([':student_id' => $studentId]); $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
         foreach ($courses as &$course) { $course['subjects_id'] = $course['course_id']; $course['subjects_name'] = $course['name']; $course['subjects_description'] = $course['description']; } unset($course);
         echo json_encode(['status' => 'success', 'data' => $courses], JSON_UNESCAPED_UNICODE); exit;
     }
     if ($action === 'get_detail') {
-        $id = (string) ($_GET['id'] ?? ''); $stmt = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, c.image_path, c.credits, CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' ELSE NULL END AS subject_type FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id WHERE c.course_id = :id AND c.status = :status"); $stmt->execute([':student_id' => $studentId, ':id' => $id, ':status' => 'active']); $course = $stmt->fetch(PDO::FETCH_ASSOC);
+        $id = (string) ($_GET['id'] ?? ''); $stmt = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, c.image_path, c.credits,
+                cc.curriculum_id, cc.curriculum_order,
+                CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' ELSE NULL END AS subject_type
+         FROM public.courses c
+         LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true
+         LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id
+         WHERE c.course_id = :id AND c.status = :status"); $stmt->execute([':student_id' => $studentId, ':id' => $id, ':status' => 'active']); $course = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$course) throw new RuntimeException('ไม่พบรายวิชานี้');
         $teachers = $conn->prepare("SELECT t.user_id, t.full_name, t.email, t.phone, t.avatar_url FROM public.course_teachers ct JOIN public.teachers t ON t.user_id = ct.teacher_id WHERE ct.course_id = :id ORDER BY t.full_name");
         $teachers->execute([':id' => $id]);

@@ -381,7 +381,7 @@ try {
         case 'getCurriculumSubjects':
             $curriculumId = $_GET['curriculum_id'] ?? '';
             if (empty($curriculumId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
-            $allSubjectsStmt = $conn->query("SELECT course_id AS id, code, name, subject_type AS type FROM public.courses ORDER BY course_id ASC");
+            $allSubjectsStmt = $conn->query("SELECT course_id AS id, code, name FROM public.courses ORDER BY code ASC NULLS LAST, course_id ASC");
             $selectedStmt = $conn->prepare("SELECT course_id, requirement_type, curriculum_order FROM public.curriculum_courses WHERE curriculum_id = :id ORDER BY curriculum_order NULLS LAST, course_id");
             $selectedStmt->execute([':id' => $curriculumId]);
             $selectedRows = $selectedStmt->fetchAll(PDO::FETCH_ASSOC);

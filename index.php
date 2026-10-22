@@ -25,13 +25,13 @@ function hubCard(array $course): string {
     $id = (string) ($course['course_id'] ?? '');
     $name = (string) ($course['name'] ?? '');
     $image = hubCourseImagePath($course);
-    $type = in_array(($course['subject_type'] ?? ''), ['compulsory', 'required'], true) ? 'required' : 'elective';
-    $tag = ($course['subject_type'] ?? null) === null ? '' : ($type === 'required' ? 'วิชาบังคับ' : 'วิชาเลือก');
+    $type = in_array(($course['subject_type'] ?? ''), ['compulsory', 'required'], true) ? 'required' : (($course['subject_type'] ?? '') === 'elective' ? 'elective' : 'unknown');
+    $tag = $type === 'required' ? 'วิชาบังคับ' : ($type === 'elective' ? 'วิชาเลือก' : 'ยังไม่ได้กำหนดประเภท');
     $status = !empty($course['is_enrolled']) ? 'ลงทะเบียนแล้ว' : 'ยังไม่ลงทะเบียน';
     $cover = $image !== null
         ? '<img src="' . hubEscape($image) . '" alt="ภาพปกวิชา ' . hubEscape($name) . '" loading="lazy">'
         : '<div class="course-cover-placeholder" role="img" aria-label="ไม่มีภาพปกวิชา"><i class="fa-solid fa-book-open" aria-hidden="true"></i></div>';
-    return '<a class="card" href="index.php?subject_id=' . rawurlencode($id) . '">' . $cover . '<div class="card-content">' . ($tag !== '' ? '<span class="card-tag ' . $type . '">' . $tag . '</span>' : '') . '<h3>' . hubEscape($name) . '</h3><p>คลิกเพื่อดูรายละเอียด</p><div class="card-meta">รหัสวิชา: ' . hubEscape($id) . ' · ' . $status . '</div></div></a>';
+    return '<a class="card" href="index.php?subject_id=' . rawurlencode($id) . '">' . $cover . '<div class="card-content"><span class="card-tag ' . $type . '">' . $tag . '</span><h3>' . hubEscape($name) . '</h3><p>คลิกเพื่อดูรายละเอียด</p><div class="card-meta">รหัสวิชา: ' . hubEscape($id) . ' · ' . $status . '</div></div></a>';
 }
 function hubLessonList(array $lessons): string {
     if (!$lessons) return '<div class="assignment-empty-state">วิชานี้ยังไม่มีบทเรียน</div>';

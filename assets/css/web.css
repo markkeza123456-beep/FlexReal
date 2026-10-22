@@ -226,6 +226,11 @@ body {
     color: #15803d;
     border: 1px solid #86efac;
 }
+.card-tag.unknown {
+    background: #f8fafc;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+}
 .course-section-block + .course-section-block {
     margin-top: 40px;
 }
