@@ -1,10 +1,13 @@
 (function(){
  const sidebar=document.querySelector('.sidebar');
- if(!sidebar)return;
+ if(!sidebar || document.querySelector('.menu-btn, [data-sidebar-toggle], .sidebar-toggle'))return;
+ document.body.classList.add('flh-has-mobile-menu');
+ if(!sidebar.id)sidebar.id='flh-mobile-sidebar';
  const button=document.createElement('button');
  button.className='flh-mobile-menu';
  button.type='button';
- button.setAttribute('aria-label','เปิดเมนู');
+ button.setAttribute('aria-label','เปิดเมนูนำทาง');
+ button.setAttribute('aria-controls',sidebar.id);
  button.setAttribute('aria-expanded','false');
  button.textContent='☰';
  document.body.appendChild(button);
@@ -15,4 +18,5 @@
  button.addEventListener('click',()=>{document.body.classList.toggle('flh-menu-open');button.setAttribute('aria-expanded',document.body.classList.contains('flh-menu-open'))});
  backdrop.addEventListener('click',close);
  sidebar.querySelectorAll('a').forEach(a=>a.addEventListener('click',close));
+ document.addEventListener('keydown',event=>{if(event.key==='Escape')close()});
 })();

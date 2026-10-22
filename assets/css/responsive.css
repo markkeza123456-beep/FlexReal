@@ -1,3 +1,266 @@
-.flh-mobile-menu:focus-visible{outline:3px solid #58718c;outline-offset:2px}
-@media(max-width:767px){.stat-grid,.stats-row,.grade-summary,.overview-student-stats,.kpis,.summary-grid,.panel-row,.grid-2,.grid-3-1{grid-template-columns:1fr!important}.table-responsive, .table-wrap{overscroll-behavior-x:contain}}
-@media(min-width:768px) and (max-width:1100px){.stat-grid,.stats-row,.grade-summary,.overview-student-stats,.kpis,.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+/* Shared layout safeguards for phones and small tablets. */
+.flh-mobile-menu:focus-visible {
+  outline: 3px solid #58718c;
+  outline-offset: 2px;
+}
+
+@media (max-width: 1100px) {
+  .stat-grid,
+  .stats-row,
+  .grade-summary,
+  .overview-student-stats,
+  .kpis,
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .table-responsive,
+  .table-wrap,
+  .overview-course-table-wrap {
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 767px) {
+  html,
+  body {
+    width: 100%;
+    min-height: 100%;
+    height: auto !important;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+  }
+
+  body.flh-menu-open {
+    overflow: hidden;
+  }
+
+  .wrap,
+  .page-shell {
+    display: block !important;
+    width: 100%;
+    height: auto !important;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .main,
+  .main-content,
+  .main-wrap,
+  .content,
+  .page-content,
+  .content-area,
+  .director-main,
+  .page-shell > .main-content,
+  .wrap > .main {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    overflow-x: clip;
+  }
+
+  .main,
+  .main-content,
+  .main-wrap,
+  .page-shell > .main-content,
+  .wrap > .main {
+    padding: 64px 16px 28px !important;
+  }
+
+  .director-main {
+    padding: 20px 14px 32px !important;
+  }
+
+  .dashboard-container {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: auto !important;
+    overflow: visible;
+  }
+
+  .content-section,
+  .content-grid,
+  .panel-row,
+  .grid-2,
+  .grid-3-1 {
+    min-width: 0;
+  }
+
+  .content-card,
+  .panel,
+  .card,
+  .metric-card,
+  .profile-card,
+  .lesson-card,
+  .form-card {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .settings-row,
+  .profile-settings-grid,
+  .form-grid-2,
+  .form-grid-3 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .table-wrap,
+  .table-responsive,
+  .overview-course-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-wrap table,
+  .table-responsive table,
+  .overview-course-table-wrap table {
+    min-width: 640px;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    max-width: 100%;
+  }
+
+  img,
+  video,
+  iframe,
+  canvas {
+    max-width: 100%;
+  }
+
+  .hero,
+  .topbar,
+  .panel-head,
+  .page-header {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .navbar {
+    max-width: 100%;
+  }
+
+  .stat-grid,
+  .stats-row,
+  .grade-summary,
+  .overview-student-stats,
+  .kpis,
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .main,
+  .main-content,
+  .main-wrap,
+  .page-shell > .main-content,
+  .wrap > .main {
+    padding-right: 12px !important;
+    padding-left: 12px !important;
+  }
+
+  .content-card,
+  .panel,
+  .card {
+    padding: 14px !important;
+  }
+
+  .stat-grid,
+  .stats-row,
+  .grade-summary,
+  .overview-student-stats,
+  .kpis,
+  .summary-grid {
+    gap: 8px !important;
+  }
+}
+
+/* Keep controls reachable when a phone is held sideways. */
+@media (max-height: 520px) and (orientation: landscape) {
+  html,
+  body {
+    height: auto !important;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+  }
+
+  .wrap,
+  .page-shell {
+    display: block !important;
+    height: auto !important;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .main,
+  .main-content,
+  .main-wrap,
+  .content,
+  .page-content,
+  .content-area,
+  .page-shell > .main-content,
+  .wrap > .main,
+  .director-main {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    overflow-x: clip;
+  }
+
+  .main,
+  .main-content,
+  .main-wrap,
+  .page-shell > .main-content,
+  .wrap > .main {
+    padding-top: 58px !important;
+    padding-bottom: 18px !important;
+  }
+
+  .director-main {
+    padding: 16px 14px 24px !important;
+  }
+
+  .dashboard-container {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: auto !important;
+    overflow: visible;
+  }
+
+  body.flh-has-mobile-menu .sidebar {
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+
+  .modal,
+  .modal-content,
+  .modal-box,
+  [role="dialog"] {
+    max-height: 94vh;
+    max-height: 94dvh;
+    overflow-y: auto;
+  }
+
+  .hero {
+    padding-top: 24px;
+    padding-bottom: 8px;
+  }
+}

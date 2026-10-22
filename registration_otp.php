@@ -22,8 +22,8 @@ $maskedEmail = htmlspecialchars($maskedEmail, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ยืนยันอีเมล - Flexible Learning Hub</title>
   <link rel="stylesheet" href="assets/css/login.css?v=20261021-brighter-success-green">
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge">
-  <link rel="stylesheet" href="assets/css/responsive.css">
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
   <style>
     .otp-code { width:100%; letter-spacing:.35em; text-align:center; font-size:1.35rem; }
     .otp-actions { display:flex; flex-direction:column; gap:12px; margin-top:18px; }

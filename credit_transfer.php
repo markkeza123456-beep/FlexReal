@@ -29,9 +29,9 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ขอเทียบโอนหน่วยกิต</title>
     <link rel="stylesheet" href="assets/css/credit_transfer.css?v=20261021-login-shared-background">
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
     <script src="assets/js/credit_transfer.js" defer></script>
-    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
 </head>
 <body>
     <main class="transfer-page">
@@ -57,6 +57,6 @@ try {
             </form>
         </section>
     </main>
-<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
+<script src="assets/js/responsive.js?v=20261022-mobile-layout-v2" defer></script>
 </body>
 </html>

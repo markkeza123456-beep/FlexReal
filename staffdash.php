@@ -59,8 +59,8 @@ if ($displayName !== '') {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/staffdash.css?v=20261022-staff-graduation-aligned" />
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-background-only" />
-    <link rel="stylesheet" href="assets/css/responsive.css">
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2" />
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
   <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout" />
 </head>
 <body>
@@ -822,6 +822,6 @@ if ($displayName !== '') {
   <div class="toast" id="toast"></div>
 
   <script src="assets/js/staffdash.js?v=20261022-graduation-status-colors"></script>
-<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
+<script src="assets/js/responsive.js?v=20261022-mobile-layout-v2" defer></script>
 </body>
 </html>

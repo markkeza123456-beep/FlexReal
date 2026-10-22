@@ -355,7 +355,7 @@ $stats = [
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261022-graduation-status-colors">
+    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261022-mobile-layout-v2">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px;
@@ -379,8 +379,8 @@ $stats = [
         .choice-label { font-weight: 600; color: var(--text-dim); font-size: 14px; width: 16px; text-align: center; }
         @media (max-width: 760px) { .course-content-editor { grid-template-columns: 1fr !important; } }
     </style>
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-fullbleed">
-    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
     <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout">
 </head>
 <body>
@@ -1596,6 +1596,6 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 <?php if ($canAccessTransferApproval): ?>
     <script src="assets/js/teacher_graduation.js?v=20261022-graduation-status-colors"></script>
 <?php endif; ?>
-<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
+<script src="assets/js/responsive.js?v=20261022-mobile-layout-v2" defer></script>
 </body>
 </html>

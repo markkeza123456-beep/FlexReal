@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 $profileRole = strtolower((string) ($_SESSION['role'] ?? ''));
 $profileContactReadonly = $profileRole === 'staff' ? '' : 'readonly';
@@ -14,9 +14,9 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub - Student Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261022-course-progress-column-alignment">
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-background-only">
-    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/student_dashboard.css?v=20261022-mobile-layout-v2">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
     <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout">
 </head>
 <body>
@@ -273,7 +273,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
 
         </main>
     </div>
-    <script src="assets/js/student_dashboard.js?v=20261022-profile-deep-link"></script>
-    <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
+    <script src="assets/js/student_dashboard.js?v=20261022-mobile-layout-v2"></script>
+    <script src="assets/js/responsive.js?v=20261022-mobile-layout-v2" defer></script>
 </body>
 </html>

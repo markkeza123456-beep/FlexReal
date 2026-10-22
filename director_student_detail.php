@@ -52,7 +52,7 @@ $courses = $coursesStmt->fetchAll(PDO::FETCH_ASSOC);
   <title>ติดตามนักเรียน - Flexible Learning Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/theme.css"><link rel="stylesheet" href="assets/css/director_dash.css">
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2"><link rel="stylesheet" href="assets/css/director_dash.css"><link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
 </head>
 <body class="director-dashboard">
   <main class="director-main director-student-detail">

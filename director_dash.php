@@ -91,8 +91,9 @@ LIMIT 5")->fetchAll(PDO::FETCH_ASSOC) ?: [];
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
   <link rel="stylesheet" href="assets/css/director_dash.css?v=20261022-director-personal-info-underline-fix">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
 </head>
 <body class="director-dashboard">
   <header class="director-topbar">

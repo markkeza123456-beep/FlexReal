@@ -29,7 +29,7 @@ try {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261021-login-shared-background">
-    <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-fullbleed">
+    <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
     <style>
         .transfer-content { max-width: 1100px; margin: 0 auto; padding: 36px; }
         .transfer-content h1 { margin: 0 0 8px; }
@@ -42,7 +42,7 @@ try {
         .transfer-empty, .transfer-error { padding: 24px; color: var(--text-dim); text-align: center; }
         @media (max-width: 700px) { .transfer-content { padding: 24px 16px; } }
     </style>
-    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
 </head>
 <body>
 <aside class="sidebar">
@@ -84,6 +84,6 @@ try {
         </section>
     </div>
 </main>
-<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
+<script src="assets/js/responsive.js?v=20261022-mobile-layout-v2" defer></script>
 </body>
 </html>

@@ -23,7 +23,7 @@ if ($firstChar === '') {
 }
 
 $dashboardUrlMap = [
-    'student' => 'student_dashboard.php#settings',
+    'student' => 'student_dashboard.php',
     'teacher' => 'teacherdash.php',
     'staff' => 'staffdash.php',
     'director' => 'director_dash.php',

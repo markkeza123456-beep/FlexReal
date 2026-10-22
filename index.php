@@ -119,8 +119,8 @@ $hubClientCourse = $hubCourse ? [
     <link rel="stylesheet" href="assets/css/web.css?v=20261022-mobile-navbar-grid">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge">
-    <link rel="stylesheet" href="assets/css/responsive.css">
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
 </head>
 <body class="landing-page">
 
@@ -161,7 +161,7 @@ $hubClientCourse = $hubCourse ? [
                 <span id="userName">ผู้ใช้งาน</span>
             </button>
             <div id="userMenu" class="user-menu">
-                <a href="student_dashboard.php#settings">ข้อมูลส่วนตัว</a>
+                <a href="student_dashboard.php">ข้อมูลส่วนตัว</a>
                 <a href="logout.php?return=index.php">ออกจากระบบ</a>
             </div>
         </div>

@@ -98,8 +98,8 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
 
     .parent-profile { transition: background .2s; padding: 8px; margin: -8px; border-radius: 10px; }
   </style>
-  <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-fullbleed" />
-    <link rel="stylesheet" href="assets/css/responsive.css">
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2" />
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-layout-v2">
   <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout" />
 </head>
 <body>
@@ -427,6 +427,6 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
 </div>
 
   <script src="assets/js/parent_dashboard.js?v=20261021-subject-type-badges"></script>
-<script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
+<script src="assets/js/responsive.js?v=20261022-mobile-layout-v2" defer></script>
 </body>
 </html>
