@@ -8,16 +8,30 @@ require_once __DIR__ . '/PHPMailer/SMTP.php';
 
 function createFlexibleMailer(string $recipient): PHPMailer
 {
+    $config = static function (string $key, string $default = ''): string {
+        $value = getenv($key);
+        if (!is_string($value) || trim($value) === '') {
+            $value = (string) ($_ENV[$key] ?? $GLOBALS['env'][$key] ?? $default);
+        }
+        return trim($value);
+    };
+
+    $username = $config('SMTP_USERNAME');
+    $password = $config('SMTP_PASSWORD');
+    if ($username === '' || $password === '') {
+        throw new RuntimeException('SMTP_USERNAME and SMTP_PASSWORD must be configured.');
+    }
+
     $mail = new PHPMailer(true);
     $mail->isSMTP();
-    $mail->Host = 'smtp.gmail.com';
+    $mail->Host = $config('SMTP_HOST', 'smtp.gmail.com');
     $mail->SMTPAuth = true;
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-    $mail->Port = 465;
+    $mail->Port = (int) $config('SMTP_PORT', '465');
     $mail->CharSet = 'UTF-8';
-    $mail->Username = 'markkeza123456@gmail.com';
-    $mail->Password = 'lprq ixqu ugye ayph';
-    $mail->setFrom('markkeza123456@gmail.com', 'Flexible Learning Hub');
+    $mail->Username = $username;
+    $mail->Password = $password;
+    $mail->setFrom($config('SMTP_FROM_EMAIL', $username), $config('SMTP_FROM_NAME', 'Flexible Learning Hub'));
     $mail->addAddress($recipient);
     return $mail;
 }
