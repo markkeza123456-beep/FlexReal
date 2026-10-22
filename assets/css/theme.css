@@ -502,6 +502,15 @@ button.primary:hover, .primary-btn:hover, .btn-login:hover, .btn-add-lesson:hove
 }
 .btn-submit:active, .btn-primary:active, .btn-orange:active,
 button[type="submit"]:active { transform: translateY(0); }
+button.btn-submit,
+button.btn-submit:hover,
+button.btn-submit:focus-visible,
+button.btn-submit:active {
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  isolation: isolate;
+}
+button.btn-submit::before { z-index: -1; pointer-events: none; }
 .btn-outline, .btn-outline-primary, .btn-outline-orange, .button.secondary {
   border-color: var(--brand-400) !important;
   background: #FFFFFF !important;
