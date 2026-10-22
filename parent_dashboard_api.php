@@ -75,7 +75,7 @@ try {
                 COALESCE(answer_scores.essay_score_possible, 0) AS essay_score_possible,
                 COALESCE(answer_scores.pending_essays, 0) AS pending_essays
          FROM public.lessons l
-         LEFT JOIN public.lesson_progress lp ON lp.lesson_id = l.lesson_id AND lp.student_id = :student_id
+         LEFT JOIN public.lesson_progress_summary lp ON lp.lesson_id = l.lesson_id AND lp.student_id = :student_id
          LEFT JOIN LATERAL (
              SELECT attempt_id, status, submitted_at, score, total_score, COUNT(*) OVER () AS attempt_count
              FROM public.quiz_attempts

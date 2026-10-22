@@ -100,6 +100,15 @@ try {
         exit;
     }
 
+    if (strtolower((string) ($_SESSION['role'] ?? '')) === 'student' && !empty($_SESSION['user_id'])) {
+        $passedStmt = $conn->prepare("SELECT EXISTS (SELECT 1 FROM public.quiz_attempts WHERE student_id = :student_id AND lesson_id = :lesson_id AND status = 'passed')");
+        $passedStmt->execute([':student_id' => (string) $_SESSION['user_id'], ':lesson_id' => $lessonId]);
+        if ($passedStmt->fetchColumn()) {
+            echo json_encode(['status' => 'already_passed', 'message' => 'คุณผ่านแบบทดสอบบทนี้แล้ว'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+
 
     $rows = loadFromTestQuestions($conn, $lessonId);
     $fromQuizQuestions = false;
@@ -133,7 +142,10 @@ try {
         ];
     }
 
-    echo json_encode(['status' => 'success', 'questions' => $formatted], JSON_UNESCAPED_UNICODE);
+    $draftScope = !empty($_SESSION['user_id'])
+        ? hash_hmac('sha256', (string) $_SESSION['user_id'], session_id())
+        : 'guest';
+    echo json_encode(['status' => 'success', 'draft_scope' => $draftScope, 'questions' => $formatted], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
 }

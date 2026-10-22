@@ -106,9 +106,9 @@ try {
     );
     $progressStmt = $conn->prepare(
         'INSERT INTO public.lesson_progress
-            (student_id, lesson_id, is_transferred, grade, transfer_request_id, transferred_by, transferred_at, last_activity_at)
-         VALUES (:student_id, :lesson_id, TRUE, \'TR\', :request_id, :reviewer_id, now(), now())
-         ON CONFLICT (student_id, lesson_id) DO UPDATE SET
+            (student_id, lesson_id, progress_type, is_transferred, grade, transfer_request_id, transferred_by, transferred_at, last_activity_at)
+         VALUES (:student_id, :lesson_id, \'transfer\', TRUE, \'TR\', :request_id, :reviewer_id, now(), now())
+         ON CONFLICT (student_id, lesson_id, progress_type) DO UPDATE SET
             is_transferred = TRUE,
             grade = \'TR\',
             transfer_request_id = EXCLUDED.transfer_request_id,

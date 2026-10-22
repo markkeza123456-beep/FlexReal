@@ -159,6 +159,7 @@
 
     if (page === 'profile' && currentPage !== 'profile') window._staffProfileReturnPage = currentPage;
     currentPage = page;
+    document.querySelector('.main-wrap')?.classList.toggle('curriculum-add-active', page === 'curriculum-add');
     if (page === 'profile') document.querySelector('main.content')?.scrollTo({ top: 0, behavior: 'auto' });
     document.querySelectorAll('.page').forEach(section => section.classList.remove('active'));
     document.getElementById(`page-${page}`)?.classList.add('active');
@@ -170,7 +171,7 @@
 
     if (topbarTitle) {
       topbarTitle.textContent = pageNames[page] || '';
-      topbarTitle.hidden = page === 'profile' || page === 'dashboard';
+      topbarTitle.hidden = page === 'profile' || page === 'dashboard' || page === 'curriculum-add' || page === 'curriculum-list' || page === 'subject-list' || page === 'subject-add' || page === 'member-list' || page === 'staff-add' || page === 'graduation-requests';
     }
     const pageUrl = new URL(window.location.href);
     pageUrl.searchParams.set('page', page);
@@ -712,7 +713,7 @@
       return;
     }
 
-    document.getElementById('subjectFormTitle').textContent = 'แก้ไขรายวิชา';
+    document.getElementById('subjectFormTitle').textContent = `แก้ไขรายวิชา: ${subject.name || subject.code || ''}`;
     document.getElementById('sf-id').value = subject.id || '';
     document.getElementById('sf-code').value = subject.code || '';
     document.getElementById('sf-name').value = subject.name || '';

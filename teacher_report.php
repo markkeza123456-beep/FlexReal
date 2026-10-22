@@ -101,7 +101,7 @@ if ($courseIds !== []) {
          INNER JOIN public.lessons l ON l.course_id = c.course_id
          INNER JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.status = 'active'
          INNER JOIN public.students st ON st.user_id = sc.student_id
-         LEFT JOIN public.lesson_progress lp ON lp.student_id = st.user_id AND lp.lesson_id = l.lesson_id
+         LEFT JOIN public.lesson_progress_summary lp ON lp.student_id = st.user_id AND lp.lesson_id = l.lesson_id
          LEFT JOIN LATERAL (
              SELECT attempt_id, score, total_score, status
              FROM public.quiz_attempts a

@@ -64,7 +64,6 @@ function hTransferPermission(?string $value): string
   <div class="main-wrap">
     <header class="topbar">
       <button class="menu-btn" id="menuBtn" type="button" title="เปิดเมนู">เมนู</button>
-      <span class="topbar-title">จัดการสิทธิ์เทียบโอน</span>
     </header>
     <main class="content">
       <section class="page active">

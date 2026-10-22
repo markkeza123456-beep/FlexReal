@@ -113,14 +113,15 @@ if (($_GET['preview'] ?? '') === 'pdf') {
 }
 $resumePage = 0;
 $documentProgressPercent = 0.0;
+$savedProgress = [];
 try {
-    $resume = $conn->prepare('SELECT COALESCE(lp.document_page_index, 0) AS page_index, COALESCE(lp.document_progress_percent, 0) AS progress_percent FROM public.lesson_progress lp JOIN public.lessons l ON l.lesson_id = lp.lesson_id WHERE lp.student_id = :student_id AND l.course_id = :course_id AND l.position = :position');
+    $resume = $conn->prepare('SELECT l.lesson_id, COALESCE(lp.document_page_index, 0) AS page_index, COALESCE(lp.document_progress_percent, 0) AS progress_percent FROM public.lessons l LEFT JOIN public.lesson_progress_summary lp ON l.lesson_id = lp.lesson_id AND lp.student_id = :student_id WHERE l.course_id = :course_id AND l.position = :position');
     $resume->execute([':student_id' => (string) $_SESSION['user_id'], ':course_id' => $courseId, ':position' => $position]);
     $savedProgress = $resume->fetch(PDO::FETCH_ASSOC) ?: [];
     $resumePage = max(0, (int) ($savedProgress['page_index'] ?? 0));
     $documentProgressPercent = min(100, max(0, (float) ($savedProgress['progress_percent'] ?? 0)));
 } catch (PDOException) {  }
-$documentProgressPayload = json_encode(['type' => 'lesson-document-progress', 'courseId' => $courseId, 'lessonIndex' => $position, 'resumePage' => $resumePage, 'documentProgressPercent' => $documentProgressPercent, 'documentUrl' => $relativePath], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+$documentProgressPayload = json_encode(['type' => 'lesson-document-progress', 'courseId' => $courseId, 'lessonIndex' => $position, 'lessonId' => (int) ($savedProgress['lesson_id'] ?? 0), 'resumePage' => $resumePage, 'documentProgressPercent' => $documentProgressPercent, 'documentUrl' => $relativePath], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 header('Content-Type: text/html; charset=utf-8');
 ?>
 <!doctype html>
@@ -133,7 +134,7 @@ header('Content-Type: text/html; charset=utf-8');
   <style>
     body { margin: 0; color: #24303b; font-family: "IBM Plex Sans Thai", system-ui, sans-serif; background: #f7f8fa; }
     header { display:flex; gap:12px; align-items:center; justify-content:space-between; padding: 12px 20px; background: #fff; border-bottom: 1px solid #e8eaed; font-weight: 700; }
-    .header-title { display:flex; flex-direction:column; gap:2px; min-width:0; }.header-title > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.reading-status { color:#64748b; font-size:.82rem; font-weight:500; }
+    .header-title { display:flex; flex-direction:column; gap:2px; min-width:0; }.header-title > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     main { max-width: 980px; min-height: calc(100vh - 59px); margin: auto; padding: 20px; box-sizing: border-box; }
     .pdf-reader { height:calc(100vh - 99px); overflow-y:auto; border:1px solid #d8dee9; border-radius:8px; background:#525a67; box-shadow:0 8px 26px rgba(15,23,42,.16); }
     .pdf-pages { display:flex; flex-direction:column; align-items:center; gap:18px; padding:18px; }
@@ -145,7 +146,7 @@ header('Content-Type: text/html; charset=utf-8');
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
-  <header class="reader-header"><div class="header-title"><span><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span><span id="reading-status" class="reading-status"></span></div></header>
+  <header class="reader-header"><div class="header-title"><span><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span></div></header>
 <?php if ($extension === 'pdf'): ?>
   <main class="pdf-reader" id="pdf-reader" aria-label="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>"><div id="pdf-pages" class="pdf-pages"><div class="pdf-loading">กำลังเปิดเอกสาร…</div></div></main>
 <?php elseif (in_array($extension, $officeExtensions, true)): ?>
@@ -166,16 +167,16 @@ header('Content-Type: text/html; charset=utf-8');
   let readingLastSaveAt = 0;
   let pendingReadingProgress = null;
   let readingSaveTimer = null;
-  const readingSaveIntervalMs = 15000;
+  const readingSaveIntervalMs = 2000;
   function sendReadingProgress(payload, useBeacon = false) {
     const form = new FormData();
-    form.append('action', 'record'); form.append('subject_id', documentPayload.courseId);
-    form.append('lesson_index', String(documentPayload.lessonIndex)); form.append('activity_type', 'document_progress');
-    form.append('progress_percent', String(payload.percent)); form.append('resume_position', String(payload.resumePage));
-    if (useBeacon) return navigator.sendBeacon('student_learning_api.php', form);
-    return fetch('student_learning_api.php', { method: 'POST', body: form, credentials: 'same-origin' })
+    form.append('lesson_id', String(documentPayload.lessonId)); form.append('progress_type', 'document');
+    form.append('progress_value', String(payload.percent)); form.append('resume_page', String(payload.resumePage));
+    form.append('is_completed', payload.percent >= 100 ? 'true' : 'false');
+    if (useBeacon) return navigator.sendBeacon('save_progress.php', form);
+    return fetch('save_progress.php', { method: 'POST', body: form, credentials: 'same-origin' })
       .then((response) => response.json())
-      .then((result) => result.ok === true && result.status === 'success');
+      .then((result) => result.ok === true);
   }
   function scheduleReadingSave() {
     if (readingSaveTimer || readingSaveInFlight || !pendingReadingProgress) return;
@@ -208,19 +209,8 @@ header('Content-Type: text/html; charset=utf-8');
   }
   window.addEventListener('pagehide', flushReadingProgressOnExit);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushReadingProgressOnExit(); });
-  function updateReadingStatus(percent) {
-    const status = document.getElementById('reading-status');
-    if (!status) return;
-    const documentPercent = Math.round(Math.max(0, Math.min(100, percent)));
-    const lessonPercent = Math.round(documentPercent * 0.30 * 10) / 10;
-    status.textContent = `อ่านแล้ว ${documentPercent}% · คิดเป็น ${lessonPercent}% ของบทเรียน`;
-  }
-
   async function renderPdf() {
-    if (!reader || !pagesContainer) {
-      updateReadingStatus(documentPayload.documentProgressPercent);
-      return;
-    }
+    if (!reader || !pagesContainer) return;
 
     try {
       const pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs');
@@ -245,13 +235,13 @@ header('Content-Type: text/html; charset=utf-8');
         pageCanvases.push(canvas);
       }
 
-      updateReadingStatus(documentPayload.documentProgressPercent);
       if (documentPayload.resumePage > 1) {
         const resumeCanvas = pageCanvases[Math.min(pageCanvases.length - 1, documentPayload.resumePage - 1)];
         reader.scrollTop = Math.max(0, resumeCanvas.offsetTop - 18);
       }
 
-      let highestReadPage = Math.floor((documentPayload.documentProgressPercent / 100) * pdf.numPages);
+      let highestReadPage = Math.max(documentPayload.resumePage, Math.floor((documentPayload.documentProgressPercent / 100) * pdf.numPages));
+      let highestReadPercent = documentPayload.documentProgressPercent;
       let scrollQueued = false;
       const recordScrolledPages = () => {
         scrollQueued = false;
@@ -260,10 +250,12 @@ header('Content-Type: text/html; charset=utf-8');
         pageCanvases.forEach((canvas, index) => {
           if (visibleBottom >= canvas.offsetTop + (canvas.offsetHeight * 0.8)) reachedPage = index + 1;
         });
-        if (reachedPage <= highestReadPage) return;
-        highestReadPage = reachedPage;
-        const percent = (highestReadPage / pdf.numPages) * 100;
-        updateReadingStatus(percent);
+        highestReadPage = Math.max(highestReadPage, reachedPage);
+        const atEnd = visibleBottom >= reader.scrollHeight - 8;
+        const scrollPercent = atEnd ? 100 : Math.min(99.9, (visibleBottom / reader.scrollHeight) * 100);
+        const percent = Math.max(highestReadPercent, scrollPercent);
+        if (percent <= highestReadPercent && reachedPage <= documentPayload.resumePage) return;
+        highestReadPercent = percent;
         saveReadingProgress(percent, highestReadPage);
       };
 
@@ -275,7 +267,6 @@ header('Content-Type: text/html; charset=utf-8');
       }, { passive: true });
     } catch (_) {
       pagesContainer.innerHTML = '<div class="notice">ไม่สามารถเปิดเอกสารได้ กรุณาลองใหม่อีกครั้ง</div>';
-      updateReadingStatus(documentPayload.documentProgressPercent);
     }
   }
 
