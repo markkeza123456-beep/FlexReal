@@ -42,6 +42,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
     }
+    function showSaveFeedback(element, message, isError = false) {
+        if (!element) return;
+        element.textContent = message;
+        element.classList.toggle('is-visible', Boolean(message));
+        element.classList.toggle('is-error', isError);
+    }
 
     async function loadEssaySubmissions() {
         const subjectId = teacherSubjectSelect?.value || '';
@@ -142,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function openContentManager(lessonId = '', lessonName = '') {
         if (!contentManagerModal) return;
         managedLessonId = String(lessonId || '');
+        showSaveFeedback(document.getElementById('inlineLessonSaveStatus'), '');
         const lessonNameInput = document.getElementById('inlineLessonName');
         const heading = document.getElementById('inlineLessonHeading');
         const count = document.getElementById('inlineLessonCount');
@@ -181,6 +188,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('closeContentManagerBtn')?.addEventListener('click', () => contentManagerModal?.classList.remove('open'));
     contentManagerModal?.addEventListener('click', (event) => { if (event.target === contentManagerModal) contentManagerModal.classList.remove('open'); });
     document.getElementById('openModalBtn')?.addEventListener('click', () => {
+        const saveButton = document.getElementById('saveLessonBtn');
+        if (saveButton) { saveButton.disabled = false; saveButton.textContent = 'บันทึกบทเรียน'; }
+        showSaveFeedback(document.getElementById('lessonSaveStatus'), '');
         modalOverlay.classList.add('open');
     });
     document.getElementById('closeModalBtn')?.addEventListener('click', () => modalOverlay.classList.remove('open'));
@@ -189,6 +199,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('saveLessonBtn')?.addEventListener('click', async (e) => {
         const btn = e.currentTarget;
         if (btn.dataset.saving === '1') return;
+        const status = document.getElementById('lessonSaveStatus');
+        showSaveFeedback(status, '');
         const lessonName = document.getElementById('lessonNameInput').value.trim();
         const subjectId = document.getElementById('lessonSubjectId').value;
         const lessonDocument = document.getElementById('lessonDocument')?.files?.[0] || null;
@@ -211,14 +223,19 @@ document.addEventListener('DOMContentLoaded', () => {
             try { result = await response.json(); }
             catch { throw new Error(`เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON (HTTP ${response.status}) ตรวจสอบ PHP error log และการตั้งค่า post_max_size`); }
             if (!response.ok || !result.success) throw new Error(result.message || `บันทึกไม่สำเร็จ (HTTP ${response.status})`);
-            alert(result.message || 'บันทึกบทเรียนเรียบร้อยแล้ว');
-            window.location.reload();
+            showSaveFeedback(status, 'เพิ่มเสร็จแล้ว บทเรียนถูกบันทึกเรียบร้อย');
+            btn.textContent = 'เพิ่มเสร็จแล้ว';
+            btn.disabled = true;
         } catch (error) {
             console.error('saveLesson failed:', error);
-            alert(error.message || 'บันทึกบทเรียนไม่สำเร็จ');
+            showSaveFeedback(status, error.message || 'บันทึกบทเรียนไม่สำเร็จ', true);
             if (String(error.message || '').includes('ล็อกอิน')) window.location.href = 'login.php';
         } finally {
-            btn.dataset.saving = '0'; btn.disabled = false; btn.textContent = 'บันทึกบทเรียน';
+            btn.dataset.saving = '0';
+            if (status?.classList.contains('is-error') || !status?.textContent) {
+                btn.disabled = false;
+                btn.textContent = 'บันทึกบทเรียน';
+            }
         }
     });
 
@@ -227,13 +244,36 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.querySelectorAll('.btn-del-lsn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if(confirm('เธ•เนเธญเธเธเธฒเธฃเธฅเธเธเธ—เน€เธฃเธตเธขเธเธเธตเนเนเธเนเธซเธฃเธทเธญเนเธกเน? (เธเนเธญเธชเธญเธเนเธเธเธ—เธเธตเนเธเธฐเธ–เธนเธเธฅเธเนเธเธ”เนเธงเธข)')) {
-                const fd = new FormData(); fd.append('action', 'delete_lesson'); fd.append('lesson_id', btn.dataset.id);
-                fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
-                    if(d.message && d.message.includes('เธฅเนเธญเธเธญเธดเธ')) { alert(d.message); window.location.href = 'login.php'; }
-                    else location.reload();
+        btn.addEventListener('click', async () => {
+            if (!window.confirm('ต้องการลบบทเรียนนี้ใช่หรือไม่? ข้อสอบและผลการทำข้อสอบในบทนี้จะถูกลบด้วย')) return;
+            btn.disabled = true;
+            try {
+                const form = new FormData();
+                form.append('action', 'delete_lesson');
+                form.append('lesson_id', btn.dataset.id || '');
+                const response = await fetch('teacher_api.php', { method: 'POST', body: form, credentials: 'same-origin' });
+                const result = await response.json();
+                if (!response.ok || result.success !== true) {
+                    if (response.status === 401 || String(result.message || '').includes('กรุณาล็อกอิน')) {
+                        window.location.href = 'login.php';
+                        return;
+                    }
+                    throw new Error(result.message || 'ลบบทเรียนไม่สำเร็จ');
+                }
+
+                const row = btn.closest('.teacher-lesson-row');
+                row?.remove();
+                document.querySelectorAll('#teacherLessonList .teacher-lesson-number').forEach((number, index) => {
+                    number.textContent = String(index + 1);
                 });
+                const lessonList = document.getElementById('teacherLessonList');
+                if (lessonList && !lessonList.querySelector('.teacher-lesson-row')) {
+                    lessonList.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:14px;background:var(--bg3);border-radius:var(--radius-sm);border:1px dashed var(--border);">ยังไม่มีบทเรียนย่อย คลิกปุ่ม “เพิ่มบทเรียน” เพื่อเริ่มต้น</div>';
+                }
+                alert('ลบบทเรียนเรียบร้อยแล้ว');
+            } catch (error) {
+                alert(error.message || 'ลบบทเรียนไม่สำเร็จ');
+                btn.disabled = false;
             }
         });
     });
@@ -439,6 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetInlineVideoForm() {
         if (!inlineVideoForm) return;
         inlineVideoForm.reset();
+        showSaveFeedback(document.getElementById('inlineVideoSaveStatus'), '');
         document.getElementById('inlineVideoId').value = '';
         const input = document.getElementById('inlineVideoFile');
         input.required = true;
@@ -485,6 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function saveInlineLesson() {
         const saveButton = document.getElementById('saveInlineLessonBtn');
+        const status = document.getElementById('inlineLessonSaveStatus');
         const lessonName = document.getElementById('inlineLessonName');
         const documentInput = document.getElementById('inlineLessonDocument');
         const documentFile = documentInput.files[0];
@@ -504,13 +546,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             if (documentFile) lessonForm.append('lesson_document', documentFile);
-            await teacherRequest(lessonForm);
-            window.location.reload();
-        } catch (error) { alert(error.message || 'บันทึกบทเรียนไม่สำเร็จ'); saveButton.disabled = false; saveButton.textContent = 'บันทึกบทเรียน'; }
+            const result = await teacherRequest(lessonForm);
+            const wasNewLesson = !managedLessonId;
+            if (wasNewLesson) {
+                managedLessonId = String(result.lesson_id || '');
+                if (managedLessonId) {
+                    document.getElementById('inlineLessonHeading').textContent = 'แก้ไขบทเรียนย่อย';
+                    document.getElementById('inlineLessonCount').textContent = 'บันทึกบทเรียนแล้ว';
+                    documentInput.required = false;
+                    document.getElementById('inlineLessonDocumentHint').textContent = 'ไม่เลือกไฟล์ใหม่ ระบบจะเก็บเอกสารเดิมไว้';
+                    await loadInlineVideos();
+                }
+            }
+            showSaveFeedback(status, wasNewLesson ? 'เพิ่มเสร็จแล้ว บทเรียนถูกบันทึกเรียบร้อย' : 'บันทึกบทเรียนเรียบร้อยแล้ว');
+            saveButton.textContent = 'บันทึกการแก้ไข';
+        } catch (error) {
+            showSaveFeedback(status, error.message || 'บันทึกบทเรียนไม่สำเร็จ', true);
+            saveButton.textContent = managedLessonId ? 'บันทึกการแก้ไข' : 'บันทึกบทเรียน';
+        }
+        saveButton.disabled = false;
     }
 
     async function saveInlineVideo() {
         const saveButton = document.getElementById('saveInlineVideoBtn');
+        const status = document.getElementById('inlineVideoSaveStatus');
+        showSaveFeedback(status, '');
         const videoTitle = document.getElementById('inlineVideoTitle');
         const videoFile = document.getElementById('inlineVideoFile');
         const videoId = document.getElementById('inlineVideoId').value;
@@ -541,16 +601,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (existingIndex >= 0) inlineVideos[existingIndex] = { ...inlineVideos[existingIndex], ...savedVideo };
             else inlineVideos.unshift(savedVideo);
             document.getElementById('inlineVideoId').value = savedVideo.id;
+            videoFile.required = false;
+            document.getElementById('inlineVideoFileRequired').textContent = '';
+            document.getElementById('inlineVideoFileHint').textContent = 'เลือกไฟล์ใหม่เมื่อต้องการแทนที่วิดีโอเดิม';
             renderInlineVideos({ videos: inlineVideos });
-            document.getElementById('inlineVideoFileHint').textContent = result.message || 'อัปโหลดวิดีโอและบันทึกสำเร็จ';
+            showSaveFeedback(status, editingVideo ? 'บันทึกวิดีโอเรียบร้อยแล้ว' : 'เพิ่มเสร็จแล้ว วิดีโอถูกบันทึกเรียบร้อย');
             saveButton.disabled = false;
             saveButton.textContent = 'บันทึกวิดีโอ';
-        } catch (error) { alert(error.message || 'บันทึกวิดีโอไม่สำเร็จ'); saveButton.disabled = false; saveButton.textContent = 'บันทึกวิดีโอ'; }
+        } catch (error) {
+            showSaveFeedback(status, error.message || 'บันทึกวิดีโอไม่สำเร็จ', true);
+            saveButton.disabled = false;
+            saveButton.textContent = 'บันทึกวิดีโอ';
+        }
     }
 
     document.getElementById('saveInlineLessonBtn')?.addEventListener('click', saveInlineLesson);
     document.getElementById('saveInlineVideoBtn')?.addEventListener('click', saveInlineVideo);
-    document.getElementById('inlineVideoClearBtn')?.addEventListener('click', resetInlineVideoForm);
     inlineVideoList?.addEventListener('click', async (event) => {
         const editButton = event.target.closest('[data-inline-video-edit]');
         if (editButton) {

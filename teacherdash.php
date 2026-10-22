@@ -355,7 +355,7 @@ $stats = [
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261022-subject-stats-right">
+    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261022-video-success-visible">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px;
@@ -618,15 +618,15 @@ $stats = [
                                 <h3 style="font-size:16px;color:var(--text);font-weight:600;">รายการบทเรียนย่อย</h3>
                                 <button type="button" class="btn-add-lesson" id="openContentManagerBtn" style="font-size:13px;padding:8px 14px" <?= $defaultSubjectId === '' ? 'disabled' : '' ?>>＋ เพิ่มบทเรียน</button>
                             </div>
-                            <div style="display:flex;flex-direction:column;gap:12px;">
+                            <div id="teacherLessonList" style="display:flex;flex-direction:column;gap:12px;">
                                 <?php
                                 if ($defaultSubjectId && !empty($subLessonsBySubject[$defaultSubjectId])):
                                     foreach ($subLessonsBySubject[$defaultSubjectId] as $i => $subLesson):
                                         $isPlaceholderLesson = !empty($subLesson['is_placeholder']);
                                 ?>
-                                <div style="background:<?= $isPlaceholderLesson ? 'rgba(255,255,255,0.65)' : 'var(--bg3)' ?>;padding:16px 20px;border-radius:var(--radius-sm);border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; flex-wrap:wrap; gap:12px;<?= $isPlaceholderLesson ? 'opacity:0.85;' : '' ?>">
+                                <div class="teacher-lesson-row" data-lesson-id="<?= h($subLesson['id']) ?>" style="background:<?= $isPlaceholderLesson ? 'rgba(255,255,255,0.65)' : 'var(--bg3)' ?>;padding:16px 20px;border-radius:var(--radius-sm);border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; flex-wrap:wrap; gap:12px;<?= $isPlaceholderLesson ? 'opacity:0.85;' : '' ?>">
                                     <div style="display:flex;align-items:center;gap:16px;">
-                                        <div style="width:36px;height:36px;background:var(--bg2);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text-primary);font-weight:600;font-size:14px;border:1px solid rgba(92, 107, 192,0.2);">
+                                        <div class="teacher-lesson-number" style="width:36px;height:36px;background:var(--bg2);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text-primary);font-weight:600;font-size:14px;border:1px solid rgba(92, 107, 192,0.2);">
                                             <?= $i+1 ?>
                                         </div>
                                         <div>
@@ -670,6 +670,7 @@ $stats = [
                                     <div class="form-group"><label>ชื่อบทเรียน *</label><input type="text" class="form-input" id="inlineLessonName" required placeholder="เช่น 1.1 ตรรกศาสตร์เบื้องต้น"></div>
                                     <div class="form-group"><label>เอกสารประกอบ (PDF)</label><div id="inlineExistingDocuments" style="display:none;margin:0 0 8px;font-size:13px;color:var(--text-muted);"></div><input type="file" class="form-input" id="inlineLessonDocument" accept="application/pdf,.pdf"><small id="inlineLessonDocumentHint" style="color:var(--text-muted);">เลือกไฟล์ PDF ใหม่เมื่อต้องการเพิ่มเอกสาร</small></div>
                                     <button type="button" class="btn-save" id="saveInlineLessonBtn">บันทึกบทเรียน</button>
+                                    <p class="save-feedback" id="inlineLessonSaveStatus" role="status" aria-live="polite"></p>
                                 </form>
                             </section>
 
@@ -682,7 +683,7 @@ $stats = [
                                     <p style="font-size:13px;color:var(--text-muted);margin:-2px 0 14px;">วิดีโอนี้จะถูกผูกกับบทเรียนที่กรอกด้านบนโดยอัตโนมัติ</p>
                                     <div class="form-group"><label>ไฟล์วิดีโอ <span id="inlineVideoFileRequired">*</span></label><input type="file" class="form-input" id="inlineVideoFile" accept="video/mp4,.mp4" required><small id="inlineVideoFileHint" style="color:var(--text-muted);">เลือกไฟล์ MP4 เพื่อบันทึก</small></div>
                                     <button type="button" class="btn-save" id="saveInlineVideoBtn">บันทึกวิดีโอ</button>
-                                    <button type="button" class="btn-cancel" id="inlineVideoClearBtn">ล้างฟอร์ม</button>
+                                    <p class="save-feedback" id="inlineVideoSaveStatus" role="status" aria-live="polite"></p>
                                 </form>
                             </section>
                         </div>
@@ -783,11 +784,11 @@ $stats = [
                             </summary>
                             <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:10px;">
                                 <?php $quizDurationMinutes = max(1, (int) ($lessonGroup['quiz_duration_minutes'] ?? 60)); ?>
-                                <div style="display:flex;flex-wrap:wrap;align-items:end;gap:8px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);">
-                                    <strong style="width:100%;font-size:13px;">กำหนดเวลาทำข้อสอบ</strong>
-                                    <label style="font-size:12px;">ชั่วโมง <input class="quiz-duration-hours" type="number" min="0" max="24" value="<?= intdiv($quizDurationMinutes, 60) ?>" style="width:72px;padding:7px;border:1px solid var(--border);border-radius:6px;"></label>
-                                    <label style="font-size:12px;">นาที <input class="quiz-duration-minutes" type="number" min="0" max="59" value="<?= $quizDurationMinutes % 60 ?>" style="width:72px;padding:7px;border:1px solid var(--border);border-radius:6px;"></label>
-                                    <button type="button" class="btn-save-quiz-duration" data-lesson-id="<?= h($lessonId) ?>" style="padding:8px 12px;">บันทึกเวลา</button>
+                                <div class="quiz-duration-panel">
+                                    <strong class="quiz-duration-heading">กำหนดเวลาทำข้อสอบ</strong>
+                                    <label class="quiz-duration-field">ชั่วโมง <input class="quiz-duration-hours" type="number" min="0" max="24" value="<?= intdiv($quizDurationMinutes, 60) ?>"></label>
+                                    <label class="quiz-duration-field">นาที <input class="quiz-duration-minutes" type="number" min="0" max="59" value="<?= $quizDurationMinutes % 60 ?>"></label>
+                                    <button type="button" class="btn-save-quiz-duration" data-lesson-id="<?= h($lessonId) ?>">บันทึกเวลา</button>
                                     <span class="quiz-duration-status" aria-live="polite" style="font-size:12px;color:var(--text-muted);"></span>
                                 </div>
                                 <button class="btn-open-add-quiz" data-id="<?= h($lessonId) ?>" data-name="<?= h($lessonGroup['title']) ?>" style="align-self:flex-start;"><span style="font-size:16px;line-height:1;">+</span> เพิ่มข้อสอบบทนี้</button>
@@ -842,6 +843,7 @@ $stats = [
                         <input type="file" class="form-input" id="lessonVideo" accept="video/mp4,.mp4">
                     </div>
                     <input type="hidden" id="lessonSubjectId" value="<?= h($defaultSubjectId) ?>">
+                    <p class="save-feedback" id="lessonSaveStatus" role="status" aria-live="polite"></p>
                 </div>
                 <div class="modal-footer">
                     <button class="btn-cancel" onclick="document.getElementById('modalOverlay').classList.remove('open')">ยกเลิก</button>
@@ -1573,7 +1575,7 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-    <script src="assets/js/teacherdash.js?v=20261022-unlimited-lessons"></script>
+    <script src="assets/js/teacherdash.js?v=20261022-delete-lesson-fix"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

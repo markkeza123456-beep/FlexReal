@@ -553,7 +553,15 @@ try {
             throw new Exception('คุณไม่มีสิทธิ์ลบบทเรียนนี้');
         }
 
-        $conn->prepare('DELETE FROM public.lessons WHERE lesson_id = ?')->execute([$lessonId]);
+        $conn->beginTransaction();
+        $lesson = $conn->prepare('SELECT lesson_id FROM public.lessons WHERE lesson_id = :id FOR UPDATE');
+        $lesson->execute([':id' => $lessonId]);
+        if (!$lesson->fetchColumn()) throw new Exception('ไม่พบบทเรียนที่ต้องการลบ');
+        // These tables reference lessons without ON DELETE CASCADE.
+        $conn->prepare('DELETE FROM public.transcript_request_lessons WHERE lesson_id = :id')->execute([':id' => $lessonId]);
+        $conn->prepare('DELETE FROM public.quiz_attempts WHERE lesson_id = :id')->execute([':id' => $lessonId]);
+        $conn->prepare('DELETE FROM public.lessons WHERE lesson_id = :id')->execute([':id' => $lessonId]);
+        $conn->commit();
         echo json_encode(['success' => true, 'message' => 'ลบบทเรียนสำเร็จ']);
         exit;
     }
