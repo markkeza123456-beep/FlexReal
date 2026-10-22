@@ -479,7 +479,7 @@
     const filteredMembers = members.filter(member => {
       if (statusFilter !== 'all' && member.status !== statusFilter) return false;
       if (!memberSearchTerm) return true;
-      const searchable = `${member.name} ${member.email} ${member.phone}`.toLocaleLowerCase();
+      const searchable = `${member.name} ${member.email} ${member.phone} ${member.linked_student_names || ''}`.toLocaleLowerCase();
       return searchable.includes(memberSearchTerm);
     });
 
@@ -490,6 +490,7 @@
           <td style="color:var(--text-secondary)">${member.email || '-'}</td>
           <td style="color:var(--text-secondary)">${member.phone || '-'}</td>
           <td><span class="badge ${member.role === 'Staff' ? 'required' : 'draft'}">${roleName[member.role] || member.role}</span></td>
+          <td>${member.roleValue === 'parent' ? escapeHtml(member.linked_student_names || 'ยังไม่ได้เชื่อมกับนักเรียน') : '-'}</td>
           <td><span class="badge ${member.status === 'active' ? 'active' : 'suspended'}">${member.status === 'inactive' ? 'ระงับบัญชี' : 'ปกติ'}</span></td>
           <td>${formatRegistrationDate(member.registered_at)}</td>
           <td>${formatRegistrationDate(member.updated_at)}</td>
@@ -505,7 +506,7 @@
           </td>
         </tr>
       `).join('')
-      : '<tr><td colspan="10" style="text-align:center; padding:30px;">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>';
+      : '<tr><td colspan="11" style="text-align:center; padding:30px;">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>';
   }
 
   function renderStaffList() {

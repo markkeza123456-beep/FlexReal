@@ -199,6 +199,7 @@ header('Content-Type: text/html; charset=utf-8');
     const form = new FormData();
     form.append('lesson_id', String(documentPayload.lessonId)); form.append('progress_type', 'document');
     form.append('progress_value', String(payload.percent)); form.append('resume_page', String(payload.resumePage));
+    form.append('current_page', String(payload.currentPage)); form.append('total_pages', String(payload.totalPages));
     form.append('is_completed', payload.percent >= 100 ? 'true' : 'false');
     if (useBeacon) return navigator.sendBeacon('save_progress.php', form);
     return fetch('save_progress.php', { method: 'POST', body: form, credentials: 'same-origin' })
@@ -223,8 +224,13 @@ header('Content-Type: text/html; charset=utf-8');
     } catch (_) {}
     finally { readingSaveInFlight = false; scheduleReadingSave(); }
   }
-  function saveReadingProgress(percent, resumePage) {
-    pendingReadingProgress = { percent: Math.max(0, Math.min(100, percent)), resumePage };
+  function saveReadingProgress(percent, currentPage) {
+    pendingReadingProgress = {
+      percent: Math.max(0, Math.min(100, percent)),
+      resumePage: currentPage,
+      currentPage,
+      totalPages: pdfDocument.numPages,
+    };
     scheduleReadingSave();
   }
   function flushReadingProgressOnExit() {
@@ -276,7 +282,10 @@ header('Content-Type: text/html; charset=utf-8');
     pageCanvases = renderedCanvases;
     if (!restoredInitialPage && documentPayload.resumePage > 1) {
       const resumeCanvas = pageCanvases[Math.min(pageCanvases.length - 1, documentPayload.resumePage - 1)];
-      if (resumeCanvas) reader.scrollTop = Math.max(0, resumeCanvas.offsetTop - 18);
+      if (resumeCanvas) {
+        const readerTop = reader.getBoundingClientRect().top;
+        reader.scrollTop = Math.max(0, reader.scrollTop + resumeCanvas.getBoundingClientRect().top - readerTop - 18);
+      }
     } else {
       reader.scrollTop = Math.max(0, (reader.scrollHeight - reader.clientHeight) * oldScrollRatio);
     }
@@ -298,23 +307,23 @@ header('Content-Type: text/html; charset=utf-8');
       updateZoomControls();
       await renderPages();
 
-      let highestReadPage = Math.max(documentPayload.resumePage, Math.floor((documentPayload.documentProgressPercent / 100) * pdf.numPages));
       let highestReadPercent = documentPayload.documentProgressPercent;
       let scrollQueued = false;
       const recordScrolledPages = () => {
         scrollQueued = false;
         const visibleBottom = reader.scrollTop + reader.clientHeight;
-        let reachedPage = 0;
+        let currentPage = 1;
         pageCanvases.forEach((canvas, index) => {
-          if (visibleBottom >= canvas.offsetTop + (canvas.offsetHeight * 0.8)) reachedPage = index + 1;
+          const canvasRect = canvas.getBoundingClientRect();
+          const readerTop = reader.getBoundingClientRect().top;
+          const canvasBottom = reader.scrollTop + canvasRect.bottom - readerTop;
+          if (visibleBottom >= canvasBottom - Math.min(canvas.offsetHeight * 0.2, reader.clientHeight * 0.2)) currentPage = index + 1;
         });
-        highestReadPage = Math.max(highestReadPage, reachedPage);
         const atEnd = visibleBottom >= reader.scrollHeight - 8;
-        const scrollPercent = atEnd ? 100 : Math.min(99.9, (visibleBottom / reader.scrollHeight) * 100);
-        const percent = Math.max(highestReadPercent, scrollPercent);
-        if (percent <= highestReadPercent && reachedPage <= documentPayload.resumePage) return;
+        const percent = Math.max(highestReadPercent, atEnd ? 100 : (currentPage / pdfDocument.numPages) * 100);
+        if (percent <= highestReadPercent && currentPage === documentPayload.resumePage) return;
         highestReadPercent = percent;
-        saveReadingProgress(percent, highestReadPage);
+        saveReadingProgress(percent, currentPage);
       };
 
       reader.addEventListener('scroll', () => {
@@ -323,7 +332,8 @@ header('Content-Type: text/html; charset=utf-8');
           requestAnimationFrame(recordScrolledPages);
         }
       }, { passive: true });
-    } catch (_) {
+    } catch (error) {
+      console.error('PDF reader failed to render:', error);
       pagesContainer.innerHTML = '<div class="notice">ไม่สามารถเปิดเอกสารได้ กรุณาลองใหม่อีกครั้ง</div>';
     }
   }

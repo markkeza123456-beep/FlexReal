@@ -68,8 +68,14 @@ try {
         $params = [':student_id' => $studentId, ':lesson_id' => $lessonId, ':progress_value' => $position, ':is_completed' => $isCompleted ? 'true' : 'false', ':video_position' => (int) floor($position), ':video_percent' => $percent];
     } else {
         $percent = min(100.0, (float) $progressValue);
+        $currentPage = filter_var($_POST['current_page'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        $totalPages = filter_var($_POST['total_pages'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if ($currentPage !== false && $totalPages !== false) {
+            $currentPage = min($currentPage, $totalPages);
+            $percent = min(100.0, ($currentPage / $totalPages) * 100);
+        }
         if ($isCompleted) $percent = 100.0;
-        $page = max(0, (int) ($_POST['resume_page'] ?? 0));
+        $page = $currentPage !== false ? (int) $currentPage : max(0, (int) ($_POST['resume_page'] ?? 0));
         $completed = $isCompleted || $percent >= 100;
         $sql = 'INSERT INTO public.lesson_progress
                     (student_id, lesson_id, progress_value, progress_type, is_completed, document_progress_percent,
