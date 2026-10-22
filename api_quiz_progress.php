@@ -35,10 +35,13 @@ try {
          LEFT JOIN public.lesson_progress_summary lp
            ON lp.lesson_id = l.lesson_id AND lp.student_id = :progress_student_id
          LEFT JOIN LATERAL (
-             SELECT score, total_score, status
+             SELECT MAX(score) AS score, MAX(total_score) AS total_score,
+                    CASE WHEN BOOL_OR(status = 'passed') THEN 'passed'
+                         ELSE (ARRAY_AGG(status ORDER BY submitted_at DESC))[1]
+                    END AS status
              FROM public.quiz_attempts
              WHERE student_id = :student_id AND lesson_id = l.lesson_id
-             ORDER BY submitted_at DESC LIMIT 1
+             HAVING COUNT(*) > 0
          ) a ON true
          WHERE l.course_id = :course_id
          ORDER BY l.position ASC"

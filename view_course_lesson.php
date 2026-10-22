@@ -134,7 +134,7 @@ header('Content-Type: text/html; charset=utf-8');
   <style>
     body { margin: 0; color: #24303b; font-family: "IBM Plex Sans Thai", system-ui, sans-serif; background: #f7f8fa; }
     header { display:flex; gap:12px; align-items:center; justify-content:space-between; padding: 12px 20px; background: #fff; border-bottom: 1px solid #e8eaed; font-weight: 700; }
-    .header-title { display:flex; flex-direction:column; gap:2px; min-width:0; }.header-title > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.reading-status { color:#64748b; font-size:.82rem; font-weight:500; }
+    .header-title { display:flex; flex-direction:column; gap:2px; min-width:0; }.header-title > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     main { max-width: 980px; min-height: calc(100vh - 59px); margin: auto; padding: 20px; box-sizing: border-box; }
     .pdf-reader { height:calc(100vh - 99px); overflow-y:auto; border:1px solid #d8dee9; border-radius:8px; background:#525a67; box-shadow:0 8px 26px rgba(15,23,42,.16); }
     .pdf-pages { display:flex; flex-direction:column; align-items:center; gap:18px; padding:18px; }
@@ -146,7 +146,7 @@ header('Content-Type: text/html; charset=utf-8');
     <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
-  <header class="reader-header"><div class="header-title"><span><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span><span id="reading-status" class="reading-status"></span></div></header>
+  <header class="reader-header"><div class="header-title"><span><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></span></div></header>
 <?php if ($extension === 'pdf'): ?>
   <main class="pdf-reader" id="pdf-reader" aria-label="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>"><div id="pdf-pages" class="pdf-pages"><div class="pdf-loading">กำลังเปิดเอกสาร…</div></div></main>
 <?php elseif (in_array($extension, $officeExtensions, true)): ?>
@@ -209,19 +209,8 @@ header('Content-Type: text/html; charset=utf-8');
   }
   window.addEventListener('pagehide', flushReadingProgressOnExit);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushReadingProgressOnExit(); });
-  function updateReadingStatus(percent) {
-    const status = document.getElementById('reading-status');
-    if (!status) return;
-    const documentPercent = Math.round(Math.max(0, Math.min(100, percent)));
-    const lessonPercent = Math.round(documentPercent * 0.30 * 10) / 10;
-    status.textContent = `อ่านแล้ว ${documentPercent}% · คิดเป็น ${lessonPercent}% ของบทเรียน`;
-  }
-
   async function renderPdf() {
-    if (!reader || !pagesContainer) {
-      updateReadingStatus(documentPayload.documentProgressPercent);
-      return;
-    }
+    if (!reader || !pagesContainer) return;
 
     try {
       const pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs');
@@ -246,7 +235,6 @@ header('Content-Type: text/html; charset=utf-8');
         pageCanvases.push(canvas);
       }
 
-      updateReadingStatus(documentPayload.documentProgressPercent);
       if (documentPayload.resumePage > 1) {
         const resumeCanvas = pageCanvases[Math.min(pageCanvases.length - 1, documentPayload.resumePage - 1)];
         reader.scrollTop = Math.max(0, resumeCanvas.offsetTop - 18);
@@ -268,7 +256,6 @@ header('Content-Type: text/html; charset=utf-8');
         const percent = Math.max(highestReadPercent, scrollPercent);
         if (percent <= highestReadPercent && reachedPage <= documentPayload.resumePage) return;
         highestReadPercent = percent;
-        updateReadingStatus(percent);
         saveReadingProgress(percent, highestReadPage);
       };
 
@@ -280,7 +267,6 @@ header('Content-Type: text/html; charset=utf-8');
       }, { passive: true });
     } catch (_) {
       pagesContainer.innerHTML = '<div class="notice">ไม่สามารถเปิดเอกสารได้ กรุณาลองใหม่อีกครั้ง</div>';
-      updateReadingStatus(documentPayload.documentProgressPercent);
     }
   }
 

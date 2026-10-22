@@ -357,7 +357,7 @@ $hubClientCourse = $hubCourse ? [
 </footer>
 
 <script>window.FLEXREAL_INITIAL = <?= json_encode(['courses' => $hubClientCourses, 'course' => $hubClientCourse, 'lessons' => $hubLessons, 'instructors' => $hubInstructors], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;</script>
-<script src="assets/js/web.js?v=20261022-video-progress-ux"></script>
+<script src="assets/js/web.js?v=20261022-video-anti-seek"></script>
 
 </body>
 </html>

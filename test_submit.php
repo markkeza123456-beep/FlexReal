@@ -43,6 +43,13 @@ try {
     if (!$lessonRow) throw new RuntimeException('ไม่พบบทเรียนที่ต้องการทำแบบทดสอบ');
     $lessonId = (int) $lessonRow['lesson_id'];
 
+    $passedAttemptStmt = $conn->prepare("SELECT EXISTS (SELECT 1 FROM public.quiz_attempts WHERE student_id = :student_id AND lesson_id = :lesson_id AND status = 'passed')");
+    $passedAttemptStmt->execute([':student_id' => $studentId, ':lesson_id' => $lessonId]);
+    if ($passedAttemptStmt->fetchColumn()) {
+        $conn->rollBack();
+        quizResponse(['status' => 'already_passed', 'message' => 'คุณผ่านแบบทดสอบบทนี้แล้ว ไม่สามารถทำซ้ำได้'], 409);
+    }
+
     $questionStmt = $conn->prepare('SELECT question_id, question_type, correct_choice, max_score FROM public.questions WHERE lesson_id = :lesson_id AND is_active = true ORDER BY question_id');
     $questionStmt->execute([':lesson_id' => $lessonId]);
     $questions = $questionStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -57,7 +64,9 @@ try {
         $totalScore += $maxScore;
         if ($question['question_type'] === 'essay') {
             $hasEssay = true;
-            $essayText = trim((string) ($answers[$index] ?? ''));
+            $answerKey = (string) $question['question_id'];
+            $essayValue = array_key_exists($answerKey, $answers) ? $answers[$answerKey] : ($answers[$index] ?? '');
+            $essayText = trim((string) $essayValue);
             if ($essayText === '') {
                 throw new RuntimeException('กรุณาตอบข้อเขียนให้ครบก่อนส่งข้อสอบ');
             }
@@ -70,7 +79,9 @@ try {
             ];
             continue;
         }
-        $choice = submittedChoice($answers[$index] ?? null);
+        $answerKey = (string) $question['question_id'];
+        $answerValue = array_key_exists($answerKey, $answers) ? $answers[$answerKey] : ($answers[$index] ?? null);
+        $choice = submittedChoice($answerValue);
         $earned = $choice !== null && $choice === $question['correct_choice'] ? $maxScore : 0.0;
         $score += $earned;
         $savedAnswers[] = [
@@ -85,27 +96,8 @@ try {
     $attemptNoStmt = $conn->prepare('SELECT COALESCE(MAX(attempt_number), 0) + 1 FROM public.quiz_attempts WHERE student_id = :student_id AND lesson_id = :lesson_id');
     $attemptNoStmt->execute([':student_id' => $studentId, ':lesson_id' => $lessonId]);
     $attemptNo = (int) $attemptNoStmt->fetchColumn();
-    $tabSwitchStmt = $conn->prepare(
-        'SELECT COALESCE(MAX(tab_switch_count), 0)
-         FROM public.exam_logs
-         WHERE student_id = :student_id AND exam_id = :exam_id AND attempt_number = :attempt_number'
-    );
-    $tabSwitchStmt->execute([
-        ':student_id' => $studentId,
-        ':exam_id' => $lessonId,
-        ':attempt_number' => $attemptNo,
-    ]);
-    $cheatingDetected = (int) $tabSwitchStmt->fetchColumn() >= 3;
-    if ($cheatingDetected) {
-        $score = 0.0;
-        foreach ($savedAnswers as &$savedAnswer) {
-            $savedAnswer['score'] = 0.0;
-            if ($savedAnswer['review_status'] === 'pending') $savedAnswer['review_status'] = 'not_required';
-        }
-        unset($savedAnswer);
-    }
     $requiredScore = $totalScore;
-    $status = $cheatingDetected ? 'failed' : ($hasEssay ? 'pending_review' : ($score >= $requiredScore ? 'passed' : 'failed'));
+    $status = $hasEssay ? 'pending_review' : ($score >= $requiredScore ? 'passed' : 'failed');
     $attemptStmt = $conn->prepare('INSERT INTO public.quiz_attempts (student_id, lesson_id, attempt_number, score, total_score, status) VALUES (:student_id, :lesson_id, :attempt_number, :score, :total_score, :status) RETURNING attempt_id');
     $attemptStmt->execute([':student_id' => $studentId, ':lesson_id' => $lessonId, ':attempt_number' => $attemptNo, ':score' => $score, ':total_score' => $totalScore, ':status' => $status]);
     $attemptId = (int) $attemptStmt->fetchColumn();
@@ -114,8 +106,11 @@ try {
     foreach ($savedAnswers as $answer) {
         $answerStmt->execute([':attempt_id' => $attemptId] + $answer);
     }
+    $bestScoreStmt = $conn->prepare('SELECT COALESCE(MAX(score), 0) FROM public.quiz_attempts WHERE student_id = :student_id AND lesson_id = :lesson_id');
+    $bestScoreStmt->execute([':student_id' => $studentId, ':lesson_id' => $lessonId]);
+    $bestScore = (float) $bestScoreStmt->fetchColumn();
     $conn->commit();
-    quizResponse(['status' => 'success', 'quiz_status' => $status, 'score' => $score, 'total_score' => $totalScore, 'required_score' => $requiredScore, 'pending_review' => $hasEssay && !$cheatingDetected, 'cheating_detected' => $cheatingDetected, 'message' => $cheatingDetected ? 'ระบบส่งข้อสอบอัตโนมัติและบันทึกผลไม่ผ่าน เนื่องจากสลับแท็บครบ 3 ครั้ง' : 'บันทึกผลสอบเรียบร้อย']);
+    quizResponse(['status' => 'success', 'quiz_status' => $status, 'score' => $score, 'best_score' => $bestScore, 'total_score' => $totalScore, 'required_score' => $requiredScore, 'pending_review' => $hasEssay, 'message' => 'บันทึกผลสอบเรียบร้อย']);
 } catch (Throwable $e) {
     if ($conn->inTransaction()) $conn->rollBack();
     error_log('Quiz submit failed: ' . $e->getMessage());

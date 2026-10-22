@@ -262,7 +262,7 @@ function renderLessonAccordion(containerId) {
                     </div>
                     <p style="margin:-4px 0 10px;font-size:12px;color:#6b7280;">${status.breakdown}</p>
                     ${!canAccessLesson(lesson.index) ? `<p style="margin:0 0 8px;color:#d35400;font-size:13px;">${getLessonLockMessage(lesson.index)}</p>` : ''}
-                    ${lesson.content ? `<div class="lesson-article-reading" data-lesson-id="${escapeHtml(lesson.id)}" style="margin:0 0 12px;padding:12px 14px;border:1px solid #f0d6c5;border-radius:10px;background:#fffaf7;white-space:pre-wrap;"><b>รายละเอียดบทเรียน</b><p style="margin:6px 0 0;">${escapeHtml(lesson.content)}</p><span class="article-progress-status" style="display:block;margin-top:8px;color:#64748b;font-size:12px;"></span></div>` : ''}
+                    ${lesson.content ? `<div class="lesson-article-reading" data-lesson-id="${escapeHtml(lesson.id)}" style="margin:0 0 12px;padding:12px 14px;border:1px solid #f0d6c5;border-radius:10px;background:#fffaf7;white-space:pre-wrap;"><b>รายละเอียดบทเรียน</b><p style="margin:6px 0 0;">${escapeHtml(lesson.content)}</p></div>` : ''}
                     <div class="curriculum-item">
                         <div class="curr-left">
                             <span class="curr-icon"><i class="fa-solid fa-file-lines" aria-hidden="true"></i></span>
@@ -282,7 +282,7 @@ function renderLessonAccordion(containerId) {
                             <span class="curr-icon"><i class="fa-solid fa-question" aria-hidden="true"></i></span>
                             <div class="curr-text"><b>แบบทดสอบประจำบท</b><p>ทดสอบความเข้าใจ</p></div>
                         </div>
-                        <button class="btn-outline-orange" onclick="startQuiz(${lesson.index})" ${isQuizUnlocked(lesson.index) ? '' : 'disabled'}>เริ่มทำ Quiz</button>
+                        <button class="btn-outline-orange" onclick="startQuiz(${lesson.index})" ${isLessonPassed(lesson.index) || !isQuizUnlocked(lesson.index) ? 'disabled' : ''}>${isLessonPassed(lesson.index) ? 'ผ่านแล้ว' : 'เริ่มทำ Quiz'}</button>
                     </div>
                     ${isQuizUnlocked(lesson.index) ? '' : `<p style="margin:8px 0 0;color:#7f8c8d;font-size:12px;">${getLessonLockMessage(lesson.index)}</p>`}
                 </div>
@@ -1290,20 +1290,19 @@ function renderVideoModalBody(lessonIndex) {
         <p style="margin-bottom:12px;color:#636e72;">กำลังดู: บทที่ ${safeIndex} - ${escapeHtml(title)}</p>
         <label for="video-lesson-select" style="display:block;margin-bottom:8px;font-weight:600;color:#303F9F;">เปลี่ยนบทเรียน</label>
         <select id="video-lesson-select" onchange="changeModalLessonVideo(this.value)" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;margin-bottom:14px;">${options}</select>
-        <video id="lesson-video-player" width="100%" controls autoplay playsinline preload="metadata" style="border-radius:10px;background:#000;">
+        <video id="lesson-video-player" width="100%" controls autoplay playsinline preload="metadata" disablepictureinpicture controlslist="nodownload noplaybackrate" style="border-radius:10px;background:#000;">
             <source id="lesson-video-source" src="${videoPath}" type="video/mp4">เบราว์เซอร์ไม่รองรับวิดีโอ
         </video>
-        <p id="video-progress-status" aria-live="polite" style="margin:10px 0 0;color:#64748b;font-size:13px;">กำลังเตรียมข้อมูลวิดีโอ...</p>
         <p id="video-fallback-status" style="display:none;margin-top:8px;color:#d35400;font-size:13px;"></p>`;
 
     const video = body.querySelector('#lesson-video-player');
     const source = body.querySelector('#lesson-video-source');
-    const status = body.querySelector('#video-progress-status');
     const fallback = body.querySelector('#video-fallback-status');
     let candidateIndex = 0;
     let saving = false;
     const parsedSavedSeconds = Number(progressRow.video_position_seconds);
     const savedSeconds = Number.isFinite(parsedSavedSeconds) && parsedSavedSeconds > 0 ? parsedSavedSeconds : 0;
+    let maxPlayedTime = savedSeconds;
     const persist = async (completed = false, keepalive = false, useBeacon = false) => {
         if (!Number.isInteger(lessonId) || lessonId <= 0 || (saving && !useBeacon) || !video || !Number.isFinite(video.currentTime)) return false;
         const durationSeconds = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
@@ -1340,7 +1339,6 @@ function renderVideoModalBody(lessonIndex) {
             catch (_) { result = { ok: false, message: responseText || 'Invalid JSON response' }; }
             console.log('Progress API Response:', response.status, result);
             if (response.ok && result.ok) {
-                if (status) status.textContent = completed ? 'ดูวิดีโอจบแล้ว บันทึกความคืบหน้าแล้ว' : `บันทึกตำแหน่ง ${formatVideoTimestamp(video.currentTime)} แล้ว`;
                 return true;
             }
             console.error('Progress API returned an error:', result);
@@ -1348,17 +1346,26 @@ function renderVideoModalBody(lessonIndex) {
             console.error('Progress API request failed:', error);
         }
         finally { saving = false; }
-        if (status) status.textContent = 'บันทึกความคืบหน้าไม่สำเร็จ';
         return false;
     };
     const restoreVideoPosition = () => {
         if (!Number.isFinite(video.duration) || video.duration <= 0) return;
         const resumeAt = Math.max(0, Math.min(savedSeconds, video.duration));
+        maxPlayedTime = resumeAt;
         if (resumeAt > 0 && resumeAt < video.duration - 1) video.currentTime = resumeAt;
-        if (status) status.textContent = resumeAt > 0 && resumeAt < video.duration - 1
-            ? `เรียนต่อจาก ${formatVideoTimestamp(resumeAt)}`
-            : 'พร้อมเริ่มเรียน';
     };
+    video.disablePictureInPicture = true;
+    video.defaultPlaybackRate = 1;
+    video.playbackRate = 1;
+    video.addEventListener('ratechange', () => {
+        if (video.playbackRate !== 1) video.playbackRate = 1;
+    });
+    video.addEventListener('timeupdate', () => {
+        if (!video.seeking && video.currentTime > maxPlayedTime) maxPlayedTime = video.currentTime;
+    });
+    video.addEventListener('seeking', () => {
+        if (video.currentTime > maxPlayedTime) video.currentTime = maxPlayedTime;
+    });
     video.addEventListener('loadedmetadata', restoreVideoPosition, { once: true });
     // The element may already have loaded metadata by the time listeners are attached.
     if (video.readyState >= HTMLMediaElement.HAVE_METADATA) restoreVideoPosition();
@@ -1462,8 +1469,6 @@ async function flushArticleScrollProgress() {
         const percent = readPixels >= height ? 100 : Math.min(99.9, readPixels / height * 100);
         const progressRow = [...getLessonProgressMap().values()].find((row) => Number(row.lesson_id) === lessonId) || {};
         const savedPercent = Math.max(Number(articleProgressLastSaved.get(lessonId) || 0), Number(progressRow.document_progress_percent || 0));
-        const status = article.querySelector('.article-progress-status');
-        if (status) status.textContent = `อ่านแล้ว ${Math.round(Math.max(percent, savedPercent))}%`;
         if (percent <= savedPercent) return;
         const data = new FormData();
         data.append('lesson_id', String(lessonId));
@@ -1475,7 +1480,6 @@ async function flushArticleScrollProgress() {
             const result = await response.json();
             if (result.ok) {
                 articleProgressLastSaved.set(lessonId, percent);
-                if (status) status.textContent = `บันทึกแล้ว ${Math.round(percent)}%`;
             }
         } catch (_) {}
     });
