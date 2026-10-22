@@ -145,6 +145,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const contentManagerModal = document.getElementById('contentManagerModal');
     let managedLessonId = '';
 
+    function appendTeacherLessonToList(lessonId, lessonTitle) {
+        const lessonList = document.getElementById('teacherLessonList');
+        if (!lessonList || !lessonId || [...lessonList.querySelectorAll('.teacher-lesson-row')].some(item => item.dataset.lessonId === String(lessonId))) return;
+        lessonList.querySelector(':scope > div:not(.teacher-lesson-row)')?.remove();
+        const row = document.createElement('div');
+        row.className = 'teacher-lesson-row';
+        row.dataset.lessonId = String(lessonId);
+        row.style.cssText = 'background:var(--bg3);padding:16px 20px;border-radius:var(--radius-sm);border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;';
+        row.innerHTML = `<div style="display:flex;align-items:center;gap:16px"><div class="teacher-lesson-number" style="width:36px;height:36px;background:var(--bg2);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text-primary);font-weight:600;font-size:14px;border:1px solid rgba(92,107,192,.2)">${lessonList.querySelectorAll('.teacher-lesson-row').length + 1}</div><div><div style="color:var(--text);font-size:15px;font-weight:500">${escapeHtml(lessonTitle)}</div><div style="color:var(--text-dim);font-size:12px;margin-top:2px">⏳ ไม่ระบุเวลา</div><div style="color:var(--text-muted);font-size:11px;margin-top:3px">บทเรียนแก้ไขล่าสุด กำลังโหลดข้อมูล</div></div></div><div style="display:flex;align-items:center;gap:10px"><span class="badge badge-active" style="margin-right:8px">เผยแพร่</span><button type="button" class="action-icon-btn btn-edit-lsn" data-id="${escapeHtml(lessonId)}" data-name="${escapeHtml(lessonTitle)}" title="แก้ไขบทเรียน">แก้ไข</button><button type="button" class="action-icon-btn btn-del-lsn" data-id="${escapeHtml(lessonId)}" title="ลบบทเรียน" style="color:#ef4444">ลบ</button></div>`;
+        lessonList.appendChild(row);
+        row.querySelector('.btn-edit-lsn')?.addEventListener('click', () => openContentManager(String(lessonId), lessonTitle));
+        row.querySelector('.btn-del-lsn')?.addEventListener('click', async (event) => {
+            if (!window.confirm('ต้องการลบบทเรียนนี้ใช่หรือไม่? ข้อสอบและผลการทำข้อสอบในบทนี้จะถูกลบด้วย')) return;
+            const button = event.currentTarget;
+            button.disabled = true;
+            try {
+                const form = new FormData(); form.append('action', 'delete_lesson'); form.append('lesson_id', String(lessonId));
+                const response = await fetch('teacher_api.php', { method: 'POST', body: form, credentials: 'same-origin' });
+                const result = await response.json();
+                if (!response.ok || result.success !== true) throw new Error(result.message || 'ลบบทเรียนไม่สำเร็จ');
+                row.remove();
+                lessonList.querySelectorAll('.teacher-lesson-number').forEach((number, index) => { number.textContent = String(index + 1); });
+            } catch (error) { alert(error.message || 'ลบบทเรียนไม่สำเร็จ'); button.disabled = false; }
+        });
+    }
+
     async function openContentManager(lessonId = '', lessonName = '') {
         if (!contentManagerModal) return;
         managedLessonId = String(lessonId || '');
@@ -223,6 +249,9 @@ document.addEventListener('DOMContentLoaded', () => {
             try { result = await response.json(); }
             catch { throw new Error(`เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON (HTTP ${response.status}) ตรวจสอบ PHP error log และการตั้งค่า post_max_size`); }
             if (!response.ok || !result.success) throw new Error(result.message || `บันทึกไม่สำเร็จ (HTTP ${response.status})`);
+            appendTeacherLessonToList(result.lesson_id, lessonName);
+            const inlineCount = document.getElementById('inlineLessonCount');
+            if (inlineCount) inlineCount.textContent = `${document.querySelectorAll('#teacherLessonList .teacher-lesson-row').length} บทเรียน`;
             showSaveFeedback(status, 'เพิ่มเสร็จแล้ว บทเรียนถูกบันทึกเรียบร้อย');
             btn.textContent = 'เพิ่มเสร็จแล้ว';
             btn.disabled = true;
@@ -551,8 +580,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (wasNewLesson) {
                 managedLessonId = String(result.lesson_id || '');
                 if (managedLessonId) {
+                    appendTeacherLessonToList(managedLessonId, lessonName.value.trim());
                     document.getElementById('inlineLessonHeading').textContent = 'แก้ไขบทเรียนย่อย';
-                    document.getElementById('inlineLessonCount').textContent = 'บันทึกบทเรียนแล้ว';
+                    document.getElementById('inlineLessonCount').textContent = `${document.querySelectorAll('#teacherLessonList .teacher-lesson-row').length} บทเรียน`;
                     documentInput.required = false;
                     document.getElementById('inlineLessonDocumentHint').textContent = 'ไม่เลือกไฟล์ใหม่ ระบบจะเก็บเอกสารเดิมไว้';
                     await loadInlineVideos();
