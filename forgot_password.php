@@ -120,6 +120,7 @@
           method: 'POST',
           body: new URLSearchParams({ email }),
           signal: controller.signal,
+          credentials: 'same-origin',
         });
 
         const text = await res.text();
@@ -160,7 +161,8 @@
       try {
         const res = await fetch('verify_pin_action.php', {
           method: 'POST',
-          body: new URLSearchParams({ pin })
+          body: new URLSearchParams({ pin }),
+          credentials: 'same-origin',
         });
         const data = await res.json();
 

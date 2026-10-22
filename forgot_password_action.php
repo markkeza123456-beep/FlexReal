@@ -62,9 +62,11 @@ try {
         throw $error;
     }
 
-    session_regenerate_id(true);
     $_SESSION['password_reset_user_id'] = (string) $user['user_id'];
     $_SESSION['password_reset_requested_at'] = time();
+    // Persist the reset context before returning the JSON response. The browser
+    // continues this flow with a second same-origin fetch immediately after.
+    session_write_close();
     passwordResetResponse('success', 'ส่งรหัส PIN ไปยังอีเมลของคุณแล้ว');
 } catch (Throwable $error) {
     $errorId = bin2hex(random_bytes(6));

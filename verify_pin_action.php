@@ -12,7 +12,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !preg_match('/^\d{6}$/', $pin)) {
 
 $userId = (string) ($_SESSION['password_reset_user_id'] ?? '');
 $requestedAt = (int) ($_SESSION['password_reset_requested_at'] ?? 0);
-if ($userId === '' || $requestedAt < time() - 900) {
+if ($userId === '' || $requestedAt <= 0 || $requestedAt < time() - 900) {
+    $age = $requestedAt > 0 ? (time() - $requestedAt) : -1;
+    error_log('[auth.password-reset] verification context unavailable; user_id_set=' . ($userId !== '' ? 'yes' : 'no') . ' age_seconds=' . $age);
     unset($_SESSION['password_reset_user_id'], $_SESSION['password_reset_requested_at']);
     echo json_encode(['status' => 'error', 'message' => 'คำขอรีเซ็ตรหัสผ่านหมดอายุ กรุณาขอ PIN ใหม่']);
     exit;
