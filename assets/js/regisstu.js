@@ -334,6 +334,10 @@
       valid = setError('field-province', 'province-error', 'กรุณาเลือกจังหวัด') && valid;
     }
 
+    if (valueOf('province') && valueOf('amphoe') && valueOf('tambon') && window.validateThaiAddress && !window.validateThaiAddress()) {
+      valid = setError('field-tambon', 'tambon-error', 'กรุณาเลือกตำบล อำเภอ และจังหวัดจากรายการที่สัมพันธ์กัน') && valid;
+    }
+
     const zip = valueOf('zipcode').replace(/\D/g, '');
     if (zip.length !== 5) {
       valid = setError('field-zipcode', 'zipcode-error', 'รหัสไปรษณีย์ต้องมี 5 หลัก') && valid;

@@ -19,20 +19,6 @@ try {
 
 
 
-    $provincesFromDb = array_map(static fn(string $name): array => ['name' => $name], [
-        'กรุงเทพมหานคร', 'กระบี่', 'กาญจนบุรี', 'กาฬสินธุ์', 'กำแพงเพชร', 'ขอนแก่น',
-        'จันทบุรี', 'ฉะเชิงเทรา', 'ชลบุรี', 'ชัยนาท', 'ชัยภูมิ', 'ชุมพร', 'เชียงราย', 'เชียงใหม่',
-        'ตรัง', 'ตราด', 'ตาก', 'นครนายก', 'นครปฐม', 'นครพนม', 'นครราชสีมา', 'นครศรีธรรมราช',
-        'นครสวรรค์', 'นนทบุรี', 'นราธิวาส', 'น่าน', 'บึงกาฬ', 'บุรีรัมย์', 'ปทุมธานี',
-        'ประจวบคีรีขันธ์', 'ปราจีนบุรี', 'ปัตตานี', 'พระนครศรีอยุธยา', 'พะเยา', 'พังงา', 'พัทลุง',
-        'พิจิตร', 'พิษณุโลก', 'เพชรบุรี', 'เพชรบูรณ์', 'แพร่', 'ภูเก็ต', 'มหาสารคาม', 'มุกดาหาร',
-        'แม่ฮ่องสอน', 'ยโสธร', 'ยะลา', 'ร้อยเอ็ด', 'ระนอง', 'ระยอง', 'ราชบุรี', 'ลพบุรี', 'ลำปาง',
-        'ลำพูน', 'เลย', 'ศรีสะเกษ', 'สกลนคร', 'สงขลา', 'สตูล', 'สมุทรปราการ', 'สมุทรสงคราม',
-        'สมุทรสาคร', 'สระแก้ว', 'สระบุรี', 'สิงห์บุรี', 'สุโขทัย', 'สุพรรณบุรี', 'สุราษฎร์ธานี',
-        'สุรินทร์', 'หนองคาย', 'หนองบัวลำภู', 'อ่างทอง', 'อำนาจเจริญ', 'อุดรธานี', 'อุตรดิตถ์',
-        'อุทัยธานี', 'อุบลราชธานี',
-    ]);
-
 } catch (PDOException $e) {
     die('ไม่สามารถโหลดข้อมูลหลักสูตรได้ กรุณาลองใหม่ภายหลัง');
 }
@@ -180,19 +166,21 @@ try {
         </div>
 
         <div class="grid-2">
-          <div class="field" id="field-tambon">
-            <label class="label" for="tambon">ตำบล / แขวง<span class="required">*</span></label>
+          <div class="field" id="field-province">
+            <label class="label" for="province">จังหวัด<span class="required">*</span></label>
             <div class="input-wrap">
-              <input type="text" id="tambon" name="tambon" placeholder="ตำบล / แขวง" required />
+              <input type="text" id="province" name="province" list="province-options" placeholder="พิมพ์หรือเลือกจังหวัด" autocomplete="address-level1" required />
+              <datalist id="province-options"></datalist>
               <span class="focus-bar"></span>
             </div>
-            <span class="error-msg" id="tambon-error"></span>
+            <span class="error-msg" id="province-error"></span>
           </div>
 
           <div class="field" id="field-amphoe">
             <label class="label" for="amphoe">อำเภอ / เขต<span class="required">*</span></label>
             <div class="input-wrap">
-              <input type="text" id="amphoe" name="amphoe" placeholder="อำเภอ / เขต" required />
+              <input type="text" id="amphoe" name="amphoe" list="amphoe-options" placeholder="เลือกจังหวัดก่อน" autocomplete="address-level2" required disabled />
+              <datalist id="amphoe-options"></datalist>
               <span class="focus-bar"></span>
             </div>
             <span class="error-msg" id="amphoe-error"></span>
@@ -200,21 +188,14 @@ try {
         </div>
 
         <div class="grid-2">
-          <div class="field" id="field-province">
-            <label class="label" for="province">จังหวัด<span class="required">*</span></label>
+          <div class="field" id="field-tambon">
+            <label class="label" for="tambon">ตำบล / แขวง<span class="required">*</span></label>
             <div class="input-wrap">
-              <select id="province" name="province" required>
-                <option value="" disabled selected>เลือกจังหวัด</option>
-
-                <?php foreach ($provincesFromDb as $prov): ?>
-                  <option value="<?= htmlspecialchars($prov['name']) ?>">
-                    <?= htmlspecialchars($prov['name']) ?>
-                  </option>
-                <?php endforeach; ?>
-              </select>
+              <input type="text" id="tambon" name="tambon" list="tambon-options" placeholder="เลือกอำเภอก่อน" autocomplete="address-level3" required disabled />
+              <datalist id="tambon-options"></datalist>
               <span class="focus-bar"></span>
             </div>
-            <span class="error-msg" id="province-error"></span>
+            <span class="error-msg" id="tambon-error"></span>
           </div>
 
           <div class="field" id="field-zipcode">
@@ -248,6 +229,7 @@ try {
     <div class="back-row">มีบัญชีอยู่แล้ว? <a href="login.php" class="link">เข้าสู่ระบบ</a></div>
   </div>
   <div class="toast" id="toast"></div>
+  <script src="assets/js/thai-address.js?v=20261022-cascading-search"></script>
   <script src="assets/js/regisstu.js?v=20261021-registration-password-toggle"></script>
 <script src="assets/js/responsive.js?v=20261022-navigation-refresh" defer></script>
 </body>
