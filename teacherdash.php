@@ -1592,7 +1592,11 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
+<<<<<<< HEAD
     <script src="assets/js/teacherdash.js?v=20261022-refresh-new-lesson-v1"></script>
+=======
+    <script src="assets/js/teacherdash.js?v=20261022-live-lesson-list"></script>
+>>>>>>> 00a7131d32b84bf4d63cb7d43687b04508a67a2c
 <?php if ($canAccessTransferApproval): ?>
     <script src="assets/js/teacher_graduation.js?v=20261022-graduation-status-colors"></script>
 <?php endif; ?>
