@@ -2,9 +2,20 @@
 
 function flexibleMailConfig(string $key, string $default = ''): string
 {
-    $value = getenv($key);
+    $value = function_exists('flexrealProcessEnv') ? flexrealProcessEnv($key) : null;
     if (!is_string($value) || trim($value) === '') {
-        $value = (string) ($_ENV[$key] ?? $GLOBALS['env'][$key] ?? $default);
+        $processValue = getenv($key);
+        $serverValue = $_SERVER[$key] ?? null;
+        $apacheValue = function_exists('apache_getenv') ? apache_getenv($key, true) : null;
+        $value = (is_string($processValue) && trim($processValue) !== '')
+            ? $processValue
+            : ((is_string($_ENV[$key] ?? null) && trim((string) $_ENV[$key]) !== '')
+                ? (string) $_ENV[$key]
+                : ((is_string($serverValue) && trim($serverValue) !== '')
+                    ? $serverValue
+                    : ((is_string($apacheValue) && trim($apacheValue) !== '')
+                        ? $apacheValue
+                        : (string) ($GLOBALS['env'][$key] ?? $default))));
     }
     return trim($value);
 }
@@ -13,7 +24,7 @@ function sendFlexibleMessage(string $recipient, string $subject, string $html, s
 {
     $url = flexibleMailConfig('GOOGLE_APPS_SCRIPT_URL');
     if ($url === '') {
-        throw new RuntimeException('ยังไม่ได้ตั้งค่า GOOGLE_APPS_SCRIPT_URL ใน Environment Variables');
+        throw new RuntimeException('เว็บแอปที่กำลังรันอ่าน GOOGLE_APPS_SCRIPT_URL ไม่พบ กรุณา Save Changes และ Deploy/Restart Render Web Service ที่ใช้งานอยู่');
     }
     $urlParts = parse_url($url);
     if (!is_array($urlParts)
