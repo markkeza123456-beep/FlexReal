@@ -879,6 +879,58 @@ function formatActivityDate(value) {
 
 document.addEventListener('DOMContentLoaded', () => {
   applyParentProfile(loadParent());
+  const addChildId = document.getElementById('parentAddChildId');
+  const addChildPinDigits = [...document.querySelectorAll('#parentAddChildPinWrap .parent-add-child-pin-digit')];
+  addChildId?.addEventListener('input', () => { addChildId.value = addChildId.value.replace(/\D/g, '').slice(0, 13); });
+  addChildPinDigits.forEach((input, index) => {
+    input.addEventListener('input', () => {
+      input.value = input.value.replace(/\D/g, '').slice(-1);
+      if (input.value && index < addChildPinDigits.length - 1) addChildPinDigits[index + 1].focus();
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Backspace' && !input.value && index > 0) addChildPinDigits[index - 1].focus();
+    });
+    input.addEventListener('paste', (event) => {
+      event.preventDefault();
+      const pasted = (event.clipboardData?.getData('text') || '').replace(/\D/g, '').slice(0, 6);
+      pasted.split('').forEach((digit, digitIndex) => { if (addChildPinDigits[digitIndex]) addChildPinDigits[digitIndex].value = digit; });
+      addChildPinDigits[Math.min(pasted.length, addChildPinDigits.length - 1)]?.focus();
+    });
+  });
+  document.getElementById('parentAddChildBtn')?.addEventListener('click', async () => {
+    const button = document.getElementById('parentAddChildBtn');
+    const feedback = document.getElementById('parentAddChildFeedback');
+    const studentId = addChildId?.value.trim() || '';
+    const pin = addChildPinDigits.map((input) => input.value).join('');
+    feedback.textContent = '';
+    feedback.className = '';
+    if (!/^\d{13}$/.test(studentId) || !/^\d{6}$/.test(pin)) {
+      feedback.textContent = 'กรุณากรอกรหัสบัตรประชาชน 13 หลักและ PIN 6 หลักให้ครบ';
+      feedback.classList.add('is-error');
+      return;
+    }
+    button.disabled = true;
+    try {
+      const body = new FormData();
+      body.append('student_id', studentId);
+      body.append('student_pin', pin);
+      body.append('csrf_token', document.getElementById('parentAddChildCsrf')?.value || '');
+      const response = await fetch('parent_add_child.php', { method: 'POST', body, credentials: 'same-origin', headers: { Accept: 'application/json' } });
+      const result = await response.json();
+      feedback.textContent = result.message || 'เพิ่มนักเรียนไม่สำเร็จ';
+      feedback.classList.toggle('is-error', !result.success);
+      if (result.success) {
+        addChildId.value = '';
+        addChildPinDigits.forEach((input) => { input.value = ''; });
+        await loadDashboardData();
+      }
+    } catch (error) {
+      feedback.textContent = 'เชื่อมต่อระบบไม่ได้ กรุณาลองใหม่';
+      feedback.classList.add('is-error');
+    } finally {
+      button.disabled = false;
+    }
+  });
   document.getElementById('overviewCourseSearch')?.addEventListener('input', renderOverviewCourseTable);
   document.getElementById('overviewCourseBody')?.addEventListener('click', event => {
     const button = event.target.closest('.view-quiz-details-btn');

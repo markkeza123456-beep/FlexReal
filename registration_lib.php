@@ -2,6 +2,7 @@
 
 function validateRegistrationPayload(PDO $conn, array $post): array
 {
+    $conn->exec('ALTER TABLE public.students ADD COLUMN IF NOT EXISTS pin_hash TEXT');
     $role = strtolower(trim((string) ($post['role'] ?? '')));
     $userId = str_replace(['-', ' ', "\t", "\r", "\n"], '', trim((string) ($post['userid'] ?? '')));
     $password = (string) ($post['password'] ?? '');
@@ -17,6 +18,8 @@ function validateRegistrationPayload(PDO $conn, array $post): array
     $district = trim((string) ($post['amphoe'] ?? ''));
     $province = trim((string) ($post['province'] ?? ''));
     $postalCode = preg_replace('/\D+/', '', (string) ($post['zipcode'] ?? ''));
+    $studentPin = trim((string) ($post['student_pin'] ?? ''));
+    $linkedStudentPin = trim((string) ($post['link_student_pin'] ?? ''));
 
     if (!in_array($role, ['student', 'teacher', 'parent'], true)) throw new RuntimeException('กรุณาเลือกบทบาทสมาชิกให้ถูกต้อง');
     if (!preg_match('/^[0-9]{13}$/', $userId)) throw new RuntimeException('เลขบัตรประชาชนต้องมีตัวเลข 13 หลัก');
@@ -27,11 +30,16 @@ function validateRegistrationPayload(PDO $conn, array $post): array
     if (!preg_match('/^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9]{8,15}$/', $password)) throw new RuntimeException('รหัสผ่านต้องมีตัวอักษรภาษาอังกฤษและตัวเลข 8-15 ตัว');
     if ($password !== (string) ($post['confirm'] ?? '')) throw new RuntimeException('รหัสผ่านไม่ตรงกัน');
     if ($role === 'student' && $level === '') throw new RuntimeException('กรุณาเลือกระดับชั้น');
+    if ($role === 'student' && !preg_match('/^[0-9]{6}$/', $studentPin)) throw new RuntimeException('กรุณาตั้ง PIN นักเรียน 6 หลัก');
     if ($role === 'parent' && $studentId !== '' && !preg_match('/^[0-9]{13}$/', $studentId)) throw new RuntimeException('เลขประจำตัวนักเรียนต้องมี 13 หลัก');
     if ($role === 'parent' && $studentId !== '') {
-        $studentCheck = $conn->prepare('SELECT 1 FROM public.students WHERE user_id = :id');
+        if (!preg_match('/^[0-9]{6}$/', $linkedStudentPin)) throw new RuntimeException('กรุณากรอก PIN นักเรียน 6 หลัก');
+        $studentCheck = $conn->prepare('SELECT pin_hash, parent_user_id FROM public.students WHERE user_id = :id');
         $studentCheck->execute([':id' => $studentId]);
-        if (!$studentCheck->fetchColumn()) throw new RuntimeException('ไม่พบนักเรียนที่ต้องการเชื่อมโยง');
+        $linkedStudent = $studentCheck->fetch(PDO::FETCH_ASSOC);
+        if (!$linkedStudent) throw new RuntimeException('ไม่พบนักเรียนที่ต้องการเชื่อมโยง');
+        if (empty($linkedStudent['pin_hash']) || !password_verify($linkedStudentPin, (string) $linkedStudent['pin_hash'])) throw new RuntimeException('PIN นักเรียนไม่ถูกต้อง หรือยังไม่ได้ตั้ง PIN');
+        if (!empty($linkedStudent['parent_user_id'])) throw new RuntimeException('นักเรียนคนนี้เชื่อมโยงกับผู้ปกครองแล้ว');
     }
 
     $idCheck = $conn->prepare('SELECT 1 FROM public.users WHERE user_id = :id');
@@ -61,7 +69,9 @@ function validateRegistrationPayload(PDO $conn, array $post): array
         'email' => $email,
         'phone' => $phone,
         'level' => $level,
+        'student_pin_hash' => $role === 'student' ? password_hash($studentPin, PASSWORD_DEFAULT) : null,
         'link_student_id' => $studentId,
+        'link_student_pin' => $linkedStudentPin,
         'house' => $address,
         'tambon' => $subdistrict,
         'amphoe' => $district,
@@ -79,17 +89,20 @@ function createRegisteredUser(PDO $conn, array $data): void
             ->execute([':id' => $data['user_id'], ':password_hash' => $data['password_hash'], ':role' => $data['role']]);
 
         if ($data['role'] === 'student') {
-            $conn->prepare('INSERT INTO public.students (user_id, full_name, email, phone, student_level) VALUES (:id, :name, :email, :phone, :level)')
-                ->execute([':id' => $data['user_id'], ':name' => $data['full_name'], ':email' => $data['email'], ':phone' => $data['phone'] ?: null, ':level' => $data['level']]);
+            $conn->prepare('INSERT INTO public.students (user_id, full_name, email, phone, student_level, pin_hash) VALUES (:id, :name, :email, :phone, :level, :pin_hash)')
+                ->execute([':id' => $data['user_id'], ':name' => $data['full_name'], ':email' => $data['email'], ':phone' => $data['phone'] ?: null, ':level' => $data['level'], ':pin_hash' => $data['student_pin_hash']]);
             if ($data['level'] !== '') assignCurriculumAndEnrollRequiredSubjects($conn, $data['user_id'], $data['level']);
         } elseif ($data['role'] === 'teacher') {
             $conn->prepare('INSERT INTO public.teachers (user_id, full_name, email, phone) VALUES (:id, :name, :email, :phone)')
                 ->execute([':id' => $data['user_id'], ':name' => $data['full_name'], ':email' => $data['email'], ':phone' => $data['phone'] ?: null]);
         } else {
             if ($data['link_student_id'] !== '') {
-                $studentCheck = $conn->prepare('SELECT 1 FROM public.students WHERE user_id = :id FOR UPDATE');
+                $studentCheck = $conn->prepare('SELECT pin_hash, parent_user_id FROM public.students WHERE user_id = :id FOR UPDATE');
                 $studentCheck->execute([':id' => $data['link_student_id']]);
-                if (!$studentCheck->fetchColumn()) throw new RuntimeException('ไม่พบนักเรียนที่ต้องการเชื่อมโยง');
+                $linkedStudent = $studentCheck->fetch(PDO::FETCH_ASSOC);
+                if (!$linkedStudent) throw new RuntimeException('ไม่พบนักเรียนที่ต้องการเชื่อมโยง');
+                if (empty($linkedStudent['pin_hash']) || !password_verify((string) $data['link_student_pin'], (string) $linkedStudent['pin_hash'])) throw new RuntimeException('PIN นักเรียนไม่ถูกต้อง หรือยังไม่ได้ตั้ง PIN');
+                if (!empty($linkedStudent['parent_user_id'])) throw new RuntimeException('นักเรียนคนนี้เชื่อมโยงกับผู้ปกครองแล้ว');
             }
             $conn->prepare('INSERT INTO public.parents (user_id, full_name, email, phone) VALUES (:id, :name, :email, :phone)')
                 ->execute([':id' => $data['user_id'], ':name' => $data['full_name'], ':email' => $data['email'], ':phone' => $data['phone'] ?: null]);

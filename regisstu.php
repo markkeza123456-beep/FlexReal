@@ -34,7 +34,7 @@ try {
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/regisstu.css?v=20261021-registration-password-toggle" />
   <link rel="stylesheet" href="assets/css/login.css?v=20261021-brighter-success-green" />
-  <link rel="stylesheet" href="assets/css/regisstu.css?v=20261021-login-shared-background" />
+  <link rel="stylesheet" href="assets/css/regisstu.css?v=20261022-parent-pin-left" />
   <link rel="stylesheet" href="assets/css/login.css?v=20261021-brighter-success-green" />
     <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-sidebar-menu-fix">
   <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2" />
@@ -132,6 +132,16 @@ try {
             </div>
             <span class="error-msg" id="link-student-id-error"></span>
           </div>
+          <div class="field" id="field-link-student-pin">
+            <label class="label" for="parentPinWrap">PIN 6 หลักของนักเรียน<span class="required">*</span></label>
+            <div class="pin-wrap" id="parentPinWrap" aria-label="PIN นักเรียน 6 หลัก">
+              <?php for ($pinDigit = 1; $pinDigit <= 6; $pinDigit++): ?>
+                <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" autocomplete="one-time-code" aria-label="ตัวเลข PIN หลักที่ <?= $pinDigit ?>" />
+              <?php endfor; ?>
+            </div>
+            <input type="hidden" id="link_student_pin" name="link_student_pin" />
+            <span class="error-msg" id="link-student-pin-error"></span>
+          </div>
         </div>
 
         <div class="section-label">ข้อมูลติดต่อ</div>
@@ -221,8 +231,8 @@ try {
         </div>
 
         <div class="role-field student-field" id="pin-section">
-          <div class="section-label">ตั้ง PIN สำหรับผู้ปกครอง</div>
-          <div class="field"><label class="label" for="student_pin">PIN 6 หลัก</label><div class="input-wrap"><input type="password" name="student_pin" id="student_pin" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" /><button type="button" class="toggle-pw" data-toggle-password="student_pin" aria-label="แสดง PIN" title="แสดง PIN"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m3 3 18 18"/></svg></button><span class="focus-bar"></span></div></div>
+          <div class="section-label">ตั้ง PIN นักเรียน</div>
+          <div class="field"><label class="label" for="student_pin">PIN 6 หลัก<span class="required">*</span></label><div class="input-wrap"><input type="password" name="student_pin" id="student_pin" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required autocomplete="new-password" /><button type="button" class="toggle-pw" data-toggle-password="student_pin" aria-label="แสดง PIN" title="แสดง PIN"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m3 3 18 18"/></svg></button><span class="focus-bar"></span></div></div>
         </div>
 
         <button type="submit" class="btn-submit" id="submitBtn">
@@ -236,7 +246,7 @@ try {
   </div>
   <div class="toast" id="toast"></div>
   <script src="assets/js/thai-address.js?v=20261022-cascading-search"></script>
-  <script src="assets/js/regisstu.js?v=20261021-registration-password-toggle"></script>
+  <script src="assets/js/regisstu.js?v=20261022-student-pin-storage"></script>
 <script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>

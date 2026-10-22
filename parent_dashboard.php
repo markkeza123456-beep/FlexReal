@@ -1,5 +1,7 @@
 <?php
 if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+$parentCsrfToken = (string) ($_SESSION['parent_csrf_token'] ?? bin2hex(random_bytes(32)));
+$_SESSION['parent_csrf_token'] = $parentCsrfToken;
 $profileRole = strtolower((string) ($_SESSION['role'] ?? ''));
 $profileContactReadonly = $profileRole === 'staff' ? '' : 'readonly';
 if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location: login.php'); exit; }
@@ -13,7 +15,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Orbitron:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <link rel="stylesheet" href="assets/vendor/tabler-icons/tabler-icons.min.css?v=2.47.0-local" />
   <link rel="stylesheet" href="assets/css/parent_dashboard.css?v=20261021-profile-two-column-fields" />
   <style>
 
@@ -58,7 +60,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
     .settings-label { font-size: 12px; color: var(--text-muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
     .settings-input {
       box-sizing: border-box; background: var(--bg3); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text-primary);
+      border-radius: 10px; padding: 9px 12px; color: var(--text-primary);
       font-family: 'Kanit', sans-serif; font-size: 14px; line-height: normal; outline: none;
       transition: border-color .2s;
     }
@@ -92,6 +94,16 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
     }
     .btn-save-profile:hover { background: #284a80; border-color: #284a80; transform: translateY(-1px); }
     .btn-save-profile:disabled { opacity: .5; cursor: not-allowed; }
+    .parent-add-child > p { margin:0 0 12px; color:var(--text-muted); font-size:12px; }
+    .parent-add-child .settings-row { margin-top:10px; }
+    .parent-add-child-pin { display:flex; align-items:center; gap:8px; min-height:40px; }
+    .parent-add-child-pin-digit { width:38px; height:42px; padding:0; border:1px solid var(--border); border-radius:8px; background:var(--bg3); color:var(--text-primary); font:600 17px 'Kanit',sans-serif; text-align:center; outline:none; }
+    .parent-add-child-pin-digit:focus { border-color:var(--brand-400); box-shadow:0 0 0 3px rgba(var(--brand-400-rgb),.15); }
+    @media (max-width:420px) { .parent-add-child-pin { gap:6px; } .parent-add-child-pin-digit { width:34px; height:40px; } }
+    #parentAddChildFeedback { display:none; margin-top:10px; color:#16804a; font-size:12px; }
+    #parentAddChildFeedback:not(:empty) { display:block; }
+    #parentAddChildFeedback.is-error { color:#b42318; }
+    .parent-add-child .btn-save-profile { margin-top:12px; }
     .btn-logout { display:flex; align-items:center; gap:10px; margin:0 12px 12px; padding:10px 12px; border-radius:8px; color:var(--text-muted); text-decoration:none; font-size:13px; transition:background .18s,color .18s; }
     .btn-logout:hover { background:rgba(239,68,68,.08); color:#ef4444; }
     .btn-logout:focus-visible { outline:3px solid rgba(var(--brand-400-rgb),.35); outline-offset:2px; }
@@ -346,6 +358,21 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
           <button class="btn-save-profile" id="saveProfileBtn" onclick="saveProfile()">
             <i class="ti ti-device-floppy"></i> บันทึกข้อมูล
           </button>
+
+        </div>
+
+        <div class="card settings-card parent-add-child" aria-labelledby="addChildTitle">
+          <div class="card-title" id="addChildTitle"><i class="ti ti-user-plus"></i> เพิ่มบุตรหลาน</div>
+          <p>กรอกรหัสบัตรประชาชนและ PIN 6 หลักของนักเรียนเพื่อเชื่อมโยงบัญชี</p>
+          <input type="hidden" id="parentAddChildCsrf" value="<?= htmlspecialchars($parentCsrfToken, ENT_QUOTES, 'UTF-8') ?>">
+          <div class="settings-row">
+            <div class="settings-field"><label class="settings-label" for="parentAddChildId">รหัสบัตรประชาชนนักเรียน</label><input class="settings-input" id="parentAddChildId" inputmode="numeric" autocomplete="off" maxlength="13" placeholder="เลข 13 หลัก"></div>
+            <div class="settings-field"><label class="settings-label" for="parentAddChildPinWrap">PIN นักเรียน</label><div class="parent-add-child-pin" id="parentAddChildPinWrap" aria-label="PIN นักเรียน 6 หลัก">
+              <?php for ($pinDigit = 1; $pinDigit <= 6; $pinDigit++): ?><input class="parent-add-child-pin-digit" type="password" inputmode="numeric" maxlength="1" pattern="[0-9]" autocomplete="one-time-code" aria-label="ตัวเลข PIN หลักที่ <?= $pinDigit ?>"><?php endfor; ?>
+            </div></div>
+          </div>
+          <div id="parentAddChildFeedback" role="status" aria-live="polite"></div>
+          <button class="btn-save-profile" id="parentAddChildBtn" type="button"><i class="ti ti-user-plus"></i> เพิ่มนักเรียน</button>
         </div>
 
         <div class="card settings-card password-settings-card">
@@ -426,7 +453,7 @@ if (empty($_SESSION['user_id']) || $profileRole !== 'parent') { header('Location
   </div>
 </div>
 
-  <script src="assets/js/parent_dashboard.js?v=20261021-subject-type-badges"></script>
+  <script src="assets/js/parent_dashboard.js?v=20261022-parent-add-pin-boxes"></script>
 <script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>

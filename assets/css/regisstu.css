@@ -493,6 +493,7 @@ body {
   justify-content: flex-start;
   gap: 10px;
 }
+#parent-link-section .pin-wrap { justify-content: flex-start; }
 .pin-digit {
   width: 54px;
   height: 58px;
