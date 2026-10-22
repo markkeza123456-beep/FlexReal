@@ -59,10 +59,6 @@ function escapeHtml(text) {
 }
 
 function normalizeSubjectType(value) {
-    const normalized = String(value || '').trim().toLowerCase();
-    if (['required', 'compulsory', 'mandatory', 'บังคับ', 'วิชาบังคับ'].includes(normalized)) return 'required';
-    if (['elective', 'optional', 'เลือก', 'วิชาเลือก'].includes(normalized)) return 'elective';
-    return '';
     const normalized = String(value ?? '').trim().toLowerCase();
     if (['required', 'compulsory'].includes(normalized)) return 'required';
     if (normalized === 'elective') return 'elective';
@@ -975,7 +971,6 @@ function createCourseCardMarkup(course) {
     const subjectDesc = 'คลิกเพื่อดูรายละเอียด';
     const subjectType = normalizeSubjectType(pick(course, 'subject_type', 'type'));
     const isEnrolled = isTruthy(pick(course, 'is_enrolled', 'Is_Enrolled'));
-    const tagText = subjectType === 'required' ? 'วิชาบังคับ' : subjectType === 'elective' ? 'วิชาเลือก' : '';
     const tagText = subjectType === 'required' ? 'วิชาบังคับ' : subjectType === 'elective' ? 'วิชาเลือก' : 'ยังไม่ได้กำหนดประเภท';
     const tagClass = subjectType || 'unknown';
     const statusText = isEnrolled ? 'ลงทะเบียนแล้ว' : 'ยังไม่ลงทะเบียน';
@@ -986,7 +981,6 @@ function createCourseCardMarkup(course) {
         <a class="card" href="index.php?subject_id=${encodeURIComponent(subjectId)}">
             <img src="${escapeHtml(imageUrl)}" data-fallback="${escapeHtml(fallbackImageUrl)}" onerror="handleCourseImageError(this)" alt="ภาพประกอบวิชา ${escapeHtml(subjectName)}" loading="lazy">
             <div class="card-content">
-                ${tagText ? `<span class="card-tag ${subjectType}">${tagText}</span>` : ''}
                 <span class="card-tag ${tagClass}">${tagText}</span>
                 <h3>${escapeHtml(subjectName)}</h3>
                 <p>${escapeHtml(subjectDesc)}</p>

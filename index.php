@@ -25,9 +25,6 @@ function hubCard(array $course): string {
     $id = (string) ($course['course_id'] ?? '');
     $name = (string) ($course['name'] ?? '');
     $image = hubCourseImagePath($course);
-    $subjectType = strtolower(trim((string) ($course['subject_type'] ?? '')));
-    $type = in_array($subjectType, ['compulsory', 'required', 'mandatory', 'บังคับ', 'วิชาบังคับ'], true) ? 'required' : 'elective';
-    $tag = $subjectType === '' ? '' : ($type === 'required' ? 'วิชาบังคับ' : 'วิชาเลือก');
     $type = in_array(($course['subject_type'] ?? ''), ['compulsory', 'required'], true) ? 'required' : (($course['subject_type'] ?? '') === 'elective' ? 'elective' : 'unknown');
     $tag = $type === 'required' ? 'วิชาบังคับ' : ($type === 'elective' ? 'วิชาเลือก' : 'ยังไม่ได้กำหนดประเภท');
     $status = !empty($course['is_enrolled']) ? 'ลงทะเบียนแล้ว' : 'ยังไม่ลงทะเบียน';
@@ -62,7 +59,7 @@ $hubInstructors = [];
 $hubLoadError = false;
 try {
     require_once __DIR__ . '/config/db.php';
-    $courseSql = "SELECT c.course_id, c.code, c.name, c.description, c.image_path, CASE WHEN LOWER(TRIM(COALESCE(cc.requirement_type, c.subject_type, ''))) IN ('required', 'compulsory', 'mandatory', 'บังคับ', 'วิชาบังคับ') THEN 'compulsory' WHEN LOWER(TRIM(COALESCE(cc.requirement_type, c.subject_type, ''))) IN ('elective', 'optional', 'เลือก', 'วิชาเลือก') THEN 'elective' ELSE NULL END AS subject_type, (cc.course_id IS NOT NULL) AS in_curriculum, (sc.course_id IS NOT NULL) AS is_enrolled FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id AND sc.status = 'active' WHERE c.status = 'active' ORDER BY (cc.course_id IS NULL), c.name";
+    $courseSql = "SELECT c.course_id, c.code, c.name, c.description, c.image_path, CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' ELSE NULL END AS subject_type, (cc.course_id IS NOT NULL) AS in_curriculum, (sc.course_id IS NOT NULL) AS is_enrolled FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id AND sc.status = 'active' WHERE c.status = 'active' ORDER BY (cc.course_id IS NULL), c.name";
     $courseStatement = $conn->prepare($courseSql);
     $studentIdForQuery = $hubRole === 'student' ? $hubUserId : '';
     $courseStatement->execute([':student_id' => $studentIdForQuery]);
@@ -71,7 +68,7 @@ try {
     $requestedCourse = trim((string) ($_GET['subject_id'] ?? ''));
     if ($requestedCourse === '' && isset($_GET['course'])) $requestedCourse = trim((string) $_GET['course']);
     if ($requestedCourse !== '') {
-        $detailStatement = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, c.image_path, c.credits, CASE WHEN LOWER(TRIM(COALESCE(cc.requirement_type, c.subject_type, ''))) IN ('required', 'compulsory', 'mandatory', 'บังคับ', 'วิชาบังคับ') THEN 'compulsory' WHEN LOWER(TRIM(COALESCE(cc.requirement_type, c.subject_type, ''))) IN ('elective', 'optional', 'เลือก', 'วิชาเลือก') THEN 'elective' ELSE NULL END AS subject_type, (sc.course_id IS NOT NULL) AS is_enrolled FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id AND sc.status = 'active' WHERE c.status = 'active' AND c.course_id::text = :id LIMIT 1");
+        $detailStatement = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, c.image_path, c.credits, CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' ELSE NULL END AS subject_type, (sc.course_id IS NOT NULL) AS is_enrolled FROM public.courses c LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id AND sc.status = 'active' WHERE c.status = 'active' AND c.course_id::text = :id LIMIT 1");
         $detailStatement->execute([':student_id' => $studentIdForQuery, ':id' => $requestedCourse]);
         $hubCourse = $detailStatement->fetch(PDO::FETCH_ASSOC) ?: null;
         if ($hubCourse) {
@@ -104,8 +101,6 @@ $hubDetailActive = $hubCourse !== null;
 $hubClientCourses = array_map(static fn(array $course): array => [
     'course_id' => $course['course_id'] ?? '',
     'name' => $course['name'] ?? '',
-    'subject_type' => $course['subject_type'] ?? null,
-    'image_path' => $course['image_path'] ?? '',
     'is_enrolled' => $course['is_enrolled'] ?? false,
 ], $hubCourses);
 $hubClientCourse = $hubCourse ? [
@@ -370,7 +365,7 @@ $hubClientCourse = $hubCourse ? [
 </footer>
 
 <script>window.FLEXREAL_INITIAL = <?= json_encode(['courses' => $hubClientCourses, 'course' => $hubClientCourse, 'lessons' => $hubLessons, 'instructors' => $hubInstructors], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;</script>
-<script src="assets/js/web.js?v=20261022-course-type-labels"></script>
+<script src="assets/js/web.js?v=20261022-mobile-login-topline"></script>
 
 </body>
 </html>
