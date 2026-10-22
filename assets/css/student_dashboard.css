@@ -448,14 +448,17 @@ body { font-family: 'Kanit', sans-serif; background-color: var(--bg-dark); color
 .data-table th:nth-child(2), .data-table td:nth-child(2) { width:36%; padding-right:36px; }
 .data-table th:nth-child(3), .data-table td:nth-child(3) { width:24%; padding-left:28px; }
 .course-progress-table { width:100%; table-layout:fixed; min-width:680px; }
-.course-progress-table .course-col-number { width:12.5%; }
+.course-progress-table .course-col-number { width:12%; }
 .course-progress-table .course-col-name { width:38%; }
 .course-progress-table .course-col-progress { width:23%; }
-.course-progress-table .course-col-result { width:26.5%; }
+.course-progress-table .course-col-result { width:27%; }
 .course-progress-table th,
-.course-progress-table td { padding-left:12px; padding-right:12px; text-align:left; }
-.course-progress-table th:nth-child(2), .course-progress-table td:nth-child(2),
-.course-progress-table th:nth-child(3), .course-progress-table td:nth-child(3) { width:auto; }
+.course-progress-table td {
+  width:auto;
+  padding:12px;
+  text-align:left;
+  vertical-align:middle;
+}
 .data-table tbody tr:hover td { background:var(--bg3); }
 .lesson-card { border:1px solid var(--border); border-radius:var(--radius-sm); padding:18px; transition:border-color .18s,transform .18s; }
 .lesson-card:hover { border-color: var(--brand-400); transform:translateY(-1px); }
