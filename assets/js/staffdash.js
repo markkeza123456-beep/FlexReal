@@ -498,9 +498,7 @@
           <td>
             <div class="action-btns">
               <button type="button" class="btn-icon edit" onclick="editMember('${member.id}')">แก้ไข</button>
-              ${member.status === 'inactive'
-                ? `<button type="button" class="btn-icon edit" onclick="restoreMember('${escapeHtml(member.id)}')">เปิดใช้งาน</button><button type="button" class="btn-icon del" onclick="permanentlyDeleteMember('${escapeHtml(member.id)}')">ลบ</button>`
-                : `<button type="button" class="btn-icon del" onclick="deleteMember('${escapeHtml(member.id)}')">ระงับ</button>`}
+              <button type="button" class="btn-icon del" onclick="deleteMember('${escapeHtml(member.id)}')">ลบถาวร</button>
             </div>
           </td>
         </tr>
@@ -571,38 +569,23 @@
   });
 
   window.deleteMember = id => {
-    openModal('ระงับบัญชี', 'บัญชีนี้จะเข้าสถานะระงับและข้อมูลประวัติจะยังคงอยู่ ยืนยันหรือไม่?', async () => {
+    openModal('ลบบัญชีถาวร', 'บัญชีนี้และข้อมูลที่เกี่ยวข้องจะถูกลบออกจากระบบอย่างถาวร ยืนยันหรือไม่?', async () => {
       const formData = new FormData();
       formData.append('action', 'deleteMember');
       formData.append('id', id);
 
       try {
         await fetchJson('api_staff.php', { method: 'POST', body: formData });
-        showToast('ระงับบัญชีเรียบร้อย', 'success');
+        showToast('ลบบัญชีเรียบร้อย', 'success');
         await loadData();
       } catch (error) {
-        showToast(error.message || 'ไม่สามารถระงับบัญชีได้', 'error');
-      }
-    });
-  };
-
-  window.restoreMember = id => {
-    openModal('เปิดใช้งานบัญชี', 'ยืนยันเปิดใช้งานบัญชีนี้อีกครั้งหรือไม่?', async () => {
-      const formData = new FormData();
-      formData.append('action', 'restoreMember');
-      formData.append('id', id);
-      try {
-        await fetchJson('api_staff.php', { method: 'POST', body: formData });
-        showToast('เปิดใช้งานบัญชีเรียบร้อย', 'success');
-        await loadData();
-      } catch (error) {
-        showToast(error.message || 'ไม่สามารถเปิดใช้งานบัญชีได้', 'error');
+        showToast(error.message || 'ไม่สามารถลบบัญชีได้', 'error');
       }
     });
   };
 
   window.permanentlyDeleteMember = id => {
-    openModal('ลบบัญชีถาวร', 'ยืนยันการลบผู้ใช้งานคนนี้อย่างถาวรหรือไม่? ข้อมูลที่เกี่ยวข้องกับบัญชีอาจถูกลบด้วย', async () => {
+    openModal('ลบบัญชีถาวร', 'บัญชีและข้อมูลทั้งหมดที่อ้างถึงจะถูกลบถาวร ยืนยันหรือไม่?', async () => {
       const formData = new FormData();
       formData.append('action', 'permanentlyDeleteMember');
       formData.append('id', id);
