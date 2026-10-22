@@ -1128,5 +1128,10 @@ body.learning-guide-open { min-width: 0; overflow-x: hidden; }
   body.landing-page .navbar.is-open .nav-links { display:flex; }
   body.landing-page .navbar .nav-home-link, body.landing-page .navbar .dropdown, body.landing-page .navbar #loginBtn { width:100%; justify-self:stretch; }
   body.landing-page .navbar .nav-home-link, body.landing-page .navbar #loginBtn { min-height:44px; display:flex; align-items:center; }
-  body.landing-page .navbar .user-profile-wrap { position:absolute; top:8px; right:12px; width:auto; max-width:48px; grid-column:auto; justify-self:auto; }
+  body.landing-page .navbar .dropdown { display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; }
+  body.landing-page .navbar .dropdown .dropbtn { width:100%; min-height:44px; display:flex; align-items:center; justify-content:space-between; text-align:left; }
+  body.landing-page .navbar .dropdown .dropdown-content { position:static; width:100%; max-width:none; margin:0 0 8px; }
+  body.landing-page .navbar .mobile-profile-slot { position:absolute; top:50%; right:12px; display:flex; align-items:center; transform:translateY(-50%); }
+  body.landing-page .navbar .mobile-profile-slot #loginBtn { display:inline-flex; width:auto; min-height:40px; padding:8px 18px; border:0; border-radius:10px; white-space:nowrap; }
+  body.landing-page .navbar .mobile-profile-slot .user-profile-wrap { position:static; top:auto; right:auto; width:auto; max-width:48px; grid-column:auto; justify-self:auto; }
 }
