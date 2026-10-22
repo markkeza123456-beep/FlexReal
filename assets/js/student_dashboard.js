@@ -468,7 +468,8 @@ document.getElementById('courseSearch')?.addEventListener('input', (e) => {
     renderTable(filtered);
 });
 
-showPage('dashboard');
+const initialPage = window.location.hash === '#settings' ? 'settings' : 'dashboard';
+showPage(initialPage);
 loadDashboardData().catch((error) => {
     const message = document.getElementById('dashboardLoadError');
     if (message) {

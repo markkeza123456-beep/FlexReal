@@ -273,7 +273,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
 
         </main>
     </div>
-    <script src="assets/js/student_dashboard.js?v=20261021-separated-password-card"></script>
+    <script src="assets/js/student_dashboard.js?v=20261022-profile-deep-link"></script>
     <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

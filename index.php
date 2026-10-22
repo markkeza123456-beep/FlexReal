@@ -116,7 +116,7 @@ $hubClientCourse = $hubCourse ? [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flexible Learning Hub</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="assets/css/web.css?v=20261021-subject-type-color-coding">
+    <link rel="stylesheet" href="assets/css/web.css?v=20261022-mobile-navbar-grid">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="assets/css/theme.css?v=20261021-user-sidebar-logo-left-nudge">
@@ -161,7 +161,7 @@ $hubClientCourse = $hubCourse ? [
                 <span id="userName">ผู้ใช้งาน</span>
             </button>
             <div id="userMenu" class="user-menu">
-                <a href="student_dashboard.php">ข้อมูลส่วนตัว</a>
+                <a href="student_dashboard.php#settings">ข้อมูลส่วนตัว</a>
                 <a href="logout.php?return=index.php">ออกจากระบบ</a>
             </div>
         </div>
@@ -361,7 +361,7 @@ $hubClientCourse = $hubCourse ? [
 </footer>
 
 <script>window.FLEXREAL_INITIAL = <?= json_encode(['courses' => $hubClientCourses, 'course' => $hubClientCourse, 'lessons' => $hubLessons, 'instructors' => $hubInstructors], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;</script>
-<script src="assets/js/web.js?v=20261022-unlimited-lessons"></script>
+<script src="assets/js/web.js?v=20261022-profile-link-settings"></script>
 
 </body>
 </html>
