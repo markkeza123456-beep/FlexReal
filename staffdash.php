@@ -58,7 +58,7 @@ if ($displayName !== '') {
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261021-profile-two-column-fields" />
+  <link rel="stylesheet" href="assets/css/staffdash.css?v=20261022-graduation-message-width" />
   <link rel="stylesheet" href="assets/css/theme.css?v=20261021-sidebar-header-background-only" />
     <link rel="stylesheet" href="assets/css/responsive.css">
   <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout" />
@@ -178,7 +178,7 @@ if ($displayName !== '') {
       </section>
 
 
-      <section class="page" id="page-curriculum-list">
+      <section class="page curriculum-list-page" id="page-curriculum-list">
         <div class="page-header">
           <div>
             <div class="page-title">รายการหลักสูตร</div>
@@ -214,7 +214,7 @@ if ($displayName !== '') {
       </section>
 
 
-      <section class="page" id="page-curriculum-add">
+      <section class="page curriculum-add-page" id="page-curriculum-add">
         <div class="page-header">
           <div>
             <div class="page-title" id="curriculumFormTitle">เพิ่มหลักสูตรใหม่</div>
@@ -313,7 +313,7 @@ if ($displayName !== '') {
       </section>
 
 
-      <section class="page" id="page-subject-list">
+      <section class="page subject-list-page" id="page-subject-list">
         <div class="page-header">
           <div>
             <div class="page-title">รายการรายวิชา</div>
@@ -326,9 +326,9 @@ if ($displayName !== '') {
             <span class="btn-text">เพิ่มรายวิชาใหม่</span>
           </button>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;margin:0 0 16px;flex-wrap:wrap;">
-          <label for="subjectCurriculumFilter" style="font-weight:600;color:var(--text);">กรองตามหลักสูตร</label>
-          <select id="subjectCurriculumFilter" class="form-input" style="width:min(420px,100%);">
+        <div class="subject-filter-toolbar">
+          <label for="subjectCurriculumFilter">กรองตามหลักสูตร</label>
+          <select id="subjectCurriculumFilter" class="subject-curriculum-select">
             <option value="">รายวิชาทั้งหมด</option>
           </select>
         </div>
@@ -355,7 +355,7 @@ if ($displayName !== '') {
       </section>
 
 
-      <section class="page" id="page-subject-add">
+      <section class="page subject-add-page" id="page-subject-add">
         <div class="page-header">
           <div>
             <div class="page-title" id="subjectFormTitle">เพิ่มรายวิชาใหม่</div>
@@ -637,7 +637,7 @@ if ($displayName !== '') {
       </section>
 
 
-      <section class="page" id="page-staff-add">
+      <section class="page staff-add-page" id="page-staff-add">
         <div class="page-header">
           <div>
             <div class="page-title">เพิ่มเจ้าหน้าที่</div>
@@ -676,16 +676,18 @@ if ($displayName !== '') {
           <div class="form-grid-2">
             <div class="form-field">
               <label class="form-label" for="stf-password">รหัสผ่าน <span class="req">*</span></label>
-              <div class="input-wrap">
+              <div class="input-wrap staff-password-input-wrap">
                 <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                 <input type="password" id="stf-password" placeholder="อย่างน้อย 6 ตัวอักษร" required />
+                <button type="button" class="staff-password-toggle" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน" onclick="toggleStaffPwd('stf-password', this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
               </div>
             </div>
             <div class="form-field">
               <label class="form-label" for="stf-password-confirm">ยืนยันรหัสผ่าน <span class="req">*</span></label>
-              <div class="input-wrap">
+              <div class="input-wrap staff-password-input-wrap">
                 <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                 <input type="password" id="stf-password-confirm" placeholder="ยืนยันรหัสผ่าน" required />
+                <button type="button" class="staff-password-toggle" aria-label="แสดงรหัสผ่าน" title="แสดงรหัสผ่าน" onclick="toggleStaffPwd('stf-password-confirm', this)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
               </div>
             </div>
           </div>
@@ -710,7 +712,7 @@ if ($displayName !== '') {
         </div>
       </section>
 
-      <section class="page" id="page-graduation-requests">
+      <section class="page graduation-requests-page" id="page-graduation-requests">
         <div class="page-header">
           <div>
             <div class="page-title">อนุมัติจบการศึกษา</div>
@@ -800,7 +802,7 @@ if ($displayName !== '') {
 
   <div class="toast" id="toast"></div>
 
-  <script src="assets/js/staffdash.js?v=20261021-profile-active-state"></script>
+  <script src="assets/js/staffdash.js?v=20261022-hide-graduation-title"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>

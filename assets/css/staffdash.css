@@ -242,6 +242,8 @@ body {
 .staff-password-title { margin-bottom: 2px; color: var(--text-muted); font-size: .82rem; font-weight: 600; }
 .staff-password-input-wrap { position: relative; display: block; }
 .staff-password-input-wrap .staff-profile-input { padding-right: 58px; }
+.staff-add-page .staff-password-input-wrap input { padding-right: 48px; }
+.staff-add-page .staff-password-toggle { z-index: 2; display: grid; width: 30px; height: 30px; place-items: center; padding: 0; }
 .staff-password-toggle { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); border: 0; background: transparent; color: var(--text-muted); font: inherit; font-size: .78rem; cursor: pointer; }
 .staff-password-toggle svg { display:block; width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 .staff-password-strength { display: block; margin-top: 6px; font-size: .72rem; color: var(--text-muted); }
@@ -599,6 +601,14 @@ body {
 .graduation-review-message { margin-bottom: 16px; color: var(--text-secondary); }
 .graduation-review-message[hidden] { display: none; }
 .graduation-request-list { display: grid; gap: 16px; }
+.graduation-requests-page > .page-header,
+.graduation-requests-page > .graduation-review-message,
+.graduation-requests-page > .graduation-request-list {
+  width: min(100%, 1000px);
+  margin-left: auto;
+  margin-right: auto;
+}
+.graduation-requests-page > .graduation-review-message { max-width: 1000px; }
 .graduation-request-card { display: grid; gap: 14px; }
 .graduation-request-heading, .graduation-request-actions { display:flex; align-items:center; justify-content:space-between; gap:14px; }
 .graduation-request-heading h2 { margin:0; font-size:1.05rem; }
@@ -615,6 +625,78 @@ body {
   background: var(--card); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 32px;
   max-width: 720px;
+}
+.curriculum-add-page > .page-header,
+.curriculum-add-page > .form-card,
+.subject-add-page > .page-header,
+.subject-add-page > .form-card,
+.staff-add-page > .page-header,
+.staff-add-page > .form-card {
+  width: min(100%, 1000px);
+  margin-left: auto;
+  margin-right: auto;
+}
+.main-wrap.curriculum-add-active > .content { padding-top: 0; }
+.curriculum-add-page { margin-top: 0; }
+.main-wrap.curriculum-add-active > .topbar { height: 52px; min-height: 52px; }
+.curriculum-add-page > .form-card,
+.subject-add-page > .form-card,
+.staff-add-page > .form-card { max-width: 1000px; }
+.subject-add-page #sf-description {
+  display: block;
+  width: 100%;
+  height: 128px;
+  padding: 13px 15px;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px;
+  color: var(--text-primary) !important;
+  font: 400 .9rem/1.6 'IBM Plex Sans Thai', sans-serif;
+  resize: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.subject-add-page #sf-description:focus {
+  border-color: var(--brand-400) !important;
+  box-shadow: 0 0 0 3px var(--orange-dim) !important;
+  outline: none;
+}
+.curriculum-list-page { padding-top: 12px; }
+.curriculum-list-page > .page-header > .btn-primary { margin-top: 12px; }
+.subject-list-page { padding-top: 12px; }
+.subject-list-page > .page-header > .btn-primary { margin-top: 12px; }
+.subject-filter-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+.subject-filter-toolbar label {
+  color: var(--text-secondary);
+  font-size: .9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.subject-curriculum-select {
+  width: min(420px, 100%);
+  min-height: 44px;
+  padding: 9px 42px 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  appearance: none;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  color: var(--text-primary);
+  font: 500 .92rem 'IBM Plex Sans Thai', sans-serif;
+  box-shadow: 0 1px 2px rgba(31, 41, 55, .05);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.subject-curriculum-select:hover { border-color: var(--brand-400); }
+.subject-curriculum-select:focus-visible {
+  outline: none;
+  border-color: var(--brand-400);
+  box-shadow: 0 0 0 3px var(--orange-dim);
 }
 .form-section-label {
   font-family: 'Orbitron', sans-serif;
