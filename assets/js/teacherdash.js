@@ -259,6 +259,38 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const quizModalOverlay = document.getElementById('quizModalOverlay');
+    document.querySelectorAll('.btn-save-quiz-duration').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const container = button.closest('div');
+            const hoursInput = container?.querySelector('.quiz-duration-hours');
+            const minutesInput = container?.querySelector('.quiz-duration-minutes');
+            const status = container?.querySelector('.quiz-duration-status');
+            const hours = Number(hoursInput?.value);
+            const minutes = Number(minutesInput?.value);
+            if (!Number.isInteger(hours) || !Number.isInteger(minutes) || hours < 0 || hours > 24 || minutes < 0 || minutes > 59 || hours * 60 + minutes < 1 || hours * 60 + minutes > 1440) {
+                if (status) status.textContent = 'เวลาสอบต้องอยู่ระหว่าง 1 นาทีถึง 24 ชั่วโมง';
+                return;
+            }
+            button.disabled = true;
+            if (status) status.textContent = 'กำลังบันทึก...';
+            const form = new FormData();
+            form.append('action', 'set_quiz_duration');
+            form.append('lesson_id', button.dataset.lessonId || '');
+            form.append('hours', String(hours));
+            form.append('minutes', String(minutes));
+            try {
+                const response = await fetch('teacher_api.php', { method: 'POST', body: form, credentials: 'same-origin' });
+                const result = await response.json();
+                if (!response.ok || result.success !== true) throw new Error(result.message || 'บันทึกเวลาไม่สำเร็จ');
+                if (status) status.textContent = `บันทึกแล้ว: ${Math.floor(result.duration_minutes / 60)} ชม. ${result.duration_minutes % 60} นาที`;
+            } catch (error) {
+                if (status) status.textContent = error.message || 'บันทึกเวลาไม่สำเร็จ';
+            } finally {
+                button.disabled = false;
+            }
+        });
+    });
+
     document.querySelectorAll('.btn-open-add-quiz').forEach(btn => {
         btn.addEventListener('click', () => {
             document.getElementById('quizTargetLessonId').value = btn.dataset.id;

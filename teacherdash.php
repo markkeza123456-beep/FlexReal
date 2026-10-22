@@ -143,7 +143,7 @@ $selectedSubject = $selectedSubjectId !== '' ? ($subjectMap[$selectedSubjectId] 
 $subLessonsBySubject = [];
 if (!empty($subjectIds)) {
     $lessonStmt = $conn->prepare('
-        SELECT l.lesson_id AS lessons_id, l.title AS lessons_name, l.study_hours, l.course_id AS subjects_id,
+        SELECT l.lesson_id AS lessons_id, l.title AS lessons_name, l.study_hours, l.quiz_duration_minutes, l.course_id AS subjects_id,
             COALESCE(l.updated_at, l.created_at) AS last_modified_at,
             COALESCE(lesson_editor.full_name, l.updated_by, \'ยังไม่มีข้อมูล\') AS lesson_editor_name,
             video_edit.last_modified_at AS video_last_modified_at,
@@ -169,6 +169,7 @@ if (!empty($subjectIds)) {
             'id' => $lessonRow['lessons_id'],
             'title' => $lessonRow['lessons_name'],
             'duration' => $lessonRow['study_hours'] > 0 ? $lessonRow['study_hours'] . ' ชั่วโมง' : 'ไม่ระบุเวลา',
+            'quiz_duration_minutes' => max(1, (int) ($lessonRow['quiz_duration_minutes'] ?? 60)),
             'last_modified_at' => $lessonRow['last_modified_at'],
             'lesson_editor_name' => $lessonRow['lesson_editor_name'],
             'video_last_modified_at' => $lessonRow['video_last_modified_at'],
@@ -784,6 +785,14 @@ $stats = [
                                 <span class="badge badge-draft"><?= count($lessonQuizzes) ?> ข้อ</span>
                             </summary>
                             <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:10px;">
+                                <?php $quizDurationMinutes = max(1, (int) ($lessonGroup['quiz_duration_minutes'] ?? 60)); ?>
+                                <div style="display:flex;flex-wrap:wrap;align-items:end;gap:8px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);">
+                                    <strong style="width:100%;font-size:13px;">กำหนดเวลาทำข้อสอบ</strong>
+                                    <label style="font-size:12px;">ชั่วโมง <input class="quiz-duration-hours" type="number" min="0" max="24" value="<?= intdiv($quizDurationMinutes, 60) ?>" style="width:72px;padding:7px;border:1px solid var(--border);border-radius:6px;"></label>
+                                    <label style="font-size:12px;">นาที <input class="quiz-duration-minutes" type="number" min="0" max="59" value="<?= $quizDurationMinutes % 60 ?>" style="width:72px;padding:7px;border:1px solid var(--border);border-radius:6px;"></label>
+                                    <button type="button" class="btn-save-quiz-duration" data-lesson-id="<?= h($lessonId) ?>" style="padding:8px 12px;">บันทึกเวลา</button>
+                                    <span class="quiz-duration-status" aria-live="polite" style="font-size:12px;color:var(--text-muted);"></span>
+                                </div>
                                 <button class="btn-open-add-quiz" data-id="<?= h($lessonId) ?>" data-name="<?= h($lessonGroup['title']) ?>" style="align-self:flex-start;"><span style="font-size:16px;line-height:1;">+</span> เพิ่มข้อสอบบทนี้</button>
                                 <?php if (empty($lessonQuizzes)): ?>
                                     <div style="padding:18px;color:var(--text-muted);font-size:13px;border:1px dashed var(--border);border-radius:8px;">ยังไม่มีข้อสอบในบทนี้</div>
@@ -1563,7 +1572,7 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-    <script src="assets/js/teacherdash.js?v=20261020-integer-question-scores"></script>
+    <script src="assets/js/teacherdash.js?v=20261022-quiz-duration-settings"></script>
 <script src="assets/js/responsive.js?v=20261021-responsive" defer></script>
 </body>
 </html>
