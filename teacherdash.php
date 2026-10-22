@@ -680,6 +680,8 @@ $stats = [
                                     <div class="form-group"><label>ชื่อบทเรียน *</label><input type="text" class="form-input" id="inlineLessonName" required placeholder="เช่น 1.1 ตรรกศาสตร์เบื้องต้น"></div>
                                     <div class="form-group"><label>เอกสารประกอบ (PDF)</label><div id="inlineExistingDocuments" style="display:none;margin:0 0 8px;font-size:13px;color:var(--text-muted);"></div><input type="file" class="form-input" id="inlineLessonDocument" accept="application/pdf,.pdf"><small id="inlineLessonDocumentHint" style="color:var(--text-muted);">เลือกไฟล์ PDF ใหม่เมื่อต้องการเพิ่มเอกสาร</small></div>
                                     <button type="button" class="btn-save" id="saveInlineLessonBtn">บันทึกบทเรียน</button>
+                                    <button type="button" class="btn-cancel" id="checkLessonStorageBtn">ตรวจสอบการตั้งค่า Storage</button>
+                                    <small id="lessonStorageStatus" role="status" style="display:block;margin-top:8px;color:var(--text-muted);"></small>
                                 </form>
                             </section>
 
@@ -838,6 +840,10 @@ $stats = [
                     <div class="form-group">
                         <label>เอกสารประกอบบทเรียน</label>
                         <input type="file" class="form-input" id="lessonDocument" accept="application/pdf,.pdf">
+                    </div>
+                    <div class="form-group">
+                        <label>วิดีโอบทเรียน (MP4)</label>
+                        <input type="file" class="form-input" id="lessonVideo" accept="video/mp4,.mp4">
                     </div>
                     <input type="hidden" id="lessonSubjectId" value="<?= h($defaultSubjectId) ?>">
                 </div>

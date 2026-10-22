@@ -167,10 +167,16 @@ function uploadLessonFile(string $fieldName, array $segments, string $prefix, bo
         throw new Exception($prefix === 'video' ? 'รองรับไฟล์วิดีโอ MP4 เท่านั้น' : 'เอกสารบทเรียนต้องเป็นไฟล์ PDF เท่านั้น');
     }
     if ($prefix === 'video' && (int) ($file['size'] ?? 0) <= 0) {
-        throw new Exception('ไฟล์วิดีโอว่างเปล่าหรืออ่านไม่ได้');
+        throw new Exception('ไฟล์ที่เลือกว่างเปล่าหรืออ่านไม่ได้');
     }
-    if ($prefix === 'video' && (int) ($file['size'] ?? 0) > phpSizeToBytes((string) ini_get('upload_max_filesize'))) {
-        throw new Exception('ไฟล์วิดีโอมีขนาดเกินขีดจำกัดของเซิร์ฟเวอร์');
+    $uploadLimit = phpSizeToBytes((string) ini_get('upload_max_filesize'));
+    if ($uploadLimit > 0 && (int) ($file['size'] ?? 0) > $uploadLimit) {
+        throw new Exception('ไฟล์มีขนาดเกิน upload_max_filesize ของ PHP (' . ini_get('upload_max_filesize') . ')');
+    }
+    if ($prefix !== 'video' && (int) ($file['size'] ?? 0) <= 0) throw new Exception('ไฟล์เอกสารว่างเปล่าหรืออ่านไม่ได้');
+    if ($prefix !== 'video') {
+        $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file($temporaryPath);
+        if ($mimeType !== 'application/pdf') throw new Exception('ไฟล์เอกสารไม่ใช่ PDF ที่ถูกต้อง');
     }
     if ($prefix === 'video') {
         $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file($temporaryPath);
@@ -214,7 +220,8 @@ function publishLessonMedia(string $localPath, string $mimeType): string
     $url = rtrim((string) ($env['SUPABASE_URL'] ?? $supabaseUrl ?? ''), '/');
     $key = trim((string) ($env['SUPABASE_SERVICE_ROLE_KEY'] ?? ''));
     $bucket = trim((string) ($env['SUPABASE_LESSON_BUCKET'] ?? 'lesson-media'));
-    if ($url === '' || $key === '') throw new RuntimeException('ยังไม่ได้ตั้งค่าไฟล์ส่วนกลาง: กรุณาเพิ่ม SUPABASE_SERVICE_ROLE_KEY ใน flexreal.env ซึ่งอยู่นอกโฟลเดอร์เว็บ แล้วรีสตาร์ต Apache');
+    if ($url === '' || str_contains($url, 'your_project_ref')) throw new RuntimeException('ไม่พบ SUPABASE_URL ที่ใช้งานได้ในค่าตั้งค่าฝั่งเซิร์ฟเวอร์ กรุณาตรวจสอบ flexreal.env และ FLEXREAL_ENV_FILE');
+    if ($key === '' || str_starts_with($key, 'replace_with_')) throw new RuntimeException('PHP อ่าน flexreal.env ได้ แต่ไม่พบ SUPABASE_SERVICE_ROLE_KEY ในค่าตั้งค่าที่มีผล กรุณาเพิ่ม Secret/Service Role Key จริงใน C:\\xampp\\config\\flexreal.env (หรือ FLEXREAL_ENV_FILE); ถ้าตั้งผ่านไฟล์จะมีผลในคำขอถัดไป ถ้าตั้งผ่าน Apache config ให้รีสตาร์ต Apache; ห้ามใส่คีย์ในหน้าเว็บ');
     // New Supabase secret keys (sb_secret_...) are API keys, not JWTs, so send
     // them only through the apikey header. Legacy service_role JWTs need both.
     $headers = ['apikey: ' . $key, 'Content-Type: application/json'];
@@ -333,6 +340,52 @@ function teacherOwnsQuiz(PDO $conn, string $teacherId, string $quizId): bool
 }
 
 try {
+    if ($action === 'check_storage_config') {
+        $storageKey = trim((string) ($env['SUPABASE_SERVICE_ROLE_KEY'] ?? ''));
+        $storageUrl = rtrim((string) ($env['SUPABASE_URL'] ?? $supabaseUrl ?? ''), '/');
+        $bucket = trim((string) ($env['SUPABASE_LESSON_BUCKET'] ?? 'lesson-media'));
+        $keyConfigured = $storageKey !== '' && !str_starts_with($storageKey, 'replace_with_');
+        $bucketStmt = $conn->prepare('SELECT public FROM storage.buckets WHERE id = :bucket LIMIT 1');
+        $bucketStmt->execute([':bucket' => $bucket]);
+        $bucketRow = $bucketStmt->fetch(PDO::FETCH_ASSOC);
+        $bucketExists = $bucketRow !== false;
+        $bucketPublic = $bucketExists ? filter_var($bucketRow['public'], FILTER_VALIDATE_BOOLEAN) : null;
+        $storageHttpStatus = null;
+        $storageApiAccepted = null;
+        $storageStatusMessage = 'ตั้งค่าไม่ครบ';
+        if (!$keyConfigured) {
+            $storageStatusMessage = 'PHP ไม่พบ SUPABASE_SERVICE_ROLE_KEY ใน flexreal.env หรือ Environment Variables ของ Apache';
+        } elseif ($storageUrl === '' || str_contains($storageUrl, 'your_project_ref')) {
+            $storageStatusMessage = 'SUPABASE_URL ไม่มีค่าหรือยังเป็นค่า placeholder';
+        } elseif (!$bucketExists) {
+            $storageStatusMessage = 'ไม่พบ bucket ' . $bucket . ' ใน Supabase Storage';
+        } else {
+            $headers = ['apikey: ' . $storageKey];
+            if (!str_starts_with($storageKey, 'sb_secret_')) $headers[] = 'Authorization: Bearer ' . $storageKey;
+            $probe = curl_init($storageUrl . '/storage/v1/bucket/' . rawurlencode($bucket));
+            curl_setopt_array($probe, [CURLOPT_HTTPHEADER => $headers, CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 8, CURLOPT_TIMEOUT => 15]);
+            $probeBody = curl_exec($probe);
+            $storageHttpStatus = (int) curl_getinfo($probe, CURLINFO_RESPONSE_CODE);
+            $probeError = curl_error($probe);
+            curl_close($probe);
+            $storageApiAccepted = $probeBody !== false && $storageHttpStatus >= 200 && $storageHttpStatus < 300;
+            $storageStatusMessage = $storageApiAccepted ? 'คีย์ได้รับการยอมรับและเข้าถึง bucket ได้' : ($storageHttpStatus ? 'Supabase ปฏิเสธการตรวจสอบ (HTTP ' . $storageHttpStatus . '); ตรวจสอบว่า URL และคีย์เป็นของโปรเจกต์เดียวกันและคีย์มีสิทธิ์ Storage' : 'เชื่อมต่อ Supabase Storage ไม่สำเร็จ: ' . $probeError);
+        }
+        echo json_encode([
+            'success' => true,
+            'status' => [
+                'url_configured' => $storageUrl !== '' && !str_contains($storageUrl, 'your_project_ref'),
+                'service_role_key_configured' => $keyConfigured,
+                'bucket' => $bucket,
+                'bucket_exists' => $bucketExists,
+                'bucket_public' => $bucketPublic,
+                'storage_api_accepted_key' => $storageApiAccepted,
+                'storage_http_status' => $storageHttpStatus,
+                'message' => $storageStatusMessage,
+            ],
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     ensureCourseWorkTables($conn);
     if ($action === 'get_course_work') {
         $subjectId = trim((string) ($_POST['subject_id'] ?? ''));
@@ -371,6 +424,15 @@ try {
             throw new Exception('รายวิชานี้มีบทเรียนครบ 3 บทแล้ว');
         }
 
+        // Reject PHP upload errors before creating the lesson row.
+        foreach (['lesson_document' => 'เอกสาร PDF', 'lesson_video' => 'วิดีโอ MP4'] as $uploadField => $label) {
+            $uploadError = (int) ($_FILES[$uploadField]['error'] ?? UPLOAD_ERR_NO_FILE);
+            if ($uploadError !== UPLOAD_ERR_OK && $uploadError !== UPLOAD_ERR_NO_FILE) {
+                if ($uploadError === UPLOAD_ERR_INI_SIZE || $uploadError === UPLOAD_ERR_FORM_SIZE) throw new Exception("{$label} มีขนาดเกินข้อจำกัด PHP (upload_max_filesize=" . ini_get('upload_max_filesize') . ', post_max_size=' . ini_get('post_max_size') . ')');
+                throw new Exception("รับไฟล์{$label}ไม่สำเร็จ (PHP upload error {$uploadError})");
+            }
+        }
+
         $conn->beginTransaction();
         $stmt = $conn->prepare('INSERT INTO public.lessons (course_id, title, content, study_hours, position, created_by, updated_at, updated_by) VALUES (:course_id, :title, :content, 1, (SELECT COALESCE(MAX(position), 0) + 1 FROM public.lessons WHERE course_id = :course_id), :created_by, clock_timestamp(), :updated_by) RETURNING lesson_id');
         $stmt->execute([':course_id' => $subjectId, ':title' => $lessonName, ':content' => $lessonContent, ':created_by' => $teacherId, ':updated_by' => $teacherId]);
@@ -380,9 +442,14 @@ try {
             $resource = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position, updated_at, updated_by) VALUES (:lesson_id, 'document', :title, :url, 1, clock_timestamp(), :updated_by)");
             $resource->execute([':lesson_id' => $lessonId, ':title' => $documentUpload['name'], ':url' => $documentUpload['path'], ':updated_by' => $teacherId]);
         }
+        $videoUpload = uploadLessonFile('lesson_video', buildLessonMediaSegments($teacherId, $subjectId, $lessonId, 'videos'), 'video', false, ['mp4']);
+        if ($videoUpload['path'] !== '') {
+            $resource = $conn->prepare("INSERT INTO public.lesson_resources (lesson_id, resource_type, title, url, position, updated_at, updated_by) VALUES (:lesson_id, 'video', :title, :url, 1, clock_timestamp(), :updated_by)");
+            $resource->execute([':lesson_id' => $lessonId, ':title' => $videoUpload['name'], ':url' => $videoUpload['path'], ':updated_by' => $teacherId]);
+        }
         $conn->commit();
 
-        echo json_encode(['success' => true, 'message' => 'เพิ่มบทเรียนสำเร็จ', 'lesson_id' => $lessonId]);
+        echo json_encode(['success' => true, 'message' => 'บันทึกบทเรียนและไฟล์ที่เลือกเรียบร้อยแล้ว', 'lesson_id' => $lessonId], JSON_UNESCAPED_UNICODE);
         exit;
     }
 

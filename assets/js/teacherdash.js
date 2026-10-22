@@ -192,39 +192,45 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('closeModalBtn')?.addEventListener('click', () => modalOverlay.classList.remove('open'));
     document.getElementById('closeModalBtn2')?.addEventListener('click', () => modalOverlay.classList.remove('open'));
 
-    document.getElementById('saveLessonBtn')?.addEventListener('click', (e) => {
-        const btn = e.target;
+    document.getElementById('saveLessonBtn')?.addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        if (btn.dataset.saving === '1') return;
         const lessonName = document.getElementById('lessonNameInput').value.trim();
         const subjectId = document.getElementById('lessonSubjectId').value;
         const lessonDocument = document.getElementById('lessonDocument')?.files?.[0] || null;
+        const lessonVideo = document.getElementById('lessonVideo')?.files?.[0] || null;
         const currentLessonCount = document.querySelectorAll('.btn-edit-lsn').length;
 
-        if (!lessonName) { document.getElementById('lessonNameInput').style.borderColor = '#ef4444'; return; }
+        if (!lessonName) { document.getElementById('lessonNameInput').style.borderColor = '#ef4444'; document.getElementById('lessonNameInput').focus(); return; }
+        if (!subjectId) { alert('ไม่พบรายวิชาที่เลือก กรุณาเลือกหรือเปิดรายวิชาใหม่'); return; }
+        if (lessonDocument && !lessonDocument.name.toLowerCase().endsWith('.pdf')) { alert('เอกสารประกอบต้องเป็นไฟล์ PDF'); return; }
+        if (lessonVideo && !lessonVideo.name.toLowerCase().endsWith('.mp4')) { alert('วิดีโอบทเรียนต้องเป็นไฟล์ MP4'); return; }
         if (currentLessonCount >= MAX_LESSONS_PER_SUBJECT) {
             alert('รายวิชานี้มีบทเรียนครบ 3 บทแล้ว');
             return;
         }
-        btn.textContent = 'กำลังบันทึก...'; btn.disabled = true;
-
-        const fd = new FormData();
-        fd.append('action', 'add_lesson');
-        fd.append('lesson_name', lessonName);
-        fd.append('subject_id', subjectId);
-        if (lessonDocument) fd.append('lesson_document', lessonDocument);
-        fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
-            if(d.success) {
-                location.reload();
-            } else {
-                console.error('saveLesson failed:', d);
-                alert('บันทึกบทเรียนไม่สำเร็จ กรุณาตรวจสอบข้อมูลแล้วลองใหม่อีกครั้ง');
-                if (String(d.message || '').includes('ล็อกอิน')) {
-                    window.location.href = 'login.php';
-                } else {
-                    btn.disabled = false;
-                    btn.textContent = 'บันทึกบทเรียน';
-                }
-            }
-        }).catch((error) => { console.error('saveLesson request failed:', error); alert('เชื่อมต่อฐานข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'); btn.disabled = false; btn.textContent = 'บันทึกบทเรียน'; });
+        btn.dataset.saving = '1'; btn.textContent = 'กำลังบันทึก...'; btn.disabled = true;
+        try {
+            const fd = new FormData();
+            fd.append('action', 'add_lesson');
+            fd.append('lesson_name', lessonName);
+            fd.append('subject_id', subjectId);
+            if (lessonDocument) fd.append('lesson_document', lessonDocument);
+            if (lessonVideo) fd.append('lesson_video', lessonVideo);
+            const response = await fetch('teacher_api.php', { method: 'POST', body: fd });
+            let result;
+            try { result = await response.json(); }
+            catch { throw new Error(`เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON (HTTP ${response.status}) ตรวจสอบ PHP error log และการตั้งค่า post_max_size`); }
+            if (!response.ok || !result.success) throw new Error(result.message || `บันทึกไม่สำเร็จ (HTTP ${response.status})`);
+            alert(result.message || 'บันทึกบทเรียนเรียบร้อยแล้ว');
+            window.location.reload();
+        } catch (error) {
+            console.error('saveLesson failed:', error);
+            alert(error.message || 'บันทึกบทเรียนไม่สำเร็จ');
+            if (String(error.message || '').includes('ล็อกอิน')) window.location.href = 'login.php';
+        } finally {
+            btn.dataset.saving = '0'; btn.disabled = false; btn.textContent = 'บันทึกบทเรียน';
+        }
     });
 
     document.querySelectorAll('.btn-edit-lsn').forEach(btn => {
@@ -402,8 +408,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function teacherRequest(formData) {
         const response = await fetch('teacher_api.php', { method: 'POST', body: formData });
-        const data = await response.json();
-        if (!data.success) throw new Error(data.message || 'บันทึกข้อมูลไม่สำเร็จ');
+        let data;
+        try { data = await response.json(); }
+        catch { throw new Error(`เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON (HTTP ${response.status}) ตรวจสอบ PHP error log และ post_max_size`); }
+        if (!response.ok || !data.success) throw new Error(data.message || `บันทึกข้อมูลไม่สำเร็จ (HTTP ${response.status})`);
         return data;
     }
 
@@ -452,6 +460,32 @@ document.addEventListener('DOMContentLoaded', () => {
         form.append('action', 'get_videos'); form.append('subject_id', teacherSubjectSelect.value);
         try { renderInlineVideos(await teacherRequest(form)); }
         catch (error) { inlineVideoList.innerHTML = `<div style="color:#ef4444;font-size:13px">${escapeHtml(error.message)}</div>`; }
+    }
+
+    async function checkLessonStorageConfig() {
+        const button = document.getElementById('checkLessonStorageBtn');
+        const output = document.getElementById('lessonStorageStatus');
+        if (!button || !output) return;
+        button.disabled = true;
+        output.textContent = 'กำลังตรวจสอบค่าฝั่งเซิร์ฟเวอร์...';
+        try {
+            const form = new FormData();
+            form.append('action', 'check_storage_config');
+            const { status } = await teacherRequest(form);
+            const authLabel = status.storage_api_accepted_key === true
+                ? 'Storage API ยอมรับคีย์'
+                : status.storage_api_accepted_key === false
+                    ? `Storage API ไม่ยอมรับคีย์ (HTTP ${status.storage_http_status || 'เชื่อมต่อไม่ได้'})`
+                    : 'ยังตรวจสอบ Storage API ไม่ได้';
+            output.textContent = `URL ${status.url_configured ? 'พบ' : 'ไม่พบ'} · Service Role Key ${status.service_role_key_configured ? 'พบ' : 'ไม่พบ'} · Bucket ${status.bucket_exists ? 'พบ' : 'ไม่พบ'}${status.bucket_public ? ' (public)' : ''} · ${authLabel} · ${status.message}`;
+            output.style.color = status.url_configured && status.service_role_key_configured && status.bucket_exists && status.storage_api_accepted_key
+                ? 'var(--text-muted)' : '#b91c1c';
+        } catch (error) {
+            output.textContent = error.message || 'ตรวจสอบการตั้งค่าไม่สำเร็จ';
+            output.style.color = '#b91c1c';
+        } finally {
+            button.disabled = false;
+        }
     }
 
     async function saveInlineLesson() {
@@ -521,6 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('saveInlineLessonBtn')?.addEventListener('click', saveInlineLesson);
     document.getElementById('saveInlineVideoBtn')?.addEventListener('click', saveInlineVideo);
+    document.getElementById('checkLessonStorageBtn')?.addEventListener('click', checkLessonStorageConfig);
 
     document.getElementById('inlineVideoClearBtn')?.addEventListener('click', resetInlineVideoForm);
     inlineVideoList?.addEventListener('click', async (event) => {
