@@ -39,7 +39,6 @@
         <button class="role-tab active" data-role="student"><span>นักเรียน</span></button>
         <button class="role-tab" data-role="teacher"><span>อาจารย์</span></button>
         <button class="role-tab" data-role="parent"><span>ผู้ปกครอง</span></button>
-        <button class="role-tab" data-role="staff"><span>เจ้าหน้าที่</span></button>
         <button class="role-tab" data-role="staff_or_director"><span>เจ้าหน้าที่ / ผู้บริหาร</span></button>
       </div>
 
