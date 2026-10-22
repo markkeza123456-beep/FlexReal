@@ -308,7 +308,15 @@ header('Content-Type: text/html; charset=utf-8');
       await renderPages();
 
       let highestReadPercent = documentPayload.documentProgressPercent;
+      let lastRecordedPage = documentPayload.resumePage;
       let scrollQueued = false;
+      let userScrollIntent = false;
+      reader.addEventListener('wheel', () => { userScrollIntent = true; }, { passive: true });
+      reader.addEventListener('touchmove', () => { userScrollIntent = true; }, { passive: true });
+      reader.addEventListener('pointerdown', () => { userScrollIntent = true; }, { passive: true });
+      reader.addEventListener('keydown', (event) => {
+        if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '].includes(event.key)) userScrollIntent = true;
+      });
       const recordScrolledPages = () => {
         scrollQueued = false;
         const visibleBottom = reader.scrollTop + reader.clientHeight;
@@ -320,13 +328,17 @@ header('Content-Type: text/html; charset=utf-8');
           if (visibleBottom >= canvasBottom - Math.min(canvas.offsetHeight * 0.2, reader.clientHeight * 0.2)) currentPage = index + 1;
         });
         const atEnd = visibleBottom >= reader.scrollHeight - 8;
-        const percent = Math.max(highestReadPercent, atEnd ? 100 : (currentPage / pdfDocument.numPages) * 100);
-        if (percent <= highestReadPercent && currentPage === documentPayload.resumePage) return;
+        const pagePercent = Math.floor((currentPage / pdfDocument.numPages) * 100);
+        const percent = Math.max(highestReadPercent, atEnd ? 100 : pagePercent);
+        if (percent <= highestReadPercent && currentPage === lastRecordedPage) return;
         highestReadPercent = percent;
+        lastRecordedPage = currentPage;
         saveReadingProgress(percent, currentPage);
       };
 
-      reader.addEventListener('scroll', () => {
+      reader.addEventListener('scroll', (event) => {
+        // Ignore programmatic scrolling during initial layout or resume restoration.
+        if (!event.isTrusted || !userScrollIntent) return;
         if (!scrollQueued) {
           scrollQueued = true;
           requestAnimationFrame(recordScrolledPages);

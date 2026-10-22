@@ -72,11 +72,10 @@ try {
         $totalPages = filter_var($_POST['total_pages'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
         if ($currentPage !== false && $totalPages !== false) {
             $currentPage = min($currentPage, $totalPages);
-            $percent = min(100.0, ($currentPage / $totalPages) * 100);
+            $percent = min(100.0, floor(($currentPage / $totalPages) * 100));
         }
-        if ($isCompleted) $percent = 100.0;
         $page = $currentPage !== false ? (int) $currentPage : max(0, (int) ($_POST['resume_page'] ?? 0));
-        $completed = $isCompleted || $percent >= 100;
+        $completed = $percent >= 100;
         $sql = 'INSERT INTO public.lesson_progress
                     (student_id, lesson_id, progress_value, progress_type, is_completed, document_progress_percent,
                      document_page_index, opened_count, first_opened_at, last_opened_at, last_activity_at, updated_at)
@@ -91,8 +90,10 @@ try {
                     last_opened_at = now(), last_activity_at = now(), updated_at = now()';
         $params = [':student_id' => $studentId, ':lesson_id' => $lessonId, ':progress_value' => $percent, ':is_completed' => $completed ? 'true' : 'false', ':document_percent' => $percent, ':document_page' => $page];
     }
-    $conn->prepare($sql)->execute($params);    $conn->commit();
-    progressJson(['ok' => true, 'progress_value' => $progressType === 'video' ? $position : $percent, 'is_completed' => $isCompleted || ($progressType === 'document' && $percent >= 100)]);
+    $conn->prepare($sql)->execute($params);
+    $conn->commit();
+    $completedResponse = $progressType === 'video' ? $isCompleted : $percent >= 100;
+    progressJson(['ok' => true, 'progress_value' => $progressType === 'video' ? $position : $percent, 'is_completed' => $completedResponse]);
 } catch (Throwable $error) {
     if (isset($conn) && $conn instanceof PDO && $conn->inTransaction()) $conn->rollBack();
     error_log('Progress save failed: ' . $error->getMessage());
