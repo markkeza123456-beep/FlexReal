@@ -38,8 +38,13 @@ try {
         FROM public.quiz_attempts a
         JOIN public.quiz_attempt_answers aa ON aa.attempt_id = a.attempt_id
         JOIN public.questions q ON q.question_id = aa.question_id
-        WHERE a.attempt_id = :attempt_id AND a.student_id = :student_id AND a.status = 'passed'
-          AND aa.question_id = :question_id LIMIT 1");
+        WHERE a.attempt_id = :attempt_id AND a.student_id = :student_id AND a.status IN ('passed', 'pending_review')
+          AND aa.question_id = :question_id
+          AND (SELECT COALESCE(SUM(aa2.score) FILTER (WHERE q2.question_type <> 'essay'), 0)
+                      >= COALESCE(SUM(q2.max_score) FILTER (WHERE q2.question_type <> 'essay'), 0) * 0.6
+               FROM public.quiz_attempt_answers aa2 JOIN public.questions q2 ON q2.question_id = aa2.question_id
+               WHERE aa2.attempt_id = a.attempt_id)
+        LIMIT 1");
     $contextStmt->execute([':attempt_id' => $attemptId, ':student_id' => (string) $_SESSION['user_id'], ':question_id' => $questionId]);
     $context = $contextStmt->fetch(PDO::FETCH_ASSOC);
     if (!$context) tutorJson(['ok' => false, 'message' => 'ไม่พบผลสอบที่ผ่านหรือไม่มีสิทธิ์ดูข้อนี้'], 404);

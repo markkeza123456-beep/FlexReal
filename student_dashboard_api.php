@@ -213,6 +213,15 @@ try {
              WHERE aa.attempt_id = :attempt_id AND a.student_id = :student_id AND q.question_type = 'essay' AND aa.review_status IN ('pending', 'graded')
              ORDER BY q.question_id"
         );
+        $objectiveAnswersStmt = $conn->prepare("SELECT q.question_id, q.question_text, q.options, q.correct_choice,
+                    q.teacher_explanation, aa.selected_choice, aa.ai_explanation,
+                    (aa.selected_choice IS NOT NULL AND aa.selected_choice = q.correct_choice) AS is_correct
+             FROM public.quiz_attempt_answers aa
+             INNER JOIN public.questions q ON q.question_id = aa.question_id
+             INNER JOIN public.quiz_attempts a ON a.attempt_id = aa.attempt_id
+             WHERE aa.attempt_id = :attempt_id AND a.student_id = :student_id
+               AND a.status IN ('passed', 'pending_review') AND q.question_type <> 'essay'
+             ORDER BY q.question_id");
         $lessons = [];
         foreach ($lessonStmt->fetchAll(PDO::FETCH_ASSOC) as $lessonRow) {
             $hasAttempt = $lessonRow['attempt_id'] !== null;
@@ -255,6 +264,9 @@ try {
                 'objective_score_total' => $objectiveTotal,
                 'objective_question_count' => (int) ($lessonRow['objective_question_count'] ?? 0),
                 'objective_correct_count' => (int) ($lessonRow['objective_correct_count'] ?? 0),
+                'objective_passed' => (float) ($lessonRow['objective_total'] ?? 0) > 0
+                    && (float) ($lessonRow['objective_score'] ?? 0) >= (float) ($lessonRow['objective_total'] ?? 0) * 0.6
+                    && (string) ($lessonRow['quiz_status'] ?? '') !== 'failed',
                 'essay_score_earned' => $essayScore,
                 'essay_score_total' => $essayTotal,
                 'essay_pending_count' => (int) ($lessonRow['essay_pending_count'] ?? 0),
@@ -264,8 +276,32 @@ try {
                 'essay_answers' => [],
                 'quiz_status' => $isTransferred ? 'passed' : ($hasAttempt ? (string) ($lessonRow['quiz_status'] ?? 'submitted') : null),
                 'latest_attempt_number' => $hasAttempt ? (int) $lessonRow['attempt_number'] : null,
+                'latest_attempt_id' => $hasAttempt ? (int) $lessonRow['attempt_id'] : null,
+                'objective_answers' => [],
                 'last_activity_at' => $lessonRow['last_activity_at'] ?? null,
             ];
+            if ($hasAttempt && in_array((string) ($lessonRow['quiz_status'] ?? ''), ['passed', 'pending_review'], true)
+                && (float) ($lessonRow['objective_total'] ?? 0) > 0
+                && (float) ($lessonRow['objective_score'] ?? 0) >= (float) ($lessonRow['objective_total'] ?? 0) * 0.6) {
+                $objectiveAnswersStmt->execute([':attempt_id' => $lessonRow['attempt_id'], ':student_id' => $studentId]);
+                $reviewAnswers = $objectiveAnswersStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                foreach ($reviewAnswers as &$reviewAnswer) {
+                    $options = is_array($reviewAnswer['options']) ? $reviewAnswer['options'] : json_decode((string) $reviewAnswer['options'], true);
+                    if (!is_array($options)) $options = [];
+                    $reviewAnswer['options'] = array_values($options);
+                    $correctChoice = strtoupper(trim((string) $reviewAnswer['correct_choice']));
+                    $selectedChoice = strtoupper(trim((string) ($reviewAnswer['selected_choice'] ?? '')));
+                    $reviewAnswer['correct_choice'] = $correctChoice;
+                    $reviewAnswer['selected_choice'] = $selectedChoice;
+                    $reviewAnswer['correct_text'] = $options[ord($correctChoice) - 65] ?? '';
+                    $reviewAnswer['selected_text'] = $selectedChoice !== '' ? ($options[ord($selectedChoice) - 65] ?? '') : '';
+                    $reviewAnswer['is_correct'] = filter_var($reviewAnswer['is_correct'], FILTER_VALIDATE_BOOLEAN);
+                    $reviewAnswer['teacher_explanation'] = (string) ($reviewAnswer['teacher_explanation'] ?? '');
+                    $reviewAnswer['ai_explanation'] = (string) ($reviewAnswer['ai_explanation'] ?? '');
+                }
+                unset($reviewAnswer);
+                $lessons[array_key_last($lessons)]['objective_answers'] = $reviewAnswers;
+            }
             if ($hasAttempt && (int) ($lessonRow['essay_question_count'] ?? 0) > 0) {
                 $essayAnswersStmt->execute([':attempt_id' => $lessonRow['attempt_id'], ':student_id' => $studentId]);
                 $lessons[array_key_last($lessons)]['essay_answers'] = $essayAnswersStmt->fetchAll(PDO::FETCH_ASSOC);

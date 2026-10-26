@@ -327,7 +327,9 @@ async function showResult(options = {}) {
             localStorage.removeItem(draftKey);
             const authoritativeScore = Number(result.score || 0);
             const scoreNode = resultBox.querySelector('.score');
-            if (scoreNode) scoreNode.textContent = `${authoritativeScore}/${result.total_score}`;
+            if (scoreNode) scoreNode.textContent = result.pending_review
+                ? `ตรวจอัตโนมัติ ${Number(result.objective_score || 0)}/${Number(result.objective_total || 0)}`
+                : `${authoritativeScore}/${result.total_score}`;
             lastResultPassed = result.quiz_status === 'passed';
             window.__lastQuizSaveResult = {
                 ok: true,
@@ -340,17 +342,17 @@ async function showResult(options = {}) {
             const resultMessage = document.getElementById('quizResultMessage');
             if (resultMessage) {
                 resultMessage.innerText = lastResultPassed
-                    ? 'ผ่านเกณฑ์แล้ว สามารถกลับไปหน้ารายวิชาได้'
+                    ? (result.pending_review ? 'คะแนนข้อปรนัยผ่านเกณฑ์แล้ว ส่วนข้อเขียนรออาจารย์ตรวจ' : 'ผ่านเกณฑ์แล้ว สามารถกลับไปหน้ารายวิชาได้')
                     : result.pending_review
-                        ? 'ส่งข้อเขียนแล้ว รออาจารย์ตรวจผลก่อน'
+                        ? (result.objective_passed ? 'คะแนนข้อปรนัยผ่านเกณฑ์แล้ว ส่วนข้อเขียนรออาจารย์ตรวจ' : 'ส่งข้อเขียนแล้ว รออาจารย์ตรวจผลก่อน')
                         : result.quiz_status === 'failed'
                             ? 'ไม่ผ่านเกณฑ์ กรุณาทำแบบทดสอบใหม่'
                             : resultMessage.innerText;
             }
-            if (Array.isArray(result.answers) && result.answers.length && !result.pending_review) {
+            if (Array.isArray(result.answers) && result.answers.length) {
                 const answerKey = document.createElement('div');
                 window.__quizAttemptId = Number(result.attempt_id || 0);
-                answerKey.innerHTML = renderAnswerKey(result.answers, result.quiz_status === 'passed' ? result.attempt_id : 0);
+                answerKey.innerHTML = renderAnswerKey(result.answers, result.objective_passed ? result.attempt_id : 0);
                 saveStatus.before(answerKey);
             }
             if (Number.isFinite(Number(result.best_score))) {

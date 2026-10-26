@@ -179,8 +179,9 @@ try {
 
     $requiredScore = $totalScore * 0.6;
     // A timed-out attempt is always a failure, even if saved answers happen to meet the pass score.
-    $status = $action === 'timeout' ? 'failed' : ($hasEssay ? 'pending_review' : ($score >= $objectiveTotalScore * 0.6 ? 'passed' : 'failed'));
-    if ($status === 'passed') {
+    $objectivePassed = $objectiveTotalScore > 0 && $score >= $objectiveTotalScore * 0.6;
+    $status = $action === 'timeout' ? 'failed' : ($hasEssay ? 'pending_review' : ($objectivePassed ? 'passed' : 'failed'));
+    if ($objectivePassed && $action !== 'timeout') {
         foreach ($questions as $index => $question) {
             if (($question['question_type'] ?? '') === 'essay') continue;
             $answerIndex = null;
@@ -219,7 +220,7 @@ try {
     $conn->prepare('UPDATE public.quiz_attempt_sessions SET status = :status, finished_at = now(), updated_at = now() WHERE session_id = :session_id')
         ->execute([':status' => $sessionStatus, ':session_id' => $sessionId]);
     $conn->commit();
-    quizResponse(['status' => 'success', 'attempt_id' => $attemptId, 'quiz_status' => $status, 'score' => $score, 'best_score' => $bestScore, 'total_score' => $totalScore, 'required_score' => $requiredScore, 'pending_review' => $hasEssay && $action !== 'timeout', 'answers' => $resultAnswers, 'message' => 'บันทึกผลสอบเรียบร้อย']);
+    quizResponse(['status' => 'success', 'attempt_id' => $attemptId, 'quiz_status' => $status, 'objective_passed' => $objectivePassed && $action !== 'timeout', 'score' => $score, 'objective_score' => $score, 'objective_total' => $objectiveTotalScore, 'best_score' => $bestScore, 'total_score' => $totalScore, 'required_score' => $objectiveTotalScore * 0.6, 'pending_review' => $hasEssay && $action !== 'timeout', 'answers' => $resultAnswers, 'message' => 'บันทึกผลสอบเรียบร้อย']);
 } catch (Throwable $e) {
     if ($conn->inTransaction()) $conn->rollBack();
     error_log('Quiz submit failed: ' . $e->getMessage());

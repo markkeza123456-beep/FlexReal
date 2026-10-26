@@ -77,9 +77,10 @@ function renderLessonBreakdown(course) {
             ? 'ผ่านจากการเทียบโอนหน่วยกิต'
             : lesson.has_attempt ? 'ทำแบบทดสอบแล้ว' : progress > 0 ? 'กำลังเรียน' : 'ยังไม่เริ่มเรียน';
         const statusClassName = lesson.quiz_status === 'pending_review'
-            ? 'pending'
+            ? (lesson.objective_passed ? 'passed' : 'pending')
             : (isTransferred || lesson.quiz_status === 'passed') ? 'passed' : 'failed';
-        const statusLabelText = statusClassName === 'pending' ? 'รอตรวจ'
+        const statusLabelText = lesson.quiz_status === 'pending_review' && lesson.objective_passed ? 'ปรนัยผ่าน · รอข้อเขียน'
+            : statusClassName === 'pending' ? 'รอตรวจ'
             : statusClassName === 'passed' ? 'ผ่าน' : 'ยังไม่ผ่าน';
         return `<div class="lesson-breakdown-row"><div class="lesson-number">${Number(lesson.position)}</div><div class="lesson-detail"><div class="lesson-detail-heading"><strong>${escapeHtml(lesson.title)}</strong><span class="lesson-score-status ${statusClassName}">${statusLabelText}</span></div><span class="lesson-short-status">${description}</span><div class="progress-bar-bg" role="progressbar" aria-label="ความคืบหน้า ${escapeHtml(lesson.title)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><div class="progress-bar-fill" style="width:${progress}%"></div></div></div></div>`;
     }).join('');
@@ -156,11 +157,66 @@ function formatReportDate(value) {
 
 function reportQuizStatus(lesson) {
     if (lesson.is_transferred) return '<span class="report-status passed">เทียบโอน</span>';
-    if (lesson.quiz_status === 'pending_review') return '<span class="report-status pending">รอตรวจข้อเขียน</span>';
+    if (lesson.quiz_status === 'pending_review') return lesson.objective_passed
+        ? '<span class="report-status passed">ปรนัยผ่าน · ข้อเขียนรอตรวจ</span>'
+        : '<span class="report-status pending">รอตรวจข้อเขียน</span>';
     return lesson.is_passed
         ? '<span class="report-status passed">ผ่าน</span>'
         : '<span class="report-status failed">ไม่ผ่าน</span>';
 }
+
+function renderSavedQuizReview(lesson) {
+    const questions = Array.isArray(lesson.objective_answers) ? lesson.objective_answers : [];
+    if (!lesson.objective_passed || !questions.length) return '—';
+    const answers = questions.map((item, index) => {
+        const options = Array.isArray(item.options) ? item.options : [];
+        const teacherText = String(item.teacher_explanation || '').trim();
+        const aiText = String(item.ai_explanation || '').trim();
+        const choices = options.map((option, choiceIndex) => `<div>${String.fromCharCode(65 + choiceIndex)}. ${escapeHtml(option)}</div>`).join('');
+        const tutor = `<div class="dashboard-tutor" data-tutor-question="${Number(item.question_id)}" style="margin-top:10px;padding:10px;border-radius:8px;background:#f8fafc"><strong>ถามเพิ่มเติมหากยังไม่เข้าใจ</strong><div class="tutor-messages" aria-live="polite" style="white-space:pre-wrap;margin:6px 0"></div><form class="tutor-form" style="display:flex;gap:6px"><input class="tutor-input" type="text" maxlength="700" placeholder="พิมพ์คำถาม..." required style="flex:1;min-width:0"><button type="submit" class="report-action-btn secondary">ถาม AI</button></form></div>`;
+        return `<article style="padding:12px;border-top:1px solid var(--border,#dbe3ef)"><strong>ข้อ ${index + 1}: ${escapeHtml(item.question_text)}</strong><div style="margin:6px 0">${choices}</div><p>คำตอบที่ถูก: ${escapeHtml(item.correct_choice)}. ${escapeHtml(item.correct_text)} · ${item.is_correct ? 'คุณตอบถูก' : 'คุณตอบผิด'}</p><div style="padding:9px;background:#f8fafc;border-radius:7px"><strong>คำอธิบายจากอาจารย์</strong><div style="white-space:pre-wrap">${escapeHtml(teacherText || 'อาจารย์กำหนดเฉลยข้อนี้ไว้')}</div></div><div style="margin-top:8px;padding:9px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:7px"><strong>วิธีทำจาก AI</strong><div style="white-space:pre-wrap">${escapeHtml(aiText || 'ยังไม่มีคำอธิบาย AI สำหรับข้อนี้')}</div></div>${tutor}</article>`;
+    }).join('');
+    return `<details class="saved-quiz-review" data-attempt-id="${Number(lesson.latest_attempt_id || 0)}"><summary style="cursor:pointer;color:#315f98;font-weight:600">ดูเฉลยและคำอธิบาย AI (${questions.length} ข้อ)</summary><div style="margin-top:8px;border:1px solid var(--border,#dbe3ef);border-radius:8px;overflow:hidden">${answers}</div></details>`;
+}
+
+const dashboardTutorHistory = new Map();
+document.getElementById('lessonReportBody')?.addEventListener('submit', async (event) => {
+    const form = event.target.closest('.tutor-form');
+    if (!form) return;
+    event.preventDefault();
+    const panel = form.closest('[data-tutor-question]');
+    const review = form.closest('[data-attempt-id]');
+    const input = panel.querySelector('.tutor-input');
+    const button = form.querySelector('button');
+    const questionId = panel.dataset.tutorQuestion;
+    const question = input.value.trim();
+    if (!question) return;
+    const history = dashboardTutorHistory.get(questionId) || [];
+    history.push({ role: 'user', content: question });
+    input.value = '';
+    input.disabled = true;
+    button.disabled = true;
+    const messages = panel.querySelector('.tutor-messages');
+    messages.textContent = 'กำลังคิดคำอธิบาย...';
+    try {
+        const response = await fetch('student_question_tutor_api.php', {
+            method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ attempt_id: Number(review.dataset.attemptId), question_id: Number(questionId), history })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.message || 'ถาม AI ไม่สำเร็จ');
+        history.push({ role: 'assistant', content: result.answer });
+        dashboardTutorHistory.set(questionId, history.slice(-8));
+        messages.textContent = history.map(item => `${item.role === 'user' ? 'คุณ' : 'ติวเตอร์'}: ${item.content}`).join('\n\n');
+    } catch (error) {
+        history.pop();
+        messages.textContent = error.message || 'ถาม AI ไม่สำเร็จ';
+    } finally {
+        input.disabled = false;
+        button.disabled = false;
+        input.focus();
+    }
+});
 
 function renderReports(courses) {
     const summary = document.getElementById('reportSummary');
@@ -215,7 +271,7 @@ function renderReports(courses) {
             const courseName = `<strong>${escapeHtml(course.name)}</strong>${hasDescription ? `<small>${escapeHtml(description)}</small>` : ''}`;
             const lessonStatus = !course.is_enrolled ? 'ยังไม่ได้ลงทะเบียน' : course.is_transferred ? 'ไม่ต้องสอบ' : `${Number(course.attempted_lessons)} / ${Number(course.lesson_count)} บท`;
             const progressStatus = course.is_enrolled ? `${fmt(course.progress)}%` : '—';
-            return `<tr><td>${courseName}</td><td>${subjectTypeBadge(course.subject_type)}</td><td>${lessonStatus}</td><td>${progressStatus}</td><td>${score}</td><td>${pending ? `<span class="report-status pending">${pending} ข้อ</span>` : '—'}</td></tr>`;
+            return `<tr><td>${courseName}</td><td>${subjectTypeBadge(course.subject_type)}</td><td>${lessonStatus}</td><td>${progressStatus}</td><td>${score}</td><td>${pending ? `<span class="report-status pending">${pending} ข้อ</span>` : '—'}</td><td>—</td></tr>`;
         }).join('');
     }
 
@@ -233,7 +289,7 @@ function renderReports(courses) {
             if (!course.is_transferred) return '';
             const courseName = escapeHtml(course.name);
             const courseCode = escapeHtml(course.code || course.subject_id);
-            return `<tr><td class="report-course-group"><strong>${courseName}</strong><small>รหัสวิชา ${courseCode}</small></td><td class="report-lesson-cell"><strong class="report-lesson-title">เทียบโอนทั้งรายวิชา</strong></td><td colspan="3" class="report-transfer-cell"><span class="report-transfer-badge">TR (ผ่านการเทียบโอน)</span></td><td class="report-center">${reportQuizStatus({ is_transferred: true })}</td></tr>`;
+            return `<tr><td class="report-course-group"><strong>${courseName}</strong><small>รหัสวิชา ${courseCode}</small></td><td class="report-lesson-cell"><strong class="report-lesson-title">เทียบโอนทั้งรายวิชา</strong></td><td colspan="3" class="report-transfer-cell"><span class="report-transfer-badge">TR (ผ่านการเทียบโอน)</span></td><td class="report-center">${reportQuizStatus({ is_transferred: true })}</td><td>—</td></tr>`;
         }
         return courseLessons.map((lesson, lessonIndex) => {
             const courseCell = lessonIndex === 0
@@ -242,7 +298,7 @@ function renderReports(courses) {
             const lessonTitle = String(lesson.title || '').trim();
             const lessonCell = `<td class="report-lesson-cell"><strong class="report-lesson-title">บทที่ ${Number(lesson.position)}</strong>${lessonTitle ? `<small class="report-lesson-subtitle">${escapeHtml(lessonTitle)}</small>` : ''}</td>`;
             if (lesson.is_transferred) {
-                return `<tr>${courseCell}${lessonCell}<td colspan="3" class="report-transfer-cell"><span class="report-transfer-badge">TR (ผ่านการเทียบโอน)</span></td><td class="report-center">${reportQuizStatus(lesson)}</td></tr>`;
+                return `<tr>${courseCell}${lessonCell}<td colspan="3" class="report-transfer-cell"><span class="report-transfer-badge">TR (ผ่านการเทียบโอน)</span></td><td class="report-center">${reportQuizStatus(lesson)}</td><td>—</td></tr>`;
             }
             const objective = Number(lesson.objective_score_total) > 0
                 ? `${fmt(lesson.objective_score_earned)}/${fmt(lesson.objective_score_total)}`
@@ -253,11 +309,13 @@ function renderReports(courses) {
                     ? `${fmt(lesson.essay_score_earned)}/${fmt(lesson.essay_score_total)}`
                     : '—';
             const total = lesson.has_attempt && Number(lesson.score_total) > 0
-                ? `${fmt(lesson.score_earned)}/${fmt(lesson.score_total)}`
+                ? Number(lesson.essay_pending_count) > 0
+                    ? `${fmt(lesson.objective_score_earned)}/${fmt(lesson.objective_score_total)} + ข้อเขียนรอตรวจ`
+                    : `${fmt(lesson.score_earned)}/${fmt(lesson.score_total)}`
                 : '—';
-            return `<tr>${courseCell}${lessonCell}<td class="report-center">${objective}</td><td class="report-center">${essay}</td><td class="report-center">${total}</td><td class="report-center">${reportQuizStatus(lesson)}</td></tr>`;
+            return `<tr>${courseCell}${lessonCell}<td class="report-center">${objective}</td><td class="report-center">${essay}</td><td class="report-center">${total}</td><td class="report-center">${reportQuizStatus(lesson)}</td><td>${renderSavedQuizReview(lesson)}</td></tr>`;
         }).join('');
-    }).join('') || '<tr><td colspan="6" class="report-empty">ยังไม่มีข้อมูลบทเรียน</td></tr>';
+    }).join('') || '<tr><td colspan="7" class="report-empty">ยังไม่มีข้อมูลบทเรียน</td></tr>';
 }
 
 function _applyAvatarUI(src) {
