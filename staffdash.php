@@ -182,6 +182,7 @@ if ($displayName !== '') {
             <div>
               <span class="panel-title" id="learningProgressTitle">รายงานความคืบหน้าการเรียนรู้</span>
               <div class="page-sub">สรุปกิจกรรมการเรียนของสมาชิกทุกคนในช่วงเวลาที่เลือก</div>
+              <div class="page-sub" id="learningProgressSummary" aria-live="polite"></div>
             </div>
             <div class="learning-range-controls" role="group" aria-label="เลือกช่วงเวลารายงาน">
               <button type="button" class="learning-range-btn is-active" data-learning-days="1" aria-pressed="true">1 วันล่าสุด</button>

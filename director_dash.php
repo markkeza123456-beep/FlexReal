@@ -129,6 +129,23 @@ LIMIT 5")->fetchAll(PDO::FETCH_ASSOC) ?: [];
       <article class="director-kpi"><span>ผู้ใช้ที่เข้าสู่ระบบวันนี้</span><strong><?= number_format($dailyVisitors) ?></strong><small>นับบัญชีผู้ใช้ไม่ซ้ำจากบันทึกเข้าเว็บไซต์</small></article>
     </section>
 
+    <section class="director-panel learning-report-card" aria-labelledby="learningReportTitle">
+      <div class="director-panel-heading" style="align-items:center;flex-wrap:wrap">
+        <div><h2 id="learningReportTitle">รายงานความคืบหน้าการเรียนรู้</h2><p id="learningProgressSummary" aria-live="polite">กำลังโหลดข้อมูล...</p></div>
+        <div class="learning-range-controls" role="group" aria-label="เลือกช่วงเวลารายงาน">
+          <button type="button" class="learning-range-btn is-active" data-learning-days="1" aria-pressed="true">ย้อนหลัง 1 วัน</button>
+          <button type="button" class="learning-range-btn" data-learning-days="3" aria-pressed="false">ย้อนหลัง 3 วัน</button>
+          <button type="button" class="learning-range-btn" data-learning-days="7" aria-pressed="false">ย้อนหลัง 1 สัปดาห์</button>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0">
+        <input type="search" id="learningProgressSearch" placeholder="ค้นหาชื่อนักเรียน..." aria-label="ค้นหาชื่อนักเรียนในรายงาน">
+        <span id="learningProgressPageInfo"></span>
+      </div>
+      <div class="director-table-scroll"><table class="director-table" style="min-width:760px"><thead><tr><th>ชื่อ-นามสกุล</th><th>บทเรียน/คอร์สล่าสุด</th><th>ความคืบหน้าในช่วงเวลา</th><th>ใช้งานล่าสุดเมื่อ</th></tr></thead><tbody id="learningProgressBody"><tr><td colspan="4" class="director-empty">กำลังโหลด...</td></tr></tbody></table></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button type="button" id="learningProgressPrev">ก่อนหน้า</button><button type="button" id="learningProgressNext">ถัดไป</button></div>
+    </section>
+
     <section class="director-panels director-analytics">
       <article class="director-panel director-chart-panel">
         <div class="director-panel-heading"><div><h2>นักเรียนลงทะเบียนรายวิชา</h2><p>นับเฉพาะการลงทะเบียนที่ยังใช้งานอยู่</p></div></div>
@@ -196,6 +213,7 @@ LIMIT 5")->fetchAll(PDO::FETCH_ASSOC) ?: [];
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="assets/js/learning_progress_report.js?v=20261026-role-based"></script>
   <script>
     const courseRows = <?= json_encode($courseRows, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
     const graduationStatusCounts = <?= json_encode($graduationStatusCounts, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;

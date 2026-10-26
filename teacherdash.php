@@ -496,6 +496,23 @@ $stats = [
             </div>
         </section>
 
+        <section class="card students-card learning-report-card" aria-labelledby="learningReportTitle">
+            <div class="card-header" style="flex-wrap:wrap;gap:12px">
+                <div><h2 class="card-title" id="learningReportTitle">รายงานความคืบหน้าการเรียนรู้</h2><p id="learningProgressSummary" class="page-sub" aria-live="polite">กำลังโหลดข้อมูล...</p></div>
+                <div class="learning-range-controls" role="group" aria-label="เลือกช่วงเวลารายงาน">
+                    <button type="button" class="learning-range-btn is-active" data-learning-days="1" aria-pressed="true">ย้อนหลัง 1 วัน</button>
+                    <button type="button" class="learning-range-btn" data-learning-days="3" aria-pressed="false">ย้อนหลัง 3 วัน</button>
+                    <button type="button" class="learning-range-btn" data-learning-days="7" aria-pressed="false">ย้อนหลัง 1 สัปดาห์</button>
+                </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin:0 0 12px;flex-wrap:wrap">
+                <input type="search" id="learningProgressSearch" class="search-input" placeholder="ค้นหาชื่อนักเรียน..." aria-label="ค้นหาชื่อนักเรียนในรายงาน">
+                <span id="learningProgressPageInfo" class="page-sub"></span>
+            </div>
+            <div class="table-wrap"><table class="lessons-table" style="min-width:760px"><thead><tr><th>ชื่อ-นามสกุล</th><th>บทเรียน/คอร์สล่าสุด</th><th>ความคืบหน้าในช่วงเวลา</th><th>ใช้งานล่าสุดเมื่อ</th></tr></thead><tbody id="learningProgressBody"><tr><td colspan="4" style="text-align:center">กำลังโหลด...</td></tr></tbody></table></div>
+            <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:12px"><button type="button" class="btn-secondary" id="learningProgressPrev">ก่อนหน้า</button><button type="button" class="btn-secondary" id="learningProgressNext">ถัดไป</button></div>
+        </section>
+
         <section class="card students-card">
             <div class="card-header">
                 <h2 class="card-title">นักเรียนในการดูแล</h2>
@@ -1604,6 +1621,7 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 </script>
 
     <script src="assets/js/teacherdash.js?v=20261026-delete-quiz-confirm-v1"></script>
+    <script src="assets/js/learning_progress_report.js?v=20261026-role-based"></script>
 <?php if ($canAccessTransferApproval): ?>
     <script src="assets/js/teacher_graduation.js?v=20261022-graduation-status-colors"></script>
 <?php endif; ?>

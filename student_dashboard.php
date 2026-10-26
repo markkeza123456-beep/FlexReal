@@ -21,7 +21,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
     <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-student-mobile-report-overflow-v1">
     <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout">
 </head>
-<body>
+<body class="student-dashboard-page">
     <div class="dashboard-container">
 
         <aside class="sidebar">
@@ -84,6 +84,18 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
                         <button type="button" id="graduationRequestBtn" class="btn-graduation-request" hidden>ยื่นขอจบการศึกษา</button>
                         <a id="graduationDownloadLink" class="btn-primary btn-graduation-download" href="#" hidden>ดาวน์โหลดใบสรุปผลการเรียน PDF</a>
                     </div>
+                </section>
+
+                <section class="content-card learning-report-card" aria-labelledby="learningReportTitle">
+                    <div class="card-header" style="flex-wrap:wrap;gap:12px">
+                        <div><h2 id="learningReportTitle">ความคืบหน้าการเรียนรู้ย้อนหลัง</h2><p id="learningProgressSummary" aria-live="polite">กำลังโหลดข้อมูล...</p></div>
+                        <div class="learning-range-controls" role="group" aria-label="เลือกช่วงเวลารายงาน">
+                            <button type="button" class="learning-range-btn is-active" data-learning-days="1" aria-pressed="true">ย้อนหลัง 1 วัน</button>
+                            <button type="button" class="learning-range-btn" data-learning-days="3" aria-pressed="false">ย้อนหลัง 3 วัน</button>
+                            <button type="button" class="learning-range-btn" data-learning-days="7" aria-pressed="false">ย้อนหลัง 1 สัปดาห์</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive"><table class="data-table"><thead><tr><th>บทเรียน/คอร์สล่าสุด</th><th>ความคืบหน้าในช่วงเวลา</th><th>ใช้งานล่าสุดเมื่อ</th></tr></thead><tbody id="learningProgressBody"><tr><td colspan="3" style="text-align:center">กำลังโหลด...</td></tr></tbody></table></div>
                 </section>
 
                 <section class="stats-grid student-stats-grid">
@@ -277,6 +289,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
         </main>
     </div>
     <script src="assets/js/student_dashboard.js?v=20261022-student-pin-reset"></script>
+    <script src="assets/js/learning_progress_report.js?v=20261026-role-based"></script>
     <script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>

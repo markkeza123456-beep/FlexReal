@@ -31,7 +31,6 @@
     'profile': 'โปรไฟล์ของฉัน',
   };
   let graduationReviewCsrf = '';
-  let learningProgressRequest = 0;
 
   const sidebar = document.getElementById('sidebar');
   const topbarTitle = document.getElementById('topbarTitle');
@@ -391,60 +390,8 @@
     if (memberStat) memberStat.textContent = formatPlainNumber(members.length);
 
     renderDashboardTables();
-    loadLearningProgress(1);
+    // The shared learning_progress_report.js owns report loading and pagination.
   }
-
-  function renderLearningProgress(rows) {
-    const body = document.getElementById('learningProgressBody');
-    if (!body) return;
-    if (!rows.length) {
-      body.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted);">ยังไม่มีสมาชิกในระบบ</td></tr>';
-      return;
-    }
-    body.innerHTML = rows.map(row => {
-      const active = Number(row.lessons_active || 0);
-      const completed = Number(row.lessons_completed || 0);
-      const quizzes = Number(row.quizzes_submitted || 0);
-      const points = Number(row.progress_percent_points || 0);
-      const hasActivity = Boolean(row.last_activity_at);
-      const summary = hasActivity
-        ? `เข้าเรียน ${active} บท · สำเร็จ ${completed} บท · ส่งแบบทดสอบ ${quizzes} ครั้ง · ความคืบหน้ารวม +${points}%`
-        : 'ไม่มีความเคลื่อนไหวในช่วงนี้';
-      return `<tr>
-        <td>${escapeHtml(row.student_name || 'ไม่ระบุชื่อ')}</td>
-        <td>${escapeHtml(row.latest_lesson || '—')}</td>
-        <td>${escapeHtml(summary)}</td>
-        <td>${hasActivity ? escapeHtml(formatRegistrationDate(row.last_activity_at)) : '<span class="learning-progress-muted">—</span>'}</td>
-      </tr>`;
-    }).join('');
-  }
-
-  async function loadLearningProgress(days) {
-    const body = document.getElementById('learningProgressBody');
-    if (!body) return;
-    const requestId = ++learningProgressRequest;
-    body.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted);">กำลังโหลด...</td></tr>';
-    try {
-      const response = await fetch(`staff_learning_progress_api.php?days=${encodeURIComponent(days)}`, { credentials: 'same-origin', cache: 'no-store' });
-      const result = await response.json();
-      if (!response.ok || !result.ok) throw new Error(result.message || 'โหลดรายงานไม่สำเร็จ');
-      if (requestId === learningProgressRequest) renderLearningProgress(Array.isArray(result.rows) ? result.rows : []);
-    } catch (error) {
-      if (requestId === learningProgressRequest) body.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:#b91c1c;">${escapeHtml(error.message || 'โหลดรายงานไม่สำเร็จ')}</td></tr>`;
-    }
-  }
-
-  document.querySelectorAll('[data-learning-days]').forEach(button => {
-    button.addEventListener('click', () => {
-      const days = Number(button.dataset.learningDays);
-      document.querySelectorAll('[data-learning-days]').forEach(item => {
-        const active = item === button;
-        item.classList.toggle('is-active', active);
-        item.setAttribute('aria-pressed', active ? 'true' : 'false');
-      });
-      loadLearningProgress(days);
-    });
-  });
 
   function renderDashboardTables() {
 
