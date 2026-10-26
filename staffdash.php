@@ -62,6 +62,9 @@ if ($displayName !== '') {
   <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2" />
   <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-centered-mobile-logout">
   <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout" />
+  <style>
+    .learning-progress-panel{margin-top:18px}.learning-progress-head{align-items:center;flex-wrap:wrap}.learning-range-controls{display:flex;flex-wrap:wrap;gap:8px}.learning-range-btn{border:1px solid var(--border,#e5e7eb);border-radius:999px;background:#fff;color:var(--text,#334155);padding:7px 13px;font:inherit;font-size:13px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}.learning-range-btn:hover,.learning-range-btn.is-active{background:var(--orange,#f97316);border-color:var(--orange,#f97316);color:#fff}.learning-progress-table{min-width:700px}.learning-progress-muted{color:var(--text-muted,#64748b)}@media(max-width:600px){.learning-range-controls{width:100%}.learning-range-btn{flex:1;padding:7px 8px;font-size:12px}}
+  </style>
 </head>
 <body>
 
@@ -173,6 +176,26 @@ if ($displayName !== '') {
             </div>
           </div>
         </div>
+
+        <section class="panel learning-progress-panel" aria-labelledby="learningProgressTitle">
+          <div class="panel-head learning-progress-head">
+            <div>
+              <span class="panel-title" id="learningProgressTitle">รายงานความคืบหน้าการเรียนรู้</span>
+              <div class="page-sub">สรุปกิจกรรมการเรียนของสมาชิกทุกคนในช่วงเวลาที่เลือก</div>
+            </div>
+            <div class="learning-range-controls" role="group" aria-label="เลือกช่วงเวลารายงาน">
+              <button type="button" class="learning-range-btn is-active" data-learning-days="1" aria-pressed="true">1 วันล่าสุด</button>
+              <button type="button" class="learning-range-btn" data-learning-days="3" aria-pressed="false">3 วันล่าสุด</button>
+              <button type="button" class="learning-range-btn" data-learning-days="7" aria-pressed="false">1 สัปดาห์ล่าสุด</button>
+            </div>
+          </div>
+          <div class="panel-table-scroll">
+            <table class="mini-table learning-progress-table">
+              <thead><tr><th>ชื่อ-นามสกุล</th><th>บทเรียน/คอร์สล่าสุดที่เข้าใช้งาน</th><th>ความคืบหน้าในช่วงเวลา</th><th>ใช้งานล่าสุดเมื่อ</th></tr></thead>
+              <tbody id="learningProgressBody"><tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted);">กำลังโหลด...</td></tr></tbody>
+            </table>
+          </div>
+        </section>
       </section>
 
 
@@ -830,7 +853,7 @@ if ($displayName !== '') {
 
   <div class="toast" id="toast"></div>
 
-  <script src="assets/js/staffdash.js?v=20261022-student-pin-status"></script>
+  <script src="assets/js/staffdash.js?v=20261026-learning-progress"></script>
 <script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>
