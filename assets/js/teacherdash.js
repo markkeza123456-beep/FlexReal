@@ -494,7 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('.btn-del-quiz').forEach(btn => {
         btn.addEventListener('click', () => {
-            if(confirm('เนเธเนเนเธเธซเธฃเธทเธญเนเธกเนเธงเนเธฒเธ•เนเธญเธเธเธฒเธฃเธฅเธเธเธณเธ–เธฒเธกเธเธตเนเธ—เธดเนเธ?')) {
+            if (window.confirm('ยืนยันการลบข้อสอบข้อนี้หรือไม่? เมื่อลบแล้วจะไม่สามารถกู้คืนได้')) {
                 const fd = new FormData(); fd.append('action', 'delete_quiz'); fd.append('quiz_id', btn.dataset.id);
                 fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {
                     if(d.message && d.message.includes('เธฅเนเธญเธเธญเธดเธ')) { alert(d.message); window.location.href = 'login.php'; }
