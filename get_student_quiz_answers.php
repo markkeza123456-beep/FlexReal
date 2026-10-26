@@ -40,7 +40,6 @@ try {
     $answerStmt = $conn->prepare(
         "SELECT q.question_id, q.question_text, q.options, q.correct_choice, q.max_score, q.question_type, q.teacher_explanation,
                 aa.selected_choice, aa.answer_text, aa.score, aa.review_status, aa.result_status,
-                aa.ai_explanation,
                 CASE WHEN aa.selected_choice IS NOT NULL AND aa.selected_choice = q.correct_choice THEN TRUE ELSE FALSE END AS is_correct,
                 COALESCE(class_stats.incorrect_count, 0) AS class_incorrect_count,
                 COALESCE(class_stats.answered_count, 0) AS class_answered_count
@@ -90,7 +89,6 @@ try {
             'options' => array_values($options),
             'correct_choice' => strtoupper(trim((string) $row['correct_choice'])),
             'teacher_explanation' => (string) ($row['teacher_explanation'] ?? ''),
-            'ai_explanation' => (string) ($row['ai_explanation'] ?? ''),
             'selected_choice' => strtoupper(trim((string) ($row['selected_choice'] ?? ''))),
             'answer_text' => (string) ($row['answer_text'] ?? ''),
             'score' => $row['score'] !== null ? (float) $row['score'] : null,

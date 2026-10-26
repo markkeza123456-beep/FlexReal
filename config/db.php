@@ -64,7 +64,6 @@ $runtimeEnvKeys = [
     'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY',
     'SUPABASE_LESSON_BUCKET', 'SUPABASE_TRANSCRIPT_BUCKET', 'BUCKET_NAME',
     'GOOGLE_APPS_SCRIPT_URL',
-    'OPENAI_API_KEY', 'OPENAI_MODEL', 'GEMINI_API_KEY', 'GEMINI_MODEL',
 ];
 foreach ($runtimeEnvKeys as $key) {
     $processValue = flexrealProcessEnv($key);

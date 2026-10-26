@@ -214,7 +214,7 @@ try {
              ORDER BY q.question_id"
         );
         $objectiveAnswersStmt = $conn->prepare("SELECT q.question_id, q.question_text, q.options, q.correct_choice,
-                    q.teacher_explanation, aa.selected_choice, aa.ai_explanation,
+                    q.teacher_explanation, aa.selected_choice,
                     (aa.selected_choice IS NOT NULL AND aa.selected_choice = q.correct_choice) AS is_correct
              FROM public.quiz_attempt_answers aa
              INNER JOIN public.questions q ON q.question_id = aa.question_id
@@ -297,7 +297,6 @@ try {
                     $reviewAnswer['selected_text'] = $selectedChoice !== '' ? ($options[ord($selectedChoice) - 65] ?? '') : '';
                     $reviewAnswer['is_correct'] = filter_var($reviewAnswer['is_correct'], FILTER_VALIDATE_BOOLEAN);
                     $reviewAnswer['teacher_explanation'] = (string) ($reviewAnswer['teacher_explanation'] ?? '');
-                    $reviewAnswer['ai_explanation'] = (string) ($reviewAnswer['ai_explanation'] ?? '');
                 }
                 unset($reviewAnswer);
                 $lessons[array_key_last($lessons)]['objective_answers'] = $reviewAnswers;

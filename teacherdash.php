@@ -1608,10 +1608,9 @@ function renderAnswerDetails(questions) {
             return `<div style="padding:8px 10px;border-radius:7px;background:${background};color:${color};font-size:12px;margin-top:5px;"><strong>${letter}.</strong> ${escHtml(String(option))}${tags ? ` <strong style="margin-left:5px;">${tags}</strong>` : ''}</div>`;
         }).join('');
         const teacherExplanation = String(question.teacher_explanation || '').trim();
-        const aiExplanation = String(question.ai_explanation || '').trim();
         const explanationHtml = isCorrect
             ? (teacherExplanation ? `<div style="margin-top:8px;padding:9px;border-radius:7px;background:#f0fdf4;color:#166534;font-size:12px;"><strong>คำอธิบายจากอาจารย์</strong><div style="white-space:pre-wrap">${escHtml(teacherExplanation)}</div></div>` : '')
-            : (aiExplanation ? `<div style="margin-top:8px;padding:9px;border-radius:7px;background:#eff6ff;border:1px solid #bfdbfe;font-size:12px;"><strong>คำอธิบายและวิธีทำเพิ่มเติมจาก AI</strong><div style="white-space:pre-wrap">${escHtml(aiExplanation)}</div></div>` : '');
+            : (teacherExplanation ? `<div style="margin-top:8px;padding:9px;border-radius:7px;background:#f8fafc;font-size:12px;"><strong>คำอธิบายจากอาจารย์</strong><div style="white-space:pre-wrap">${escHtml(teacherExplanation)}</div></div>` : '');
         return `<article style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-top:10px;"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><strong style="font-size:12px;">ข้อ ${index + 1}: ${escHtml(question.question_text)}</strong><span style="color:${markerColor};font-weight:700;font-size:12px;white-space:nowrap;">${marker}</span></div>${options}<div style="margin-top:7px;color:var(--text-muted);font-size:11px;">นักเรียนตอบ: ${answered ? escHtml(selected) : 'ยังไม่ตอบ'} · เฉลย: ${escHtml(correct || '-')} · ผิด ${Number(question.class_incorrect_count) || 0}/${Number(question.class_answered_count) || 0} คน</div>${explanationHtml}</article>`;
     }).join('');
     return summary + rows;

@@ -19,51 +19,6 @@ function submittedChoice(mixed $value): ?string
     return in_array($value, ['A', 'B', 'C', 'D'], true) ? $value : null;
 }
 
-function generateAnswerExplanation(array $question, string $selectedChoice): ?string
-{
-    $apiKey = trim((string) (getenv('GEMINI_API_KEY') ?: ''));
-    if ($apiKey === '') return null;
-    $options = is_array($question['options']) ? $question['options'] : (json_decode((string) $question['options'], true) ?: []);
-    $labels = ['A', 'B', 'C', 'D'];
-    $optionLines = [];
-    foreach ($options as $index => $option) $optionLines[] = ($labels[$index] ?? (string) ($index + 1)) . '. ' . (string) $option;
-    $correct = strtoupper(trim((string) $question['correct_choice']));
-    $selected = strtoupper($selectedChoice);
-    $correctText = $options[ord($correct) - 65] ?? $correct;
-    $selectedText = $options[ord($selected) - 65] ?? $selected;
-    $teacherExplanation = trim((string) ($question['teacher_explanation'] ?? ''));
-    $prompt = "คุณคือติวเตอร์ผู้เชี่ยวชาญ จงอธิบายว่าทำไมคำตอบที่อาจารย์กำหนดจึงถูกต้อง และแสดงวิธีคิดอย่างเป็นขั้นตอนให้นักเรียนเข้าใจง่าย หากมีคำตอบที่นักเรียนเลือก ให้ช่วยชี้จุดที่เข้าใจคลาดเคลื่อนอย่างสุภาพ\n\n"
-        . "โจทย์: " . (string) $question['question_text'] . "\nตัวเลือก:\n" . implode("\n", $optionLines)
-        . "\nนักเรียนเลือก: {$selected}. {$selectedText}\nคำตอบที่ถูกต้อง: {$correct}. {$correctText}"
-        . ($teacherExplanation !== '' ? "\nคำอธิบายจากอาจารย์: {$teacherExplanation}" : '')
-        . "\nให้ตอบเป็นภาษาไทย สุภาพ กระชับแต่ละเอียด เป็นขั้นตอน และอย่าคาดเดาข้อมูลที่ไม่มีในโจทย์";
-
-    $body = json_encode([
-        'contents' => [['role' => 'user', 'parts' => [['text' => $prompt]]]],
-        'generationConfig' => ['temperature' => 0.2, 'maxOutputTokens' => 700],
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    if ($body === false) return null;
-    if (!function_exists('curl_init')) return null;
-    $model = trim((string) (getenv('GEMINI_MODEL') ?: 'gemini-2.5-flash-lite'));
-    $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent?key=' . rawurlencode($apiKey);
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-        CURLOPT_POSTFIELDS => $body,
-        CURLOPT_CONNECTTIMEOUT => 3,
-        CURLOPT_TIMEOUT => 8,
-    ]);
-    $response = curl_exec($ch);
-    $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    if (!is_string($response) || $status < 200 || $status >= 300) return null;
-    $decoded = json_decode($response, true);
-    $text = trim((string) ($decoded['candidates'][0]['content']['parts'][0]['text'] ?? ''));
-    return $text !== '' ? mb_substr($text, 0, 6000, 'UTF-8') : null;
-}
-
 $payload = json_decode((string) file_get_contents('php://input'), true);
 if (!is_array($payload)) quizResponse(['status' => 'error', 'message' => 'รูปแบบข้อมูลไม่ถูกต้อง'], 400);
 if (($_SESSION['role'] ?? '') !== 'student' || empty($_SESSION['user_id'])) {
@@ -145,9 +100,8 @@ try {
                 'score' => null,
                 'review_status' => $essayText !== '' && $action !== 'timeout' ? 'pending' : 'not_required',
                 'reviewer_comment' => null,
-                'ai_explanation' => null,
             ];
-            $resultAnswers[] = ['question_id' => (int) $question['question_id'], 'question' => (string) $question['question_text'], 'is_correct' => null, 'selected_choice' => null, 'answer_text' => $essayText, 'teacher_explanation' => (string) ($question['teacher_explanation'] ?? ''), 'ai_explanation' => null];
+            $resultAnswers[] = ['question_id' => (int) $question['question_id'], 'question' => (string) $question['question_text'], 'is_correct' => null, 'selected_choice' => null, 'answer_text' => $essayText, 'teacher_explanation' => (string) ($question['teacher_explanation'] ?? '')];
             continue;
         }
         $answerKey = (string) $question['question_id'];
@@ -159,11 +113,6 @@ try {
         $selectedText = $choice !== null ? (string) ($options[ord($choice) - 65] ?? '') : '';
         $correctChoice = strtoupper(trim((string) $question['correct_choice']));
         $correctText = (string) ($options[ord($correctChoice) - 65] ?? '');
-        $aiExplanation = (!$isCorrect && $choice !== null) ? generateAnswerExplanation($question, $choice) : null;
-        if (!$isCorrect && $aiExplanation === null) {
-            $fallback = trim((string) ($question['teacher_explanation'] ?? ''));
-            $aiExplanation = $fallback !== '' ? 'คำอธิบายจากอาจารย์: ' . $fallback : 'AI ยังไม่พร้อมให้บริการในขณะนี้ กรุณาสอบถามอาจารย์ผู้สอน';
-        }
         $score += $earned;
         $savedAnswers[] = [
             'question_id' => (int) $question['question_id'],
@@ -172,44 +121,19 @@ try {
             'score' => $earned,
             'review_status' => 'not_required',
             'reviewer_comment' => null,
-            'ai_explanation' => $aiExplanation,
         ];
-        $resultAnswers[] = ['question_id' => (int) $question['question_id'], 'question' => (string) $question['question_text'], 'is_correct' => $isCorrect, 'selected_choice' => $choice, 'selected_text' => $selectedText, 'correct_choice' => $correctChoice, 'correct_text' => $correctText, 'teacher_explanation' => (string) ($question['teacher_explanation'] ?? ''), 'ai_explanation' => $aiExplanation];
+        $resultAnswers[] = ['question_id' => (int) $question['question_id'], 'question' => (string) $question['question_text'], 'is_correct' => $isCorrect, 'selected_choice' => $choice, 'selected_text' => $selectedText, 'correct_choice' => $correctChoice, 'correct_text' => $correctText, 'teacher_explanation' => (string) ($question['teacher_explanation'] ?? '')];
     }
 
     $requiredScore = $totalScore * 0.6;
     // A timed-out attempt is always a failure, even if saved answers happen to meet the pass score.
     $objectivePassed = $objectiveTotalScore > 0 && $score >= $objectiveTotalScore * 0.6;
     $status = $action === 'timeout' ? 'failed' : ($hasEssay ? 'pending_review' : ($objectivePassed ? 'passed' : 'failed'));
-    if ($objectivePassed && $action !== 'timeout') {
-        foreach ($questions as $index => $question) {
-            if (($question['question_type'] ?? '') === 'essay') continue;
-            $answerIndex = null;
-            foreach ($savedAnswers as $savedIndex => $savedAnswer) {
-                if ((int) $savedAnswer['question_id'] === (int) $question['question_id']) { $answerIndex = $savedIndex; break; }
-            }
-            if ($answerIndex === null) continue;
-            $correctChoice = strtoupper(trim((string) $question['correct_choice']));
-            $currentChoice = $savedAnswers[$answerIndex]['selected_choice'];
-            if ($savedAnswers[$answerIndex]['ai_explanation'] === null) {
-                $savedAnswers[$answerIndex]['ai_explanation'] = generateAnswerExplanation($question, $currentChoice ?: $correctChoice)
-                    ?? 'AI ยังไม่พร้อมให้บริการในขณะนี้ กรุณาสอบถามอาจารย์ผู้สอน';
-            }
-        }
-        foreach ($resultAnswers as $index => $resultAnswer) {
-            if ($resultAnswer['is_correct'] === null) continue;
-            $savedIndex = null;
-            foreach ($savedAnswers as $candidateIndex => $savedAnswer) {
-                if ((int) $savedAnswer['question_id'] === (int) $resultAnswer['question_id']) { $savedIndex = $candidateIndex; break; }
-            }
-            if ($savedIndex !== null) $resultAnswers[$index]['ai_explanation'] = $savedAnswers[$savedIndex]['ai_explanation'];
-        }
-    }
     $attemptStmt = $conn->prepare('INSERT INTO public.quiz_attempts (student_id, lesson_id, attempt_number, score, total_score, status) VALUES (:student_id, :lesson_id, :attempt_number, :score, :total_score, :status) RETURNING attempt_id');
     $attemptStmt->execute([':student_id' => $studentId, ':lesson_id' => $lessonId, ':attempt_number' => $attemptNo, ':score' => $score, ':total_score' => $totalScore, ':status' => $status]);
     $attemptId = (int) $attemptStmt->fetchColumn();
 
-    $answerStmt = $conn->prepare('INSERT INTO public.quiz_attempt_answers (attempt_id, question_id, selected_choice, answer_text, score, review_status, reviewer_comment, ai_explanation) VALUES (:attempt_id, :question_id, :selected_choice, :answer_text, :score, :review_status, :reviewer_comment, :ai_explanation)');
+    $answerStmt = $conn->prepare('INSERT INTO public.quiz_attempt_answers (attempt_id, question_id, selected_choice, answer_text, score, review_status, reviewer_comment) VALUES (:attempt_id, :question_id, :selected_choice, :answer_text, :score, :review_status, :reviewer_comment)');
     foreach ($savedAnswers as $answer) {
         $answerStmt->execute([':attempt_id' => $attemptId] + $answer);
     }

@@ -202,7 +202,7 @@ async function saveTestResult(score, totalScore = quiz.questions.length, action 
     return response.json();
 }
 
-function renderAnswerKey(resultAnswers = [], attemptId = 0) {
+function renderAnswerKey(resultAnswers = []) {
     return `
         <div class="answer-key">
             <h3>ผลตรวจและเฉลยรายข้อ</h3>
@@ -211,55 +211,14 @@ function renderAnswerKey(resultAnswers = [], attemptId = 0) {
                 const isCorrect = Boolean(item.is_correct);
                 const wasAnswered = Boolean(item.selected_choice);
                 const teacherExplanation = String(item.teacher_explanation || '').trim();
-                const aiExplanation = String(item.ai_explanation || '').trim();
                 const explanation = isCorrect
                     ? `<div class="teacher-explanation" style="margin-top:10px;padding:12px;border-radius:8px;background:#f8fafc;border:1px solid #dbe3ef"><strong>คำอธิบายจากอาจารย์</strong><p style="white-space:pre-wrap">${escapeHtml(teacherExplanation || 'อาจารย์กำหนดเฉลยข้อนี้ไว้')}</p></div>`
                     : wasAnswered ? `<div class="teacher-explanation" style="margin-top:10px;padding:12px;border-radius:8px;background:#f8fafc;border:1px solid #dbe3ef"><strong>คำอธิบายจากอาจารย์</strong><p style="white-space:pre-wrap">${escapeHtml(teacherExplanation || 'อาจารย์ยังไม่ได้เพิ่มคำอธิบาย')}</p></div>` : '';
-                const tutor = attemptId && isCorrect ? `<div class="question-tutor" data-tutor-question="${Number(item.question_id)}" style="margin-top:12px;padding:10px;border-radius:8px;background:#f8fafc"><strong>ยังไม่เข้าใจข้อนี้? ถาม AI ได้</strong><div class="tutor-messages" aria-live="polite" style="font-size:13px;white-space:pre-wrap;margin:6px 0"></div><form class="tutor-form" style="display:flex;gap:6px"><input class="tutor-input" type="text" maxlength="700" placeholder="พิมพ์คำถามสั้นๆ..." required style="flex:1;min-width:0"><button type="submit" class="primary-btn" style="padding:7px 12px">ถาม</button></form></div>` : '';
-                const aiBlock = aiExplanation ? `<div class="ai-explanation" style="margin-top:10px;padding:12px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe"><strong>คำอธิบายและวิธีทำเพิ่มเติมจาก AI</strong><p style="white-space:pre-wrap">${escapeHtml(aiExplanation)}</p></div>` : '';
-                return `<div class="answer-item ${isCorrect ? 'is-correct' : 'is-wrong'}"><b>ข้อ ${index + 1}: ${escapeHtml(item.question)}</b><p>${wasAnswered ? (isCorrect ? '✓ ตอบถูก' : '✗ ตอบผิด') : 'ไม่ได้ตอบ'}</p><p>คำตอบของคุณ: ${escapeHtml(item.selected_choice ? `${item.selected_choice}. ${item.selected_text}` : 'ไม่ได้ตอบ')}</p><p>คำตอบที่ถูก: ${escapeHtml(item.correct_choice)}. ${escapeHtml(item.correct_text)}</p>${explanation}${aiBlock}${tutor}</div>`;
+                return `<div class="answer-item ${isCorrect ? 'is-correct' : 'is-wrong'}"><b>ข้อ ${index + 1}: ${escapeHtml(item.question)}</b><p>${wasAnswered ? (isCorrect ? '✓ ตอบถูก' : '✗ ตอบผิด') : 'ไม่ได้ตอบ'}</p><p>คำตอบของคุณ: ${escapeHtml(item.selected_choice ? `${item.selected_choice}. ${item.selected_text}` : 'ไม่ได้ตอบ')}</p><p>คำตอบที่ถูก: ${escapeHtml(item.correct_choice)}. ${escapeHtml(item.correct_text)}</p>${explanation}</div>`;
             }).join('')}
         </div>
     `;
 }
-
-const questionTutorHistory = new Map();
-resultBox.addEventListener('submit', async (event) => {
-    const form = event.target.closest('.tutor-form');
-    if (!form) return;
-    event.preventDefault();
-    const panel = form.closest('[data-tutor-question]');
-    const input = panel.querySelector('.tutor-input');
-    const button = form.querySelector('button');
-    const questionId = panel.dataset.tutorQuestion;
-    const question = input.value.trim();
-    if (!question) return;
-    const history = questionTutorHistory.get(questionId) || [];
-    history.push({ role: 'user', content: question });
-    input.value = '';
-    input.disabled = true;
-    button.disabled = true;
-    const messages = panel.querySelector('.tutor-messages');
-    messages.textContent = 'กำลังคิดคำอธิบาย...';
-    try {
-        const response = await fetch('student_question_tutor_api.php', {
-            method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ attempt_id: Number(window.__quizAttemptId), question_id: Number(questionId), history })
-        });
-        const data = await response.json();
-        if (!response.ok || !data.ok) throw new Error(data.message || 'ถาม AI ไม่สำเร็จ');
-        history.push({ role: 'assistant', content: data.answer });
-        questionTutorHistory.set(questionId, history.slice(-8));
-        messages.textContent = history.map(item => `${item.role === 'user' ? 'คุณ' : 'ติวเตอร์'}: ${item.content}`).join('\n\n');
-    } catch (error) {
-        history.pop();
-        messages.textContent = error.message || 'ถาม AI ไม่สำเร็จ';
-    } finally {
-        input.disabled = false;
-        button.disabled = false;
-        input.focus();
-    }
-});
 
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
