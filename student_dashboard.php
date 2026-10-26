@@ -20,6 +20,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
     <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
     <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-student-mobile-report-overflow-v1">
     <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout">
+    <link rel="stylesheet" href="assets/css/learning-progress-report.css?v=20261026-blue-buttons">
 </head>
 <body class="student-dashboard-page">
     <div class="dashboard-container">

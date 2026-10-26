@@ -62,8 +62,9 @@ if ($displayName !== '') {
   <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2" />
   <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-centered-mobile-logout">
   <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout" />
+  <link rel="stylesheet" href="assets/css/learning-progress-report.css?v=20261026-blue-buttons" />
   <style>
-    .learning-progress-panel{margin-top:18px}.learning-progress-head{align-items:center;flex-wrap:wrap}.learning-range-controls{display:flex;flex-wrap:wrap;gap:8px}.learning-range-btn{border:1px solid var(--border,#e5e7eb);border-radius:999px;background:#fff;color:var(--text,#334155);padding:7px 13px;font:inherit;font-size:13px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}.learning-range-btn:hover,.learning-range-btn.is-active{background:var(--orange,#f97316);border-color:var(--orange,#f97316);color:#fff}.learning-progress-table{min-width:700px}.learning-progress-muted{color:var(--text-muted,#64748b)}@media(max-width:600px){.learning-range-controls{width:100%}.learning-range-btn{flex:1;padding:7px 8px;font-size:12px}}
+    .learning-progress-panel{margin-top:18px}.learning-progress-head{align-items:center;flex-wrap:wrap}.learning-progress-table{min-width:700px}.learning-progress-muted{color:var(--text-muted,#64748b)}
   </style>
 </head>
 <body>

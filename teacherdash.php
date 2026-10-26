@@ -388,6 +388,7 @@ $stats = [
     <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
     <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-logout-bottom">
     <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout">
+    <link rel="stylesheet" href="assets/css/learning-progress-report.css?v=20261026-blue-buttons">
 </head>
 <body>
 <aside class="sidebar">

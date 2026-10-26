@@ -94,6 +94,7 @@ LIMIT 5")->fetchAll(PDO::FETCH_ASSOC) ?: [];
   <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
   <link rel="stylesheet" href="assets/css/director_dash.css?v=20261022-director-personal-info-underline-fix">
   <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-sidebar-menu-fix">
+  <link rel="stylesheet" href="assets/css/learning-progress-report.css?v=20261026-blue-buttons">
 </head>
 <body class="director-dashboard">
   <header class="director-topbar">
