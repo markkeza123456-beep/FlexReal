@@ -174,8 +174,8 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
                     <div class="table-responsive">
                         <table class="data-table report-table lesson-report-table">
                             <colgroup>
-                                <col style="width:22%"><col style="width:24%"><col style="width:15%">
-                                <col style="width:13%"><col style="width:12%"><col style="width:14%">
+                                <col style="width:18%"><col style="width:18%"><col style="width:12%">
+                                <col style="width:12%"><col style="width:12%"><col style="width:11%"><col style="width:17%">
                             </colgroup>
                             <thead><tr><th>รายวิชา</th><th>บทเรียน</th><th class="report-center">คะแนนปรนัย</th><th class="report-center">คะแนนข้อเขียน</th><th class="report-center">คะแนนรวม</th><th class="report-center">สถานะผลการเรียน</th><th>เฉลย</th></tr></thead>
                             <tbody id="lessonReportBody"></tbody>
