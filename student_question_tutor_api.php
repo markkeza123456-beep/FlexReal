@@ -11,18 +11,27 @@ function tutorJson(array $data, int $status = 200): never
     exit;
 }
 
-function tutorCompletion(string $apiKey, string $model, array $messages, int $maxTokens): ?string
+function tutorCompletion(string $apiKey, string $model, array $messages, int $maxTokens, ?string &$failureReason = null): ?string
 {
-    if (!function_exists('curl_init')) return null;
+    if (!function_exists('curl_init')) {
+        $failureReason = 'PHP cURL extension is unavailable';
+        error_log('Student tutor API unavailable: PHP cURL extension is missing');
+        return null;
+    }
     $body = json_encode(['model' => $model, 'messages' => $messages, 'temperature' => 0.2, 'max_tokens' => $maxTokens], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     if ($body === false) return null;
     $ch = curl_init('https://api.openai.com/v1/chat/completions');
     curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer ' . $apiKey], CURLOPT_POSTFIELDS => $body, CURLOPT_CONNECTTIMEOUT => 4, CURLOPT_TIMEOUT => 18]);
     $response = curl_exec($ch);
     $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $transportError = curl_error($ch);
     curl_close($ch);
     if (!is_string($response) || $status < 200 || $status >= 300) {
-        error_log('Student tutor API failed with status ' . $status);
+        $decodedError = is_string($response) ? json_decode($response, true) : null;
+        $apiError = trim((string) ($decodedError['error']['message'] ?? ''));
+        $apiCode = trim((string) ($decodedError['error']['code'] ?? $decodedError['error']['type'] ?? ''));
+        $failureReason = $status > 0 ? 'OpenAI HTTP ' . $status . ($apiCode !== '' ? ' (' . $apiCode . ')' : '') : 'Network/TLS connection failed';
+        error_log('Student tutor API failed: ' . $failureReason . ($transportError !== '' ? '; transport=' . $transportError : '') . ($apiError !== '' ? '; message=' . mb_substr($apiError, 0, 500, 'UTF-8') : ''));
         return null;
     }
     $decoded = json_decode($response, true);
@@ -82,16 +91,27 @@ try {
         $selected = strtoupper(trim((string) ($context['selected_choice'] ?? '')));
         $selectedText = $selected !== '' ? ($options[ord($selected) - 65] ?? '') : '';
         $prompt = "คุณคือติวเตอร์ผู้เชี่ยวชาญ จงอธิบายเป็นภาษาไทยว่าทำไมเฉลยที่อาจารย์เลือกจึงถูกต้อง พร้อมแสดงวิธีคิดเป็นขั้นตอนที่นักเรียนเข้าใจง่าย หากนักเรียนตอบผิดให้ชี้จุดที่พลาดอย่างสุภาพ ห้ามเปลี่ยนเฉลยและห้ามแต่งข้อมูลที่ไม่มีในโจทย์.\nโจทย์: {$context['question_text']}\nตัวเลือก: " . implode(' | ', array_map('strval', $options)) . "\nนักเรียนเลือก: {$selected}. {$selectedText}\nเฉลยอาจารย์: {$correct}. {$correctText}\nคำอธิบายอาจารย์: " . trim((string) ($context['teacher_explanation'] ?? ''));
-        $answer = tutorCompletion($apiKey, $model, [['role' => 'user', 'content' => $prompt]], 700);
-        if ($answer === null) tutorJson(['ok' => false, 'message' => 'บริการ AI ติดต่อไม่สำเร็จ กรุณาตรวจ Logs ของ Render และสถานะ API ของ OpenAI'], 502);
+        $failureReason = null;
+        $answer = tutorCompletion($apiKey, $model, [['role' => 'user', 'content' => $prompt]], 700, $failureReason);
+        if ($answer === null) {
+            $userMessage = match (true) {
+                str_contains((string) $failureReason, 'HTTP 401') => 'OpenAI ไม่ยอมรับ API key (401) ตรวจว่าคีย์ถูกต้องและยังใช้งานได้',
+                str_contains((string) $failureReason, 'HTTP 429') => 'OpenAI ปฏิเสธคำขอ (429) ตรวจ usage limit, billing หรือ rate limit',
+                str_contains((string) $failureReason, 'HTTP 404') => 'ไม่พบโมเดล OpenAI ที่ตั้งไว้ ตรวจค่า OPENAI_MODEL',
+                str_contains((string) $failureReason, 'HTTP 400') => 'OpenAI ปฏิเสธรูปแบบคำขอ (400) ตรวจชื่อโมเดลหรือ request parameters',
+                default => 'เชื่อมต่อ OpenAI ไม่สำเร็จ ตรวจ Logs ของ Render เพื่อดูรายละเอียด (ห้ามแชร์ API key)',
+            };
+            tutorJson(['ok' => false, 'message' => $userMessage], 502);
+        }
         $save = $conn->prepare('UPDATE public.quiz_attempt_answers aa SET ai_explanation = :explanation FROM public.quiz_attempts a WHERE aa.attempt_id = a.attempt_id AND aa.attempt_id = :attempt_id AND aa.question_id = :question_id AND a.student_id = :student_id');
         $save->execute([':explanation' => $answer, ':attempt_id' => $attemptId, ':question_id' => $questionId, ':student_id' => (string) $_SESSION['user_id']]);
         tutorJson(['ok' => true, 'answer' => $answer]);
     }
 
     $instructions = "คุณเป็นติวเตอร์ส่วนตัวภาษาไทยสำหรับนักเรียน ช่วยตอบคำถามต่อเนื่องอย่างใจเย็นและเข้าใจง่าย ยึดโจทย์และเฉลยที่ครูกำหนดเป็นหลัก ห้ามเปลี่ยนเฉลย หากข้อมูลไม่พอให้บอกตรงๆ และขอรายละเอียดเพิ่ม ห้ามเปิดเผยข้อมูลส่วนตัวใดๆ.\nโจทย์: {$context['question_text']}\nตัวเลือก: " . implode(' | ', array_map('strval', $options)) . "\nเฉลยครู: {$correct}. {$correctText}\nคำอธิบายครู: " . trim((string) ($context['teacher_explanation'] ?? '')) . "\nคำอธิบายตั้งต้น: " . trim((string) ($context['ai_explanation'] ?? ''));
-    $answer = tutorCompletion($apiKey, $model, array_merge([['role' => 'system', 'content' => $instructions]], $messages), 500);
-    if ($answer === null) tutorJson(['ok' => false, 'message' => 'AI ตอบคำถามไม่สำเร็จ กรุณาลองอีกครั้ง'], 502);
+    $failureReason = null;
+    $answer = tutorCompletion($apiKey, $model, array_merge([['role' => 'system', 'content' => $instructions]], $messages), 500, $failureReason);
+    if ($answer === null) tutorJson(['ok' => false, 'message' => 'AI ตอบคำถามไม่สำเร็จ ตรวจ Logs ของ Render เพื่อดู status code'], 502);
     tutorJson(['ok' => true, 'answer' => $answer]);
 } catch (Throwable $error) {
     error_log('Student tutor request failed: ' . $error->getMessage());
