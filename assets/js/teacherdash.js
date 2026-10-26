@@ -404,6 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fd.append('action', 'add_quiz'); fd.append('lesson_id', lessonId); fd.append('type', type);
         fd.append('question', question); fd.append('choice_a', chA); fd.append('choice_b', chB);
         fd.append('choice_c', chC); fd.append('choice_d', chD); fd.append('answer', ans); fd.append('max_score', maxScore);
+        fd.append('teacher_explanation', document.getElementById('teacherExplanationAdd')?.value || '');
 
         const controller = new AbortController();
         const requestTimeout = window.setTimeout(() => controller.abort(), 30000);
@@ -433,6 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('editQuizIdInput').value = btn.dataset.id;
             document.getElementById('editQuizTypeHidden').value = type;
             document.getElementById('editQuizQuestion').value = btn.dataset.question;
+            document.getElementById('teacherExplanationEdit').value = btn.dataset.explanation || '';
             document.getElementById('editQuizMaxScore').value = btn.dataset.maxScore || '1';
 
             grpChoiceEdit.style.display = 'none'; grpTFEdit.style.display = 'none';
@@ -479,6 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fd.append('action', 'edit_quiz'); fd.append('quiz_id', document.getElementById('editQuizIdInput').value);
         fd.append('type', type); fd.append('question', document.getElementById('editQuizQuestion').value.trim());
         fd.append('choice_a', chA); fd.append('choice_b', chB); fd.append('choice_c', chC); fd.append('choice_d', chD); fd.append('answer', ans); fd.append('max_score', maxScore);
+        fd.append('teacher_explanation', document.getElementById('teacherExplanationEdit')?.value || '');
 
         btn.textContent = '⏳ กำลังบันทึก...'; btn.disabled = true;
         fetch('teacher_api.php', { method: 'POST', body: fd }).then(r=>r.json()).then(d => {

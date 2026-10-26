@@ -16,7 +16,7 @@ const resultBox = document.getElementById('resultBox');
 const backToCourse = document.getElementById('backToCourse');
 const quizTimer = document.getElementById('quizTimer');
 const QUIZ_PASS_RATIO = 1.0;
-const REQUEST_TIMEOUT_MS = 8000;
+const REQUEST_TIMEOUT_MS = 120000;
 
 let quiz = { subtitle: '', questions: [] };
 let answers = [];
@@ -202,37 +202,67 @@ async function saveTestResult(score, totalScore = quiz.questions.length, action 
     return response.json();
 }
 
-function renderAnswerKey() {
+function renderAnswerKey(resultAnswers = [], attemptId = 0) {
     return `
         <div class="answer-key">
-            <h3>เฉลยข้อสอบ</h3>
-            ${quiz.questions.map((item, index) => {
-                const correctIndex = Number(item.answer);
-                const selectedIndex = answers[index];
-                const correctDisplayIndex = item.optionIndexes?.indexOf(correctIndex) ?? correctIndex;
-                const selectedDisplayIndex = item.optionIndexes?.indexOf(Number(selectedIndex)) ?? Number(selectedIndex);
-                const isEssay = isEssayQuestion(item);
-                const essayAnswerText = String(item.answer_text || '').trim();
-                const isCorrect = !isEssay && Number(selectedIndex) === correctIndex;
-                return `
-                    <div class="answer-item ${isCorrect ? 'is-correct' : 'is-wrong'}">
-                        <b>ข้อ ${index + 1}: ${item.question}</b>
-                        ${isEssay
-                            ? `<p>คำตอบที่ถูก: ${essayAnswerText && essayAnswerText !== '-' ? essayAnswerText : 'รอครูตรวจ'}</p>`
-                            : `<p>คำตอบที่ถูก: ${item.options[correctDisplayIndex]}</p>`
-                        }
-                        <p>คำตอบของคุณ: ${
-                            selectedIndex === null || selectedIndex === undefined || selectedIndex === ''
-                                ? 'ไม่ได้ตอบ'
-                                : isEssay
-                                    ? selectedIndex
-                                    : item.options[selectedDisplayIndex]
-                        }</p>
-                    </div>
-                `;
+            <h3>ผลตรวจและเฉลยรายข้อ</h3>
+            ${resultAnswers.map((item, index) => {
+                if (item.is_correct === null) return `<div class="answer-item"><b>ข้อ ${index + 1}: ${escapeHtml(item.question)}</b><p>คำตอบข้อเขียน: ${escapeHtml(item.answer_text || 'ไม่ได้ตอบ')} · รออาจารย์ตรวจ</p></div>`;
+                const isCorrect = Boolean(item.is_correct);
+                const wasAnswered = Boolean(item.selected_choice);
+                const teacherExplanation = String(item.teacher_explanation || '').trim();
+                const aiExplanation = String(item.ai_explanation || '').trim();
+                const explanation = isCorrect
+                    ? `<div class="teacher-explanation" style="margin-top:10px;padding:12px;border-radius:8px;background:#f8fafc;border:1px solid #dbe3ef"><strong>คำอธิบายจากอาจารย์</strong><p style="white-space:pre-wrap">${escapeHtml(teacherExplanation || 'อาจารย์กำหนดเฉลยข้อนี้ไว้')}</p></div>`
+                    : wasAnswered ? `<div class="teacher-explanation" style="margin-top:10px;padding:12px;border-radius:8px;background:#f8fafc;border:1px solid #dbe3ef"><strong>คำอธิบายจากอาจารย์</strong><p style="white-space:pre-wrap">${escapeHtml(teacherExplanation || 'อาจารย์ยังไม่ได้เพิ่มคำอธิบาย')}</p></div>` : '';
+                const tutor = attemptId && isCorrect ? `<div class="question-tutor" data-tutor-question="${Number(item.question_id)}" style="margin-top:12px;padding:10px;border-radius:8px;background:#f8fafc"><strong>ยังไม่เข้าใจข้อนี้? ถาม AI ได้</strong><div class="tutor-messages" aria-live="polite" style="font-size:13px;white-space:pre-wrap;margin:6px 0"></div><form class="tutor-form" style="display:flex;gap:6px"><input class="tutor-input" type="text" maxlength="700" placeholder="พิมพ์คำถามสั้นๆ..." required style="flex:1;min-width:0"><button type="submit" class="primary-btn" style="padding:7px 12px">ถาม</button></form></div>` : '';
+                const aiBlock = aiExplanation ? `<div class="ai-explanation" style="margin-top:10px;padding:12px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe"><strong>คำอธิบายและวิธีทำเพิ่มเติมจาก AI</strong><p style="white-space:pre-wrap">${escapeHtml(aiExplanation)}</p></div>` : '';
+                return `<div class="answer-item ${isCorrect ? 'is-correct' : 'is-wrong'}"><b>ข้อ ${index + 1}: ${escapeHtml(item.question)}</b><p>${wasAnswered ? (isCorrect ? '✓ ตอบถูก' : '✗ ตอบผิด') : 'ไม่ได้ตอบ'}</p><p>คำตอบของคุณ: ${escapeHtml(item.selected_choice ? `${item.selected_choice}. ${item.selected_text}` : 'ไม่ได้ตอบ')}</p><p>คำตอบที่ถูก: ${escapeHtml(item.correct_choice)}. ${escapeHtml(item.correct_text)}</p>${explanation}${aiBlock}${tutor}</div>`;
             }).join('')}
         </div>
     `;
+}
+
+const questionTutorHistory = new Map();
+resultBox.addEventListener('submit', async (event) => {
+    const form = event.target.closest('.tutor-form');
+    if (!form) return;
+    event.preventDefault();
+    const panel = form.closest('[data-tutor-question]');
+    const input = panel.querySelector('.tutor-input');
+    const button = form.querySelector('button');
+    const questionId = panel.dataset.tutorQuestion;
+    const question = input.value.trim();
+    if (!question) return;
+    const history = questionTutorHistory.get(questionId) || [];
+    history.push({ role: 'user', content: question });
+    input.value = '';
+    input.disabled = true;
+    button.disabled = true;
+    const messages = panel.querySelector('.tutor-messages');
+    messages.textContent = 'กำลังคิดคำอธิบาย...';
+    try {
+        const response = await fetch('student_question_tutor_api.php', {
+            method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ attempt_id: Number(window.__quizAttemptId), question_id: Number(questionId), history })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.message || 'ถาม AI ไม่สำเร็จ');
+        history.push({ role: 'assistant', content: data.answer });
+        questionTutorHistory.set(questionId, history.slice(-8));
+        messages.textContent = history.map(item => `${item.role === 'user' ? 'คุณ' : 'ติวเตอร์'}: ${item.content}`).join('\n\n');
+    } catch (error) {
+        history.pop();
+        messages.textContent = error.message || 'ถาม AI ไม่สำเร็จ';
+    } finally {
+        input.disabled = false;
+        button.disabled = false;
+        input.focus();
+    }
+});
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 }
 
 function renderResultActionButton(isPassed, isPendingReview = false) {
@@ -260,20 +290,16 @@ async function showResult(options = {}) {
     const totalScore = quiz.questions.reduce((total, item) => total + Number(item.max_score || 1), 0);
     const essayCount = quiz.questions.filter((item) => isEssayQuestion(item)).length;
     const hasPendingEssay = quiz.questions.some((item, index) => isEssayQuestion(item) && String(answers[index] || '').trim() !== '');
-    const calculatedScore = quiz.questions.reduce((total, item, index) => {
-        if (isEssayQuestion(item)) return total;
-        return total + (answers[index] === item.answer ? Number(item.max_score || 1) : 0);
-    }, 0);
-    const score = calculatedScore;
+    const score = 0;
     const requiredScore = totalScore * QUIZ_PASS_RATIO;
-    const isPassed = score >= requiredScore;
-    const effectivePassed = isPassed && options.action !== 'timeout';
+    const isPassed = false;
+    const effectivePassed = false;
 
     resultBox.hidden = false;
     resultBox.innerHTML = `
         <h2>ผลคะแนน</h2>
         <p>คุณได้ <span class="score">${score}/${totalScore}</span> คะแนน</p>
-        <p id="quizResultMessage">${options.action === 'timeout' ? 'หมดเวลาแล้ว ระบบส่งคำตอบที่บันทึกไว้' : isPassed ? 'ผ่านเกณฑ์แล้ว สามารถกลับไปหน้ารายวิชาได้' : hasPendingEssay ? 'ส่งข้อเขียนแล้ว รออาจารย์ตรวจผลก่อน' : 'ยังไม่ผ่านเกณฑ์ กรุณาทำซ้ำบทเดิมอีกครั้ง'}</p>
+        <p id="quizResultMessage">${options.action === 'timeout' ? 'หมดเวลาแล้ว ระบบส่งคำตอบที่บันทึกไว้' : hasPendingEssay ? 'ส่งข้อเขียนแล้ว รออาจารย์ตรวจผลก่อน' : 'กำลังตรวจคำตอบจากระบบ...'}</p>
         <p>เกณฑ์ผ่าน: ${requiredScore} คะแนน</p>
         ${essayCount > 0 ? `<p>มีข้อเขียน ${essayCount} ข้อ รอครูตรวจ</p>` : ''}
         <p id="saveStatus">กำลังบันทึกผลแบบทดสอบ...</p>
@@ -299,11 +325,14 @@ async function showResult(options = {}) {
         }
         if (result.status === 'success') {
             localStorage.removeItem(draftKey);
+            const authoritativeScore = Number(result.score || 0);
+            const scoreNode = resultBox.querySelector('.score');
+            if (scoreNode) scoreNode.textContent = `${authoritativeScore}/${result.total_score}`;
             lastResultPassed = result.quiz_status === 'passed';
             window.__lastQuizSaveResult = {
                 ok: true,
                 status: result.quiz_status || 'success',
-                score,
+                score: authoritativeScore,
                 totalScore,
                 requiredScore,
             };
@@ -318,9 +347,10 @@ async function showResult(options = {}) {
                             ? 'ไม่ผ่านเกณฑ์ กรุณาทำแบบทดสอบใหม่'
                             : resultMessage.innerText;
             }
-            if (lastResultPassed) {
+            if (Array.isArray(result.answers) && result.answers.length && !result.pending_review) {
                 const answerKey = document.createElement('div');
-                answerKey.innerHTML = renderAnswerKey();
+                window.__quizAttemptId = Number(result.attempt_id || 0);
+                answerKey.innerHTML = renderAnswerKey(result.answers, result.quiz_status === 'passed' ? result.attempt_id : 0);
                 saveStatus.before(answerKey);
             }
             if (Number.isFinite(Number(result.best_score))) {
@@ -335,6 +365,8 @@ async function showResult(options = {}) {
                 pendingNotice.style.fontWeight = '600';
                 saveStatus.before(pendingNotice);
             }
+            const totalNode = resultBox.querySelector('p:nth-of-type(3)');
+            if (totalNode) totalNode.textContent = `เกณฑ์ผ่าน: ${result.required_score} คะแนน`;
             const actionWrap = resultBox.querySelector('.result-action-wrap');
             const updatedAction = renderResultActionButton(lastResultPassed, Boolean(result.pending_review));
             if (actionWrap) {
@@ -354,7 +386,7 @@ async function showResult(options = {}) {
                 ok: false,
                 status: result.status || 'error',
                 error: result.message || 'save_failed',
-                score,
+                score: authoritativeScore,
                 totalScore,
             };
             saveStatus.innerText = '';

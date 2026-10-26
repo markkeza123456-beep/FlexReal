@@ -320,6 +320,7 @@ if ($defaultSubjectId) {
                COALESCE(q.options->>0, '') AS choice_a, COALESCE(q.options->>1, '') AS choice_b,
                COALESCE(q.options->>2, '') AS choice_c, COALESCE(q.options->>3, '') AS choice_d,
                COALESCE(q.correct_choice, '-') AS correct_answer, q.max_score AS question_max_score,
+               COALESCE(q.teacher_explanation, '') AS teacher_explanation,
                q.lesson_id AS lessons_id, l.title AS lessons_name
         FROM public.questions q
         INNER JOIN public.lessons l ON q.lesson_id = l.lesson_id
@@ -831,7 +832,7 @@ $stats = [
                                 ?>
                                     <div class="quiz-item" style="border:1px solid var(--border);border-radius:8px;padding:13px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
                                         <div style="display:flex;gap:10px;min-width:0;"><b class="mono" style="color:var(--text-primary);">Q<?= $i + 1 ?></b><div><div style="font-size:14px;color:var(--text);margin-bottom:5px;"><?= h($q['questions_text']) ?></div><span class="badge badge-draft" style="font-size:10.5px;"><?= $qLabel ?> · <?= number_format((float) $q['question_max_score'], 0) ?> คะแนน</span><div style="color:var(--text-muted);font-size:11px;margin-top:5px;">แก้ไขล่าสุด <?= h(formatTeacherEditDate($q['last_modified_at'] ?? null)) ?></div></div></div>
-                                        <div style="display:flex;gap:4px;flex-shrink:0;"><button class="action-icon-btn btn-edit-quiz" data-id="<?= h($q['questions_id']) ?>" data-type="<?= $qType ?>" data-question="<?= h($q['questions_text']) ?>" data-ca="<?= h($q['choice_a']) ?>" data-cb="<?= h($q['choice_b']) ?>" data-cc="<?= h($q['choice_c']) ?>" data-cd="<?= h($q['choice_d']) ?>" data-answer="<?= h($q['correct_answer']) ?>" data-max-score="<?= number_format((float) $q['question_max_score'], 0, '.', '') ?>" title="แก้ไขคำถาม">แก้ไข</button><button class="action-icon-btn btn-del-quiz" data-id="<?= h($q['questions_id']) ?>" title="ลบคำถาม" style="color:#ef4444;">ลบ</button></div>
+                                        <div style="display:flex;gap:4px;flex-shrink:0;"><button class="action-icon-btn btn-edit-quiz" data-id="<?= h($q['questions_id']) ?>" data-type="<?= $qType ?>" data-question="<?= h($q['questions_text']) ?>" data-ca="<?= h($q['choice_a']) ?>" data-cb="<?= h($q['choice_b']) ?>" data-cc="<?= h($q['choice_c']) ?>" data-cd="<?= h($q['choice_d']) ?>" data-answer="<?= h($q['correct_answer']) ?>" data-explanation="<?= h($q['teacher_explanation']) ?>" data-max-score="<?= number_format((float) $q['question_max_score'], 0, '.', '') ?>" title="แก้ไขคำถาม">แก้ไข</button><button class="action-icon-btn btn-del-quiz" data-id="<?= h($q['questions_id']) ?>" title="ลบคำถาม" style="color:#ef4444;">ลบ</button></div>
                                     </div>
                                 <?php endforeach; endif; ?>
                             </div>
@@ -928,6 +929,7 @@ $stats = [
                         <label>คำถาม</label>
                         <textarea class="form-input" id="quizQuestionAdd" rows="3" placeholder="พิมพ์คำถาม..."></textarea>
                     </div>
+                    <div class="form-group"><label for="teacherExplanationAdd">คำอธิบายเพิ่มเติมจากอาจารย์ (ถ้ามี)</label><textarea class="form-input" id="teacherExplanationAdd" rows="3" placeholder="อธิบายแนวคิดหรือเหตุผลของคำตอบที่ถูกต้อง"></textarea></div>
                     <div class="form-group"><label for="quizMaxScoreAdd">คะแนนเต็มข้อนี้</label><input class="form-input" id="quizMaxScoreAdd" type="number" min="1" max="10000" step="1" value="1" required></div>
 
                     <div class="form-group" id="quizChoiceGroupAdd">
@@ -975,6 +977,7 @@ $stats = [
                         <label>คำถาม</label>
                         <textarea class="form-input" id="editQuizQuestion" rows="3"></textarea>
                     </div>
+                    <div class="form-group"><label for="teacherExplanationEdit">คำอธิบายเพิ่มเติมจากอาจารย์ (ถ้ามี)</label><textarea class="form-input" id="teacherExplanationEdit" rows="3" placeholder="อธิบายแนวคิดหรือเหตุผลของคำตอบที่ถูกต้อง"></textarea></div>
                     <div class="form-group"><label for="editQuizMaxScore">คะแนนเต็มข้อนี้</label><input class="form-input" id="editQuizMaxScore" type="number" min="1" max="10000" step="1" required></div>
 
                     <div class="form-group" id="quizChoiceGroupEdit">
@@ -1604,7 +1607,12 @@ function renderAnswerDetails(questions) {
             const tags = [isAnswer ? '✓ เฉลย' : '', isSelected ? (isCorrect ? '✓ นักเรียนเลือก' : '✗ นักเรียนเลือก') : ''].filter(Boolean).join(' · ');
             return `<div style="padding:8px 10px;border-radius:7px;background:${background};color:${color};font-size:12px;margin-top:5px;"><strong>${letter}.</strong> ${escHtml(String(option))}${tags ? ` <strong style="margin-left:5px;">${tags}</strong>` : ''}</div>`;
         }).join('');
-        return `<article style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-top:10px;"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><strong style="font-size:12px;">ข้อ ${index + 1}: ${escHtml(question.question_text)}</strong><span style="color:${markerColor};font-weight:700;font-size:12px;white-space:nowrap;">${marker}</span></div>${options}<div style="margin-top:7px;color:var(--text-muted);font-size:11px;">นักเรียนตอบ: ${answered ? escHtml(selected) : 'ยังไม่ตอบ'} · เฉลย: ${escHtml(correct || '-')} · ผิด ${Number(question.class_incorrect_count) || 0}/${Number(question.class_answered_count) || 0} คน</div></article>`;
+        const teacherExplanation = String(question.teacher_explanation || '').trim();
+        const aiExplanation = String(question.ai_explanation || '').trim();
+        const explanationHtml = isCorrect
+            ? (teacherExplanation ? `<div style="margin-top:8px;padding:9px;border-radius:7px;background:#f0fdf4;color:#166534;font-size:12px;"><strong>คำอธิบายจากอาจารย์</strong><div style="white-space:pre-wrap">${escHtml(teacherExplanation)}</div></div>` : '')
+            : (aiExplanation ? `<div style="margin-top:8px;padding:9px;border-radius:7px;background:#eff6ff;border:1px solid #bfdbfe;font-size:12px;"><strong>คำอธิบายและวิธีทำเพิ่มเติมจาก AI</strong><div style="white-space:pre-wrap">${escHtml(aiExplanation)}</div></div>` : '');
+        return `<article style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-top:10px;"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;"><strong style="font-size:12px;">ข้อ ${index + 1}: ${escHtml(question.question_text)}</strong><span style="color:${markerColor};font-weight:700;font-size:12px;white-space:nowrap;">${marker}</span></div>${options}<div style="margin-top:7px;color:var(--text-muted);font-size:11px;">นักเรียนตอบ: ${answered ? escHtml(selected) : 'ยังไม่ตอบ'} · เฉลย: ${escHtml(correct || '-')} · ผิด ${Number(question.class_incorrect_count) || 0}/${Number(question.class_answered_count) || 0} คน</div>${explanationHtml}</article>`;
     }).join('');
     return summary + rows;
 }

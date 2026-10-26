@@ -70,7 +70,7 @@ function loadFromTestQuestions(PDO $conn, string $lessonId): array
         "SELECT question_id AS questions_id, question_text AS questions_text, question_type, max_score,
                 COALESCE(options->>0, '') AS choice_a, COALESCE(options->>1, '') AS choice_b,
                 COALESCE(options->>2, '') AS choice_c, COALESCE(options->>3, '') AS choice_d,
-                COALESCE(correct_choice, '') AS correct_answer, max_score
+                max_score
          FROM public.questions
          WHERE lesson_id = ? AND is_active = true
          ORDER BY question_id ASC"
@@ -127,18 +127,16 @@ try {
             (string) ($q['choice_d'] ?? ''),
         ];
 
-        $correctAnswer = (string) ($q['correct_answer'] ?? '');
-        $questionType = strtolower((string) ($q['question_type'] ?? inferQuestionType($options, $correctAnswer)));
-        $answerIndex = $questionType === 'essay' ? -1 : resolveAnswerIndex($correctAnswer, $options);
+        $questionType = strtolower((string) ($q['question_type'] ?? 'multiple_choice'));
 
         $formatted[] = [
             'question_id' => (int) $q['questions_id'],
             'question' => $questionText,
             'options' => $options,
-            'answer' => $answerIndex,
+            'answer' => null,
             'type' => $questionType,
             'max_score' => (float) ($q['max_score'] ?? 1),
-            'answer_text' => $questionType === 'essay' ? $correctAnswer : '',
+            'answer_text' => '',
         ];
     }
 

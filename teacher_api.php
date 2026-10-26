@@ -545,8 +545,8 @@ try {
 
         $stmt = $conn->prepare(
             'INSERT INTO public.questions
-                (lesson_id, question_type, question_text, options, correct_choice, max_score)
-             VALUES (:lesson_id, :question_type, :question_text, CAST(:options AS jsonb), :correct_choice, :max_score)'
+                (lesson_id, question_type, question_text, options, correct_choice, teacher_explanation, max_score)
+             VALUES (:lesson_id, :question_type, :question_text, CAST(:options AS jsonb), :correct_choice, :teacher_explanation, :max_score)'
         );
         $stmt->execute([
             ':lesson_id' => $lessonId,
@@ -554,6 +554,7 @@ try {
             ':question_text' => $question,
             ':options' => $type === 'essay' ? null : json_encode($type === 'truefalse' ? [$choiceA, $choiceB] : [$choiceA, $choiceB, $choiceC, $choiceD], JSON_UNESCAPED_UNICODE),
             ':correct_choice' => $type === 'essay' ? null : strtoupper($answer),
+            ':teacher_explanation' => trim((string) ($_POST['teacher_explanation'] ?? '')) ?: null,
             ':max_score' => $maxScore,
         ]);
 
@@ -613,6 +614,7 @@ try {
                  question_text = :question_text,
                  options = CAST(:options AS jsonb),
                  correct_choice = :correct_choice,
+                 teacher_explanation = :teacher_explanation,
                  max_score = :max_score,
                  updated_at = NOW()
              WHERE question_id = :question_id'
@@ -622,6 +624,7 @@ try {
             ':question_text' => $question,
             ':options' => $type === 'essay' ? null : json_encode($type === 'truefalse' ? [$choiceA, $choiceB] : [$choiceA, $choiceB, $choiceC, $choiceD], JSON_UNESCAPED_UNICODE),
             ':correct_choice' => $type === 'essay' ? null : strtoupper($answer),
+            ':teacher_explanation' => trim((string) ($_POST['teacher_explanation'] ?? '')) ?: null,
             ':max_score' => $maxScore,
             ':question_id' => $quizId,
         ]);
