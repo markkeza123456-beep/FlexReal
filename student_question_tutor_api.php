@@ -18,10 +18,23 @@ function tutorCompletion(string $apiKey, string $model, array $messages, int $ma
         error_log('Student tutor API unavailable: PHP cURL extension is missing');
         return null;
     }
-    $body = json_encode(['model' => $model, 'messages' => $messages, 'temperature' => 0.2, 'max_tokens' => $maxTokens], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $contents = [];
+    foreach ($messages as $message) {
+        $role = ($message['role'] ?? '') === 'assistant' ? 'model' : 'user';
+        $contents[] = ['role' => $role, 'parts' => [['text' => (string) ($message['content'] ?? '')]]];
+    }
+    $systemInstruction = null;
+    if (($messages[0]['role'] ?? '') === 'system') {
+        $systemInstruction = ['parts' => [['text' => (string) ($messages[0]['content'] ?? '')]]];
+        array_shift($contents);
+    }
+    $payload = ['contents' => $contents, 'generationConfig' => ['temperature' => 0.2, 'maxOutputTokens' => $maxTokens]];
+    if ($systemInstruction !== null) $payload['systemInstruction'] = $systemInstruction;
+    $body = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     if ($body === false) return null;
-    $ch = curl_init('https://api.openai.com/v1/chat/completions');
-    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer ' . $apiKey], CURLOPT_POSTFIELDS => $body, CURLOPT_CONNECTTIMEOUT => 4, CURLOPT_TIMEOUT => 18]);
+    $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent?key=' . rawurlencode($apiKey);
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_HTTPHEADER => ['Content-Type: application/json'], CURLOPT_POSTFIELDS => $body, CURLOPT_CONNECTTIMEOUT => 4, CURLOPT_TIMEOUT => 18]);
     $response = curl_exec($ch);
     $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $transportError = curl_error($ch);
@@ -29,13 +42,13 @@ function tutorCompletion(string $apiKey, string $model, array $messages, int $ma
     if (!is_string($response) || $status < 200 || $status >= 300) {
         $decodedError = is_string($response) ? json_decode($response, true) : null;
         $apiError = trim((string) ($decodedError['error']['message'] ?? ''));
-        $apiCode = trim((string) ($decodedError['error']['code'] ?? $decodedError['error']['type'] ?? ''));
-        $failureReason = $status > 0 ? 'OpenAI HTTP ' . $status . ($apiCode !== '' ? ' (' . $apiCode . ')' : '') : 'Network/TLS connection failed';
+        $apiCode = trim((string) ($decodedError['error']['status'] ?? $decodedError['error']['code'] ?? ''));
+        $failureReason = $status > 0 ? 'Gemini HTTP ' . $status . ($apiCode !== '' ? ' (' . $apiCode . ')' : '') : 'Network/TLS connection failed';
         error_log('Student tutor API failed: ' . $failureReason . ($transportError !== '' ? '; transport=' . $transportError : '') . ($apiError !== '' ? '; message=' . mb_substr($apiError, 0, 500, 'UTF-8') : ''));
         return null;
     }
     $decoded = json_decode($response, true);
-    $answer = trim((string) ($decoded['choices'][0]['message']['content'] ?? ''));
+    $answer = trim((string) ($decoded['candidates'][0]['content']['parts'][0]['text'] ?? ''));
     return $answer !== '' ? mb_substr($answer, 0, 5000, 'UTF-8') : null;
 }
 
@@ -80,9 +93,9 @@ try {
     $options = is_array($context['options']) ? $context['options'] : (json_decode((string) $context['options'], true) ?: []);
     $correct = strtoupper(trim((string) $context['correct_choice']));
     $correctText = $options[ord($correct) - 65] ?? '';
-    $apiKey = trim((string) (getenv('OPENAI_API_KEY') ?: ''));
-    if ($apiKey === '') tutorJson(['ok' => false, 'message' => 'ยังไม่ได้ตั้งค่า AI API key'], 503);
-    $model = trim((string) (getenv('OPENAI_MODEL') ?: 'gpt-4o-mini'));
+    $apiKey = trim((string) (getenv('GEMINI_API_KEY') ?: ''));
+    if ($apiKey === '') tutorJson(['ok' => false, 'message' => 'ยังไม่ได้ตั้งค่า GEMINI_API_KEY ใน Render'], 503);
+    $model = trim((string) (getenv('GEMINI_MODEL') ?: 'gemini-2.5-flash-lite'));
     if ($action === 'explain') {
         $existingExplanation = trim((string) ($context['ai_explanation'] ?? ''));
         if ($existingExplanation !== '' && !str_contains($existingExplanation, 'ยังไม่มีคำอธิบาย') && !str_contains($existingExplanation, 'AI ยังไม่พร้อม')) {
@@ -95,11 +108,11 @@ try {
         $answer = tutorCompletion($apiKey, $model, [['role' => 'user', 'content' => $prompt]], 700, $failureReason);
         if ($answer === null) {
             $userMessage = match (true) {
-                str_contains((string) $failureReason, 'HTTP 401') => 'OpenAI ไม่ยอมรับ API key (401) ตรวจว่าคีย์ถูกต้องและยังใช้งานได้',
-                str_contains((string) $failureReason, 'HTTP 429') => 'OpenAI ปฏิเสธคำขอ (429) ตรวจ usage limit, billing หรือ rate limit',
-                str_contains((string) $failureReason, 'HTTP 404') => 'ไม่พบโมเดล OpenAI ที่ตั้งไว้ ตรวจค่า OPENAI_MODEL',
-                str_contains((string) $failureReason, 'HTTP 400') => 'OpenAI ปฏิเสธรูปแบบคำขอ (400) ตรวจชื่อโมเดลหรือ request parameters',
-                default => 'เชื่อมต่อ OpenAI ไม่สำเร็จ ตรวจ Logs ของ Render เพื่อดูรายละเอียด (ห้ามแชร์ API key)',
+                str_contains((string) $failureReason, 'HTTP 401') || str_contains((string) $failureReason, 'HTTP 403') => 'Gemini ไม่ยอมรับ API key หรือไม่มีสิทธิ์ใช้ API ตรวจคีย์และการเปิดใช้ Gemini API',
+                str_contains((string) $failureReason, 'HTTP 429') => 'Gemini ถึงโควตาหรือเรียกถี่เกินไป กรุณารอสักครู่หรือตรวจ Free Tier limit',
+                str_contains((string) $failureReason, 'HTTP 404') => 'ไม่พบ Gemini model ที่ตั้งไว้ ตรวจค่า GEMINI_MODEL',
+                str_contains((string) $failureReason, 'HTTP 400') => 'Gemini ปฏิเสธรูปแบบคำขอ (400) ตรวจชื่อโมเดลหรือ request parameters',
+                default => 'เชื่อมต่อ Gemini ไม่สำเร็จ ตรวจ Logs ของ Render เพื่อดูรายละเอียด (ห้ามแชร์ API key)',
             };
             tutorJson(['ok' => false, 'message' => $userMessage], 502);
         }

@@ -21,7 +21,7 @@ function submittedChoice(mixed $value): ?string
 
 function generateAnswerExplanation(array $question, string $selectedChoice): ?string
 {
-    $apiKey = trim((string) (getenv('OPENAI_API_KEY') ?: ''));
+    $apiKey = trim((string) (getenv('GEMINI_API_KEY') ?: ''));
     if ($apiKey === '') return null;
     $options = is_array($question['options']) ? $question['options'] : (json_decode((string) $question['options'], true) ?: []);
     $labels = ['A', 'B', 'C', 'D'];
@@ -39,18 +39,18 @@ function generateAnswerExplanation(array $question, string $selectedChoice): ?st
         . "\nให้ตอบเป็นภาษาไทย สุภาพ กระชับแต่ละเอียด เป็นขั้นตอน และอย่าคาดเดาข้อมูลที่ไม่มีในโจทย์";
 
     $body = json_encode([
-        'model' => trim((string) (getenv('OPENAI_MODEL') ?: 'gpt-4o-mini')),
-        'messages' => [['role' => 'user', 'content' => $prompt]],
-        'temperature' => 0.2,
-        'max_tokens' => 700,
+        'contents' => [['role' => 'user', 'parts' => [['text' => $prompt]]]],
+        'generationConfig' => ['temperature' => 0.2, 'maxOutputTokens' => 700],
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     if ($body === false) return null;
     if (!function_exists('curl_init')) return null;
-    $ch = curl_init('https://api.openai.com/v1/chat/completions');
+    $model = trim((string) (getenv('GEMINI_MODEL') ?: 'gemini-2.5-flash-lite'));
+    $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent?key=' . rawurlencode($apiKey);
+    $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer ' . $apiKey],
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
         CURLOPT_POSTFIELDS => $body,
         CURLOPT_CONNECTTIMEOUT => 3,
         CURLOPT_TIMEOUT => 8,
@@ -60,7 +60,7 @@ function generateAnswerExplanation(array $question, string $selectedChoice): ?st
     curl_close($ch);
     if (!is_string($response) || $status < 200 || $status >= 300) return null;
     $decoded = json_decode($response, true);
-    $text = trim((string) ($decoded['choices'][0]['message']['content'] ?? ''));
+    $text = trim((string) ($decoded['candidates'][0]['content']['parts'][0]['text'] ?? ''));
     return $text !== '' ? mb_substr($text, 0, 6000, 'UTF-8') : null;
 }
 
