@@ -4,13 +4,14 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libfreetype6-dev \
         libjpeg62-turbo-dev \
+        libcurl4-openssl-dev \
         libonig-dev \
         libpng-dev \
         libpq-dev \
         libxml2-dev \
         unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" dom gd mbstring pdo_pgsql xml \
+    && docker-php-ext-install -j"$(nproc)" curl dom gd mbstring pdo_pgsql xml \
     && a2enmod rewrite \
     && sed -i 's/^Listen 80$/Listen 10000/' /etc/apache2/ports.conf \
     && sed -i 's/<VirtualHost \*:80>/<VirtualHost *:10000>/' /etc/apache2/sites-available/000-default.conf \

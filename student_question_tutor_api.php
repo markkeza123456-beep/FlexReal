@@ -83,7 +83,7 @@ try {
         $selectedText = $selected !== '' ? ($options[ord($selected) - 65] ?? '') : '';
         $prompt = "คุณคือติวเตอร์ผู้เชี่ยวชาญ จงอธิบายเป็นภาษาไทยว่าทำไมเฉลยที่อาจารย์เลือกจึงถูกต้อง พร้อมแสดงวิธีคิดเป็นขั้นตอนที่นักเรียนเข้าใจง่าย หากนักเรียนตอบผิดให้ชี้จุดที่พลาดอย่างสุภาพ ห้ามเปลี่ยนเฉลยและห้ามแต่งข้อมูลที่ไม่มีในโจทย์.\nโจทย์: {$context['question_text']}\nตัวเลือก: " . implode(' | ', array_map('strval', $options)) . "\nนักเรียนเลือก: {$selected}. {$selectedText}\nเฉลยอาจารย์: {$correct}. {$correctText}\nคำอธิบายอาจารย์: " . trim((string) ($context['teacher_explanation'] ?? ''));
         $answer = tutorCompletion($apiKey, $model, [['role' => 'user', 'content' => $prompt]], 700);
-        if ($answer === null) tutorJson(['ok' => false, 'message' => 'AI สร้างคำอธิบายไม่สำเร็จ กรุณาตรวจ OPENAI_API_KEY และลองใหม่'], 502);
+        if ($answer === null) tutorJson(['ok' => false, 'message' => 'บริการ AI ติดต่อไม่สำเร็จ กรุณาตรวจ Logs ของ Render และสถานะ API ของ OpenAI'], 502);
         $save = $conn->prepare('UPDATE public.quiz_attempt_answers aa SET ai_explanation = :explanation FROM public.quiz_attempts a WHERE aa.attempt_id = a.attempt_id AND aa.attempt_id = :attempt_id AND aa.question_id = :question_id AND a.student_id = :student_id');
         $save->execute([':explanation' => $answer, ':attempt_id' => $attemptId, ':question_id' => $questionId, ':student_id' => (string) $_SESSION['user_id']]);
         tutorJson(['ok' => true, 'answer' => $answer]);
