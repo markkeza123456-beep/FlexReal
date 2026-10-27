@@ -133,7 +133,7 @@ SQL;
         $inSql = implode(', ', $placeholders);
         $timelineSql = "WITH activity AS (
             SELECT lp.student_id::text AS student_id,
-                   COALESCE(lp.last_activity_at, lp.last_opened_at, lp.updated_at) AS occurred_at,
+                   MAX(COALESCE(lp.last_activity_at, lp.last_opened_at, lp.updated_at)) AS occurred_at,
                    'lesson'::text AS activity_type,
                    COALESCE(c.name || ' · ' || l.title, l.title, 'บทเรียน') AS activity_title,
                    NULL::integer AS attempt_number, NULL::numeric AS score, NULL::numeric AS total_score,

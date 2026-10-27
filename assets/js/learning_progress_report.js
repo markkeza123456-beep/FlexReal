@@ -43,9 +43,11 @@
           badge = '<span class="learning-badge is-started">เริ่มทำ</span>';
         } else {
           const passed = activity.result_status === 'passed';
+          const pending = activity.result_status === 'pending_review';
           const retry = attempt > 1 ? ' - ทำใหม่' : '';
-          label = `ส่งแบบทดสอบ: ${title} (รอบที่ ${attempt}) — คะแนน ${Number(activity.score || 0)}/${Number(activity.total_score || 0)} (${passed ? 'ผ่าน' : `ไม่ผ่าน${retry}`})`;
-          badge = passed ? '<span class="learning-badge is-passed">ผ่าน</span>' : `<span class="learning-badge is-failed">ไม่ผ่าน${retry}</span>`;
+          const resultLabel = passed ? 'ผ่าน' : pending ? 'รอตรวจ' : `ไม่ผ่าน${retry}`;
+          label = `ส่งแบบทดสอบ: ${title} (รอบที่ ${attempt}) — คะแนน ${Number(activity.score || 0)}/${Number(activity.total_score || 0)} (${resultLabel})`;
+          badge = passed ? '<span class="learning-badge is-passed">ผ่าน</span>' : pending ? '<span class="learning-badge is-started">รอตรวจ</span>' : `<span class="learning-badge is-failed">ไม่ผ่าน${retry}</span>`;
         }
         return `<tr><td class="learning-timeline-cell">${student}<time datetime="${esc(activity.occurred_at)}">${esc(time)}</time><span class="learning-timeline-text">— ${esc(label)}</span>${badge}</td></tr>`;
       }).join('');
