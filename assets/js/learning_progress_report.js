@@ -30,8 +30,8 @@
       const active = Number(row.lessons_active || 0);
       const completed = Number(row.lessons_completed || 0);
       const quizzes = Number(row.quizzes_submitted || 0);
-      const points = Number(row.progress_percent_points || 0);
-      const progress = hasActivity ? `เข้าเรียน ${active} บท · สำเร็จ ${completed} บท · ส่งแบบทดสอบ ${quizzes} ครั้ง · ความคืบหน้ารวม ${points >= 0 ? '+' : ''}${points}%` : 'ไม่มีความเคลื่อนไหวในช่วงนี้';
+      const progressPercent = Math.min(100, Math.max(0, Number(row.progress_percent) || 0));
+      const progress = hasActivity ? `เข้าเรียน ${active} บท · สำเร็จ ${completed} บท · ส่งแบบทดสอบ ${quizzes} บท · ความคืบหน้ารวม ${progressPercent}%` : 'ไม่มีความเคลื่อนไหวในช่วงนี้';
       const last = hasActivity ? dateFormat.format(new Date(row.last_activity_at)) : '—';
       const latest = esc(row.latest_lesson || '—');
       if (studentView) return `<tr><td>${latest}</td><td>${esc(progress)}</td><td>${esc(last)}</td></tr>`;

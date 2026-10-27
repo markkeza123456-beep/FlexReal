@@ -57,10 +57,16 @@ try {
             SELECT student_id,
                    COUNT(DISTINCT lesson_id) FILTER (WHERE activity_type = 'progress') AS lessons_active,
                    COUNT(DISTINCT lesson_id) FILTER (WHERE is_completed) AS lessons_completed,
-                   COUNT(*) FILTER (WHERE activity_type = 'quiz') AS quizzes_submitted,
-                   SUM(progress_percent) AS progress_percent_points,
+                   COUNT(DISTINCT lesson_id) FILTER (WHERE activity_type = 'quiz') AS quizzes_submitted,
                    MAX(activity_at) AS last_activity_at
             FROM activity GROUP BY student_id
+        ), student_targets AS (
+            SELECT sc.student_id::text AS student_id,
+                   COUNT(DISTINCT l.lesson_id) AS total_lessons
+            FROM public.student_courses sc
+            JOIN public.lessons l ON l.course_id = sc.course_id
+            WHERE sc.status = 'active'
+            GROUP BY sc.student_id
         )
 SQL;
 
@@ -78,10 +84,11 @@ SQL;
         COALESCE(ps.lessons_active, 0) AS lessons_active,
         COALESCE(ps.lessons_completed, 0) AS lessons_completed,
         COALESCE(ps.quizzes_submitted, 0) AS quizzes_submitted,
-        COALESCE(ps.progress_percent_points, 0) AS progress_percent_points,
+        COALESCE(LEAST(100, ROUND(100.0 * COALESCE(ps.lessons_completed, 0) / NULLIF(st.total_lessons, 0), 1)), 0) AS progress_percent,
         ps.last_activity_at
         FROM public.students s
         LEFT JOIN per_student ps ON ps.student_id = s.user_id::text
+        LEFT JOIN student_targets st ON st.student_id = s.user_id::text
         LEFT JOIN LATERAL (
             SELECT a.lesson_id FROM activity a WHERE a.student_id = s.user_id::text
             ORDER BY a.activity_at DESC, a.lesson_id DESC LIMIT 1
@@ -99,7 +106,7 @@ SQL;
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     foreach ($rows as &$row) {
         foreach (['lessons_active', 'lessons_completed', 'quizzes_submitted'] as $field) $row[$field] = (int) $row[$field];
-        $row['progress_percent_points'] = round((float) $row['progress_percent_points'], 1);
+        $row['progress_percent'] = min(100, max(0, round((float) $row['progress_percent'], 1)));
     }
     unset($row);
 
