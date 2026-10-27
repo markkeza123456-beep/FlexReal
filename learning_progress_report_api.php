@@ -157,27 +157,33 @@ SQL;
             }
         }
 
-        $quizStmt = $conn->prepare("SELECT qa.student_id::text AS student_id, qa.attempt_id,
+        $quizStmt = $conn->prepare("WITH active_quizzes AS (
+                SELECT DISTINCT qa.student_id, qa.lesson_id
+                FROM public.quiz_attempts qa
+                WHERE qa.submitted_at >= now() - make_interval(days => CAST(:detail_days AS integer))
+                  AND qa.student_id::text IN ({$inSql})
+            ), quiz_history AS (
+                SELECT qa.student_id::text AS student_id, qa.attempt_id,
                 qa.lesson_id, qa.attempt_number, qa.score, qa.total_score, qa.status,
                 qa.submitted_at, COALESCE(c.name || ' · ' || l.title, l.title, 'แบบทดสอบ') AS quiz_title,
-                COUNT(*) OVER (PARTITION BY qa.student_id, qa.lesson_id) AS attempts_in_range,
+                COUNT(*) OVER (PARTITION BY qa.student_id, qa.lesson_id) AS attempts_total,
                 ROW_NUMBER() OVER (PARTITION BY qa.student_id, qa.lesson_id ORDER BY qa.submitted_at DESC, qa.attempt_number DESC, qa.attempt_id DESC) AS recent_rank
-            FROM public.quiz_attempts qa
-            JOIN public.lessons l ON l.lesson_id = qa.lesson_id
-            LEFT JOIN public.courses c ON c.course_id = l.course_id
-            WHERE qa.submitted_at >= now() - make_interval(days => CAST(:detail_days AS integer))
-              AND qa.student_id::text IN ({$inSql})
-            ORDER BY qa.submitted_at DESC, qa.attempt_number DESC");
+                FROM public.quiz_attempts qa
+                JOIN active_quizzes aq ON aq.student_id = qa.student_id AND aq.lesson_id = qa.lesson_id
+                JOIN public.lessons l ON l.lesson_id = qa.lesson_id
+                LEFT JOIN public.courses c ON c.course_id = l.course_id
+            )
+            SELECT * FROM quiz_history ORDER BY submitted_at DESC, attempt_number DESC");
         $quizStmt->execute($detailParams);
         foreach ($quizStmt->fetchAll(PDO::FETCH_ASSOC) as $quiz) {
             $studentId = $quiz['student_id'];
             if (isset($rowIndex[$studentId])) {
-                $quiz['has_retry'] = (int) $quiz['attempts_in_range'] > 1;
+                $quiz['has_retry'] = (int) $quiz['attempts_total'] > 1;
                 $quiz['has_failed'] = (int) $quiz['recent_rank'] === 1 && $quiz['status'] !== 'passed';
                 $quiz['score'] = (float) $quiz['score'];
                 $quiz['total_score'] = (float) $quiz['total_score'];
                 $quiz['attempt_number'] = (int) $quiz['attempt_number'];
-                unset($quiz['student_id'], $quiz['attempts_in_range'], $quiz['recent_rank']);
+                unset($quiz['student_id'], $quiz['attempts_total'], $quiz['recent_rank']);
                 $rowIndex[$studentId]['quizzes'][] = $quiz;
             }
         }
