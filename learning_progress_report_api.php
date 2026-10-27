@@ -15,7 +15,7 @@ if ($userId === '' || !isset($roleScope[$role])) {
 }
 
 $days = filter_var($_GET['days'] ?? 1, FILTER_VALIDATE_INT);
-if (!in_array($days, [3, 7], true)) $days = 3;
+if (!in_array($days, [1, 3, 7], true)) $days = 1;
 $rangeStart = (new DateTimeImmutable('today', new DateTimeZone('Asia/Bangkok')))
     ->modify('-' . ($days - 1) . ' days')
     ->format('Y-m-d H:i:sP');

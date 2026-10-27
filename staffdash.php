@@ -186,7 +186,8 @@ if ($displayName !== '') {
               <div class="page-sub" id="learningProgressSummary" aria-live="polite"></div>
             </div>
             <div class="learning-range-controls" role="group" aria-label="เลือกช่วงเวลารายงาน">
-              <button type="button" class="learning-range-btn is-active" data-learning-days="3" aria-pressed="true">3 วันล่าสุด</button>
+              <button type="button" class="learning-range-btn is-active" data-learning-days="1" aria-pressed="true">วันนี้</button>
+              <button type="button" class="learning-range-btn" data-learning-days="3" aria-pressed="false">3 วันล่าสุด</button>
               <button type="button" class="learning-range-btn" data-learning-days="7" aria-pressed="false">7 วันล่าสุด</button>
             </div>
           </div>

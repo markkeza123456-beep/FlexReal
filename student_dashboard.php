@@ -91,7 +91,8 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
                     <div class="card-header" style="flex-wrap:wrap;gap:12px">
                         <div><h2 id="learningReportTitle">ความคืบหน้าการเรียนรู้ย้อนหลัง</h2><p id="learningProgressSummary" aria-live="polite">กำลังโหลดข้อมูล...</p></div>
                         <div class="learning-range-controls" role="group" aria-label="เลือกช่วงเวลารายงาน">
-                            <button type="button" class="learning-range-btn is-active" data-learning-days="3" aria-pressed="true">ย้อนหลัง 3 วัน</button>
+                            <button type="button" class="learning-range-btn is-active" data-learning-days="1" aria-pressed="true">วันนี้</button>
+                            <button type="button" class="learning-range-btn" data-learning-days="3" aria-pressed="false">ย้อนหลัง 3 วัน</button>
                             <button type="button" class="learning-range-btn" data-learning-days="7" aria-pressed="false">ย้อนหลัง 7 วัน</button>
                         </div>
                     </div>
