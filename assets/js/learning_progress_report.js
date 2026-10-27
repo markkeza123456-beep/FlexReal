@@ -67,10 +67,11 @@
       const pagination = data.pagination || { page: 1, pages: 1, total: 1 };
       page = Number(pagination.page || 1);
       pages = Number(pagination.pages || 1);
+      const rangeLabel = days === 1 ? 'วันนี้' : `${days} วันที่ผ่านมา`;
       if (summary) summary.textContent = directorView
-        ? `ผู้เรียน active ${Number(data.active_count || 0).toLocaleString('th-TH')} คน ใน ${days} วันที่ผ่านมา`
-        : studentView ? `กิจกรรมการเรียนของคุณใน ${days} วันที่ผ่านมา`
-          : `ผู้เรียน active ${Number(data.active_count || 0).toLocaleString('th-TH')} คน · นักเรียนที่ดูแล ${Number(pagination.total || 0).toLocaleString('th-TH')} คน`;
+        ? `ผู้เรียน active ${Number(data.active_count || 0).toLocaleString('th-TH')} คน · ${rangeLabel}`
+        : studentView ? `กิจกรรมการเรียนของคุณ${days === 1 ? ' ' : 'ในช่วง '}${rangeLabel}`
+          : `ผู้เรียน active ${Number(data.active_count || 0).toLocaleString('th-TH')} คน · นักเรียนที่ดูแล ${Number(pagination.total || 0).toLocaleString('th-TH')} คน · ${rangeLabel}`;
       if (pageInfo) pageInfo.textContent = `หน้า ${page} / ${pages} · ${Number(pagination.total || 0).toLocaleString('th-TH')} คน`;
       if (previous) previous.disabled = page <= 1;
       if (next) next.disabled = page >= pages;

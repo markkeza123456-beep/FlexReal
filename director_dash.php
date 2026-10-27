@@ -214,7 +214,7 @@ LIMIT 5")->fetchAll(PDO::FETCH_ASSOC) ?: [];
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-  <script src="assets/js/learning_progress_report.js?v=20261026-role-based"></script>
+  <script src="assets/js/learning_progress_report.js?v=20261027-calendar-range-v2"></script>
   <script>
     const courseRows = <?= json_encode($courseRows, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
     const graduationStatusCounts = <?= json_encode($graduationStatusCounts, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
