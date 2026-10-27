@@ -502,9 +502,8 @@ $stats = [
             <div class="card-header" style="flex-wrap:wrap;gap:12px">
                 <div><h2 class="card-title" id="learningReportTitle">รายงานความคืบหน้าการเรียนรู้</h2><p id="learningProgressSummary" class="page-sub" aria-live="polite">กำลังโหลดข้อมูล...</p></div>
                 <div class="learning-range-controls" role="group" aria-label="เลือกช่วงเวลารายงาน">
-                    <button type="button" class="learning-range-btn is-active" data-learning-days="1" aria-pressed="true">ย้อนหลัง 1 วัน</button>
-                    <button type="button" class="learning-range-btn" data-learning-days="3" aria-pressed="false">ย้อนหลัง 3 วัน</button>
-                    <button type="button" class="learning-range-btn" data-learning-days="7" aria-pressed="false">ย้อนหลัง 1 สัปดาห์</button>
+                    <button type="button" class="learning-range-btn is-active" data-learning-days="3" aria-pressed="true">ย้อนหลัง 3 วัน</button>
+                    <button type="button" class="learning-range-btn" data-learning-days="7" aria-pressed="false">ย้อนหลัง 7 วัน</button>
                 </div>
             </div>
             <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin:0 0 12px;flex-wrap:wrap">

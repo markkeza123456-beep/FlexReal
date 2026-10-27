@@ -134,9 +134,8 @@ LIMIT 5")->fetchAll(PDO::FETCH_ASSOC) ?: [];
       <div class="director-panel-heading" style="align-items:center;flex-wrap:wrap">
         <div><h2 id="learningReportTitle">รายงานความคืบหน้าการเรียนรู้</h2><p id="learningProgressSummary" aria-live="polite">กำลังโหลดข้อมูล...</p></div>
         <div class="learning-range-controls" role="group" aria-label="เลือกช่วงเวลารายงาน">
-          <button type="button" class="learning-range-btn is-active" data-learning-days="1" aria-pressed="true">ย้อนหลัง 1 วัน</button>
-          <button type="button" class="learning-range-btn" data-learning-days="3" aria-pressed="false">ย้อนหลัง 3 วัน</button>
-          <button type="button" class="learning-range-btn" data-learning-days="7" aria-pressed="false">ย้อนหลัง 1 สัปดาห์</button>
+          <button type="button" class="learning-range-btn is-active" data-learning-days="3" aria-pressed="true">ย้อนหลัง 3 วัน</button>
+          <button type="button" class="learning-range-btn" data-learning-days="7" aria-pressed="false">ย้อนหลัง 7 วัน</button>
         </div>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0">

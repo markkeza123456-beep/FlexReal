@@ -10,7 +10,7 @@
   const studentView = document.body.classList.contains('student-dashboard-page') || Boolean(document.getElementById('dashboard-page'));
   const directorView = document.body.classList.contains('director-dashboard');
   const dateFormat = new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Bangkok' });
-  let days = 1;
+  let days = 3;
   let page = 1;
   let pages = 1;
   let query = '';
@@ -82,7 +82,7 @@
   }
 
   document.querySelectorAll('[data-learning-days]').forEach(button => button.addEventListener('click', () => {
-    days = [1, 3, 7].includes(Number(button.dataset.learningDays)) ? Number(button.dataset.learningDays) : 1;
+    days = [3, 7].includes(Number(button.dataset.learningDays)) ? Number(button.dataset.learningDays) : 3;
     page = 1;
     document.querySelectorAll('[data-learning-days]').forEach(item => {
       const active = item === button;

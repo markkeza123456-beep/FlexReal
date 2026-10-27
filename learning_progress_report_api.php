@@ -15,7 +15,10 @@ if ($userId === '' || !isset($roleScope[$role])) {
 }
 
 $days = filter_var($_GET['days'] ?? 1, FILTER_VALIDATE_INT);
-if (!in_array($days, [1, 3, 7], true)) $days = 1;
+if (!in_array($days, [3, 7], true)) $days = 3;
+$rangeStart = (new DateTimeImmutable('today', new DateTimeZone('Asia/Bangkok')))
+    ->modify('-' . ($days - 1) . ' days')
+    ->format('Y-m-d H:i:sP');
 $search = trim((string) ($_GET['q'] ?? ''));
 $search = mb_substr($search, 0, 100, 'UTF-8');
 $page = max(1, (int) ($_GET['page'] ?? 1));
@@ -24,7 +27,7 @@ $pageSize = 25;
 try {
     require_once __DIR__ . '/config/db.php';
     $scope = $roleScope[$role];
-    $params = [':days' => $days, ':search' => '%' . $search . '%'];
+    $params = [':range_start' => $rangeStart, ':search' => '%' . $search . '%'];
     $scopeSql = '';
     if ($scope === 'student') {
         $scopeSql = 'AND s.user_id::text = :scope_user';
@@ -45,13 +48,13 @@ try {
                    BOOL_OR(lp.is_completed) AS is_completed
             FROM public.lesson_progress lp
             WHERE lp.progress_type IN ('document', 'video')
-              AND COALESCE(lp.last_activity_at, lp.last_opened_at, lp.updated_at) >= now() - make_interval(days => CAST(:days AS integer))
+              AND COALESCE(lp.last_activity_at, lp.last_opened_at, lp.updated_at) >= CAST(:range_start AS timestamptz)
             GROUP BY lp.student_id, lp.lesson_id
         ), quiz_activity AS (
             SELECT qa.student_id::text AS student_id, qa.lesson_id, qa.attempt_id,
                    qa.attempt_number, qa.score, qa.total_score, qa.status, qa.submitted_at
             FROM public.quiz_attempts qa
-            WHERE qa.submitted_at >= now() - make_interval(days => CAST(:days AS integer))
+            WHERE qa.submitted_at >= CAST(:range_start AS timestamptz)
         ), lesson_summary AS (
             SELECT student_id, COUNT(DISTINCT lesson_id) AS lessons_active,
                    COUNT(DISTINCT lesson_id) FILTER (WHERE is_completed) AS lessons_completed,
@@ -124,7 +127,7 @@ SQL;
     if ($rows) {
         $studentIds = array_column($rows, 'student_id');
         $placeholders = [];
-        $detailParams = [':detail_days' => $days];
+        $detailParams = [':detail_range_start' => $rangeStart];
         foreach ($studentIds as $index => $studentId) {
             $key = ':student_' . $index;
             $placeholders[] = $key;
@@ -142,7 +145,7 @@ SQL;
             JOIN public.lessons l ON l.lesson_id = lp.lesson_id
             LEFT JOIN public.courses c ON c.course_id = l.course_id
             WHERE lp.progress_type IN ('document', 'video')
-              AND COALESCE(lp.last_activity_at, lp.last_opened_at, lp.updated_at) >= now() - make_interval(days => CAST(:detail_days AS integer))
+              AND COALESCE(lp.last_activity_at, lp.last_opened_at, lp.updated_at) >= CAST(:detail_range_start AS timestamptz)
               AND lp.student_id::text IN ({$inSql})
             GROUP BY lp.student_id, lp.lesson_id, c.name, l.title
             UNION ALL
@@ -152,7 +155,7 @@ SQL;
             FROM public.quiz_attempt_sessions qs
             JOIN public.lessons l ON l.lesson_id = qs.lesson_id
             LEFT JOIN public.courses c ON c.course_id = l.course_id
-            WHERE qs.started_at >= now() - make_interval(days => CAST(:detail_days AS integer))
+            WHERE qs.started_at >= CAST(:detail_range_start AS timestamptz)
               AND qs.student_id::text IN ({$inSql})
             UNION ALL
             SELECT qa.student_id::text, qa.submitted_at, 'quiz_submit'::text,
@@ -161,7 +164,7 @@ SQL;
             FROM public.quiz_attempts qa
             JOIN public.lessons l ON l.lesson_id = qa.lesson_id
             LEFT JOIN public.courses c ON c.course_id = l.course_id
-            WHERE qa.submitted_at >= now() - make_interval(days => CAST(:detail_days AS integer))
+            WHERE qa.submitted_at >= CAST(:detail_range_start AS timestamptz)
               AND qa.student_id::text IN ({$inSql})
         ) SELECT * FROM activity ORDER BY occurred_at DESC, activity_type ASC, item_id DESC";
         $timelineStmt = $conn->prepare($timelineSql);
@@ -195,7 +198,7 @@ SQL;
     }
 
     $activeScopeSql = '';
-    $activeParams = [':days' => $days];
+    $activeParams = [':range_start' => $rangeStart];
     if ($scope === 'student') {
         $activeScopeSql = 'AND active.student_id = :scope_user';
         $activeParams[':scope_user'] = $userId;
@@ -212,9 +215,9 @@ SQL;
         FROM (
             SELECT student_id::text AS student_id FROM public.lesson_progress
             WHERE progress_type IN ('document', 'video')
-              AND COALESCE(last_activity_at, last_opened_at, updated_at) >= now() - make_interval(days => CAST(:days AS integer))
+              AND COALESCE(last_activity_at, last_opened_at, updated_at) >= CAST(:range_start AS timestamptz)
             UNION SELECT student_id::text FROM public.quiz_attempts
-            WHERE submitted_at >= now() - make_interval(days => CAST(:days AS integer))
+            WHERE submitted_at >= CAST(:range_start AS timestamptz)
         ) active WHERE TRUE {$activeScopeSql}");
     $activeStmt->execute($activeParams);
     $activeCount = (int) $activeStmt->fetchColumn();
