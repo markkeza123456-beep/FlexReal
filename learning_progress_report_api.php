@@ -24,7 +24,7 @@ $pageSize = 25;
 try {
     require_once __DIR__ . '/config/db.php';
     $scope = $roleScope[$role];
-    $params = [':progress_days' => $days, ':quiz_days' => $days, ':search' => '%' . $search . '%'];
+    $params = [':days' => $days, ':search' => '%' . $search . '%'];
     $scopeSql = '';
     if ($scope === 'student') {
         $scopeSql = 'AND s.user_id::text = :scope_user';
@@ -39,27 +39,41 @@ try {
         $params[':scope_teacher'] = $userId;
     }
     $base = <<<'SQL'
-        WITH activity AS (
+        WITH lesson_activity AS (
             SELECT lp.student_id::text AS student_id, lp.lesson_id,
-                   COALESCE(lp.last_activity_at, lp.last_opened_at, lp.updated_at) AS activity_at,
-                   lp.is_completed,
-                   GREATEST(COALESCE(lp.document_progress_percent, 0), COALESCE(lp.video_progress_percent, 0)) AS progress_percent,
-                   'progress'::text AS activity_type
+                   MAX(COALESCE(lp.last_activity_at, lp.last_opened_at, lp.updated_at)) AS activity_at,
+                   BOOL_OR(lp.is_completed) AS is_completed
             FROM public.lesson_progress lp
             WHERE lp.progress_type IN ('document', 'video')
-              AND COALESCE(lp.last_activity_at, lp.last_opened_at, lp.updated_at) >= now() - make_interval(days => CAST(:progress_days AS integer))
-            UNION ALL
-            SELECT qa.student_id::text, qa.lesson_id, qa.submitted_at,
-                   (qa.status = 'passed'), 0::numeric, 'quiz'::text
+              AND COALESCE(lp.last_activity_at, lp.last_opened_at, lp.updated_at) >= now() - make_interval(days => CAST(:days AS integer))
+            GROUP BY lp.student_id, lp.lesson_id
+        ), quiz_activity AS (
+            SELECT qa.student_id::text AS student_id, qa.lesson_id, qa.attempt_id,
+                   qa.attempt_number, qa.score, qa.total_score, qa.status, qa.submitted_at
             FROM public.quiz_attempts qa
-            WHERE qa.submitted_at >= now() - make_interval(days => CAST(:quiz_days AS integer))
-        ), per_student AS (
-            SELECT student_id,
-                   COUNT(DISTINCT lesson_id) FILTER (WHERE activity_type = 'progress') AS lessons_active,
+            WHERE qa.submitted_at >= now() - make_interval(days => CAST(:days AS integer))
+        ), lesson_summary AS (
+            SELECT student_id, COUNT(DISTINCT lesson_id) AS lessons_active,
                    COUNT(DISTINCT lesson_id) FILTER (WHERE is_completed) AS lessons_completed,
-                   COUNT(DISTINCT lesson_id) FILTER (WHERE activity_type = 'quiz') AS quizzes_submitted,
-                   MAX(activity_at) AS last_activity_at
-            FROM activity GROUP BY student_id
+                   MAX(activity_at) AS last_lesson_activity
+            FROM lesson_activity GROUP BY student_id
+        ), quiz_summary AS (
+            SELECT student_id, COUNT(DISTINCT attempt_id) AS quizzes_submitted,
+                   COUNT(DISTINCT attempt_id) FILTER (WHERE status = 'passed') AS quizzes_passed,
+                   COUNT(DISTINCT attempt_id) FILTER (WHERE status <> 'passed') AS quizzes_failed,
+                   MAX(submitted_at) AS last_quiz_activity
+            FROM quiz_activity GROUP BY student_id
+        ), per_student AS (
+            SELECT s.user_id::text AS student_id,
+                   COALESCE(ls.lessons_active, 0) AS lessons_active,
+                   COALESCE(ls.lessons_completed, 0) AS lessons_completed,
+                   COALESCE(qs.quizzes_submitted, 0) AS quizzes_submitted,
+                   COALESCE(qs.quizzes_passed, 0) AS quizzes_passed,
+                   COALESCE(qs.quizzes_failed, 0) AS quizzes_failed,
+                   GREATEST(ls.last_lesson_activity, qs.last_quiz_activity) AS last_activity_at
+            FROM public.students s
+            LEFT JOIN lesson_summary ls ON ls.student_id = s.user_id::text
+            LEFT JOIN quiz_summary qs ON qs.student_id = s.user_id::text
         ), student_targets AS (
             SELECT sc.student_id::text AS student_id,
                    COUNT(DISTINCT l.lesson_id) AS total_lessons
@@ -80,21 +94,16 @@ SQL;
     $offset = ($page - 1) * $pageSize;
 
     $sql = $base . " SELECT s.user_id::text AS student_id, s.full_name AS student_name,
-        COALESCE(c.name || ' · ' || l.title, '-') AS latest_lesson,
         COALESCE(ps.lessons_active, 0) AS lessons_active,
         COALESCE(ps.lessons_completed, 0) AS lessons_completed,
         COALESCE(ps.quizzes_submitted, 0) AS quizzes_submitted,
+        COALESCE(ps.quizzes_passed, 0) AS quizzes_passed,
+        COALESCE(ps.quizzes_failed, 0) AS quizzes_failed,
         COALESCE(LEAST(100, ROUND(100.0 * COALESCE(ps.lessons_completed, 0) / NULLIF(st.total_lessons, 0), 1)), 0) AS progress_percent,
         ps.last_activity_at
         FROM public.students s
         LEFT JOIN per_student ps ON ps.student_id = s.user_id::text
         LEFT JOIN student_targets st ON st.student_id = s.user_id::text
-        LEFT JOIN LATERAL (
-            SELECT a.lesson_id FROM activity a WHERE a.student_id = s.user_id::text
-            ORDER BY a.activity_at DESC, a.lesson_id DESC LIMIT 1
-        ) latest ON TRUE
-        LEFT JOIN public.lessons l ON l.lesson_id = latest.lesson_id
-        LEFT JOIN public.courses c ON c.course_id = l.course_id
         WHERE s.full_name ILIKE :search {$scopeSql}
         ORDER BY (ps.last_activity_at IS NOT NULL) DESC, ps.last_activity_at DESC NULLS LAST, s.full_name ASC
         LIMIT :page_size OFFSET :page_offset";
@@ -105,10 +114,80 @@ SQL;
     $stmt->execute();
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     foreach ($rows as &$row) {
-        foreach (['lessons_active', 'lessons_completed', 'quizzes_submitted'] as $field) $row[$field] = (int) $row[$field];
+        foreach (['lessons_active', 'lessons_completed', 'quizzes_submitted', 'quizzes_passed', 'quizzes_failed'] as $field) $row[$field] = (int) $row[$field];
         $row['progress_percent'] = min(100, max(0, round((float) $row['progress_percent'], 1)));
+        $row['lessons'] = [];
+        $row['quizzes'] = [];
     }
     unset($row);
+
+    if ($rows) {
+        $studentIds = array_column($rows, 'student_id');
+        $placeholders = [];
+        $detailParams = [':detail_days' => $days];
+        foreach ($studentIds as $index => $studentId) {
+            $key = ':student_' . $index;
+            $placeholders[] = $key;
+            $detailParams[$key] = $studentId;
+        }
+        $inSql = implode(', ', $placeholders);
+        $lessonStmt = $conn->prepare("SELECT lp.student_id::text AS student_id, lp.lesson_id,
+                COALESCE(c.name || ' · ' || l.title, l.title, 'บทเรียน') AS lesson_title,
+                BOOL_OR(lp.is_completed) AS is_completed,
+                MAX(COALESCE(lp.last_activity_at, lp.last_opened_at, lp.updated_at)) AS activity_at
+            FROM public.lesson_progress lp
+            JOIN public.lessons l ON l.lesson_id = lp.lesson_id
+            LEFT JOIN public.courses c ON c.course_id = l.course_id
+            WHERE lp.progress_type IN ('document', 'video')
+              AND COALESCE(lp.last_activity_at, lp.last_opened_at, lp.updated_at) >= now() - make_interval(days => CAST(:detail_days AS integer))
+              AND lp.student_id::text IN ({$inSql})
+            GROUP BY lp.student_id, lp.lesson_id, c.name, l.title
+            ORDER BY activity_at DESC, lp.lesson_id DESC");
+        $lessonStmt->execute($detailParams);
+        $rowIndex = array_column($rows, null, 'student_id');
+        foreach ($lessonStmt->fetchAll(PDO::FETCH_ASSOC) as $lesson) {
+            $studentId = $lesson['student_id'];
+            if (isset($rowIndex[$studentId])) {
+                $rowIndex[$studentId]['lessons'][] = [
+                    'lesson_id' => (string) $lesson['lesson_id'],
+                    'title' => $lesson['lesson_title'],
+                    'is_completed' => in_array($lesson['is_completed'], [true, 1, '1', 't', 'true'], true),
+                    'activity_at' => $lesson['activity_at'],
+                ];
+            }
+        }
+
+        $quizStmt = $conn->prepare("SELECT qa.student_id::text AS student_id, qa.attempt_id,
+                qa.lesson_id, qa.attempt_number, qa.score, qa.total_score, qa.status,
+                qa.submitted_at, COALESCE(c.name || ' · ' || l.title, l.title, 'แบบทดสอบ') AS quiz_title,
+                COUNT(*) OVER (PARTITION BY qa.student_id, qa.lesson_id) AS attempts_in_range,
+                ROW_NUMBER() OVER (PARTITION BY qa.student_id, qa.lesson_id ORDER BY qa.submitted_at DESC, qa.attempt_number DESC, qa.attempt_id DESC) AS recent_rank
+            FROM public.quiz_attempts qa
+            JOIN public.lessons l ON l.lesson_id = qa.lesson_id
+            LEFT JOIN public.courses c ON c.course_id = l.course_id
+            WHERE qa.submitted_at >= now() - make_interval(days => CAST(:detail_days AS integer))
+              AND qa.student_id::text IN ({$inSql})
+            ORDER BY qa.submitted_at DESC, qa.attempt_number DESC");
+        $quizStmt->execute($detailParams);
+        foreach ($quizStmt->fetchAll(PDO::FETCH_ASSOC) as $quiz) {
+            $studentId = $quiz['student_id'];
+            if (isset($rowIndex[$studentId])) {
+                $quiz['has_retry'] = (int) $quiz['attempts_in_range'] > 1;
+                $quiz['has_failed'] = (int) $quiz['recent_rank'] === 1 && $quiz['status'] !== 'passed';
+                $quiz['score'] = (float) $quiz['score'];
+                $quiz['total_score'] = (float) $quiz['total_score'];
+                $quiz['attempt_number'] = (int) $quiz['attempt_number'];
+                unset($quiz['student_id'], $quiz['attempts_in_range'], $quiz['recent_rank']);
+                $rowIndex[$studentId]['quizzes'][] = $quiz;
+            }
+        }
+        $rows = array_values($rowIndex);
+        foreach ($rows as &$row) {
+            $row['has_retry'] = count(array_filter($row['quizzes'], static fn(array $quiz): bool => $quiz['has_retry'])) > 0;
+            $row['has_failed'] = count(array_filter($row['quizzes'], static fn(array $quiz): bool => $quiz['has_failed'])) > 0;
+        }
+        unset($row);
+    }
 
     $activeScopeSql = '';
     $activeParams = [':days' => $days];

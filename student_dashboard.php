@@ -96,7 +96,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
                             <button type="button" class="learning-range-btn" data-learning-days="7" aria-pressed="false">ย้อนหลัง 1 สัปดาห์</button>
                         </div>
                     </div>
-                    <div class="table-responsive"><table class="data-table"><thead><tr><th>บทเรียน/คอร์สล่าสุด</th><th>ความคืบหน้าในช่วงเวลา</th><th>ใช้งานล่าสุดเมื่อ</th></tr></thead><tbody id="learningProgressBody"><tr><td colspan="3" style="text-align:center">กำลังโหลด...</td></tr></tbody></table></div>
+                    <div class="table-responsive"><table class="data-table"><thead><tr><th>สรุปกิจกรรมและรายละเอียด</th><th>สถานะ</th><th>ใช้งานล่าสุดเมื่อ</th></tr></thead><tbody id="learningProgressBody"><tr><td colspan="3" style="text-align:center">กำลังโหลด...</td></tr></tbody></table></div>
                 </section>
 
                 <section class="stats-grid student-stats-grid">

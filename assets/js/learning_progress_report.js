@@ -30,12 +30,25 @@
       const active = Number(row.lessons_active || 0);
       const completed = Number(row.lessons_completed || 0);
       const quizzes = Number(row.quizzes_submitted || 0);
+      const passed = Number(row.quizzes_passed || 0);
+      const failed = Number(row.quizzes_failed || 0);
       const progressPercent = Math.min(100, Math.max(0, Number(row.progress_percent) || 0));
-      const progress = hasActivity ? `เข้าเรียน ${active} บท · สำเร็จ ${completed} บท · ส่งแบบทดสอบ ${quizzes} บท · ความคืบหน้ารวม ${progressPercent}%` : 'ไม่มีความเคลื่อนไหวในช่วงนี้';
       const last = hasActivity ? dateFormat.format(new Date(row.last_activity_at)) : '—';
-      const latest = esc(row.latest_lesson || '—');
-      if (studentView) return `<tr><td>${latest}</td><td>${esc(progress)}</td><td>${esc(last)}</td></tr>`;
-      return `<tr><td>${esc(row.student_name || 'ไม่ระบุชื่อ')}</td><td>${latest}</td><td>${esc(progress)}</td><td>${esc(last)}</td></tr>`;
+      const lessons = Array.isArray(row.lessons) ? row.lessons : [];
+      const quizzesList = Array.isArray(row.quizzes) ? row.quizzes : [];
+      const lessonList = lessons.length
+        ? `<ul class="learning-activity-list">${lessons.map(lesson => `<li><span>${esc(lesson.title || 'บทเรียน')}</span>${lesson.is_completed ? '<span class="learning-badge is-passed">สำเร็จ</span>' : ''}</li>`).join('')}</ul>`
+        : '<span class="learning-muted">ไม่มีบทเรียนในช่วงนี้</span>';
+      const quizList = quizzesList.length
+        ? `<ul class="learning-activity-list">${quizzesList.map(quiz => {
+            const passedAttempt = quiz.status === 'passed';
+            const badges = `${passedAttempt ? '<span class="learning-badge is-passed">ผ่าน</span>' : '<span class="learning-badge is-failed">ไม่ผ่าน</span>'}${quiz.has_retry ? '<span class="learning-badge is-warning">ทำซ้ำ</span>' : ''}${quiz.has_failed ? '<span class="learning-badge is-failed">รอบล่าสุดไม่ผ่าน</span>' : ''}`;
+            return `<li class="learning-quiz-item"><div><strong>${esc(quiz.quiz_title || 'แบบทดสอบ')} · รอบที่ ${Number(quiz.attempt_number || 0)}</strong><small>${Number(quiz.score || 0)}/${Number(quiz.total_score || 0)}</small></div><div class="learning-badges">${badges}</div></li>`;
+          }).join('')}</ul>`
+        : '<span class="learning-muted">ไม่มีการสอบในช่วงนี้</span>';
+      const details = `<div class="learning-activity-summary">เข้าเรียนจริง: ${active} บท · สำเร็จ ${completed} บท<br>ทำแบบทดสอบทั้งหมด: ${quizzes} ครั้ง (ผ่าน ${passed} / ไม่ผ่าน ${failed})<br>ความคืบหน้ารวม: ${progressPercent}%</div><div class="learning-activity-columns"><div><strong>บทเรียน</strong>${lessonList}</div><div><strong>ประวัติการสอบ</strong>${quizList}</div></div>`;
+      if (studentView) return `<tr><td>${details}</td><td>${esc(hasActivity ? 'มีกิจกรรม' : 'ไม่มีความเคลื่อนไหว')}</td><td>${esc(last)}</td></tr>`;
+      return `<tr><td>${esc(row.student_name || 'ไม่ระบุชื่อ')}</td><td>${details}</td><td>${esc(last)}</td></tr>`;
     }).join('');
   }
 
