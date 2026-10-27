@@ -143,7 +143,7 @@ LIMIT 5")->fetchAll(PDO::FETCH_ASSOC) ?: [];
         <input type="search" id="learningProgressSearch" placeholder="ค้นหาชื่อนักเรียน..." aria-label="ค้นหาชื่อนักเรียนในรายงาน">
         <span id="learningProgressPageInfo"></span>
       </div>
-      <div class="director-table-scroll"><table class="director-table" style="min-width:760px"><thead><tr><th>ชื่อ-นามสกุล</th><th>บทเรียน/คอร์สล่าสุด</th><th>ความคืบหน้าในช่วงเวลา</th><th>ใช้งานล่าสุดเมื่อ</th></tr></thead><tbody id="learningProgressBody"><tr><td colspan="4" class="director-empty">กำลังโหลด...</td></tr></tbody></table></div>
+      <div class="director-table-scroll"><table class="director-table learning-timeline-table" style="min-width:760px"><thead><tr><th>นักเรียน — เวลา — กิจกรรม</th></tr></thead><tbody id="learningProgressBody"><tr><td class="director-empty">กำลังโหลด...</td></tr></tbody></table></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button type="button" id="learningProgressPrev">ก่อนหน้า</button><button type="button" id="learningProgressNext">ถัดไป</button></div>
     </section>
 

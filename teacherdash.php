@@ -511,7 +511,7 @@ $stats = [
                 <input type="search" id="learningProgressSearch" class="search-input" placeholder="ค้นหาชื่อนักเรียน..." aria-label="ค้นหาชื่อนักเรียนในรายงาน">
                 <span id="learningProgressPageInfo" class="page-sub"></span>
             </div>
-            <div class="table-wrap"><table class="lessons-table" style="min-width:760px"><thead><tr><th>ชื่อ-นามสกุล</th><th>บทเรียน/คอร์สล่าสุด</th><th>ความคืบหน้าในช่วงเวลา</th><th>ใช้งานล่าสุดเมื่อ</th></tr></thead><tbody id="learningProgressBody"><tr><td colspan="4" style="text-align:center">กำลังโหลด...</td></tr></tbody></table></div>
+            <div class="table-wrap"><table class="lessons-table learning-timeline-table" style="min-width:760px"><thead><tr><th>นักเรียน — เวลา — กิจกรรม</th></tr></thead><tbody id="learningProgressBody"><tr><td style="text-align:center">กำลังโหลด...</td></tr></tbody></table></div>
             <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:12px"><button type="button" class="btn-secondary" id="learningProgressPrev">ก่อนหน้า</button><button type="button" class="btn-secondary" id="learningProgressNext">ถัดไป</button></div>
         </section>
 

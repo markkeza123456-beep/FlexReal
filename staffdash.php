@@ -182,7 +182,7 @@ if ($displayName !== '') {
           <div class="panel-head learning-progress-head">
             <div>
               <span class="panel-title" id="learningProgressTitle">รายงานความคืบหน้าการเรียนรู้</span>
-              <div class="page-sub">สรุปกิจกรรมการเรียนของสมาชิกทุกคนในช่วงเวลาที่เลือก</div>
+              <div class="page-sub">รายการกิจกรรมของสมาชิกทุกคน เรียงจากล่าสุด</div>
               <div class="page-sub" id="learningProgressSummary" aria-live="polite"></div>
             </div>
             <div class="learning-range-controls" role="group" aria-label="เลือกช่วงเวลารายงาน">
@@ -193,8 +193,8 @@ if ($displayName !== '') {
           </div>
           <div class="panel-table-scroll">
             <table class="mini-table learning-progress-table">
-              <thead><tr><th>ชื่อ-นามสกุล</th><th>บทเรียน/คอร์สล่าสุดที่เข้าใช้งาน</th><th>ความคืบหน้าในช่วงเวลา</th><th>ใช้งานล่าสุดเมื่อ</th></tr></thead>
-              <tbody id="learningProgressBody"><tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted);">กำลังโหลด...</td></tr></tbody>
+              <thead><tr><th>สมาชิก — เวลา — กิจกรรม</th></tr></thead>
+              <tbody id="learningProgressBody"><tr><td style="text-align:center;padding:20px;color:var(--text-muted);">กำลังโหลด...</td></tr></tbody>
             </table>
           </div>
         </section>

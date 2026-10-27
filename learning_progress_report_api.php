@@ -131,10 +131,13 @@ SQL;
             $detailParams[$key] = $studentId;
         }
         $inSql = implode(', ', $placeholders);
-        $lessonStmt = $conn->prepare("SELECT lp.student_id::text AS student_id, lp.lesson_id,
-                COALESCE(c.name || ' · ' || l.title, l.title, 'บทเรียน') AS lesson_title,
-                BOOL_OR(lp.is_completed) AS is_completed,
-                MAX(COALESCE(lp.last_activity_at, lp.last_opened_at, lp.updated_at)) AS activity_at
+        $timelineSql = "WITH activity AS (
+            SELECT lp.student_id::text AS student_id,
+                   COALESCE(lp.last_activity_at, lp.last_opened_at, lp.updated_at) AS occurred_at,
+                   'lesson'::text AS activity_type,
+                   COALESCE(c.name || ' · ' || l.title, l.title, 'บทเรียน') AS activity_title,
+                   NULL::integer AS attempt_number, NULL::numeric AS score, NULL::numeric AS total_score,
+                   NULL::text AS result_status, BOOL_OR(lp.is_completed) AS is_completed, lp.lesson_id::text AS item_id
             FROM public.lesson_progress lp
             JOIN public.lessons l ON l.lesson_id = lp.lesson_id
             LEFT JOIN public.courses c ON c.course_id = l.course_id
@@ -142,57 +145,53 @@ SQL;
               AND COALESCE(lp.last_activity_at, lp.last_opened_at, lp.updated_at) >= now() - make_interval(days => CAST(:detail_days AS integer))
               AND lp.student_id::text IN ({$inSql})
             GROUP BY lp.student_id, lp.lesson_id, c.name, l.title
-            ORDER BY activity_at DESC, lp.lesson_id DESC");
-        $lessonStmt->execute($detailParams);
+            UNION ALL
+            SELECT qs.student_id::text, qs.started_at, 'quiz_start'::text,
+                   COALESCE(c.name || ' · ' || l.title, l.title, 'แบบทดสอบ'),
+                   qs.attempt_number, NULL::numeric, NULL::numeric, NULL::text, FALSE, qs.session_id::text
+            FROM public.quiz_attempt_sessions qs
+            JOIN public.lessons l ON l.lesson_id = qs.lesson_id
+            LEFT JOIN public.courses c ON c.course_id = l.course_id
+            WHERE qs.started_at >= now() - make_interval(days => CAST(:detail_days AS integer))
+              AND qs.student_id::text IN ({$inSql})
+            UNION ALL
+            SELECT qa.student_id::text, qa.submitted_at, 'quiz_submit'::text,
+                   COALESCE(c.name || ' · ' || l.title, l.title, 'แบบทดสอบ'),
+                   qa.attempt_number, qa.score, qa.total_score, qa.status, FALSE, qa.attempt_id::text
+            FROM public.quiz_attempts qa
+            JOIN public.lessons l ON l.lesson_id = qa.lesson_id
+            LEFT JOIN public.courses c ON c.course_id = l.course_id
+            WHERE qa.submitted_at >= now() - make_interval(days => CAST(:detail_days AS integer))
+              AND qa.student_id::text IN ({$inSql})
+        ) SELECT * FROM activity ORDER BY occurred_at DESC, activity_type ASC, item_id DESC";
+        $timelineStmt = $conn->prepare($timelineSql);
+        $timelineStmt->execute($detailParams);
         $rowIndex = array_column($rows, null, 'student_id');
-        foreach ($lessonStmt->fetchAll(PDO::FETCH_ASSOC) as $lesson) {
-            $studentId = $lesson['student_id'];
+        foreach ($timelineStmt->fetchAll(PDO::FETCH_ASSOC) as $activity) {
+            $studentId = $activity['student_id'];
             if (isset($rowIndex[$studentId])) {
-                $rowIndex[$studentId]['lessons'][] = [
-                    'lesson_id' => (string) $lesson['lesson_id'],
-                    'title' => $lesson['lesson_title'],
-                    'is_completed' => in_array($lesson['is_completed'], [true, 1, '1', 't', 'true'], true),
-                    'activity_at' => $lesson['activity_at'],
-                ];
-            }
-        }
-
-        $quizStmt = $conn->prepare("WITH active_quizzes AS (
-                SELECT DISTINCT qa.student_id, qa.lesson_id
-                FROM public.quiz_attempts qa
-                WHERE qa.submitted_at >= now() - make_interval(days => CAST(:detail_days AS integer))
-                  AND qa.student_id::text IN ({$inSql})
-            ), quiz_history AS (
-                SELECT qa.student_id::text AS student_id, qa.attempt_id,
-                qa.lesson_id, qa.attempt_number, qa.score, qa.total_score, qa.status,
-                qa.submitted_at, COALESCE(c.name || ' · ' || l.title, l.title, 'แบบทดสอบ') AS quiz_title,
-                COUNT(*) OVER (PARTITION BY qa.student_id, qa.lesson_id) AS attempts_total,
-                ROW_NUMBER() OVER (PARTITION BY qa.student_id, qa.lesson_id ORDER BY qa.submitted_at DESC, qa.attempt_number DESC, qa.attempt_id DESC) AS recent_rank
-                FROM public.quiz_attempts qa
-                JOIN active_quizzes aq ON aq.student_id = qa.student_id AND aq.lesson_id = qa.lesson_id
-                JOIN public.lessons l ON l.lesson_id = qa.lesson_id
-                LEFT JOIN public.courses c ON c.course_id = l.course_id
-            )
-            SELECT * FROM quiz_history ORDER BY submitted_at DESC, attempt_number DESC");
-        $quizStmt->execute($detailParams);
-        foreach ($quizStmt->fetchAll(PDO::FETCH_ASSOC) as $quiz) {
-            $studentId = $quiz['student_id'];
-            if (isset($rowIndex[$studentId])) {
-                $quiz['has_retry'] = (int) $quiz['attempts_total'] > 1;
-                $quiz['has_failed'] = (int) $quiz['recent_rank'] === 1 && $quiz['status'] !== 'passed';
-                $quiz['score'] = (float) $quiz['score'];
-                $quiz['total_score'] = (float) $quiz['total_score'];
-                $quiz['attempt_number'] = (int) $quiz['attempt_number'];
-                unset($quiz['student_id'], $quiz['attempts_total'], $quiz['recent_rank']);
-                $rowIndex[$studentId]['quizzes'][] = $quiz;
+                $activity['attempt_number'] = $activity['attempt_number'] === null ? null : (int) $activity['attempt_number'];
+                $activity['score'] = $activity['score'] === null ? null : (float) $activity['score'];
+                $activity['total_score'] = $activity['total_score'] === null ? null : (float) $activity['total_score'];
+                $activity['is_completed'] = in_array($activity['is_completed'], [true, 1, '1', 't', 'true'], true);
+                unset($activity['student_id'], $activity['item_id']);
+                $rowIndex[$studentId]['activities'][] = $activity;
             }
         }
         $rows = array_values($rowIndex);
         foreach ($rows as &$row) {
-            $row['has_retry'] = count(array_filter($row['quizzes'], static fn(array $quiz): bool => $quiz['has_retry'])) > 0;
-            $row['has_failed'] = count(array_filter($row['quizzes'], static fn(array $quiz): bool => $quiz['has_failed'])) > 0;
+            usort($row['activities'], static fn(array $a, array $b): int => strcmp((string) $b['occurred_at'], (string) $a['occurred_at']));
+            $row['has_retry'] = false;
+            $row['has_failed'] = false;
         }
         unset($row);
+        if ($scope !== 'student') {
+            usort($rows, static function (array $a, array $b): int {
+                $aTime = (string) ($a['activities'][0]['occurred_at'] ?? '');
+                $bTime = (string) ($b['activities'][0]['occurred_at'] ?? '');
+                return strcmp($bTime, $aTime);
+            });
+        }
     }
 
     $activeScopeSql = '';
