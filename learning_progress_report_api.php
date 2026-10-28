@@ -121,6 +121,7 @@ SQL;
         $row['progress_percent'] = min(100, max(0, round((float) $row['progress_percent'], 1)));
         $row['lessons'] = [];
         $row['quizzes'] = [];
+        $row['activities'] = [];
     }
     unset($row);
 
