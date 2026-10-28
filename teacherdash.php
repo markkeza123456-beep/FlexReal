@@ -389,7 +389,7 @@ $stats = [
     <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
     <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-logout-bottom">
     <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout">
-    <link rel="stylesheet" href="assets/css/learning-progress-report.css?v=20261026-blue-buttons">
+    <link rel="stylesheet" href="assets/css/learning-progress-report.css?v=20261028-shared-timeline-v2">
 </head>
 <body>
 <aside class="sidebar">
@@ -1632,7 +1632,7 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 </script>
 
     <script src="assets/js/teacherdash.js?v=20261026-delete-quiz-confirm-v1"></script>
-    <script src="assets/js/learning_progress_report.js?v=20261028-five-events-per-page"></script>
+    <script src="assets/js/learning_progress_report.js?v=20261028-shared-timeline-v2"></script>
 <?php if ($canAccessTransferApproval): ?>
     <script src="assets/js/teacher_graduation.js?v=20261022-graduation-status-colors"></script>
 <?php endif; ?>

@@ -62,7 +62,7 @@ if ($displayName !== '') {
   <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2" />
   <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-centered-mobile-logout">
   <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout" />
-  <link rel="stylesheet" href="assets/css/learning-progress-report.css?v=20261026-blue-buttons" />
+  <link rel="stylesheet" href="assets/css/learning-progress-report.css?v=20261028-shared-timeline-v2" />
   <style>
     .learning-progress-panel{margin-top:18px}.learning-progress-head{align-items:center;flex-wrap:wrap}.learning-progress-table{min-width:700px}.learning-progress-muted{color:var(--text-muted,#64748b)}
   </style>
@@ -191,12 +191,20 @@ if ($displayName !== '') {
               <button type="button" class="learning-range-btn" data-learning-days="7" aria-pressed="false">7 วันล่าสุด</button>
             </div>
           </div>
+          <div class="learning-report-tools">
+            <input type="search" id="learningProgressSearch" class="search-input" placeholder="ค้นหาสมาชิก..." aria-label="ค้นหาสมาชิกในรายงาน">
+            <span id="learningProgressPageInfo" class="page-sub"></span>
+          </div>
           <div class="panel-table-scroll">
             <table class="mini-table learning-progress-table">
               <thead><tr><th>สมาชิก — เวลา — กิจกรรม</th></tr></thead>
               <tbody id="learningProgressBody"><tr><td style="text-align:center;padding:20px;color:var(--text-muted);">กำลังโหลด...</td></tr></tbody>
             </table>
           </div>
+          <nav class="learning-pagination" aria-label="เปลี่ยนหน้ารายงาน">
+            <button type="button" class="learning-pagination-btn" id="learningProgressPrev" aria-label="ไปหน้าก่อนหน้า"><span aria-hidden="true">‹</span> ก่อนหน้า</button>
+            <button type="button" class="learning-pagination-btn is-next" id="learningProgressNext" aria-label="ไปหน้าถัดไป">ถัดไป <span aria-hidden="true">›</span></button>
+          </nav>
         </section>
       </section>
 
@@ -856,6 +864,7 @@ if ($displayName !== '') {
   <div class="toast" id="toast"></div>
 
   <script src="assets/js/staffdash.js?v=20261026-learning-progress"></script>
+  <script src="assets/js/learning_progress_report.js?v=20261028-shared-timeline-v2"></script>
 <script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>

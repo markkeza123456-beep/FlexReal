@@ -50,7 +50,30 @@
   transform: none;
 }
 
+.learning-timeline-table th { text-align: left; }
+.learning-timeline-cell { display:flex; align-items:center; gap:10px; line-height:1.6; }
+.learning-timeline-cell time { flex:0 0 145px; color:#718198; font-variant-numeric:tabular-nums; }
+.learning-timeline-text { min-width:0; flex:1; }
+.learning-timeline-student { flex:0 0 180px; }
+.learning-report-tools { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin:12px 0; }
+.learning-timeline-empty { text-align:center!important; color:#718198!important; }
+.learning-badge { display:inline-flex; align-items:center; padding:2px 7px; border-radius:999px; font-size:11px; font-weight:600; white-space:nowrap; }
+.learning-badge.is-passed { color:#15803d; background:#dcfce7; }
+.learning-badge.is-failed,.learning-badge.is-warning { color:#b42318; background:#fee2e2; }
+.learning-badge.is-started { color:#1d4ed8; background:#dbeafe; }
+.learning-badge.is-lesson { color:#c2410c; background:#ffedd5; }
+.learning-pagination { display:flex; justify-content:flex-end; align-items:center; gap:10px; margin-top:16px; }
+.learning-pagination-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-width:112px; min-height:42px; padding:9px 16px; border:1px solid #4a83c3; border-radius:10px; background:#fff; color:#315f98; font:inherit; font-size:14px; font-weight:600; line-height:1.2; cursor:pointer; transition:background .18s ease,color .18s ease,box-shadow .18s ease,transform .18s ease; }
+.learning-pagination-btn:hover:not(:disabled) { background:linear-gradient(135deg,#365f9d,#5d9bdd); border-color:transparent; color:#fff; box-shadow:0 5px 14px rgba(42,91,153,.24); transform:translateY(-1px); }
+.learning-pagination-btn:focus-visible { outline:3px solid rgba(69,139,211,.35); outline-offset:2px; }
+.learning-pagination-btn:disabled { border-color:#d9e2ee; background:#f3f6fa; color:#9aa8b8; cursor:not-allowed; opacity:1; box-shadow:none; transform:none; }
+.learning-pagination-btn span { font-size:20px; line-height:14px; }
+
 @media (max-width: 560px) {
   .learning-range-controls { justify-content: flex-start; }
   .learning-range-btn { flex: 1 1 auto; padding: 8px 10px; }
+  .learning-timeline-cell { align-items:flex-start; flex-wrap:wrap; gap:4px 9px; }
+  .learning-timeline-cell time,.learning-timeline-student { flex-basis:100%; }
+  .learning-pagination { justify-content:space-between; }
+  .learning-pagination-btn { min-width:0; flex:1; }
 }

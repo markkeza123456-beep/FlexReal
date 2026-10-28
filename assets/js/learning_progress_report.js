@@ -56,7 +56,7 @@
 
   async function load() {
     const current = ++serial;
-    body.innerHTML = `<tr><td colspan="${studentView ? 3 : 4}" style="text-align:center;padding:16px">กำลังโหลด...</td></tr>`;
+    body.innerHTML = '<tr><td style="text-align:center;padding:16px">กำลังโหลด...</td></tr>';
     try {
       const params = new URLSearchParams({ days: String(days), page: String(page), q: query });
       const response = await fetch(`learning_progress_report_api.php?${params}`, { credentials: 'same-origin', cache: 'no-store' });

@@ -20,7 +20,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
     <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
     <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-student-mobile-report-overflow-v1">
     <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout">
-    <link rel="stylesheet" href="assets/css/learning-progress-report.css?v=20261026-blue-buttons">
+    <link rel="stylesheet" href="assets/css/learning-progress-report.css?v=20261028-shared-timeline-v2">
 </head>
 <body class="student-dashboard-page">
     <div class="dashboard-container">
@@ -97,6 +97,10 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
                         </div>
                     </div>
                     <div class="table-responsive"><table class="data-table learning-timeline-table"><thead><tr><th>เวลา — กิจกรรม</th></tr></thead><tbody id="learningProgressBody"><tr><td style="text-align:center">กำลังโหลด...</td></tr></tbody></table></div>
+                    <nav class="learning-pagination" aria-label="เปลี่ยนหน้ารายงาน">
+                        <button type="button" class="learning-pagination-btn" id="learningProgressPrev" aria-label="ไปหน้าก่อนหน้า"><span aria-hidden="true">‹</span> ก่อนหน้า</button>
+                        <button type="button" class="learning-pagination-btn is-next" id="learningProgressNext" aria-label="ไปหน้าถัดไป">ถัดไป <span aria-hidden="true">›</span></button>
+                    </nav>
                 </section>
 
                 <section class="stats-grid student-stats-grid">
@@ -290,7 +294,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
         </main>
     </div>
     <script src="assets/js/student_dashboard.js?v=20261022-student-pin-reset"></script>
-    <script src="assets/js/learning_progress_report.js?v=20261028-five-events-per-page"></script>
+    <script src="assets/js/learning_progress_report.js?v=20261028-shared-timeline-v2"></script>
     <script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>

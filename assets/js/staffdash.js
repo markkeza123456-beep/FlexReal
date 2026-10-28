@@ -93,10 +93,24 @@
   }
 
   async function fetchJson(url, options = {}) {
-    const response = await fetch(url, options);
-    const result = await response.json();
+    const response = await fetch(url, {
+      credentials: 'same-origin',
+      ...options,
+    });
+    let result;
+    try {
+      result = await response.json();
+    } catch (_) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('เซสชันหมดอายุหรือบัญชีไม่มีสิทธิ์เจ้าหน้าที่ กรุณาเข้าสู่ระบบใหม่แล้วลองอีกครั้ง');
+      }
+      throw new Error('ระบบตอบกลับไม่ถูกต้อง กรุณารีเฟรชหน้าแล้วลองอีกครั้ง');
+    }
     if (!response.ok) {
-      const error = new Error(result.message || 'Request failed');
+      const message = response.status === 401 || response.status === 403
+        ? 'เซสชันหมดอายุหรือบัญชีไม่มีสิทธิ์เจ้าหน้าที่ กรุณาเข้าสู่ระบบใหม่แล้วลองอีกครั้ง'
+        : (result.message || 'Request failed');
+      const error = new Error(message);
       error.payload = result;
       throw error;
     }
