@@ -660,7 +660,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderInlineVideos(data) {
         if (!inlineVideoList) return;
         inlineVideos = data.videos || [];
-        const videosForLesson = managedLessonId ? inlineVideos.filter(video => String(video.lessons_id) === managedLessonId) : [];
+        const videosForLesson = managedLessonId
+            ? inlineVideos
+                .filter(video => String(video.lessons_id) === managedLessonId)
+                .sort((a, b) => Number(b.last_modified_epoch || 0) - Number(a.last_modified_epoch || 0)
+                    || String(b.id).localeCompare(String(a.id), undefined, { numeric: true }))
+                .slice(0, 1)
+            : [];
         inlineVideoList.innerHTML = videosForLesson.length ? videosForLesson.map((video) => `
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
                 <div style="min-width:0"><strong style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(video.title)}</strong><span style="font-size:11px;color:var(--text-muted)">แก้ไขล่าสุด ${formatTeacherEditDate(video.last_modified_epoch)} · โดย ${escapeHtml(video.updated_by_name || 'ยังไม่มีข้อมูล')}</span></div>

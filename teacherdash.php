@@ -1637,7 +1637,7 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-    <script src="assets/js/teacherdash.js?v=20261028-teacher-lesson-media"></script>
+    <script src="assets/js/teacherdash.js?v=20261028-teacher-lesson-media-v2"></script>
     <script src="assets/js/learning_progress_report.js?v=20261028-shared-timeline-v2"></script>
 <?php if ($canAccessTransferApproval): ?>
     <script src="assets/js/teacher_graduation.js?v=20261022-graduation-status-colors"></script>
