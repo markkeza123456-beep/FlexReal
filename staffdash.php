@@ -192,8 +192,7 @@ if ($displayName !== '') {
             </div>
           </div>
           <div class="learning-report-tools">
-            <input type="search" id="learningProgressSearch" class="search-input" placeholder="ค้นหาสมาชิก..." aria-label="ค้นหาสมาชิกในรายงาน">
-            <span id="learningProgressPageInfo" class="page-sub"></span>
+            <span id="learningProgressPageInfo" class="page-sub" style="margin-left:auto;"></span>
           </div>
           <div class="panel-table-scroll">
             <table class="mini-table learning-progress-table">
@@ -863,7 +862,7 @@ if ($displayName !== '') {
 
   <div class="toast" id="toast"></div>
 
-  <script src="assets/js/staffdash.js?v=20261028-curriculum-no-order"></script>
+  <script src="assets/js/staffdash.js?v=20261028-dashboard-search-removed"></script>
   <script src="assets/js/learning_progress_report.js?v=20261028-shared-timeline-v2"></script>
 <script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
