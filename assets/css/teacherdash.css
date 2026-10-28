@@ -590,7 +590,6 @@ body.teacher-resource-viewer-open { overflow:hidden; }
 .teacher-subject-stats-label { color:var(--text-dim); }
 .teacher-subject-stats-count { color:var(--text); font-weight:600; }
 #inlineLessonDocumentHint, #inlineVideoFileHint, #inlineVideoForm > p { display: none; }
-#inlineVideoList { display: none; }
 #inlineVideoForm > p.save-feedback.is-visible { display: block; flex-basis: 100%; }
 
 @media (max-width: 820px) {
