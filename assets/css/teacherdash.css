@@ -285,6 +285,13 @@ html, body {
     line-height: 1;
 }
 .page-sub { font-size: 13px; color: var(--text-dim); display: block; margin-top: 4px; }
+.learning-pagination { display:flex; justify-content:flex-end; align-items:center; gap:10px; margin-top:16px; }
+.learning-pagination-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-width:112px; min-height:42px; padding:9px 16px; border:1px solid var(--brand-400); border-radius:10px; background:#fff; color:var(--brand-700); font:inherit; font-size:14px; font-weight:600; line-height:1.2; cursor:pointer; transition:background .18s ease,color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease; }
+.learning-pagination-btn:hover:not(:disabled) { background:linear-gradient(135deg,var(--primary-start),var(--primary-end)); border-color:transparent; color:#fff; box-shadow:0 5px 14px rgba(var(--brand-400-rgb),.24); transform:translateY(-1px); }
+.learning-pagination-btn:focus-visible { outline:3px solid rgba(var(--brand-400-rgb),.3); outline-offset:2px; }
+.learning-pagination-btn:disabled { border-color:#d9e2ee; background:#f3f6fa; color:#9aa8b8; box-shadow:none; cursor:not-allowed; opacity:1; transform:none; }
+.learning-pagination-btn span { font-size:20px; line-height:14px; }
+@media (max-width:600px) { .learning-pagination { justify-content:space-between; } .learning-pagination-btn { min-width:0; flex:1; } }
 
 .topbar-right { display: flex; align-items: center; gap: 12px; }
 

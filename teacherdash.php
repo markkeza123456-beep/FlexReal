@@ -362,7 +362,7 @@ $stats = [
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261022-mobile-layout-v2">
+    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261028-learning-pagination">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px;
@@ -512,7 +512,10 @@ $stats = [
                 <span id="learningProgressPageInfo" class="page-sub"></span>
             </div>
             <div class="table-wrap"><table class="lessons-table learning-timeline-table" style="min-width:760px"><thead><tr><th>นักเรียน — เวลา — กิจกรรม</th></tr></thead><tbody id="learningProgressBody"><tr><td style="text-align:center">กำลังโหลด...</td></tr></tbody></table></div>
-            <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:12px"><button type="button" class="btn-secondary" id="learningProgressPrev">ก่อนหน้า</button><button type="button" class="btn-secondary" id="learningProgressNext">ถัดไป</button></div>
+            <nav class="learning-pagination" aria-label="เปลี่ยนหน้ารายงาน">
+                <button type="button" class="learning-pagination-btn" id="learningProgressPrev" aria-label="ไปหน้าก่อนหน้า"><span aria-hidden="true">‹</span> ก่อนหน้า</button>
+                <button type="button" class="learning-pagination-btn is-next" id="learningProgressNext" aria-label="ไปหน้าถัดไป">ถัดไป <span aria-hidden="true">›</span></button>
+            </nav>
         </section>
 
         <section class="card students-card">
