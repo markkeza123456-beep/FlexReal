@@ -362,7 +362,7 @@ $stats = [
     <title>แดชบอร์ดอาจารย์ - Flexible Learning Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261028-learning-pagination">
+    <link rel="stylesheet" href="assets/css/teacherdash.css?v=20261028-teacher-lesson-media">
     <style>
         .action-icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px;
@@ -703,7 +703,7 @@ $stats = [
                                 <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;"><div><p style="font-size:11px;color:var(--text-primary);font-weight:700;letter-spacing:.08em;margin:0 0 4px;">LESSON CONTENT</p><h3 style="font-size:17px;margin:0;" id="inlineLessonHeading">เพิ่มบทเรียนย่อย</h3></div><span id="inlineLessonCount" style="font-size:12px;color:var(--text-muted);"><?= count($subLessonsBySubject[$defaultSubjectId] ?? []) ?> บทเรียน</span></div>
                                 <form id="inlineLessonForm" enctype="multipart/form-data">
                                     <div class="form-group"><label>ชื่อบทเรียน *</label><input type="text" class="form-input" id="inlineLessonName" required placeholder="เช่น 1.1 ตรรกศาสตร์เบื้องต้น"></div>
-                                    <div class="form-group"><label>เอกสารประกอบ (PDF)</label><div id="inlineExistingDocuments" style="display:none;margin:0 0 8px;font-size:13px;color:var(--text-muted);"></div><input type="file" class="form-input" id="inlineLessonDocument" accept="application/pdf,.pdf"><small id="inlineLessonDocumentHint" style="color:var(--text-muted);">เลือกไฟล์ PDF ใหม่เมื่อต้องการเพิ่มเอกสาร</small></div>
+                                    <div class="form-group"><label>เอกสารประกอบ (PDF)</label><div id="inlineExistingDocuments" class="teacher-existing-resources" hidden></div><input type="file" class="form-input" id="inlineLessonDocument" accept="application/pdf,.pdf"><small id="inlineLessonDocumentHint" style="color:var(--text-muted);">เลือกไฟล์ PDF ใหม่เมื่อต้องการเพิ่มเอกสาร</small></div>
                                     <button type="button" class="btn-save" id="saveInlineLessonBtn">บันทึกบทเรียน</button>
                                     <p class="save-feedback" id="inlineLessonSaveStatus" role="status" aria-live="polite"></p>
                                 </form>
@@ -714,8 +714,8 @@ $stats = [
                                 <div id="inlineVideoList" style="margin-bottom:16px;color:var(--text-muted);font-size:13px;">กำลังโหลดวิดีโอ...</div>
                                 <form id="inlineVideoForm" enctype="multipart/form-data">
                                     <input type="hidden" id="inlineVideoId">
-                                    <input type="hidden" id="inlineVideoTitle" value="วิดีโอบทเรียน">
                                     <p style="font-size:13px;color:var(--text-muted);margin:-2px 0 14px;">วิดีโอนี้จะถูกผูกกับบทเรียนที่กรอกด้านบนโดยอัตโนมัติ</p>
+                                    <div class="form-group"><label for="inlineVideoTitle">ชื่อวิดีโอ *</label><input type="text" class="form-input" id="inlineVideoTitle" value="วิดีโอบทเรียน" required></div>
                                     <div class="form-group"><label>ไฟล์วิดีโอ <span id="inlineVideoFileRequired">*</span></label><input type="file" class="form-input" id="inlineVideoFile" accept="video/mp4,.mp4" required><small id="inlineVideoFileHint" style="color:var(--text-muted);">เลือกไฟล์ MP4 เพื่อบันทึก</small></div>
                                     <button type="button" class="btn-save" id="saveInlineVideoBtn">บันทึกวิดีโอ</button>
                                     <p class="save-feedback" id="inlineVideoSaveStatus" role="status" aria-live="polite"></p>
@@ -723,6 +723,12 @@ $stats = [
                             </section>
                         </div>
                           </div>
+                        </div>
+                        <div class="teacher-resource-viewer" id="teacherResourceViewer" aria-hidden="true">
+                            <section class="teacher-resource-dialog" role="dialog" aria-modal="true" aria-labelledby="teacherResourceTitle">
+                                <header class="teacher-resource-header"><h2 id="teacherResourceTitle">ดูสื่อการเรียน</h2><button type="button" id="teacherResourceClose">ปิด</button></header>
+                                <div class="teacher-resource-body" id="teacherResourceBody"></div>
+                            </section>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -1631,7 +1637,7 @@ document.getElementById('studentDetailModal').addEventListener('click', function
 });
 </script>
 
-    <script src="assets/js/teacherdash.js?v=20261026-delete-quiz-confirm-v1"></script>
+    <script src="assets/js/teacherdash.js?v=20261028-teacher-lesson-media"></script>
     <script src="assets/js/learning_progress_report.js?v=20261028-shared-timeline-v2"></script>
 <?php if ($canAccessTransferApproval): ?>
     <script src="assets/js/teacher_graduation.js?v=20261022-graduation-status-colors"></script>

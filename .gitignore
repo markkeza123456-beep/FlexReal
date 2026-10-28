@@ -1,6 +1,5 @@
 .env
 .env.*
-!.env.example
 flexreal.env
 config/flexreal.env
 db_connect.php

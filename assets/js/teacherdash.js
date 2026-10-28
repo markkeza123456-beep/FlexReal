@@ -145,6 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const modalOverlay = document.getElementById('modalOverlay');
     const contentManagerModal = document.getElementById('contentManagerModal');
+    const teacherResourceViewer = document.getElementById('teacherResourceViewer');
+    const teacherResourceBody = document.getElementById('teacherResourceBody');
     let managedLessonId = '';
 
     function appendTeacherLessonToList(lessonId, lessonTitle) {
@@ -182,9 +184,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const count = document.getElementById('inlineLessonCount');
         const documentHint = document.getElementById('inlineLessonDocumentHint');
         const documentInput = document.getElementById('inlineLessonDocument');
+        const existingDocuments = document.getElementById('inlineExistingDocuments');
         const saveButton = document.getElementById('saveInlineLessonBtn');
         document.getElementById('inlineLessonForm')?.reset();
         resetInlineVideoForm();
+        renderInlineDocuments([]);
         documentInput.required = false;
         documentHint.style.display = 'none';
         lessonNameInput.value = lessonName;
@@ -200,14 +204,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const form = new FormData(); form.append('action', 'get_lesson_content'); form.append('lesson_id', managedLessonId);
                 const data = await teacherRequest(form);
                 lessonNameInput.value = data.lesson?.title || lessonName;
-                const currentDocument = (data.documents || [])[0];
+                const documents = data.documents || [];
+                renderInlineDocuments(documents);
+                const currentDocument = documents[0];
                 const currentDocumentIsPdf = currentDocument && /\.pdf$/i.test(currentDocument.url || '');
                 documentInput.required = Boolean(currentDocument && !currentDocumentIsPdf);
                 documentHint.textContent = documentInput.required
                     ? 'ไฟล์เดิมไม่ใช่ PDF กรุณาเลือกไฟล์ PDF ใหม่'
                     : 'ไม่เลือกไฟล์ใหม่ ระบบจะเก็บเอกสาร PDF เดิมไว้';
                 documentHint.style.display = documentInput.required ? 'block' : 'none';
-            } catch (error) { alert(error.message || 'โหลดข้อมูลบทเรียนไม่สำเร็จ'); }
+            } catch (error) {
+                existingDocuments.innerHTML = `<div class="teacher-existing-empty">${escapeHtml(error.message || 'โหลดไฟล์เดิมไม่สำเร็จ')}</div>`;
+                existingDocuments.hidden = false;
+                alert(error.message || 'โหลดข้อมูลบทเรียนไม่สำเร็จ');
+            }
         }
         await loadInlineVideos();
     }
@@ -541,6 +551,102 @@ document.addEventListener('DOMContentLoaded', () => {
         return new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date);
     }
 
+    function teacherResourceUrl(value) {
+        try {
+            const url = new URL(String(value || ''), window.location.href);
+            return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+        } catch (_) { return ''; }
+    }
+
+    function youtubeEmbedUrl(value) {
+        try {
+            const url = new URL(value);
+            if (url.hostname === 'youtu.be') return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(url.pathname.slice(1))}`;
+            if (url.hostname === 'youtube.com' || url.hostname.endsWith('.youtube.com')) {
+                const id = url.searchParams.get('v') || url.pathname.match(/\/embed\/([^/?]+)/)?.[1] || url.pathname.match(/\/shorts\/([^/?]+)/)?.[1];
+                if (id) return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}`;
+            }
+        } catch (_) { /* Uploaded resources use their original URL. */ }
+        return '';
+    }
+
+    function openTeacherResource(title, value, type) {
+        const url = teacherResourceUrl(value);
+        if (!url || !teacherResourceViewer || !teacherResourceBody) return;
+        document.getElementById('teacherResourceTitle').textContent = title || (type === 'video' ? 'วิดีโอบทเรียน' : 'เอกสารประกอบ');
+        teacherResourceBody.replaceChildren();
+        if (type === 'video') {
+            const embedUrl = youtubeEmbedUrl(url);
+            if (embedUrl) {
+                const frame = document.createElement('iframe');
+                frame.src = embedUrl;
+                frame.title = title || 'วิดีโอบทเรียน';
+                frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+                frame.allowFullscreen = true;
+                teacherResourceBody.append(frame);
+            } else if (/\.(mp4|webm|ogg)$/i.test(new URL(url).pathname)) {
+                const video = document.createElement('video');
+                video.src = url;
+                video.controls = true;
+                video.playsInline = true;
+                video.preload = 'metadata';
+                teacherResourceBody.append(video);
+            } else {
+                const frame = document.createElement('iframe');
+                frame.src = url;
+                frame.title = title || 'วิดีโอบทเรียน';
+                frame.allowFullscreen = true;
+                teacherResourceBody.append(frame);
+            }
+        } else {
+            const frame = document.createElement('iframe');
+            frame.src = url;
+            frame.title = title || 'เอกสารประกอบ';
+            teacherResourceBody.append(frame);
+        }
+        teacherResourceViewer.classList.add('open');
+        teacherResourceViewer.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('teacher-resource-viewer-open');
+        document.getElementById('teacherResourceClose')?.focus();
+    }
+
+    function closeTeacherResourceViewer() {
+        if (!teacherResourceViewer?.classList.contains('open')) return;
+        teacherResourceViewer.classList.remove('open');
+        teacherResourceViewer.setAttribute('aria-hidden', 'true');
+        teacherResourceBody?.replaceChildren();
+        document.body.classList.remove('teacher-resource-viewer-open');
+    }
+
+    function renderInlineDocuments(documents) {
+        const container = document.getElementById('inlineExistingDocuments');
+        if (!container) return;
+        if (!documents.length) {
+            container.replaceChildren();
+            container.hidden = true;
+            return;
+        }
+        container.innerHTML = documents.map((documentResource, index) => {
+            const resourceTitle = documentResource.title || `เอกสารประกอบ ${index + 1}`;
+            return `<div class="teacher-existing-resource"><span class="teacher-existing-resource-name">${escapeHtml(resourceTitle)}</span><button type="button" data-inline-document-view="${escapeHtml(documentResource.id)}">เปิดเอกสาร</button></div>`;
+        }).join('');
+        container.hidden = false;
+        container.onclick = (event) => {
+            const button = event.target.closest('[data-inline-document-view]');
+            if (!button) return;
+            const resource = documents.find(item => String(item.id) === button.dataset.inlineDocumentView);
+            if (resource) openTeacherResource(resource.title || 'เอกสารประกอบ', resource.url, 'document');
+        };
+    }
+
+    document.getElementById('teacherResourceClose')?.addEventListener('click', closeTeacherResourceViewer);
+    teacherResourceViewer?.addEventListener('click', (event) => {
+        if (event.target === teacherResourceViewer) closeTeacherResourceViewer();
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeTeacherResourceViewer();
+    });
+
     function editInlineVideo(video) {
         if (!video) return;
         document.getElementById('inlineVideoId').value = String(video.id || '');
@@ -558,7 +664,7 @@ document.addEventListener('DOMContentLoaded', () => {
         inlineVideoList.innerHTML = videosForLesson.length ? videosForLesson.map((video) => `
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
                 <div style="min-width:0"><strong style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(video.title)}</strong><span style="font-size:11px;color:var(--text-muted)">แก้ไขล่าสุด ${formatTeacherEditDate(video.last_modified_epoch)} · โดย ${escapeHtml(video.updated_by_name || 'ยังไม่มีข้อมูล')}</span></div>
-                <div style="display:flex;gap:5px;flex-shrink:0"><button type="button" class="action-icon-btn" data-inline-video-edit="${escapeHtml(video.id)}" title="แก้ไขวิดีโอ">แก้ไข</button><button type="button" class="action-icon-btn" data-inline-video-delete="${escapeHtml(video.id)}" title="ลบวิดีโอ" style="color:#ef4444">ลบ</button></div>
+                <div style="display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap"><button type="button" class="action-icon-btn" data-inline-video-view="${escapeHtml(video.id)}" title="ดูวิดีโอเดิม">ดูวิดีโอ</button><button type="button" class="action-icon-btn" data-inline-video-edit="${escapeHtml(video.id)}" title="แก้ไขวิดีโอ">แก้ไข</button><button type="button" class="action-icon-btn" data-inline-video-delete="${escapeHtml(video.id)}" title="ลบวิดีโอ" style="color:#ef4444">ลบ</button></div>
             </div>`).join('') : `<div style="padding:12px 0;color:var(--text-muted);font-size:13px">${managedLessonId ? 'ยังไม่มีวิดีโอในบทเรียนนี้' : 'บันทึกบทเรียนก่อน แล้วจึงเพิ่มวิดีโอได้'}</div>`;
     }
 
@@ -607,15 +713,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             showSaveFeedback(status, wasNewLesson ? 'เพิ่มเสร็จแล้ว บทเรียนถูกบันทึกเรียบร้อย' : 'บันทึกบทเรียนเรียบร้อยแล้ว');
             saveButton.textContent = 'บันทึกการแก้ไข';
-            if (wasNewLesson) {
-                if (managedLessonId) {
-                    try {
-                        sessionStorage.setItem('teacherReopenLessonManager', JSON.stringify({ id: managedLessonId }));
-                    } catch (_) {}
-                }
-                window.location.reload();
-                return;
+            if (managedLessonId) {
+                try { sessionStorage.setItem('teacherReopenLessonManager', JSON.stringify({ id: managedLessonId })); }
+                catch (_) {}
             }
+            window.location.reload();
+            return;
         } catch (error) {
             showSaveFeedback(status, error.message || 'บันทึกบทเรียนไม่สำเร็จ', true);
             saveButton.textContent = managedLessonId ? 'บันทึกการแก้ไข' : 'บันทึกบทเรียน';
@@ -646,21 +749,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const videoModifiedAt = document.getElementById(`lessonVideoModified-${managedLessonId}`);
             const videoEditorName = result.video.updated_by_name || 'ยังไม่มีข้อมูล';
             if (videoModifiedAt) videoModifiedAt.textContent = `วิดีโอแก้ไขล่าสุด ${formatTeacherEditDate(result.video.last_modified_epoch)} · โดย ${videoEditorName}`;
-            const savedVideo = {
-                id: String(result.video.id),
-                title: videoTitle.value.trim() || 'วิดีโอบทเรียน',
-                lessons_id: managedLessonId,
-                last_modified_epoch: result.video.last_modified_epoch,
-                updated_by_name: videoEditorName,
-            };
-            const existingIndex = inlineVideos.findIndex(video => String(video.id) === savedVideo.id);
-            if (existingIndex >= 0) inlineVideos[existingIndex] = { ...inlineVideos[existingIndex], ...savedVideo };
-            else inlineVideos.unshift(savedVideo);
-            document.getElementById('inlineVideoId').value = savedVideo.id;
+            document.getElementById('inlineVideoId').value = String(result.video.id);
             videoFile.required = false;
             document.getElementById('inlineVideoFileRequired').textContent = '';
             document.getElementById('inlineVideoFileHint').textContent = 'เลือกไฟล์ใหม่เมื่อต้องการแทนที่วิดีโอเดิม';
-            renderInlineVideos({ videos: inlineVideos });
+            await loadInlineVideos();
             showSaveFeedback(status, editingVideo ? 'บันทึกวิดีโอเรียบร้อยแล้ว' : 'เพิ่มเสร็จแล้ว วิดีโอถูกบันทึกเรียบร้อย');
             saveButton.disabled = false;
             saveButton.textContent = 'บันทึกวิดีโอ';
@@ -674,6 +767,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('saveInlineLessonBtn')?.addEventListener('click', saveInlineLesson);
     document.getElementById('saveInlineVideoBtn')?.addEventListener('click', saveInlineVideo);
     inlineVideoList?.addEventListener('click', async (event) => {
+        const viewButton = event.target.closest('[data-inline-video-view]');
+        if (viewButton) {
+            const video = inlineVideos.find(item => String(item.id) === viewButton.dataset.inlineVideoView);
+            if (video) openTeacherResource(video.title || 'วิดีโอบทเรียน', video.url, 'video');
+            return;
+        }
         const editButton = event.target.closest('[data-inline-video-edit]');
         if (editButton) {
             const video = inlineVideos.find(item => String(item.id) === String(editButton.dataset.inlineVideoEdit));

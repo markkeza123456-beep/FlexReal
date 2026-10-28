@@ -1,7 +1,0 @@
-ALTER TABLE public.users
-    ADD COLUMN IF NOT EXISTS created_by VARCHAR(50),
-    ADD COLUMN IF NOT EXISTS updated_by VARCHAR(50);
-
-ALTER TABLE public.staff
-    ADD COLUMN IF NOT EXISTS created_by VARCHAR(50),
-    ADD COLUMN IF NOT EXISTS updated_by VARCHAR(50);

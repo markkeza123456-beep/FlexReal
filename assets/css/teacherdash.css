@@ -552,6 +552,22 @@ html, body {
     backdrop-filter: none;
     z-index: 1200;
 }
+.teacher-existing-resources { display:grid; gap:8px; margin:0 0 8px; }
+#inlineExistingDocuments[hidden] { display:none !important; }
+.teacher-existing-resource { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 11px; border:1px solid var(--border); border-radius:9px; background:var(--bg2); }
+.teacher-existing-resource-name { min-width:0; overflow-wrap:anywhere; color:var(--text); font-size:13px; }
+.teacher-existing-resource button,.teacher-resource-header button { flex:0 0 auto; min-height:36px; padding:6px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg2); color:var(--brand-700); font:600 13px 'Kanit',sans-serif; cursor:pointer; }
+.teacher-existing-resource button:hover,.teacher-resource-header button:hover { border-color:var(--brand-400); background:var(--bg3); }
+.teacher-existing-empty { padding:10px 11px; border:1px dashed var(--border); border-radius:9px; color:var(--text-muted); font-size:13px; }
+.teacher-resource-viewer { display:none; position:fixed; inset:0; z-index:1400; padding:20px; background:rgba(20,30,48,.76); }
+.teacher-resource-viewer.open { display:grid; place-items:center; }
+.teacher-resource-dialog { display:flex; flex-direction:column; width:min(1000px,100%); max-height:min(90vh,900px); overflow:hidden; border:1px solid var(--border); border-radius:16px; background:var(--bg2); box-shadow:0 24px 70px rgba(0,0,0,.32); }
+.teacher-resource-header { display:flex; flex:0 0 auto; align-items:center; justify-content:space-between; gap:16px; padding:12px 18px; border-bottom:1px solid var(--border); }
+.teacher-resource-header h2 { min-width:0; margin:0; overflow-wrap:anywhere; font-size:18px; }
+.teacher-resource-body { display:grid; min-height:240px; flex:1 1 auto; place-items:center; overflow:auto; background:var(--bg3); }
+.teacher-resource-body iframe,.teacher-resource-body video { display:block; width:100%; height:min(75vh,760px); border:0; background:#111; }
+.teacher-resource-body video { object-fit:contain; }
+body.teacher-resource-viewer-open { overflow:hidden; }
 .content-manager-modal { width: 100%; max-width: none; height: 100vh; max-height: none; border: 0; border-radius: 0; padding: 30px clamp(20px, 5vw, 80px) 44px; overflow-y: auto; box-sizing: border-box; background: transparent; }
 .content-manager-header { position: sticky; top: -30px; z-index: 2; display: flex; align-items: center; padding: 16px 22px; margin: 0 auto 24px; width: min(1180px, 100%); border: 1px solid rgba(var(--brand-400-rgb), .28); border-left: 4px solid var(--brand-400); border-radius: 14px; background: rgba(255,255,255,.92); box-shadow: 0 8px 22px rgba(34,56,80,.08); backdrop-filter: blur(12px); }
 .content-manager-header .modal-title { font-size: 22px; line-height: 1.4; }
@@ -581,6 +597,15 @@ html, body {
     .course-content-editor { grid-template-columns: 1fr; }
     .course-content-editor > div:last-child { grid-column: auto; }
     .content-manager-modal { padding-inline: 16px; }
+}
+@media (max-width: 600px) {
+    .teacher-resource-viewer { padding:8px; }
+    .teacher-resource-dialog { width:100%; max-height:94vh; border-radius:12px; }
+    .teacher-resource-header { padding:10px 12px; }
+    .teacher-resource-header h2 { font-size:16px; }
+    .teacher-resource-body { min-height:180px; }
+    .teacher-resource-body iframe,.teacher-resource-body video { height:calc(94vh - 62px); }
+    .teacher-existing-resource { align-items:flex-start; flex-wrap:wrap; }
 }
 @media (max-width: 520px) { .teacher-subject-stats { align-items:flex-start; text-align:left; } }
 @media (max-width: 520px) { .lesson-list-heading { align-items:flex-start; flex-direction:column; } }
