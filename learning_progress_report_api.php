@@ -22,7 +22,8 @@ $rangeStart = (new DateTimeImmutable('today', new DateTimeZone('Asia/Bangkok')))
 $search = trim((string) ($_GET['q'] ?? ''));
 $search = mb_substr($search, 0, 100, 'UTF-8');
 $page = max(1, (int) ($_GET['page'] ?? 1));
-$pageSize = 25;
+$pageSize = 5;
+$studentFetchSize = 5000;
 
 try {
     require_once __DIR__ . '/config/db.php';
@@ -92,9 +93,8 @@ SQL;
     $countStmt = $conn->prepare($countSql);
     $countStmt->execute($params);
     $total = (int) $countStmt->fetchColumn();
-    $pages = max(1, (int) ceil($total / $pageSize));
-    $page = min($page, $pages);
-    $offset = ($page - 1) * $pageSize;
+    $studentPages = max(1, (int) ceil($total / $studentFetchSize));
+    $studentOffset = 0;
 
     $sql = $base . " SELECT s.user_id::text AS student_id, s.full_name AS student_name,
         COALESCE(ps.lessons_active, 0) AS lessons_active,
@@ -112,8 +112,8 @@ SQL;
         LIMIT :page_size OFFSET :page_offset";
     $stmt = $conn->prepare($sql);
     foreach ($params as $key => $value) $stmt->bindValue($key, $value);
-    $stmt->bindValue(':page_size', $pageSize, PDO::PARAM_INT);
-    $stmt->bindValue(':page_offset', $offset, PDO::PARAM_INT);
+    $stmt->bindValue(':page_size', $studentFetchSize, PDO::PARAM_INT);
+    $stmt->bindValue(':page_offset', $studentOffset, PDO::PARAM_INT);
     $stmt->execute();
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     foreach ($rows as &$row) {
@@ -198,6 +198,22 @@ SQL;
         }
     }
 
+    $timelineRows = [];
+    foreach ($rows as $studentRow) {
+        foreach ($studentRow['activities'] as $activity) {
+            $timelineRows[] = [
+                'student_name' => $studentRow['student_name'],
+                'activities' => [$activity],
+                'occurred_at' => $activity['occurred_at'],
+            ];
+        }
+    }
+    usort($timelineRows, static fn(array $a, array $b): int => strcmp((string) ($b['occurred_at'] ?? ''), (string) ($a['occurred_at'] ?? '')));
+    $timelineTotal = count($timelineRows);
+    $pages = max(1, (int) ceil($timelineTotal / $pageSize));
+    $page = min($page, $pages);
+    $timelineRows = array_slice($timelineRows, ($page - 1) * $pageSize, $pageSize);
+
     $activeScopeSql = '';
     $activeParams = [':range_start' => $rangeStart];
     if ($scope === 'student') {
@@ -224,7 +240,7 @@ SQL;
     $activeCount = (int) $activeStmt->fetchColumn();
 
     echo json_encode(['ok' => true, 'role' => $role, 'days' => $days, 'active_count' => $activeCount,
-        'pagination' => ['page' => $page, 'page_size' => $pageSize, 'total' => $total, 'pages' => $pages], 'rows' => $rows], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        'pagination' => ['page' => $page, 'page_size' => $pageSize, 'total' => $timelineTotal, 'pages' => $pages], 'rows' => $timelineRows], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $error) {
     error_log('Learning progress report failed: ' . $error->getMessage());
     http_response_code(500);

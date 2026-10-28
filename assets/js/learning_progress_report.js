@@ -72,7 +72,7 @@
         ? `ผู้เรียน active ${Number(data.active_count || 0).toLocaleString('th-TH')} คน · ${rangeLabel}`
         : studentView ? `กิจกรรมการเรียนของคุณ${days === 1 ? ' ' : 'ในช่วง '}${rangeLabel}`
           : `ผู้เรียน active ${Number(data.active_count || 0).toLocaleString('th-TH')} คน · นักเรียนที่ดูแล ${Number(pagination.total || 0).toLocaleString('th-TH')} คน · ${rangeLabel}`;
-      if (pageInfo) pageInfo.textContent = `หน้า ${page} / ${pages} · ${Number(pagination.total || 0).toLocaleString('th-TH')} คน`;
+      if (pageInfo) pageInfo.textContent = `หน้า ${page} / ${pages} · ${Number(pagination.total || 0).toLocaleString('th-TH')} รายการ`;
       if (previous) previous.disabled = page <= 1;
       if (next) next.disabled = page >= pages;
     } catch (error) {

@@ -431,6 +431,11 @@ body {
 .toggle-pw:hover { color: var(--text-primary); }
 .toggle-pw svg { width: 18px; height: 18px; }
 
+/* Keep the designed form eye toggle as the only password reveal control. */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear { display: none; }
+input[type="password"]::-webkit-credentials-auto-fill-button { visibility: hidden; pointer-events: none; position: absolute; right: 0; }
+
 
 .field.has-error .input-wrap input {
   border-color: var(--error);

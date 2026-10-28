@@ -427,6 +427,11 @@ body {
 .toggle-pw .eye-slash { opacity: 0; transition: opacity 160ms ease; }
 .toggle-pw.is-visible .eye-slash { opacity: 1; }
 
+/* Keep the designed form eye toggle as the only password reveal control. */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear { display: none; }
+input[type="password"]::-webkit-credentials-auto-fill-button { visibility: hidden; pointer-events: none; position: absolute; right: 0; }
+
 
 .file-upload { position: relative; }
 .file-upload input[type="file"] {

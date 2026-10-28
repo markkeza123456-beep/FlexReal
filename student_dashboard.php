@@ -290,7 +290,7 @@ if (!isset($_SESSION['user_id']) || $profileRole !== 'student') {
         </main>
     </div>
     <script src="assets/js/student_dashboard.js?v=20261022-student-pin-reset"></script>
-    <script src="assets/js/learning_progress_report.js?v=20261027-calendar-range-v2"></script>
+    <script src="assets/js/learning_progress_report.js?v=20261028-five-events-per-page"></script>
     <script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
 </html>
