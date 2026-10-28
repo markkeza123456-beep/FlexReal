@@ -478,7 +478,6 @@ async function loadDashboardData() {
             ...course,
             id: '',
             curriculum_id: '',
-            curriculum_order: null,
             attempted_lessons: 0,
             passed_lessons: 0,
             is_transferred: false,

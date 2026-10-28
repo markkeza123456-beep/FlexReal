@@ -262,7 +262,7 @@ try {
                          editor_user.user_id, editor_staff.first_name, editor_staff.last_name
                 ORDER BY c.course_id ASC
             ");
-            $curriculumSubjectsStmt = $conn->query('SELECT curriculum_id, course_id, requirement_type, curriculum_order FROM public.curriculum_courses ORDER BY curriculum_id, curriculum_order NULLS LAST, course_id');
+            $curriculumSubjectsStmt = $conn->query('SELECT curriculum_id, course_id, requirement_type FROM public.curriculum_courses ORDER BY curriculum_id, course_id');
             $curriculumIssuesStmt = $conn->query("SELECT ac.curriculum_id, cu.code AS curriculum_code, cu.name AS curriculum_name,
                        c.course_id, c.code AS subject_code, c.name AS subject_name,
                        COUNT(DISTINCT sc.student_id)::integer AS affected_students
@@ -573,14 +573,12 @@ try {
             $curriculumId = $_GET['curriculum_id'] ?? '';
             if (empty($curriculumId)) { jsonResponse(['status' => 'error', 'message' => 'Missing ID'], 400); }
             $allSubjectsStmt = $conn->query("SELECT course_id AS id, code, name FROM public.courses ORDER BY code ASC NULLS LAST, course_id ASC");
-            $selectedStmt = $conn->prepare("SELECT course_id, requirement_type, curriculum_order FROM public.curriculum_courses WHERE curriculum_id = :id ORDER BY curriculum_order NULLS LAST, course_id");
+            $selectedStmt = $conn->prepare("SELECT course_id, requirement_type FROM public.curriculum_courses WHERE curriculum_id = :id ORDER BY course_id");
             $selectedStmt->execute([':id' => $curriculumId]);
             $selectedRows = $selectedStmt->fetchAll(PDO::FETCH_ASSOC);
             $selectedTypes = [];
-            $selectedOrders = [];
             foreach ($selectedRows as $selectedRow) {
                 $selectedTypes[(string) $selectedRow['course_id']] = $selectedRow['requirement_type'] === 'required' ? 'compulsory' : 'elective';
-                $selectedOrders[(string) $selectedRow['course_id']] = $selectedRow['curriculum_order'] !== null ? (int) $selectedRow['curriculum_order'] : null;
             }
             jsonResponse([
                 'status' => 'success',
@@ -588,7 +586,6 @@ try {
                 'subjects' => fetchAllRows($allSubjectsStmt),
                 'selected' => array_column($selectedRows, 'course_id'),
                 'selected_types' => $selectedTypes,
-                'selected_orders' => $selectedOrders
             ]);
             break;
 
@@ -603,27 +600,22 @@ try {
                 $existingStmt->execute([':id' => $curriculumId]);
                 $existingIds = array_map('strval', $existingStmt->fetchAll(PDO::FETCH_COLUMN));
                 $selectedIds = [];
-                $insertStmt = $conn->prepare("INSERT INTO public.curriculum_courses (curriculum_id, course_id, requirement_type, curriculum_order) SELECT :cid, course_id, :requirement_type, :curriculum_order FROM public.courses WHERE course_id = :sid ON CONFLICT (curriculum_id, course_id) DO UPDATE SET requirement_type = EXCLUDED.requirement_type, curriculum_order = EXCLUDED.curriculum_order, updated_at = NOW()");
+                $insertStmt = $conn->prepare("INSERT INTO public.curriculum_courses (curriculum_id, course_id, requirement_type) SELECT :cid, course_id, :requirement_type FROM public.courses WHERE course_id = :sid ON CONFLICT (curriculum_id, course_id) DO UPDATE SET requirement_type = EXCLUDED.requirement_type, updated_at = NOW()");
                 if (!empty($subjectIds) && is_array($subjectIds)) {
-                    $usedOrders = [];
                     $usedSubjects = [];
                     foreach ($subjectIds as $selection) {
                         if (is_array($selection)) {
                             $sid = trim((string) ($selection['id'] ?? ''));
                             $type = strtolower(trim((string) ($selection['type'] ?? 'elective')));
-                            $order = filter_var($selection['order'] ?? null, FILTER_VALIDATE_INT);
                         } else {
                             $sid = trim((string) $selection);
                             $type = 'elective';
-                            $order = false;
                         }
                         if ($sid === '' || !ctype_digit($sid) || !in_array($type, ['compulsory', 'elective'], true)) throw new RuntimeException('ประเภทวิชาในหลักสูตรไม่ถูกต้อง');
-                        if ($order === false || $order < 1 || isset($usedOrders[$order])) throw new RuntimeException('กรุณากำหนดลำดับหลักสูตรเป็นจำนวนเต็มบวกที่ไม่ซ้ำกัน');
                         if (isset($usedSubjects[$sid])) throw new RuntimeException('พบรายวิชาซ้ำในรายการหลักสูตร');
-                        $usedOrders[$order] = true;
                         $usedSubjects[$sid] = true;
                         $selectedIds[] = $sid;
-                        $insertStmt->execute([':cid' => $curriculumId, ':sid' => $sid, ':requirement_type' => $type === 'compulsory' ? 'required' : 'elective', ':curriculum_order' => $order]);
+                        $insertStmt->execute([':cid' => $curriculumId, ':sid' => $sid, ':requirement_type' => $type === 'compulsory' ? 'required' : 'elective']);
                         if ($insertStmt->rowCount() < 1) throw new RuntimeException('ไม่พบรายวิชาที่ต้องการบันทึก');
                     }
                 }

@@ -15,7 +15,6 @@ try {
     if ($action === 'get_all') {
         $stmt = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, c.image_path,
                 cc.curriculum_id,
-                cc.curriculum_order,
                 CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' ELSE c.subject_type END AS subject_type,
                 (cc.course_id IS NOT NULL) AS in_curriculum,
                 (cc.requirement_type = 'required') AS is_curriculum_required,
@@ -25,14 +24,14 @@ try {
          LEFT JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id AND cc.course_id = c.course_id
          LEFT JOIN public.student_courses sc ON sc.course_id = c.course_id AND sc.student_id = :student_id AND sc.status = 'active'
          WHERE c.status = 'active'
-         ORDER BY (cc.course_id IS NULL), cc.curriculum_order ASC NULLS LAST, c.code ASC NULLS LAST, c.course_id ASC");
+         ORDER BY (cc.course_id IS NULL), c.code ASC NULLS LAST, c.course_id ASC");
         $stmt->execute([':student_id' => $studentId]); $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
         foreach ($courses as &$course) { $course['subjects_id'] = $course['course_id']; $course['subjects_name'] = $course['name']; $course['subjects_description'] = $course['description']; } unset($course);
         echo json_encode(['status' => 'success', 'data' => $courses], JSON_UNESCAPED_UNICODE); exit;
     }
     if ($action === 'get_detail') {
         $id = (string) ($_GET['id'] ?? ''); $stmt = $conn->prepare("SELECT c.course_id, c.code, c.name, c.description, c.image_path, c.credits,
-                cc.curriculum_id, cc.curriculum_order,
+                cc.curriculum_id,
                 CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' ELSE c.subject_type END AS subject_type
          FROM public.courses c
          LEFT JOIN LATERAL (SELECT curriculum_id FROM public.student_curricula WHERE student_id = :student_id AND status = 'active' ORDER BY enrolled_at DESC LIMIT 1) active_curriculum ON true

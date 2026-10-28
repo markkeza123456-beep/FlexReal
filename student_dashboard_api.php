@@ -127,7 +127,7 @@ try {
 
     $courseStmt = $conn->prepare(
         "SELECT c.course_id, c.code, c.name, COALESCE(c.description, '') AS description,
-                cc.curriculum_id, cc.curriculum_order,
+                cc.curriculum_id,
                 COALESCE(sc.status, 'active') AS enrollment_status,
                 CASE WHEN cc.requirement_type = 'required' THEN 'compulsory' WHEN cc.requirement_type = 'elective' THEN 'elective' ELSE NULL END AS subject_type
          FROM (
@@ -138,7 +138,7 @@ try {
          INNER JOIN public.curriculum_courses cc ON cc.curriculum_id = active_curriculum.curriculum_id
          INNER JOIN public.courses c ON c.course_id = cc.course_id
          LEFT JOIN public.student_courses sc ON sc.student_id = :student_id AND sc.course_id = c.course_id
-         ORDER BY cc.curriculum_order ASC NULLS LAST, c.code ASC NULLS LAST, c.course_id ASC"
+         ORDER BY c.code ASC NULLS LAST, c.course_id ASC"
     );
     $courseStmt->execute([':student_id' => $studentId]);
 
@@ -329,11 +329,10 @@ try {
             $completedCourses++;
         }
         $courses[] = [
-            'id' => $row['curriculum_order'] !== null ? str_pad((string) $row['curriculum_order'], 2, '0', STR_PAD_LEFT) : '',
+            'id' => str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT),
             'subject_id' => (string) ($row['course_id'] ?? ''),
             'code' => (string) ($row['code'] ?? ''),
             'curriculum_id' => (string) ($row['curriculum_id'] ?? ''),
-            'curriculum_order' => $row['curriculum_order'] !== null ? (int) $row['curriculum_order'] : null,
             'is_in_curriculum' => true,
             'is_enrolled' => true,
             'name' => (string) ($row['name'] ?? 'ไม่ระบุชื่อวิชา'),

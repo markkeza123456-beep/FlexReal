@@ -863,7 +863,7 @@ if ($displayName !== '') {
 
   <div class="toast" id="toast"></div>
 
-  <script src="assets/js/staffdash.js?v=20261026-learning-progress"></script>
+  <script src="assets/js/staffdash.js?v=20261028-curriculum-no-order"></script>
   <script src="assets/js/learning_progress_report.js?v=20261028-shared-timeline-v2"></script>
 <script src="assets/js/responsive.js?v=20261022-menu-auto-close" defer></script>
 </body>
