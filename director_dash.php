@@ -91,10 +91,11 @@ LIMIT 5")->fetchAll(PDO::FETCH_ASSOC) ?: [];
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
-  <link rel="stylesheet" href="assets/css/director_dash.css?v=20261022-director-personal-info-underline-fix">
+  <link rel="stylesheet" href="assets/css/director_dash.css?v=20261028-director-search">
   <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-sidebar-menu-fix">
-  <link rel="stylesheet" href="assets/css/learning-progress-report.css?v=20261028-shared-timeline-v2">
+  <link rel="stylesheet" href="assets/css/learning-progress-report.css?v=20261028-search-style">
 </head>
 <body class="director-dashboard">
   <header class="director-topbar">
@@ -140,7 +141,7 @@ LIMIT 5")->fetchAll(PDO::FETCH_ASSOC) ?: [];
         </div>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0">
-        <input type="search" id="learningProgressSearch" placeholder="ค้นหาชื่อนักเรียน..." aria-label="ค้นหาชื่อนักเรียนในรายงาน">
+        <input type="search" id="learningProgressSearch" class="learning-report-search" placeholder="ค้นหาชื่อนักเรียน..." aria-label="ค้นหาชื่อนักเรียนในรายงาน">
         <span id="learningProgressPageInfo"></span>
       </div>
       <div class="director-table-scroll"><table class="director-table learning-timeline-table" style="min-width:760px"><thead><tr><th>นักเรียน — เวลา — กิจกรรม</th></tr></thead><tbody id="learningProgressBody"><tr><td class="director-empty">กำลังโหลด...</td></tr></tbody></table></div>

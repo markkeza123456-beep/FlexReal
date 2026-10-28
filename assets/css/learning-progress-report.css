@@ -56,6 +56,9 @@
 .learning-timeline-text { min-width:0; flex:1; }
 .learning-timeline-student { flex:0 0 180px; }
 .learning-report-tools { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin:12px 0; }
+.learning-report-search { width:200px; min-height:36px; padding:7px 12px; border:1px solid var(--border); border-radius:8px; outline:none; background:var(--bg3); color:var(--text); font:400 13px 'Kanit',sans-serif; transition:border-color .2s; }
+.learning-report-search::placeholder { color:var(--text-muted); }
+.learning-report-search:focus { border-color:var(--brand-400); }
 .learning-timeline-empty { text-align:center!important; color:#718198!important; }
 .learning-badge { display:inline-flex; align-items:center; padding:2px 7px; border-radius:999px; font-size:11px; font-weight:600; white-space:nowrap; }
 .learning-badge.is-passed { color:#15803d; background:#dcfce7; }

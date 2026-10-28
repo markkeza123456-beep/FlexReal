@@ -389,7 +389,7 @@ $stats = [
     <link rel="stylesheet" href="assets/css/theme.css?v=20261022-mobile-layout-v2">
     <link rel="stylesheet" href="assets/css/responsive.css?v=20261022-mobile-logout-bottom">
     <link rel="stylesheet" href="assets/css/profile-layout.css?v=20261021-centered-profile-layout">
-    <link rel="stylesheet" href="assets/css/learning-progress-report.css?v=20261028-shared-timeline-v2">
+    <link rel="stylesheet" href="assets/css/learning-progress-report.css?v=20261028-search-style">
 </head>
 <body>
 <aside class="sidebar">
@@ -508,7 +508,7 @@ $stats = [
                 </div>
             </div>
             <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin:0 0 12px;flex-wrap:wrap">
-                <input type="search" id="learningProgressSearch" class="search-input" placeholder="ค้นหาชื่อนักเรียน..." aria-label="ค้นหาชื่อนักเรียนในรายงาน">
+                <input type="search" id="learningProgressSearch" class="search-input learning-report-search" placeholder="ค้นหาชื่อนักเรียน..." aria-label="ค้นหาชื่อนักเรียนในรายงาน">
                 <span id="learningProgressPageInfo" class="page-sub"></span>
             </div>
             <div class="table-wrap"><table class="lessons-table learning-timeline-table" style="min-width:760px"><thead><tr><th>นักเรียน — เวลา — กิจกรรม</th></tr></thead><tbody id="learningProgressBody"><tr><td style="text-align:center">กำลังโหลด...</td></tr></tbody></table></div>
